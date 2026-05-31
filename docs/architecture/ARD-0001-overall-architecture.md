@@ -1,0 +1,422 @@
+# ARD-0001: Overall Architecture
+
+Status: Accepted
+
+Date: 2026-05-31
+
+## Context
+
+Nebius Market Abuse Arena is an educational simulation for demonstrating synthetic order-book anomaly detection and AI-generated explanations. It is not a production market surveillance system, does not detect real market manipulation, does not provide trading signals, and must not be used for compliance decisions.
+
+The project needs to support two complementary workflows:
+
+- a live visual arena where users can start a synthetic exchange, launch abuse-like scenarios, inspect detector confidence, and read generated incident explanations
+- an offline benchmark path where many labeled synthetic simulations are run to measure deterministic detector behavior
+
+The implementation should be easy to run locally, clear enough for reviewers to inspect, and structured so Nebius serverless components can be demonstrated without coupling the UI directly to AI services.
+
+## Decision
+
+Build the system as a React visual arena backed by a FastAPI simulator, with a local synthetic exchange/order book, normal and abuse-like agents, deterministic detectors, and separate Nebius serverless components for benchmarks and explanations.
+
+The main architecture is:
+
+```text
+React / Vite UI
+  - Arena screen
+  - Incident drawer
+  - Benchmark screen
+        |
+        | REST + WebSocket
+        v
+FastAPI Backend
+  - simulation controller
+  - scenario launcher
+  - WebSocket state stream
+  - incident store
+  - explanation client
+        |
+        +-------------------------+
+        |                         |
+        v                         v
+Local Synthetic Simulation        Nebius Serverless AI Endpoint
+  - order book                    - explain event
+  - matching engine               - explain simulation
+  - normal agents                 - generate report
+  - scenario agents
+  - deterministic detectors
+        |
+        v
+Event, Snapshot, Incident, and Report Artifacts
+```
+
+The batch path runs separately:
+
+```text
+Nebius Serverless AI Job
+  - run many synthetic simulations
+  - inject labeled scenario families
+  - compute precision, recall, and F1
+  - generate benchmark artifacts and charts
+```
+
+## Architecture Overview
+
+### UI Layer
+
+The UI is a React visual arena under `frontend/`. It presents the live simulation and does not own simulation logic.
+
+Responsibilities:
+
+- show the live order book ladder
+- show mid-price, spread, imbalance, and detector confidence views
+- provide Start, Pause, Reset, Auto Arena, and Market Regime controls
+- provide scenario launch buttons
+- show agent activity and active agents
+- show incident cards and an incident drawer
+- show benchmark summary results
+- show the educational disclaimer
+
+The UI communicates with the backend through REST for commands and WebSocket for live state.
+
+### Backend Layer
+
+The backend is a FastAPI application under `backend/`. It is the runtime control plane.
+
+Responsibilities:
+
+- own simulation lifecycle commands
+- maintain the simulation clock
+- launch and stop scenarios
+- run normal and scenario agents
+- process exchange events
+- recalculate detector scores
+- emit incidents
+- broadcast live arena state over WebSocket
+- persist local artifacts
+- call the Nebius explanation endpoint
+
+The backend isolates the browser from direct simulation internals and from direct Nebius endpoint calls.
+
+### Synthetic Exchange Layer
+
+The exchange layer models a simple limit order book and matching engine.
+
+Key modules:
+
+- `backend/app/exchange/order_book.py`
+- `backend/app/exchange/matching_engine.py`
+- `backend/app/exchange/event_log.py`
+- `backend/app/exchange/schemas.py`
+
+Responsibilities:
+
+- add limit orders
+- cancel orders
+- apply market orders
+- maintain best bid and ask
+- expose L2 snapshots
+- append replayable event logs
+
+This layer should stay deterministic and testable.
+
+### Agent Layer
+
+Agents generate synthetic market activity.
+
+Always-on agents:
+
+- `MarketMakerAgent`
+- `NoiseTraderAgent`
+- `LiquidityTakerAgent`
+
+Scenario agents:
+
+- `SpoofingLikeAgent`
+- `LayeringLikeAgent`
+- `QuoteStuffingLikeAgent`
+- `LiquidityEvaporationScenario`
+- `PanicSelloffScenario`
+
+Normal agents provide background liquidity and order flow. Scenario agents are launched manually and emit labeled synthetic abuse-like patterns.
+
+### Detector Layer
+
+Detectors are deterministic and evidence-driven.
+
+Feature families:
+
+- spread bps
+- top-N depth
+- imbalance
+- message rate
+- cancel-to-trade ratio
+- order lifetime
+- wall size ratio
+- depth change percentage
+
+Detector families:
+
+- spoofing-like wall detector
+- layering-like detector
+- quote-stuffing-like detector
+- liquidity-shock detector
+
+Detector output should include confidence, severity, evidence, involved agent or scenario, timestamps, and incident metadata.
+
+### Explanation Layer
+
+The explanation layer converts structured incident evidence into plain-English summaries.
+
+Responsibilities:
+
+- prepare explanation requests
+- call the Nebius Serverless AI Endpoint
+- receive structured explanation output
+- store generated reports
+- ensure AI text is framed as supporting explanation, not ground truth
+
+### Nebius Serverless Components
+
+The project uses Nebius in two places:
+
+- Serverless AI Endpoint for incident and simulation explanations
+- Serverless AI Job for offline benchmark simulations
+
+The endpoint is interactive and request-driven. The job is batch-oriented and produces benchmark artifacts.
+
+## Documentation Map
+
+Core documentation:
+
+- `README.md` - project entry point, setup, disclaimer, documentation links
+- `PHASES.md` - phased implementation plan
+- `docs/architecture.md` - high-level architecture diagram and component responsibilities
+- `docs/runtime-model.md` - ticking runtime model, UI screens, APIs, and module responsibilities
+- `docs/benchmark-methodology.md` - benchmark design and metrics
+- `docs/nebius-deployment.md` - Nebius endpoint and job deployment notes
+- `docs/research-notes.md` - research positioning and references
+- `docs/safety-and-disclaimers.md` - safety language and non-production framing
+- `docs/challenge-submission.md` - submission framing and assets
+
+Architecture records:
+
+- `docs/architecture/README.md` - ARD index and conventions
+- `docs/architecture/ARD-0001-overall-architecture.md` - this record
+
+## Phased Implementation Approach
+
+The project should be implemented in five phases.
+
+### Phase 1: Core Live Arena
+
+Build the minimum live loop:
+
+- order book
+- matching engine
+- normal agents
+- simulation clock
+- WebSocket state stream
+- basic UI ladder
+
+Reasoning:
+
+The order book and tick loop are the foundation. A credible visual arena must first show live, changing synthetic market state before scenario or AI features are added.
+
+Exit criteria:
+
+- simulator ticks continuously when started
+- normal agents generate baseline activity
+- matching engine updates the synthetic book
+- UI shows bids, asks, best levels, and basic market state
+
+### Phase 2: Scenario Agents And Operator Controls
+
+Add manually launched synthetic scenarios:
+
+- spoofing-like wall
+- layering-like pattern
+- quote-stuffing-like burst
+- scenario buttons
+- agent feed
+
+Reasoning:
+
+The project needs clear, visible demo moments. Scenario launch buttons make the system understandable to reviewers and create labeled events for later detectors and benchmarks.
+
+Exit criteria:
+
+- UI can launch each scenario manually
+- active scenario state is visible
+- agent activity appears in the feed
+- scenario events are labeled
+
+### Phase 3: Deterministic Detectors And Incidents
+
+Add detection and evidence:
+
+- microstructure features
+- confidence scores
+- incident cards
+- evidence extraction
+
+Reasoning:
+
+Detector output should be explainable and reproducible before AI explanations are introduced. This keeps the model grounded in structured evidence instead of letting generated text define the detection.
+
+Exit criteria:
+
+- detector confidence updates while the simulation runs
+- scenario activity can create incident cards
+- incidents include structured evidence
+- detector behavior is deterministic for a fixed seed
+
+### Phase 4: Nebius Benchmark And Explanation Runtime
+
+Add Nebius serverless surfaces:
+
+- Serverless AI Job for benchmark
+- Serverless AI Endpoint for explanation
+- deployment docs
+- screenshots of Nebius logs and metrics
+
+Reasoning:
+
+Nebius integration should attach to already-structured simulation and detector outputs. The endpoint explains incidents; the batch job evaluates detector behavior over many synthetic runs.
+
+Exit criteria:
+
+- benchmark job runs multiple synthetic scenarios
+- precision, recall, and F1 are reported by scenario family
+- explanation endpoint returns structured summaries
+- deployment docs include commands and review evidence
+
+### Phase 5: Polish And Submission Assets
+
+Prepare the project for review:
+
+- README
+- architecture diagram
+- blog post
+- short video
+- research notes
+- sample benchmark report
+
+Reasoning:
+
+The final phase packages the work so the architecture, safety framing, demo flow, and benchmark value are clear without requiring reviewers to infer the story from code.
+
+Exit criteria:
+
+- README and docs explain the system clearly
+- demo can be started with documented commands
+- architecture and runtime model are documented
+- supporting research notes and benchmark report are available
+- claims remain limited to synthetic educational simulation
+
+## Key Decisions
+
+### Decision 1: Keep UI And Simulation Separate
+
+The UI will not directly own exchange logic. It sends commands to the backend and receives state updates.
+
+Rationale:
+
+- keeps simulation testable outside the browser
+- avoids duplicating state logic across frontend and backend
+- allows batch jobs to reuse simulation concepts without UI dependencies
+
+### Decision 2: Use Deterministic Detectors Before AI Explanations
+
+The detector engine will calculate confidence and evidence deterministically. AI explanations summarize evidence but do not determine incidents.
+
+Rationale:
+
+- makes benchmark metrics meaningful
+- improves reviewability
+- avoids overstating AI-generated conclusions
+- supports the educational safety framing
+
+### Decision 3: Keep Nebius Endpoint And Job Separate
+
+The Serverless AI Endpoint and Serverless AI Job serve different runtime needs.
+
+Rationale:
+
+- endpoint is latency-sensitive and interaction-driven
+- job is throughput-oriented and benchmark-driven
+- separation makes deployment and observability clearer
+
+### Decision 4: Persist Artifacts Locally
+
+The system writes local event, snapshot, incident, benchmark, and report artifacts under `outputs/`.
+
+Rationale:
+
+- supports replay and debugging
+- supports benchmark reproducibility
+- gives reviewers concrete artifacts
+- avoids treating transient UI state as the only source of truth
+
+### Decision 5: Use Explicit Safety Language
+
+README, UI, docs, and generated reports must state that this is an educational simulation.
+
+Rationale:
+
+- scenarios are synthetic abuse-like patterns
+- detectors are simplified and deterministic
+- output must not be interpreted as real surveillance, trading advice, or compliance guidance
+
+## Alternatives Considered
+
+### Browser-Only Simulation
+
+Rejected for the primary architecture.
+
+Reason:
+
+It would simplify the demo but make backend APIs, batch benchmarks, artifact persistence, and serverless integration less realistic.
+
+### AI-First Detection
+
+Rejected.
+
+Reason:
+
+AI-generated text is not a stable detector. The project needs deterministic detector outputs before explanation generation.
+
+### Single Monolithic Service For UI, Simulation, Benchmark, And Explanation
+
+Rejected.
+
+Reason:
+
+It would reduce deployment boundaries but obscure the distinction between live demo, offline benchmark, and AI explanation workloads.
+
+## Consequences
+
+Positive consequences:
+
+- clear runtime boundaries
+- testable simulation and detector logic
+- UI can remain responsive and visual
+- Nebius components have focused responsibilities
+- benchmark outputs can be reproduced and reviewed
+
+Tradeoffs:
+
+- more modules and documentation to maintain
+- WebSocket state contract needs to stay synchronized with UI needs
+- benchmark and live runtime may diverge if shared logic is not kept aligned
+- serverless deployment requires separate configuration and observability artifacts
+
+## Follow-Up ARDs
+
+Future records should cover:
+
+- ARD-0002: WebSocket state schema
+- ARD-0003: Detector evidence model
+- ARD-0004: Benchmark artifact format
+- ARD-0005: Nebius endpoint contract
+- ARD-0006: Scenario labeling and reproducibility

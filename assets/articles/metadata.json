@@ -1,0 +1,66 @@
+[
+  {
+    "key": "abides_high_fidelity_market_simulation",
+    "title": "ABIDES: Towards High-Fidelity Market Simulation for AI Research",
+    "authors": "David Byrd, Maria Hybinette, Tucker Hybinette Balch",
+    "source": "arXiv:1904.12066",
+    "url": "https://arxiv.org/abs/1904.12066",
+    "pdf_url": "https://arxiv.org/pdf/1904.12066"
+  },
+  {
+    "key": "spoofing_limit_order_book_agent_based_model",
+    "title": "Spoofing the Limit Order Book: An Agent-Based Model",
+    "authors": "Xintong Wang, Michael P. Wellman",
+    "source": "AAMAS 2017 / IFAAMAS proceedings",
+    "url": "https://www.ifaamas.org/Proceedings/aamas2017/pdfs/p651.pdf",
+    "pdf_url": "https://www.ifaamas.org/Proceedings/aamas2017/pdfs/p651.pdf"
+  },
+  {
+    "key": "realism_metrics_lob_market_simulation",
+    "title": "Get Real: Realism Metrics for Robust Limit Order Book Market Simulations",
+    "authors": "Svitlana Vyetrenko et al.",
+    "source": "arXiv:1912.04941",
+    "url": "https://arxiv.org/abs/1912.04941",
+    "pdf_url": "https://arxiv.org/pdf/1912.04941"
+  },
+  {
+    "key": "world_agent_lob_simulation",
+    "title": "Learning to simulate realistic limit order book markets from data as a World Agent",
+    "authors": "Andrea Coletta, Aymeric Moulin, Svitlana Vyetrenko, Tucker Balch",
+    "source": "arXiv:2210.09897",
+    "url": "https://arxiv.org/abs/2210.09897",
+    "pdf_url": "https://arxiv.org/pdf/2210.09897"
+  },
+  {
+    "key": "trades_realistic_market_simulations",
+    "title": "TRADES: Generating Realistic Market Simulations with Diffusion Models",
+    "authors": "Leonardo Berti, Bardh Prenkaj, Paola Velardi",
+    "source": "arXiv:2502.07071",
+    "url": "https://arxiv.org/abs/2502.07071",
+    "pdf_url": "https://arxiv.org/pdf/2502.07071"
+  },
+  {
+    "key": "neural_stochastic_agent_based_lob_simulation",
+    "title": "Neural Stochastic Agent-Based Limit Order Book Simulation: A Hybrid Methodology",
+    "authors": "Zijian Shi, John Cartlidge",
+    "source": "arXiv:2303.00080",
+    "url": "https://arxiv.org/abs/2303.00080",
+    "pdf_url": "https://arxiv.org/pdf/2303.00080"
+  },
+  {
+    "key": "multi_agent_rl_realistic_lob_market_simulation",
+    "title": "Multi-Agent Reinforcement Learning in a Realistic Limit Order Book Market Simulation",
+    "authors": "Michaël Karpe, Jin Fang, Zhongyao Ma, Chen Wang",
+    "source": "arXiv:2006.05574",
+    "url": "https://arxiv.org/abs/2006.05574",
+    "pdf_url": "https://arxiv.org/pdf/2006.05574"
+  },
+  {
+    "key": "llm_based_financial_market_agents",
+    "title": "Simulating Financial Market via Large Language Model based Agents",
+    "authors": "Shen Gao et al.",
+    "source": "arXiv:2406.19966",
+    "url": "https://arxiv.org/abs/2406.19966",
+    "pdf_url": "https://arxiv.org/pdf/2406.19966"
+  }
+]

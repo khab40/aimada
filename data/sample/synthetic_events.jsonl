@@ -1,0 +1,3 @@
+{"timestamp":1,"type":"limit_order","agent_id":"noise-1","side":"buy","price":99.9,"quantity":1}
+{"timestamp":2,"type":"limit_order","agent_id":"spoof-1","side":"buy","price":98.0,"quantity":500}
+{"timestamp":3,"type":"cancel","agent_id":"spoof-1","order_id":"spoof-1-spoof-2"}

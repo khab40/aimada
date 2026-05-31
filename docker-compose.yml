@@ -1,0 +1,21 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./outputs:/app/outputs
+
+  frontend:
+    build:
+      context: ./frontend
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000
+      VITE_WS_URL: ws://localhost:8000/ws/arena
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend

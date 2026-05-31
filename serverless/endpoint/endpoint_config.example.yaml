@@ -1,0 +1,7 @@
+model: nebius-ai-studio
+temperature: 0.2
+max_tokens: 800
+routes:
+  - /explain-event
+  - /explain-simulation
+  - /generate-incident-report
