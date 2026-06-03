@@ -39,6 +39,17 @@ class LiveArenaRuntime:
         await self.broadcaster.broadcast({"type": "arena_state", "payload": self._last_state})
         return self._last_state
 
+    async def launch_scenario(self, scenario_name: str) -> dict[str, object]:
+        async with self._lock:
+            result = self.engine.launch_scenario(scenario_name)
+            if result.get("accepted"):
+                self.running = True
+                if self._task is None or self._task.done():
+                    self._task = asyncio.create_task(self._run())
+            self._last_state = self.engine.snapshot(running=self.running)
+        await self.broadcaster.broadcast({"type": "arena_state", "payload": self._last_state})
+        return {"accepted": bool(result.get("accepted")), "result": result, "state": self._last_state}
+
     async def snapshot(self) -> dict[str, object]:
         async with self._lock:
             return dict(self._last_state)

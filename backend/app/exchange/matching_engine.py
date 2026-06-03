@@ -11,7 +11,17 @@ class MatchingEngine:
     def process_event(self, order: Order) -> list[dict[str, object]]:
         if order.order_type == "cancel":
             canceled = self.book.cancel_order(order.order_id)
-            return [{"type": "cancel", "order_id": order.order_id, "agent_id": order.agent_id}] if canceled else []
+            return [
+                {
+                    "type": "cancel",
+                    "order_id": order.order_id,
+                    "agent_id": order.agent_id,
+                    "timestamp": order.timestamp,
+                    "scenario_id": order.scenario_id,
+                    "scenario_name": order.scenario_name,
+                    "scenario_family": order.scenario_family,
+                }
+            ] if canceled else []
 
         if order.order_type == "market":
             return self.match_market_order(order)
@@ -41,6 +51,9 @@ class MatchingEngine:
                 "price": resting_order.price,
                 "quantity": resting_order.quantity,
                 "timestamp": resting_order.timestamp,
+                "scenario_id": resting_order.scenario_id,
+                "scenario_name": resting_order.scenario_name,
+                "scenario_family": resting_order.scenario_family,
             }
         )
         return events
@@ -56,6 +69,9 @@ class MatchingEngine:
             "side": order.side,
             "quantity": order.quantity,
             "timestamp": order.timestamp,
+            "scenario_id": order.scenario_id,
+            "scenario_name": order.scenario_name,
+            "scenario_family": order.scenario_family,
         }]
 
     def update_book(self, order: Order) -> list[dict[str, object]]:
