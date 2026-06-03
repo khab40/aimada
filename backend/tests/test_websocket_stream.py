@@ -2,7 +2,9 @@ import asyncio
 
 from fastapi import WebSocketDisconnect
 
+from app.arena.engine import SimulationEngine
 from app.websocket.broadcaster import Broadcaster
+from app.websocket.manager import WebSocketManager
 
 
 class FakeWebSocket:
@@ -31,5 +33,44 @@ def test_websocket_broadcaster_sends_initial_arena_state() -> None:
         assert websocket.accepted is True
         assert websocket.messages == [initial]
         assert broadcaster.client_count == 0
+
+    asyncio.run(run())
+
+
+def test_websocket_manager_tracks_clients_and_sends_arena_state() -> None:
+    async def run() -> None:
+        websocket = FakeWebSocket()
+        manager = WebSocketManager()
+        engine = SimulationEngine()
+
+        await manager.connect(websocket)
+        await manager.send_state(websocket, await engine.get_state())
+
+        assert websocket.accepted is True
+        assert manager.client_count == 1
+        assert websocket.messages[0]["type"] == "arena_state"
+        assert websocket.messages[0]["payload"]["tick"] == 0
+
+        manager.disconnect(websocket)
+        assert manager.client_count == 0
+
+    asyncio.run(run())
+
+
+def test_websocket_manager_sends_versioned_arena_message_envelope() -> None:
+    async def run() -> None:
+        websocket = FakeWebSocket()
+        manager = WebSocketManager()
+        engine = SimulationEngine()
+
+        await manager.connect(websocket)
+        await manager.send_state(websocket, await engine.get_state())
+
+        message = websocket.messages[0]
+        assert message["type"] == "arena_state"
+        assert message["version"] == 1
+        assert isinstance(message["timestamp"], str)
+        assert message["payload"]["tick"] == 0
+        assert message["payload"]["book"]["bids"]
 
     asyncio.run(run())

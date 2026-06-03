@@ -1,14 +1,106 @@
 from collections import defaultdict
 from dataclasses import replace
 
-from app.exchange.schemas import Order
+from app.exchange.schemas import BookSide, Order, PriceLevel, Side
 
 
 class OrderBook:
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        mid_price: float | None = None,
+        levels: int = 0,
+        tick_size: float = 1.0,
+        base_size: float = 10.0,
+    ) -> None:
         self.bids: dict[float, list[Order]] = defaultdict(list)
         self.asks: dict[float, list[Order]] = defaultdict(list)
         self.orders: dict[str, Order] = {}
+        self.level_owners: dict[tuple[BookSide, float], str] = {}
+        self.mid_price: float | None = None
+        self.spread: float | None = None
+
+        if mid_price is not None and levels > 0:
+            self.initialize(mid_price=mid_price, levels=levels, tick_size=tick_size, base_size=base_size)
+
+    def initialize(
+        self,
+        mid_price: float,
+        levels: int,
+        tick_size: float = 1.0,
+        base_size: float = 10.0,
+        owner: str = "normal",
+    ) -> None:
+        self.bids.clear()
+        self.asks.clear()
+        self.orders.clear()
+        self.level_owners.clear()
+
+        for index in range(levels):
+            distance = index + 1
+            size = base_size + index
+            self.update_level("bid", mid_price - distance * tick_size, size, owner)
+            self.update_level("ask", mid_price + distance * tick_size, size, owner)
+
+        self.recalculate()
+
+    def _normalize_side(self, side: Side | BookSide) -> BookSide:
+        if side in {"buy", "bid"}:
+            return "bid"
+        if side in {"sell", "ask"}:
+            return "ask"
+        raise ValueError(f"unknown book side: {side}")
+
+    def _levels_for_side(self, side: Side | BookSide) -> dict[float, list[Order]]:
+        book_side = self._normalize_side(side)
+        return self.bids if book_side == "bid" else self.asks
+
+    def _synthetic_order_id(self, side: BookSide, price: float) -> str:
+        return f"l2-{side}-{price:.8f}"
+
+    def _level_quantity(self, side: Side | BookSide, price: float) -> float:
+        levels = self._levels_for_side(side)
+        return sum(order.quantity for order in levels.get(price, []))
+
+    def recalculate(self) -> None:
+        best_bid = self.best_bid()
+        best_ask = self.best_ask()
+        if best_bid is None or best_ask is None:
+            self.mid_price = None
+            self.spread = None
+            return
+        self.mid_price = (best_bid + best_ask) / 2
+        self.spread = best_ask - best_bid
+
+    def update_level(self, side: Side | BookSide, price: float, size: float, owner: str = "normal") -> None:
+        book_side = self._normalize_side(side)
+        if size <= 0:
+            self.remove_level(book_side, price)
+            return
+
+        levels = self._levels_for_side(book_side)
+        existing_orders = levels.get(price, [])
+        for order in existing_orders:
+            self.orders.pop(order.order_id, None)
+
+        order = Order(
+            order_id=self._synthetic_order_id(book_side, price),
+            agent_id=owner,
+            side="buy" if book_side == "bid" else "sell",
+            quantity=size,
+            price=price,
+        )
+        levels[price] = [order]
+        self.orders[order.order_id] = order
+        self.level_owners[(book_side, price)] = owner
+        self.recalculate()
+
+    def remove_level(self, side: Side | BookSide, price: float) -> None:
+        book_side = self._normalize_side(side)
+        levels = self._levels_for_side(book_side)
+        for order in levels.pop(price, []):
+            self.orders.pop(order.order_id, None)
+        self.level_owners.pop((book_side, price), None)
+        self.recalculate()
 
     def add_limit_order(self, order: Order) -> None:
         if order.price is None:
@@ -16,6 +108,8 @@ class OrderBook:
         levels = self.bids if order.side == "buy" else self.asks
         levels[order.price].append(order)
         self.orders[order.order_id] = order
+        self.level_owners.setdefault(("bid" if order.side == "buy" else "ask", order.price), "normal")
+        self.recalculate()
 
     def add(self, order: Order) -> None:
         self.add_limit_order(order)
@@ -28,6 +122,8 @@ class OrderBook:
         levels[order.price] = [item for item in levels[order.price] if item.order_id != order_id]
         if not levels[order.price]:
             del levels[order.price]
+            self.level_owners.pop(("bid" if order.side == "buy" else "ask", order.price), None)
+        self.recalculate()
         return order
 
     def cancel(self, order_id: str) -> Order | None:
@@ -68,6 +164,9 @@ class OrderBook:
                         "price": price,
                         "quantity": traded_quantity,
                         "timestamp": order.timestamp,
+                        "scenario_id": order.scenario_id or resting.scenario_id,
+                        "scenario_name": order.scenario_name or resting.scenario_name,
+                        "scenario_family": order.scenario_family or resting.scenario_family,
                     }
                 )
 
@@ -82,12 +181,26 @@ class OrderBook:
                 opposite_levels[price] = updated_level
             else:
                 opposite_levels.pop(price, None)
+                self.level_owners.pop(("ask" if order.side == "buy" else "bid", price), None)
 
+        self.recalculate()
         return trades
 
-    def apply_market_order(self, order: Order) -> list[dict[str, object]]:
-        if order.order_type != "market":
-            raise ValueError("apply_market_order requires a market order")
+    def apply_market_order(self, order_or_side: Order | Side, quantity: float | None = None) -> list[dict[str, object]]:
+        if isinstance(order_or_side, Order):
+            if order_or_side.order_type != "market":
+                raise ValueError("apply_market_order requires a market order")
+            return self.match_order(order_or_side)
+
+        if quantity is None:
+            raise ValueError("quantity is required when applying a market order by side")
+        order = Order(
+            order_id=f"market-{order_or_side}-{len(self.orders) + 1}",
+            agent_id="market_order",
+            side=order_or_side,
+            quantity=quantity,
+            order_type="market",
+        )
         return self.match_order(order)
 
     def best_bid(self) -> float | None:
@@ -99,13 +212,25 @@ class OrderBook:
     def get_best_bid_ask(self) -> dict[str, float | None]:
         return {"best_bid": self.best_bid(), "best_ask": self.best_ask()}
 
-    def get_l2_snapshot(self, depth: int = 5) -> dict[str, list[dict[str, float | int]]]:
+    def get_l2_snapshot(self, depth: int = 5) -> dict[str, object]:
         bid_prices = sorted(self.bids, reverse=True)[:depth]
         ask_prices = sorted(self.asks)[:depth]
+        self.recalculate()
         return {
-            "bids": [{"price": price, "quantity": sum(order.quantity for order in self.bids[price])} for price in bid_prices],
-            "asks": [{"price": price, "quantity": sum(order.quantity for order in self.asks[price])} for price in ask_prices],
+            "bids": [self._price_level("bid", price).to_dict() for price in bid_prices],
+            "asks": [self._price_level("ask", price).to_dict() for price in ask_prices],
+            "best_bid": self.best_bid(),
+            "best_ask": self.best_ask(),
+            "mid": self.mid_price,
+            "spread": self.spread,
         }
 
-    def snapshot(self, depth: int = 5) -> dict[str, list[dict[str, float | int]]]:
+    def _price_level(self, side: BookSide, price: float) -> PriceLevel:
+        return PriceLevel(
+            price=price,
+            quantity=self._level_quantity(side, price),
+            owner=self.level_owners.get((side, price)),
+        )
+
+    def snapshot(self, depth: int = 5) -> dict[str, object]:
         return self.get_l2_snapshot(depth)

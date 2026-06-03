@@ -1,0 +1,46 @@
+from app.exchange.order_book import OrderBook
+from app.schemas.arena import AgentEvent, AttackStage
+from app.scenarios.base import ScenarioBase
+
+
+class SpoofingLikeScenario(ScenarioBase):
+    scenario_name = "spoofing-like"
+    scenario_family = "spoofing_like"
+    agent_id = "ABUSER_01"
+
+    def __init__(self, scenario_id: str, start_tick: int) -> None:
+        super().__init__(scenario_id, start_tick)
+        self.wall_price: float | None = None
+
+    def on_stage_enter(self, book: OrderBook, tick: int, stage: AttackStage) -> list[AgentEvent]:
+        if stage == AttackStage.WALL_PLACED:
+            best_ask = book.best_ask()
+            if best_ask is None:
+                return []
+            self.wall_price = best_ask + 2.0
+            book.update_level("ask", self.wall_price, 48.0, owner="abuser")
+            return [
+                self._event(
+                    tick,
+                    "large ask wall placed away from mid",
+                    stage=stage,
+                    side="sell",
+                    price=self.wall_price,
+                    quantity=48.0,
+                )
+            ]
+
+        if stage == AttackStage.PRESSURE_PHASE:
+            if self.wall_price is not None:
+                book.update_level("ask", self.wall_price, 52.0, owner="abuser")
+            return [self._event(tick, "visible wall pressure phase", stage=stage, price=self.wall_price)]
+
+        if stage == AttackStage.WALL_CANCELLED:
+            if self.wall_price is not None:
+                book.remove_level("ask", self.wall_price)
+            return [self._event(tick, "ask wall cancelled before execution", stage=stage, price=self.wall_price)]
+
+        if stage == AttackStage.INCIDENT_CONFIRMED:
+            return [self._event(tick, "spoofing-like wall incident confirmed", stage=stage, confidence=0.91)]
+
+        return super().on_stage_enter(book, tick, stage)
