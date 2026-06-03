@@ -21,6 +21,8 @@ yarn.lock
 
 # VS Code
 .vscode/
+!.vscode/
+!.vscode/extensions.json
 
 # Logs
 logs/
@@ -38,3 +40,6 @@ build/
 .mypy_cache/
 .next/
 .vite/
+
+# Local implementation worktrees
+.worktrees/
