@@ -1,7 +1,38 @@
-model: nebius-ai-studio
-temperature: 0.2
-max_tokens: 800
+name: market-abuse-arena-ai-endpoint
+container_port: 9000
+public: true
+auth: token
+platform: cpu-d3
+preset: 4vcpu-16gb
+subnet_name: default-subnet
+
+image:
+  repository: ghcr.io/your-org/nebius-market-abuse-arena-endpoint
+  tag: latest
+
+env:
+  # mock = deterministic local fallback, ai = call Nebius AI Studio OpenAI-compatible API.
+  NEBIUS_ENDPOINT_MODE: mock
+  NEBIUS_AI_STUDIO_BASE_URL: https://api.studio.nebius.com/v1
+  NEBIUS_AI_MODEL: meta-llama/Meta-Llama-3.1-8B-Instruct
+  NEBIUS_TEMPERATURE: "0.2"
+  NEBIUS_MAX_TOKENS: "800"
+  NEBIUS_REQUEST_TIMEOUT_SECONDS: "12"
+
+secrets:
+  # Do not commit real values. Set through Nebius endpoint env-secret/token-secret options.
+  NEBIUS_API_KEY: ""
+  ENDPOINT_AUTH_TOKEN: ""
+
 routes:
-  - /explain-event
-  - /explain-simulation
-  - /generate-incident-report
+  - GET /health
+  - POST /explain-event
+  - POST /explain-simulation
+  - POST /generate-report
+  - POST /generate-incident-report
+  - POST /generate-scenario
+
+backend_wiring:
+  NEBIUS_INCIDENT_EXPLAINER_URL: http://<endpoint-public-ip>/explain-event
+  NEBIUS_SCENARIO_GENERATOR_URL: http://<endpoint-public-ip>/generate-scenario
+  NEBIUS_API_KEY: <same endpoint auth token if auth=token>

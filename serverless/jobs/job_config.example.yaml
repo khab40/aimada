@@ -1,8 +1,28 @@
-run_count: 100
-random_seed: 7
-scenarios:
-  - spoofing-like
-  - layering-like
-  - quote-stuffing-like
-  - liquidity-evaporation
-output_dir: ../../outputs
+name: market-abuse-detector-tournament
+kind: detector_tournament
+platform: cpu-d3
+preset: 4vcpu-16gb
+subnet_name: default-subnet
+
+image:
+  repository: ghcr.io/your-org/nebius-market-abuse-arena-jobs
+  tag: latest
+
+args:
+  - python
+  - detector_tournament.py
+  - --runs
+  - "100"
+  - --scenarios
+  - spoofing,layering,quote_stuffing,liquidity_evaporation
+  - --detectors
+  - spoofing_like,layering_like,quote_stuffing,liquidity_shock
+  - --output
+  - /job/outputs/benchmark
+
+outputs:
+  local_mount: outputs/benchmark
+  artifacts:
+    - benchmark_report.md
+    - metrics.csv
+    - results.json

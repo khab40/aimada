@@ -1,0 +1,27 @@
+name: market-abuse-synthetic-dataset
+kind: synthetic_dataset_factory
+platform: cpu-d3
+preset: 4vcpu-16gb
+subnet_name: default-subnet
+
+image:
+  repository: ghcr.io/your-org/nebius-market-abuse-arena-jobs
+  tag: latest
+
+args:
+  - python
+  - synthetic_dataset_factory.py
+  - --samples
+  - "100"
+  - --output
+  - /job/outputs/synthetic-dataset
+
+outputs:
+  local_mount: outputs/synthetic-dataset
+  artifacts:
+    - events.jsonl
+    - incidents.jsonl
+    - labels.jsonl
+    - snapshots.parquet
+    - snapshots.parquet.jsonl
+    - manifest.json

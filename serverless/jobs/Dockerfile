@@ -2,8 +2,11 @@ FROM python:3.11-slim
 
 WORKDIR /job
 
-RUN pip install --no-cache-dir pyyaml
+ENV PYTHONPATH=/job/backend
 
-COPY . .
+COPY backend /job/backend
+COPY serverless/jobs /job/serverless/jobs
 
-CMD ["python", "run_batch_benchmark.py", "--config", "job_config.example.yaml"]
+WORKDIR /job/serverless/jobs
+
+CMD ["python", "detector_tournament.py", "--runs", "100", "--output", "/job/outputs/benchmark"]
