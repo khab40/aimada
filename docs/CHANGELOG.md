@@ -5,7 +5,7 @@ Update this file with each significant commit before pushing.
 
 ## 2026-06-03
 
-### `pending` - feat: wire Nebius jobs and polish arena operations
+### `6709f20` - feat: wire Nebius jobs and polish arena operations
 
 - Wired the Lab "Run on Nebius Serverless Job" action through FastAPI to execute `serverless/jobs/detector_tournament.py` and parse produced benchmark artifacts.
 - Updated backend Docker packaging so the FastAPI container includes `serverless/jobs` and can run the detector tournament path in Docker.
