@@ -5,6 +5,13 @@ Update this file with each significant commit before pushing.
 
 ## 2026-06-03
 
+### `0c1f58b` - fix: preserve labeled legacy scenario runtime
+
+- Kept the legacy scenario-agent and `LiveArenaRuntime` path because committed tests and older scenario-controller code still reference it.
+- Added scenario metadata propagation to spoofing-like, layering-like, and quote-stuffing-like agents.
+- Added scenario launch support to `LiveArenaRuntime` and covered it with tests.
+- Extended the matching engine to preserve scenario identifiers on cancel, limit-order, and market-order events.
+
 ### `2811d05` - docs: add architecture, use cases, and deployment docs
 
 - Expanded the root README with quick start, API examples, environment mapping, documentation index, and screenshot links.
