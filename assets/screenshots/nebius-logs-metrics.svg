@@ -1,0 +1,116 @@
+<svg viewBox="0 0 1100 800" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1100" height="800" fill="#0f1419"/>
+
+  <!-- Title -->
+  <text x="20" y="35" font-size="24" font-weight="bold" fill="#ffffff">Nebius Logs & Metrics Dashboard</text>
+
+  <!-- Tabs -->
+  <rect x="20" y="50" width="80" height="30" fill="#22d3ee" stroke="#22d3ee" stroke-width="1"/>
+  <text x="35" y="70" font-size="12" font-weight="bold" fill="#0f1419">Logs</text>
+
+  <rect x="100" y="50" width="100" height="30" fill="#1f2937" stroke="#4a5568" stroke-width="1"/>
+  <text x="115" y="70" font-size="12" fill="#a0aec0">Metrics</text>
+
+  <rect x="200" y="50" width="100" height="30" fill="#1f2937" stroke="#4a5568" stroke-width="1"/>
+  <text x="215" y="70" font-size="12" fill="#a0aec0">Traces</text>
+
+  <!-- Log Level Filter -->
+  <rect x="350" y="50" width="80" height="30" fill="#1f2937" stroke="#4a5568" stroke-width="1"/>
+  <text x="360" y="70" font-size="11" fill="#a0aec0">Level: All ▼</text>
+
+  <rect x="440" y="50" width="100" height="30" fill="#1f2937" stroke="#4a5568" stroke-width="1"/>
+  <text x="450" y="70" font-size="11" fill="#a0aec0">Service: All ▼</text>
+
+  <!-- Logs Section (Top) -->
+  <rect x="20" y="90" width="1060" height="380" fill="#1a1f2e" stroke="#4a5568" stroke-width="1"/>
+  <text x="30" y="110" font-size="12" font-weight="bold" fill="#22d3ee">Log Stream</text>
+
+  <!-- Log Entries (monospace console style) -->
+  <rect x="30" y="125" width="1040" height="335" fill="#0f1419" stroke="#4a5568" stroke-width="0.5" font-family="monospace"/>
+
+  <!-- Recent logs with timestamps -->
+  <text x="40" y="145" font-size="9" fill="#a0aec0">[2026-06-02T14:36:42.123Z] INFO  benchmark_job: Initializing batch run</text>
+  <text x="40" y="162" font-size="9" fill="#a0aec0">[2026-06-02T14:36:42.456Z] INFO  worker_pool: Spawned 8 compute workers</text>
+  <text x="40" y="179" font-size="9" fill="#86efac">[2026-06-02T14:36:43.789Z] DEBUG simulator: Loaded detector model v2.1.0</text>
+  <text x="40" y="196" font-size="9" fill="#86efac">[2026-06-02T14:36:44.012Z] DEBUG storage: Connected to s3://nebius-artifacts</text>
+  <text x="40" y="213" font-size="9" fill="#a0aec0">[2026-06-02T14:36:50.234Z] INFO  worker_1: Starting simulation batch 1-50</text>
+  <text x="40" y="230" font-size="9" fill="#a0aec0">[2026-06-02T14:36:51.567Z] INFO  worker_2: Starting simulation batch 51-100</text>
+  <text x="40" y="247" font-size="9" fill="#a0aec0">[2026-06-02T14:37:12.890Z] INFO  worker_1: Completed 50 simulations (F1=0.88)</text>
+  <text x="40" y="264" font-size="9" fill="#fbbf24">[2026-06-02T14:37:15.123Z] WARN  worker_3: Simulation 78 timeout, retrying...</text>
+  <text x="40" y="281" font-size="9" fill="#a0aec0">[2026-06-02T14:37:18.456Z] INFO  storage: Uploaded batch results 1-50</text>
+  <text x="40" y="298" font-size="9" fill="#86efac">[2026-06-02T14:37:25.789Z] DEBUG aggregator: Computing aggregate statistics</text>
+  <text x="40" y="315" font-size="9" fill="#a0aec0">[2026-06-02T14:37:28.012Z] INFO  aggregator: Precision: 0.89 | Recall: 0.87 | F1: 0.88</text>
+  <text x="40" y="332" font-size="9" fill="#a0aec0">[2026-06-02T14:37:35.345Z] INFO  worker_4: Completed 50 simulations (F1=0.91)</text>
+  <text x="40" y="349" font-size="9" fill="#86efac">[2026-06-02T14:37:45.678Z] DEBUG detector: Avg latency 45ms, max 142ms</text>
+  <text x="40" y="366" font-size="9" fill="#a0aec0">[2026-06-02T14:37:52.901Z] INFO  benchmark_job: Progress: 250/500 (50%)</text>
+  <text x="40" y="383" font-size="9" fill="#a0aec0">[2026-06-02T14:37:59.234Z] INFO  worker_5: Starting simulation batch 251-300</text>
+  <text x="40" y="400" font-size="9" fill="#86efac">[2026-06-02T14:38:12.567Z] DEBUG health: CPU: 78%, Mem: 64%, Disk: 32%</text>
+  <text x="40" y="417" font-size="9" fill="#22d3ee">[2026-06-02T14:38:25.890Z] INFO  <scroll...more logs above...></text>
+
+  <!-- Scroll indicator -->
+  <text x="1020" y="220" font-size="20" fill="#4a5568">⬇</text>
+
+  <!-- Metrics Section (Bottom Left) -->
+  <rect x="20" y="485" width="520" height="295" fill="#1a1f2e" stroke="#4a5568" stroke-width="1"/>
+  <text x="30" y="505" font-size="12" font-weight="bold" fill="#22d3ee">Performance Metrics</text>
+
+  <!-- CPU Usage Chart -->
+  <rect x="30" y="520" width="500" height="80" fill="#0f1419" stroke="#4a5568" stroke-width="0.5"/>
+  <text x="40" y="535" font-size="10" fill="#60a5fa">CPU Usage</text>
+  <polyline points="45,590 75,575 105,580 135,570 165,585 195,590 225,580 255,565 285,575 315,588 345,592 375,580 405,570 435,575 465,585 495,590"
+            fill="none" stroke="#ef4444" stroke-width="2"/>
+  <line x1="45" y1="600" x2="495" y2="600" stroke="#4a5568" stroke-width="0.5"/>
+  <text x="40" y="615" font-size="8" fill="#a0aec0">0%</text>
+  <text x="475" y="615" font-size="8" fill="#a0aec0">100%</text>
+  <text x="350" y="605" font-size="9" fill="#ef4444">Avg: 78% | Peak: 92%</text>
+
+  <!-- Memory Usage Chart -->
+  <rect x="30" y="610" width="500" height="80" fill="#0f1419" stroke="#4a5568" stroke-width="0.5"/>
+  <text x="40" y="625" font-size="10" fill="#60a5fa">Memory Usage</text>
+  <polyline points="45,680 75,670 105,675 135,680 165,685 195,690 225,688 255,692 285,695 315,693 345,691 375,689 405,687 435,685 465,683 495,681"
+            fill="none" stroke="#3b82f6" stroke-width="2"/>
+  <line x1="45" y1="700" x2="495" y2="700" stroke="#4a5568" stroke-width="0.5"/>
+  <text x="40" y="715" font-size="8" fill="#a0aec0">0%</text>
+  <text x="475" y="715" font-size="8" fill="#a0aec0">100%</text>
+  <text x="350" y="705" font-size="9" fill="#3b82f6">Avg: 64% | Peak: 72%</text>
+
+  <!-- Request Latency -->
+  <rect x="30" y="700" width="500" height="70" fill="#0f1419" stroke="#4a5568" stroke-width="0.5"/>
+  <text x="40" y="715" font-size="10" fill="#60a5fa">Request Latency (ms)</text>
+  <text x="40" y="735" font-size="9" fill="#a0aec0">p50: 43ms | p95: 61ms | p99: 78ms | max: 142ms</text>
+  <text x="40" y="752" font-size="9" fill="#a0aec0">Errors: 0 | Timeouts: 2 (retried successfully)</text>
+
+  <!-- System Health Section (Bottom Right) -->
+  <rect x="560" y="485" width="520" height="295" fill="#1a1f2e" stroke="#4a5568" stroke-width="1"/>
+  <text x="570" y="505" font-size="12" font-weight="bold" fill="#22d3ee">Job Health & Status</text>
+
+  <!-- Status Cards -->
+  <rect x="570" y="520" width="240" height="60" fill="#1f2937" stroke="#4a5568" stroke-width="0.5"/>
+  <text x="580" y="535" font-size="10" fill="#60a5fa">Running Time</text>
+  <text x="590" y="555" font-size="16" font-weight="bold" fill="#86efac">4m 23s</text>
+
+  <rect x="830" y="520" width="240" height="60" fill="#1f2937" stroke="#4a5568" stroke-width="0.5"/>
+  <text x="840" y="535" font-size="10" fill="#60a5fa">Estimated Remaining</text>
+  <text x="850" y="555" font-size="16" font-weight="bold" fill="#fbbf24">~5m 37s</text>
+
+  <rect x="570" y="595" width="240" height="60" fill="#1f2937" stroke="#4a5568" stroke-width="0.5"/>
+  <text x="580" y="610" font-size="10" fill="#60a5fa">Simulations Completed</text>
+  <text x="590" y="630" font-size="16" font-weight="bold" fill="#86efac">250 / 500</text>
+
+  <rect x="830" y="595" width="240" height="60" fill="#1f2937" stroke="#4a5568" stroke-width="0.5"/>
+  <text x="840" y="610" font-size="10" fill="#60a5fa">Success Rate</text>
+  <text x="850" y="630" font-size="16" font-weight="bold" fill="#86efac">99.6%</text>
+
+  <!-- Worker Status -->
+  <text x="570" y="675" font-size="11" font-weight="bold" fill="#22d3ee">Worker Status</text>
+  <text x="580" y="695" font-size="9" fill="#86efac">● worker-1: HEALTHY (50/50 complete)</text>
+  <text x="580" y="712" font-size="9" fill="#86efac">● worker-2: HEALTHY (48/50 complete)</text>
+  <text x="580" y="729" font-size="9" fill="#86efac">● worker-3: BUSY (45/50 in progress)</text>
+  <text x="580" y="746" font-size="9" fill="#fbbf24">⚠ worker-4: RECOVERING (timeout, retrying...)</text>
+  <text x="580" y="763" font-size="9" fill="#86efac">● worker-5: BUSY (12/50 in progress)</text>
+
+  <!-- Footer controls -->
+  <rect x="20" y="790" width="1060" height="30" fill="#1f2937" stroke="#4a5568" stroke-width="1"/>
+  <text x="35" y="810" font-size="11" fill="#60a5fa">🔄 Refresh | 📥 Export Logs | 💾 Download Metrics | ⏸ Pause | 🔔 Alerts</text>
+</svg>

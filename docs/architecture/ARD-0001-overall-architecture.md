@@ -21,43 +21,77 @@ Build the system as a React visual arena backed by a FastAPI simulator, with a l
 
 The main architecture is:
 
-```text
-React / Vite UI
-  - Arena screen
-  - Incident drawer
-  - Benchmark screen
-        |
-        | REST + WebSocket
-        v
-FastAPI Backend
-  - simulation controller
-  - scenario launcher
-  - WebSocket state stream
-  - incident store
-  - explanation client
-        |
-        +-------------------------+
-        |                         |
-        v                         v
-Local Synthetic Simulation        Nebius Serverless AI Endpoint
-  - order book                    - explain event
-  - matching engine               - explain simulation
-  - normal agents                 - generate report
-  - scenario agents
-  - deterministic detectors
-        |
-        v
-Event, Snapshot, Incident, and Report Artifacts
+```mermaid
+graph TD
+    UI["React / Vite UI - Arena, incident drawer, benchmark screen"]
+    Backend["FastAPI Backend - simulation control, scenarios, WebSocket, incidents, explanation client"]
+    Simulation["Local Synthetic Simulation - order book, matching engine, agents, detectors"]
+    Endpoint["Nebius Serverless AI Endpoint - explain event, explain simulation, generate report"]
+    Artifacts["Event, snapshot, incident, and report artifacts"]
+
+    UI -->|REST and WebSocket| Backend
+    Backend --> Simulation
+    Backend --> Endpoint
+    Simulation --> Artifacts
+    Backend --> Artifacts
+```
+
+```mermaid
+graph TD
+    UI["React / Vite UI - Arena, Incident Drawer, Benchmark"]
+    Backend["FastAPI Backend - control plane"]
+    Runtime["Live Arena Runtime - simulation clock"]
+    Exchange["Synthetic Exchange - order book + matching engine"]
+    Agents["Agents - normal + scenario"]
+    Detectors["Deterministic Detectors - microstructure features"]
+    Incidents["Incident Store - evidence + confidence"]
+    Endpoint["Nebius Serverless AI Endpoint - explanations"]
+    Store["Local Artifacts - events, snapshots, incidents, reports"]
+
+    UI -->|REST commands| Backend
+    Backend -->|WebSocket arena_state| UI
+    Backend --> Runtime
+    Runtime --> Agents
+    Agents --> Exchange
+    Exchange --> Detectors
+    Detectors --> Incidents
+    Incidents --> Endpoint
+    Endpoint --> Backend
+    Runtime --> Store
+    Incidents --> Store
 ```
 
 The batch path runs separately:
 
-```text
-Nebius Serverless AI Job
-  - run many synthetic simulations
-  - inject labeled scenario families
-  - compute precision, recall, and F1
-  - generate benchmark artifacts and charts
+```mermaid
+graph TD
+    Job["Nebius Serverless AI Job"]
+    Runs["Run many synthetic simulations"]
+    Labels["Inject labeled scenario families"]
+    Metrics["Compute precision, recall, and F1"]
+    Artifacts["Generate benchmark artifacts and charts"]
+
+    Job --> Runs
+    Job --> Labels
+    Job --> Metrics
+    Job --> Artifacts
+```
+
+```mermaid
+graph LR
+    Job["Nebius Serverless AI Job"]
+    Runner["Batch Simulation Runner"]
+    Labels["Scenario Labels"]
+    Outputs["Detector Outputs"]
+    Metrics["Benchmark Metrics"]
+    Artifacts["Benchmark Artifacts - JSON, CSV, Markdown, charts"]
+
+    Job --> Runner
+    Runner --> Labels
+    Runner --> Outputs
+    Labels --> Metrics
+    Outputs --> Metrics
+    Metrics --> Artifacts
 ```
 
 ## Architecture Overview
@@ -79,6 +113,22 @@ Responsibilities:
 
 The UI communicates with the backend through REST for commands and WebSocket for live state.
 
+```mermaid
+graph LR
+    Controls["Start / Pause / Reset"]
+    Ladder["Order Book Ladder"]
+    Charts["Price, Spread, Imbalance"]
+    Feed["Agent Feed"]
+    IncidentsUI["Incident Cards / Drawer"]
+    BackendState["arena_state payload"]
+
+    BackendState --> Ladder
+    BackendState --> Charts
+    BackendState --> Feed
+    BackendState --> IncidentsUI
+    Controls -->|REST commands| BackendState
+```
+
 ### Backend Layer
 
 The backend is a FastAPI application under `backend/`. It is the runtime control plane.
@@ -97,6 +147,25 @@ Responsibilities:
 - call the Nebius explanation endpoint
 
 The backend isolates the browser from direct simulation internals and from direct Nebius endpoint calls.
+
+```mermaid
+graph TD
+    UIStart["1. UI posts /simulation/start"]
+    APIStart["2. FastAPI route calls runtime start"]
+    InitialBroadcast["3. Runtime broadcasts initial state"]
+    Tick["4. Runtime steps simulation clock"]
+    Store["5. Local store appends events and snapshots"]
+    Broadcast["6. WebSocket broadcaster sends arena_state"]
+    UIUpdate["7. UI receives state update"]
+
+    UIStart --> APIStart
+    APIStart --> InitialBroadcast
+    InitialBroadcast --> Tick
+    Tick --> Store
+    Store --> Broadcast
+    Broadcast --> UIUpdate
+    UIUpdate --> Tick
+```
 
 ### Synthetic Exchange Layer
 
@@ -119,6 +188,22 @@ Responsibilities:
 - append replayable event logs
 
 This layer should stay deterministic and testable.
+
+```mermaid
+graph TD
+    Order["Order Intent"]
+    Matching["Matching Engine"]
+    Book["Order Book"]
+    Trades["Trade Events"]
+    Resting["Resting Limit Orders"]
+    Snapshot["L2 Snapshot - best bid, best ask, mid, spread"]
+
+    Order --> Matching
+    Matching --> Book
+    Book --> Trades
+    Book --> Resting
+    Book --> Snapshot
+```
 
 ### Agent Layer
 
@@ -163,6 +248,22 @@ Detector families:
 - liquidity-shock detector
 
 Detector output should include confidence, severity, evidence, involved agent or scenario, timestamps, and incident metadata.
+
+```mermaid
+graph LR
+    Events["Exchange Events"]
+    BookState["Book Snapshot"]
+    Features["Microstructure Features"]
+    Scores["Detector Confidence Scores"]
+    Evidence["Evidence Items"]
+    Incident["Incident Card"]
+
+    Events --> Features
+    BookState --> Features
+    Features --> Scores
+    Scores --> Evidence
+    Evidence --> Incident
+```
 
 ### Explanation Layer
 
@@ -413,10 +514,10 @@ Tradeoffs:
 
 ## Follow-Up ARDs
 
-Future records should cover:
+Architecture records that refine this decision:
 
-- ARD-0002: WebSocket state schema
-- ARD-0003: Detector evidence model
-- ARD-0004: Benchmark artifact format
-- ARD-0005: Nebius endpoint contract
-- ARD-0006: Scenario labeling and reproducibility
+- [ARD-0002: WebSocket State Schema](ARD-0002-websocket-state-schema.md)
+- [ARD-0003: Detector Evidence Model](ARD-0003-detector-evidence-model.md)
+- [ARD-0004: Benchmark Artifact Format](ARD-0004-benchmark-artifact-format.md)
+- [ARD-0005: Nebius Endpoint Contract](ARD-0005-nebius-endpoint-contract.md)
+- [ARD-0006: Scenario Labeling and Reproducibility](ARD-0006-scenario-labeling-and-reproducibility.md)

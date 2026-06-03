@@ -1,7 +1,7 @@
-.PHONY: help backend-test backend-dev frontend-dev serverless-benchmark docker-up docker-down
+.PHONY: help backend-test backend-dev frontend-dev serverless-benchmark serverless-build docker-up docker-down
 
 help:
-	@printf "%s\n" "Targets: backend-test backend-dev frontend-dev serverless-benchmark docker-up docker-down"
+	@printf "%s\n" "Targets: backend-test backend-dev frontend-dev serverless-benchmark serverless-build docker-up docker-down"
 
 backend-test:
 	cd backend && uv run pytest
@@ -14,6 +14,9 @@ frontend-dev:
 
 serverless-benchmark:
 	cd serverless/jobs && uv run python run_batch_benchmark.py --config job_config.example.yaml
+
+serverless-build:
+	./scripts/build-serverless-images.sh
 
 docker-up:
 	docker compose up --build

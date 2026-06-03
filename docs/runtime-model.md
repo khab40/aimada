@@ -6,17 +6,27 @@ This document describes how the live arena runs, how agents participate in the e
 
 The exchange simulator ticks continuously while the arena is running. A normal local cadence is one tick every 250-500 ms, fast enough for a live visual demo while still leaving the UI readable.
 
-```text
-Every 250-500 ms:
+```mermaid
+graph TD
+    Tick["Every 250-500 ms"]
+    NormalAgents["1. Normal always-on agents act"]
+    ScenarioAgents["2. Active scenario agents act"]
+    Matching["3. Matching engine processes order events"]
+    Book["4. Order book state is updated"]
+    Detectors["5. Detectors recalculate features and confidence scores"]
+    Incidents["6. Incidents emit when thresholds are crossed"]
+    Store["7. Backend stores events and snapshots"]
+    UI["8. UI receives new state over WebSocket"]
 
-1. normal always-on agents act
-2. active scenario agents act
-3. matching engine processes order events
-4. order book state is updated
-5. detectors recalculate feature values and confidence scores
-6. incidents are emitted when detector thresholds are crossed
-7. backend stores event and snapshot artifacts
-8. UI receives the new state over WebSocket
+    Tick --> NormalAgents
+    NormalAgents --> ScenarioAgents
+    ScenarioAgents --> Matching
+    Matching --> Book
+    Book --> Detectors
+    Detectors --> Incidents
+    Incidents --> Store
+    Store --> UI
+    UI --> Tick
 ```
 
 The backend owns the clock and publishes each state update to connected browser clients. REST endpoints control start, pause, reset, scenario launch, incident explanation, and benchmark summary retrieval.

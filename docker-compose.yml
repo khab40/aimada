@@ -1,20 +1,43 @@
 services:
+  endpoint:
+    build:
+      context: ./serverless/endpoint
+    environment:
+      NEBIUS_ENDPOINT_MODE: ${NEBIUS_ENDPOINT_MODE:-mock}
+      NEBIUS_API_KEY: ${NEBIUS_API_KEY:-}
+      NEBIUS_AI_STUDIO_BASE_URL: ${NEBIUS_AI_STUDIO_BASE_URL:-https://api.studio.nebius.com/v1}
+      NEBIUS_AI_MODEL: ${NEBIUS_AI_MODEL:-meta-llama/Meta-Llama-3.1-8B-Instruct}
+      NEBIUS_TEMPERATURE: ${NEBIUS_TEMPERATURE:-0.2}
+      NEBIUS_MAX_TOKENS: ${NEBIUS_MAX_TOKENS:-800}
+      NEBIUS_REQUEST_TIMEOUT_SECONDS: ${NEBIUS_REQUEST_TIMEOUT_SECONDS:-12}
+    ports:
+      - "9001:9000"
+
   backend:
     build:
       context: ./backend
-    env_file:
-      - .env
+    environment:
+      LOG_LEVEL: INFO
+      ARENA_OUTPUT_DIR: /app/outputs
+      NEBIUS_API_KEY: ${NEBIUS_API_KEY:-}
+      NEBIUS_TENANT_ID: ${NEBIUS_TENANT_ID:-}
+      NEBIUS_ENDPOINT_BASE_URL: ${NEBIUS_ENDPOINT_BASE_URL:-http://endpoint:9000}
+      NEBIUS_INCIDENT_EXPLAINER_URL: ${NEBIUS_INCIDENT_EXPLAINER_URL:-}
+      NEBIUS_SCENARIO_GENERATOR_URL: ${NEBIUS_SCENARIO_GENERATOR_URL:-}
     ports:
       - "8000:8000"
     volumes:
       - ./outputs:/app/outputs
+    depends_on:
+      - endpoint
 
   frontend:
     build:
       context: ./frontend
     environment:
       VITE_API_BASE_URL: http://localhost:8000
-      VITE_WS_URL: ws://localhost:8000/ws/arena
+      VITE_ARENA_MODE: websocket
+      VITE_ARENA_WS_URL: ws://localhost:8000/ws/arena
     ports:
       - "5173:5173"
     depends_on:

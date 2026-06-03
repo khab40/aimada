@@ -9,47 +9,38 @@ The design keeps the browser UI, demo orchestration backend, local simulation en
 
 ## Interactive Demo Path
 
-```text
-┌─────────────────────────────────────────────────────────────────────┐
-│                        React / Next UI                              │
-│                                                                     │
-│  Live Order Book  | Charts | Agent Feed | Scenario Buttons | Alerts │
-└───────────────────────────────┬─────────────────────────────────────┘
-                                │ WebSocket / REST
-                                v
-┌─────────────────────────────────────────────────────────────────────┐
-│                         FastAPI Demo Backend                        │
-│                                                                     │
-│  - simulation controller                                             │
-│  - WebSocket broadcaster                                             │
-│  - scenario launcher                                                 │
-│  - incident store                                                    │
-│  - calls Nebius AI explanation endpoint                              │
-└───────────────┬───────────────────────┬─────────────────────────────┘
-                │                       │
-                v                       v
-┌────────────────────────────┐   ┌────────────────────────────────────┐
-│  Local Live Simulation     │   │ Nebius Serverless AI Endpoint       │
-│                            │   │                                    │
-│  - exchange simulator      │   │  /explain-event                    │
-│  - normal agents           │   │  /explain-simulation               │
-│  - abuse-like scenarios    │   │  /generate-incident-report         │
-│  - detector engine         │   │                                    │
-└───────────────┬────────────┘   └────────────────────────────────────┘
-                │
-                v
-┌─────────────────────────────────────────────────────────────────────┐
-│                         Event / Snapshot Log                        │
-│                                                                     │
-│  events.jsonl / snapshots.parquet / incidents.json / reports.md     │
-└─────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    UI["React / Vite UI - Arena, Incident Drawer, Benchmark"]
+    API["FastAPI Demo Backend - REST control API"]
+    WS["WebSocket Broadcaster - live arena_state stream"]
+    Runtime["Live Arena Runtime - 250-500 ms simulation ticks"]
+    Agents["Normal + Scenario Agents"]
+    Exchange["Synthetic Exchange - Order Book + Matching Engine"]
+    Detectors["Deterministic Detectors - features + confidence scores"]
+    Incidents["Incident Store - evidence + metadata"]
+    Explain["Nebius Serverless AI Endpoint - explain-event, explain-simulation, generate-report"]
+    Artifacts["Local Artifacts - events, snapshots, incidents, reports"]
+
+    UI -->|REST commands| API
+    API --> Runtime
+    Runtime --> Agents
+    Agents --> Exchange
+    Exchange --> Detectors
+    Detectors --> Incidents
+    Runtime --> WS
+    WS -->|arena_state| UI
+    Incidents -->|explain request| Explain
+    Explain -->|structured explanation| API
+    Runtime --> Artifacts
+    Incidents --> Artifacts
 ```
 
 ### Component Responsibilities
 
 | Component | Responsibility |
 | --- | --- |
-| React / Next UI | Presents the live order book, charts, agent activity, scenario controls, alerts, and incident explanations. It consumes real-time updates over WebSocket and invokes backend actions through REST. |
+| React / Vite UI | Presents the live order book, charts, agent activity, scenario controls, alerts, and incident explanations. It consumes real-time updates over WebSocket and invokes backend actions through REST. |
 | FastAPI demo backend | Owns the demo control plane. It starts and stops simulations, launches scenarios, broadcasts state to the UI, persists incidents, and calls Nebius AI endpoints for explanation and report generation. |
 | Local live simulation | Runs the in-process market simulation. It models an exchange, normal trading agents, synthetic abuse-like behaviors, and the detector engine. |
 | Nebius Serverless AI endpoint | Provides LLM-assisted explanation and summarization APIs for events, whole simulations, and incident reports. |
@@ -57,7 +48,7 @@ The design keeps the browser UI, demo orchestration backend, local simulation en
 
 ### Runtime Flow
 
-1. The user starts or controls a scenario from the React / Next UI.
+1. The user starts or controls a scenario from the React / Vite UI.
 2. The UI sends a REST request to the FastAPI backend.
 3. The backend starts or updates the local simulation and subscribes to generated events.
 4. The simulation emits order events, snapshots, agent actions, detector signals, and incidents.
@@ -65,17 +56,50 @@ The design keeps the browser UI, demo orchestration backend, local simulation en
 6. When an explanation or report is requested, the backend calls the Nebius Serverless AI endpoint and stores the generated result.
 7. The UI renders the latest market state, detector alerts, incident details, and AI-generated explanations.
 
+### Live Tick Sequence
+
+```mermaid
+graph TD
+    Start["1. UI posts /simulation/start"]
+    RuntimeStart["2. Backend starts runtime"]
+    AgentsStep["3. Agents act on each tick"]
+    ExchangeStep["4. Matching engine updates book"]
+    DetectorStep["5. Detectors score events and book"]
+    BroadcastStep["6. WebSocket broadcasts arena_state"]
+    RenderStep["7. UI renders book, events, agents, scores"]
+
+    Start --> RuntimeStart
+    RuntimeStart --> AgentsStep
+    AgentsStep --> ExchangeStep
+    ExchangeStep --> DetectorStep
+    DetectorStep --> BroadcastStep
+    BroadcastStep --> RenderStep
+    RenderStep --> AgentsStep
+```
+
 ## Batch / Benchmark Path
 
-```text
-┌─────────────────────────────────────────────────────────────────────┐
-│                  Nebius Serverless AI Job                            │
-│                                                                     │
-│  Run 100-1000 synthetic simulations                                  │
-│  Inject spoofing-like / layering-like / quote-stuffing-like patterns │
-│  Measure detector precision / recall / F1                            │
-│  Generate benchmark report + charts                                  │
-└─────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph LR
+    Config["job_config.yaml - runs, scenarios, seed"]
+    Job["Nebius Serverless AI Job"]
+    Simulation["Synthetic Simulation Runner"]
+    Labels["Scenario Labels - ground-truth windows"]
+    DetectorOutputs["Detector Outputs"]
+    Metrics["Precision / Recall / F1 - latency and false positives"]
+    Charts["Charts - F1, confidence, latency"]
+    Report["benchmark_report.md"]
+    Results["benchmark_results.json - detector_metrics.csv - incidents.jsonl"]
+
+    Config --> Job
+    Job --> Simulation
+    Simulation --> Labels
+    Simulation --> DetectorOutputs
+    Labels --> Metrics
+    DetectorOutputs --> Metrics
+    Metrics --> Charts
+    Metrics --> Report
+    Metrics --> Results
 ```
 
 The batch path is intended for repeatable detector evaluation rather than live interaction. A serverless job runs many synthetic simulations, injects labeled abuse-like patterns, collects detector outputs, and compares them against the known scenario labels.
@@ -97,6 +121,25 @@ The batch path is intended for repeatable detector evaluation rather than live i
 | `incidents.json` | Detected incidents with metadata, timestamps, involved agents, scenario labels, and detector evidence. |
 | `reports.md` | Human-readable AI-generated explanations, incident summaries, and benchmark reports. |
 
+### Artifact Relationships
+
+```mermaid
+graph TD
+    Events["events.jsonl - raw exchange and agent events"]
+    Snapshots["snapshots.parquet - order book state over time"]
+    Labels["scenario_labels.jsonl - synthetic ground truth"]
+    Incidents["incidents.json / incidents.jsonl - detector alerts and evidence"]
+    Reports["reports.md / benchmark_report.md - human-readable summaries"]
+    Metrics["detector_metrics.csv - benchmark metrics"]
+
+    Events --> Incidents
+    Snapshots --> Incidents
+    Labels --> Metrics
+    Incidents --> Metrics
+    Incidents --> Reports
+    Metrics --> Reports
+```
+
 ## Architectural Boundaries
 
 - The UI should not directly call the simulation engine or Nebius AI endpoints. It should communicate through the FastAPI backend.
@@ -104,3 +147,25 @@ The batch path is intended for repeatable detector evaluation rather than live i
 - The backend should be the integration boundary for live transport, persistence, scenario orchestration, and AI calls.
 - Batch benchmark jobs should share simulation and detector code with the live path where practical, but should not depend on the interactive UI.
 - Persisted artifacts should be treated as replay and audit inputs, not only as transient logs.
+
+## Related Documentation
+
+This architecture supports all workflows described in [Use Cases](USE_CASES.md):
+
+1. **Live Arena Mode** — Supported by the Interactive Path with WebSocket and REST
+2. **Manual Scenario Launch** — Scenario launcher in the FastAPI backend
+3. **Incident Investigation** — Incident store and Nebius Serverless AI Endpoint
+4. **Red-Team Scenario Generation** — Nebius Serverless AI Endpoint `/generate-scenario`
+5. **Detector Tournament Benchmark** — Batch / Benchmark Path with Nebius Jobs
+6. **Synthetic Dataset Generation** — Batch / Benchmark Path artifact outputs
+
+Detailed architecture decisions are recorded in [Architecture Records (ARDs)](architecture/README.md):
+
+- [ARD-0001: Overall Architecture](architecture/ARD-0001-overall-architecture.md) — This architecture
+- [ARD-0002: WebSocket State Schema](architecture/ARD-0002-websocket-state-schema.md) — Real-time state transport
+- [ARD-0003: Detector Evidence Model](architecture/ARD-0003-detector-evidence-model.md) — How detectors report findings
+- [ARD-0004: Benchmark Artifact Format](architecture/ARD-0004-benchmark-artifact-format.md) — Persisted data formats
+- [ARD-0005: Nebius Endpoint Contract](architecture/ARD-0005-nebius-endpoint-contract.md) — AI service API contracts
+- [ARD-0007: Nebius Serverless AI Jobs](architecture/ARD-0007-nebius-serverless-ai-jobs.md) — Batch execution
+- [ARD-0008: Nebius Serverless AI Endpoints](architecture/ARD-0008-nebius-serverless-ai-endpoints.md) — Interactive AI service
+- [ARD-0009: Judge Mode Investigation Reports](architecture/ARD-0009-judge-mode-investigation-reports.md) — Investigation mode
