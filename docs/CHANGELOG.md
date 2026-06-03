@@ -5,6 +5,17 @@ Update this file with each significant commit before pushing.
 
 ## 2026-06-03
 
+### `pending` - feat: wire Nebius jobs and polish arena operations
+
+- Wired the Lab "Run on Nebius Serverless Job" action through FastAPI to execute `serverless/jobs/detector_tournament.py` and parse produced benchmark artifacts.
+- Updated backend Docker packaging so the FastAPI container includes `serverless/jobs` and can run the detector tournament path in Docker.
+- Added persistent incident explanation records under `incidents/explanations.jsonl` and exposed them in Reports as Nebius analysis history.
+- Polished the Arena cockpit toward a denser FinTech terminal UI with better viewport usage, responsive heatmap sizing, tighter panels, and clearer market-data styling.
+- Made Arena Start/Pause/Reset controls state-dependent to avoid duplicate starts and invalid resets.
+- Added a browser/site icon and web manifest for the Nebius Market Abuse Arena UI.
+- Added a concise one-pager under `assets/` describing Market Abuse Arena as an early-stage product demo and future near-real-time detection direction.
+- Updated `docs/PHASES.md` with status markers and aligned Phase 4 artifacts with the current serverless job outputs.
+
 ### `0c1f58b` - fix: preserve labeled legacy scenario runtime
 
 - Kept the legacy scenario-agent and `LiveArenaRuntime` path because committed tests and older scenario-controller code still reference it.

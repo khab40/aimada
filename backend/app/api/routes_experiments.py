@@ -1,4 +1,8 @@
+import csv
+import subprocess
+import sys
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Literal
 from uuid import uuid4
 
@@ -43,7 +47,7 @@ class BenchmarkRunRequest(BaseModel):
 
 class BenchmarkRunResponse(BaseModel):
     id: str
-    mode: Literal["mock_nebius_serverless_job"]
+    mode: Literal["local_serverless_job"]
     status: Literal["queued", "running", "generating_report", "completed"]
     created_at: str
     command: list[str]
@@ -55,6 +59,7 @@ class ReportsSummary(BaseModel):
     experiments: list[dict[str, Any]]
     benchmark_runs: list[dict[str, Any]]
     incidents: list[dict[str, Any]]
+    explanations: list[dict[str, Any]]
     attacks: list[dict[str, Any]]
     significant_events: list[dict[str, Any]]
 
@@ -110,30 +115,55 @@ async def launch_attack_experiment(payload: AttackExperimentRequest, request: Re
 def run_benchmark_experiment(payload: BenchmarkRunRequest, request: Request) -> BenchmarkRunResponse:
     run_id = f"JOB-{uuid4().hex[:8].upper()}"
     normalized_scenarios = [_normalize_scenario(scenario) for scenario in payload.scenarios]
-    results = _mock_benchmark_results(normalized_scenarios)
+    if not normalized_scenarios:
+        raise HTTPException(status_code=400, detail="select at least one scenario")
+
+    runs = max(1, min(payload.runs, 1000))
+    detectors = _detector_set(payload.detectors)
+    repo_root = _repo_root()
+    output_dir = _store(request).output_dir / "benchmark" / run_id
     command = [
-        "python",
-        "detector_tournament.py",
+        sys.executable,
+        str(repo_root / "serverless" / "jobs" / "detector_tournament.py"),
         "--runs",
-        str(payload.runs),
+        str(runs),
         "--scenarios",
         ",".join(normalized_scenarios),
         "--detectors",
-        payload.detectors,
+        ",".join(detectors),
         "--output",
-        f"/job/outputs/benchmark/{run_id}",
+        str(output_dir),
     ]
+    completed = subprocess.run(
+        command,
+        capture_output=True,
+        check=False,
+        cwd=repo_root,
+        text=True,
+        timeout=60,
+    )
+    if completed.returncode != 0:
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "message": "serverless detector tournament failed",
+                "stderr": completed.stderr[-2000:],
+                "stdout": completed.stdout[-2000:],
+            },
+        )
+
+    results = _read_benchmark_results(output_dir / "metrics.csv")
     response = BenchmarkRunResponse(
         id=run_id,
-        mode="mock_nebius_serverless_job",
+        mode="local_serverless_job",
         status="completed",
         created_at=_now(),
         command=command,
         results=results,
         artifact_paths={
-            "benchmark_report": f"outputs/benchmark/{run_id}/benchmark_report.md",
-            "metrics": f"outputs/benchmark/{run_id}/metrics.csv",
-            "results": f"outputs/benchmark/{run_id}/results.json",
+            "benchmark_report": str(output_dir / "benchmark_report.md"),
+            "metrics": str(output_dir / "metrics.csv"),
+            "results": str(output_dir / "results.json"),
         },
     )
     _store(request).append_jsonl("experiments/benchmark_runs.jsonl", response.model_dump(mode="json"))
@@ -142,8 +172,10 @@ def run_benchmark_experiment(payload: BenchmarkRunRequest, request: Request) -> 
         {
             "type": "benchmark_run_completed",
             "run_id": run_id,
-            "runs": payload.runs,
+            "runs": runs,
             "scenarios": normalized_scenarios,
+            "detectors": detectors,
+            "mode": response.mode,
             "created_at": response.created_at,
         },
     )
@@ -157,6 +189,7 @@ def reports_summary(request: Request) -> ReportsSummary:
         experiments=store.read_jsonl("experiments/attack_experiments.jsonl", limit=25),
         benchmark_runs=store.read_jsonl("experiments/benchmark_runs.jsonl", limit=25),
         incidents=store.read_jsonl("incidents/incidents.jsonl", limit=50),
+        explanations=store.read_jsonl("incidents/explanations.jsonl", limit=50),
         attacks=store.read_jsonl("attacks/attacks.jsonl", limit=50),
         significant_events=store.read_jsonl("events/significant_events.jsonl", limit=100),
     )
@@ -164,6 +197,15 @@ def reports_summary(request: Request) -> ReportsSummary:
 
 def _store(request: Request) -> LocalStore:
     return request.app.state.store
+
+
+def _repo_root() -> Path:
+    here = Path(__file__).resolve()
+    candidates = [here.parents[3], here.parents[2], Path.cwd()]
+    for candidate in candidates:
+        if (candidate / "serverless" / "jobs" / "detector_tournament.py").exists():
+            return candidate
+    return here.parents[3]
 
 
 def _now() -> str:
@@ -197,11 +239,54 @@ def _normalize_scenario(value: str) -> str:
     return mapping.get(normalized, normalized)
 
 
-def _mock_benchmark_results(scenarios: list[str]) -> list[BenchmarkResult]:
-    defaults = {
-        "spoofing": BenchmarkResult(scenario="Spoofing", precision=0.91, recall=0.86, f1=0.88, avg_detection_latency_ms=840),
-        "layering": BenchmarkResult(scenario="Layering", precision=0.84, recall=0.79, f1=0.81, avg_detection_latency_ms=980),
-        "quote_stuffing": BenchmarkResult(scenario="Quote stuffing", precision=0.96, recall=0.92, f1=0.94, avg_detection_latency_ms=410),
-        "liquidity_evaporation": BenchmarkResult(scenario="Liquidity evaporation", precision=0.89, recall=0.83, f1=0.86, avg_detection_latency_ms=760),
+def _detector_set(value: str) -> list[str]:
+    normalized = value.lower().replace("-", "_").replace(" ", "_")
+    detector_sets = {
+        "baseline": ["spoofing_like", "layering_like", "quote_stuffing", "liquidity_shock"],
+        "tuned": ["spoofing_like", "layering_like", "quote_stuffing", "liquidity_shock"],
+        "hybrid": ["spoofing_like", "layering_like", "quote_stuffing", "liquidity_shock"],
     }
-    return [defaults[scenario] for scenario in scenarios if scenario in defaults]
+    return detector_sets.get(normalized, detector_sets["tuned"])
+
+
+def _read_benchmark_results(metrics_path: Path) -> list[BenchmarkResult]:
+    expected_detectors = {
+        "spoofing-like": "spoofing_like",
+        "layering-like": "layering_like",
+        "quote-stuffing": "quote_stuffing",
+        "liquidity-evaporation": "liquidity_shock",
+    }
+    rows: list[dict[str, str]] = []
+    with metrics_path.open("r", encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+
+    selected_rows: list[dict[str, str]] = []
+    for row in rows:
+        if row.get("detector") == expected_detectors.get(row.get("scenario", "")):
+            selected_rows.append(row)
+    if not selected_rows:
+        selected_rows = rows
+
+    return [
+        BenchmarkResult(
+            scenario=_display_scenario(row.get("scenario", "unknown")),
+            precision=float(row.get("precision") or 0),
+            recall=float(row.get("recall") or 0),
+            f1=float(row.get("f1") or 0),
+            avg_detection_latency_ms=_optional_float(row.get("avg_detection_latency_ms")),
+        )
+        for row in selected_rows
+    ]
+
+
+def _optional_float(value: str | None) -> float | None:
+    if not value:
+        return None
+    try:
+        return float(value)
+    except ValueError:
+        return None
+
+
+def _display_scenario(value: str) -> str:
+    return value.replace("-", " ").replace("_", " ").title()

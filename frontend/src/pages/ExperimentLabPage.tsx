@@ -28,6 +28,7 @@ export function ExperimentLabPage() {
   const [benchmarkRows, setBenchmarkRows] = useState<BenchmarkResult[]>(defaultBenchmarkRows);
   const [jobRun, setJobRun] = useState<BenchmarkRunResponse | null>(null);
   const [jobError, setJobError] = useState<string | null>(null);
+  const isJobRunning = currentStatusIndex !== null && currentStatusIndex < jobStatuses.length - 1;
 
   useEffect(() => {
     if (currentStatusIndex === null || currentStatusIndex >= jobStatuses.length - 1) {
@@ -42,6 +43,9 @@ export function ExperimentLabPage() {
   }, [currentStatusIndex]);
 
   async function runJob() {
+    if (isJobRunning || selectedScenarios.size === 0) {
+      return;
+    }
     setCurrentStatusIndex(0);
     setJobError(null);
     try {
@@ -127,7 +131,9 @@ export function ExperimentLabPage() {
             </select>
           </label>
 
-          <button type="submit">Run on Nebius Serverless Job</button>
+          <button disabled={isJobRunning || selectedScenarios.size === 0} type="submit">
+            {isJobRunning ? "Running Serverless Job..." : "Run on Nebius Serverless Job"}
+          </button>
           {jobRun ? <p className="lab-job-note">Recorded run {jobRun.id}. Artifacts: {Object.values(jobRun.artifact_paths).join(", ")}</p> : null}
           {jobError ? <p className="lab-job-note error">{jobError}</p> : null}
         </form>

@@ -36,6 +36,9 @@ class IncidentExplanationResponse(BaseModel):
     mode: Literal["nebius", "mock"]
     endpoint: str
     incident_id: str
+    explanation_id: str | None = None
+    created_at: str | None = None
+    stored_artifact: str | None = None
     risk_level: str
     plain_english_summary: str
     evidence: list[str]

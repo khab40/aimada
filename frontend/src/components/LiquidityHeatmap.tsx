@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { OrderBookSnapshot, PriceLevel } from "@/types/arena";
 
 export type HeatmapFrame = {
@@ -26,8 +26,24 @@ export function LiquidityHeatmap({
   visibleLevels?: number;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [canvasSize, setCanvasSize] = useState({ height: 280, width: 900 });
   const frames = useMemo(() => toHeatmapFrames(snapshots.slice(-maxFrames)), [maxFrames, snapshots]);
   const visiblePrices = useMemo(() => getVisiblePrices(snapshots.at(-1), visibleLevels), [snapshots, visibleLevels]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      return;
+    }
+
+    const observer = new ResizeObserver(([entry]) => {
+      const width = Math.max(320, Math.floor(entry.contentRect.width));
+      const height = Math.max(220, Math.floor(entry.contentRect.height));
+      setCanvasSize({ height, width });
+    });
+    observer.observe(canvas);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -36,8 +52,12 @@ export function LiquidityHeatmap({
       return;
     }
 
+    const pixelRatio = window.devicePixelRatio || 1;
+    canvas.width = Math.floor(canvasSize.width * pixelRatio);
+    canvas.height = Math.floor(canvasSize.height * pixelRatio);
+    context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     drawHeatmap(context, frames, visiblePrices);
-  }, [frames, visiblePrices]);
+  }, [canvasSize, frames, visiblePrices]);
 
   return (
     <section className="liquidity-heatmap">
@@ -48,8 +68,6 @@ export function LiquidityHeatmap({
       <canvas
         ref={canvasRef}
         className="cockpit-heatmap"
-        width={900}
-        height={280}
         aria-label="Rolling liquidity heatmap by time frame and price level"
       />
       <div className="heatmap-legend">
@@ -63,8 +81,9 @@ export function LiquidityHeatmap({
 
 function drawHeatmap(context: CanvasRenderingContext2D, frames: HeatmapFrame[], visiblePrices: number[]) {
   const { canvas } = context;
-  const width = canvas.width;
-  const height = canvas.height;
+  const pixelRatio = window.devicePixelRatio || 1;
+  const width = canvas.width / pixelRatio;
+  const height = canvas.height / pixelRatio;
   const plotWidth = width - LEFT_AXIS_WIDTH;
   const plotHeight = height - BOTTOM_AXIS_HEIGHT;
 

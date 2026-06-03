@@ -24,6 +24,7 @@ export function ArenaPage() {
   const { launchScenario, mode, pause, reset, running, sourceStatus, start, state, symbol, tick } = useArenaSource();
   const [heatmapSnapshots, setHeatmapSnapshots] = useState(() => [state.book]);
   const [timeline, setTimeline] = useState<MarketTimelineFrame[]>(() => [toTimelineFrame(state)]);
+  const [hasStarted, setHasStarted] = useState(false);
   const incident = useMemo(() => createIncident(state), [state]);
   const loading = mode === "websocket" && sourceStatus === "connecting";
 
@@ -45,6 +46,7 @@ export function ArenaPage() {
         if (running) {
           pause();
         } else {
+          setHasStarted(true);
           start();
         }
       }
@@ -58,7 +60,11 @@ export function ArenaPage() {
         launchScenario("quote_stuffing");
       }
       if (key === "r") {
+        if (!hasStarted) {
+          return;
+        }
         reset();
+        setHasStarted(false);
         setHeatmapSnapshots([]);
         setTimeline([]);
       }
@@ -66,7 +72,7 @@ export function ArenaPage() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [launchScenario, pause, reset, running, start]);
+  }, [hasStarted, launchScenario, pause, reset, running, start]);
 
   return (
     <section className={`cockpit-page ${incident ? "incident-active" : ""}`} aria-label="Market microstructure cockpit">
@@ -74,11 +80,22 @@ export function ArenaPage() {
         mid={state.mid}
         onPause={pause}
         onReset={() => {
+          if (!hasStarted) {
+            return;
+          }
           reset();
+          setHasStarted(false);
           setHeatmapSnapshots([]);
           setTimeline([]);
         }}
-        onStart={start}
+        onStart={() => {
+          if (running) {
+            return;
+          }
+          setHasStarted(true);
+          start();
+        }}
+        canReset={hasStarted}
         running={running}
         spread={state.spread}
         symbol={symbol}
@@ -149,6 +166,7 @@ function isEditableTarget(target: EventTarget | null) {
 }
 
 function TopStatusBar({
+  canReset,
   mid,
   onPause,
   onReset,
@@ -159,6 +177,7 @@ function TopStatusBar({
   tick,
   source
 }: {
+  canReset: boolean;
   mid: number | null;
   onPause: () => void;
   onReset: () => void;
@@ -181,9 +200,9 @@ function TopStatusBar({
       <MetricPill label="State" value={running ? "Running" : "Paused"} tone={running ? "good" : "warn"} />
       <MetricPill label="Source" value={source} />
       <div className="cockpit-controls">
-        <button type="button" onClick={onStart}>Start</button>
-        <button type="button" onClick={onPause}>Pause</button>
-        <button type="button" onClick={onReset}>Reset</button>
+        <button type="button" disabled={running} onClick={onStart}>Start</button>
+        <button type="button" disabled={!running} onClick={onPause}>Pause</button>
+        <button type="button" disabled={!canReset} onClick={onReset}>Reset</button>
       </div>
     </header>
   );

@@ -2,10 +2,11 @@ import asyncio
 import json
 from typing import Any
 
-from app.api.routes_incidents import build_compact_replay_payload
+from app.api.routes_incidents import build_compact_replay_payload, persist_explanation_result
 from app.arena.engine import SimulationEngine
 from app.config import get_settings
 from app.nebius.client import NebiusClient
+from app.storage.local_store import LocalStore
 
 
 def test_incident_is_created_when_detector_crosses_threshold() -> None:
@@ -144,6 +145,40 @@ def test_compact_replay_payload_contains_bounded_market_context() -> None:
         assert len(payload["recent_events"]) <= 10
         assert payload["detectors"]
         assert "events" not in payload
+
+    asyncio.run(run())
+
+
+def test_incident_explanation_result_is_persisted(tmp_path: Any) -> None:
+    async def run() -> None:
+        engine = SimulationEngine(store=LocalStore(tmp_path))
+        engine.launch_scenario("quote-stuffing")
+        for _ in range(5):
+            engine.step()
+
+        incident = await engine.get_incident("INC-000001")
+        state = await engine.get_state()
+        assert incident is not None
+
+        explanation = NebiusClient(incident_explainer_url="").explain_incident(incident)
+        replay_payload = build_compact_replay_payload(incident, state)
+        stored = persist_explanation_result(
+            store=engine.store,
+            incident=incident,
+            explanation=explanation,
+            replay_payload=replay_payload,
+        )
+        rows = engine.store.read_jsonl("incidents/explanations.jsonl")
+        significant_events = engine.store.read_jsonl("events/significant_events.jsonl")
+
+        assert stored.explanation_id is not None
+        assert stored.created_at is not None
+        assert stored.stored_artifact == "incidents/explanations.jsonl"
+        assert rows
+        assert rows[-1]["id"] == stored.explanation_id
+        assert rows[-1]["incident_id"] == "INC-000001"
+        assert rows[-1]["explanation"]["plain_english_summary"]
+        assert significant_events[-1]["type"] == "nebius_incident_explanation"
 
     asyncio.run(run())
 

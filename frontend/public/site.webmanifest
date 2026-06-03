@@ -1,0 +1,14 @@
+{
+  "name": "Nebius Market Abuse Arena",
+  "short_name": "NMAA",
+  "icons": [
+    {
+      "src": "/nmaa-icon.svg",
+      "sizes": "64x64",
+      "type": "image/svg+xml"
+    }
+  ],
+  "theme_color": "#07111b",
+  "background_color": "#050b12",
+  "display": "standalone"
+}

@@ -41,9 +41,9 @@ export function NebiusAIInvestigatorPanel({ incident }: { incident?: Incident | 
 
       {state === "idle" && (
         <div className="investigator-state">
-          <p>Ready to send the incident evidence package to the backend Nebius client.</p>
+          <p>Ready to send the incident evidence package to FastAPI, then Nebius Serverless AI Endpoint when configured.</p>
           <button type="button" disabled={!incident} onClick={() => void analyzeIncident()}>
-            Analyze Incident
+            Analyze with Nebius
           </button>
         </div>
       )}
@@ -59,6 +59,12 @@ export function NebiusAIInvestigatorPanel({ incident }: { incident?: Incident | 
         <div className="investigator-result">
           <div className={`risk-level ${explanation.risk_level}`}>Risk level: {explanation.risk_level}</div>
           <span className="endpoint-badge">{explanation.endpoint}</span>
+          {explanation.explanation_id ? (
+            <p className="persistence-note">
+              Saved as <code>{explanation.explanation_id}</code>
+              {explanation.stored_artifact ? <> in <code>{explanation.stored_artifact}</code></> : null}
+            </p>
+          ) : null}
           <p>{explanation.plain_english_summary}</p>
           <h4>Evidence</h4>
           <ul>
@@ -72,8 +78,8 @@ export function NebiusAIInvestigatorPanel({ incident }: { incident?: Incident | 
 
       {state === "error" && (
         <div className="investigator-state error">
-          <p>Mock explanation failed. Retry the simulated endpoint call.</p>
-          <button type="button" onClick={() => void analyzeIncident()}>Retry</button>
+          <p>Incident analysis failed. Retry the backend Nebius call.</p>
+          <button type="button" onClick={() => void analyzeIncident()}>Retry Analysis</button>
         </div>
       )}
     </section>
@@ -86,7 +92,7 @@ function mockExplainIncident(incident: Incident): Promise<IncidentExplanation> {
       resolve({
         endpoint: "local mock investigator",
         evidence: incident.evidence.map((item) => `${item.label}: ${String(item.value)}${item.unit ? ` ${item.unit}` : ""}`),
-        fallback_reason: "Frontend mock incident is not stored in the backend incident registry.",
+        fallback_reason: "Frontend mock incident is not stored in the backend incident registry, so this result is not persisted.",
         incident_id: incident.id,
         mode: "mock",
         plain_english_summary:

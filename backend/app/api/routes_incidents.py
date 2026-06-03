@@ -1,10 +1,13 @@
+from datetime import datetime, timezone
 from typing import Any
+from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 from app.nebius.client import IncidentExplanationResponse, NebiusClient
 from app.schemas.arena import AgentEvent, ArenaState, AttackTrackerState, Incident, MarketFeatures, PriceLevel
+from app.storage.local_store import LocalStore
 
 router = APIRouter(prefix="/api/incidents", tags=["incidents"])
 nebius_client = NebiusClient()
@@ -30,7 +33,62 @@ async def explain_incident(incident_id: str, request: Request) -> IncidentExplan
         raise HTTPException(status_code=404, detail=f"unknown incident: {incident_id}")
     state = await request.app.state.simulation.get_state()
     replay_payload = build_compact_replay_payload(incident, state)
-    return nebius_client.explain_incident(incident, replay_payload=replay_payload)
+    explanation = nebius_client.explain_incident(incident, replay_payload=replay_payload)
+    return persist_explanation_result(
+        store=request.app.state.store,
+        incident=incident,
+        explanation=explanation,
+        replay_payload=replay_payload,
+    )
+
+
+def persist_explanation_result(
+    *,
+    store: LocalStore,
+    incident: Incident,
+    explanation: IncidentExplanationResponse,
+    replay_payload: dict[str, Any],
+) -> IncidentExplanationResponse:
+    explanation_id = f"EXP-AI-{uuid4().hex[:10].upper()}"
+    created_at = datetime.now(timezone.utc).isoformat()
+    stored_artifact = "incidents/explanations.jsonl"
+    enriched = explanation.model_copy(
+        update={
+            "explanation_id": explanation_id,
+            "created_at": created_at,
+            "stored_artifact": stored_artifact,
+        }
+    )
+    store.append_jsonl(
+        stored_artifact,
+        {
+            "id": explanation_id,
+            "created_at": created_at,
+            "incident_id": incident.id,
+            "incident_type": incident.type,
+            "scenario_id": incident.scenario_id,
+            "scenario_family": incident.scenario_family,
+            "mode": enriched.mode,
+            "endpoint": enriched.endpoint,
+            "risk_level": enriched.risk_level,
+            "fallback_reason": enriched.fallback_reason,
+            "explanation": enriched.model_dump(mode="json"),
+            "replay": replay_payload,
+        },
+    )
+    store.append_jsonl(
+        "events/significant_events.jsonl",
+        {
+            "type": "nebius_incident_explanation",
+            "created_at": created_at,
+            "explanation_id": explanation_id,
+            "incident_id": incident.id,
+            "mode": enriched.mode,
+            "endpoint": enriched.endpoint,
+            "risk_level": enriched.risk_level,
+        },
+    )
+    return enriched
 
 
 def build_compact_replay_payload(incident: Incident, state: ArenaState) -> dict[str, Any]:

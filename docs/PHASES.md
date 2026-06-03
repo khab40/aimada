@@ -12,7 +12,15 @@ Nebius Market Abuse Arena will be built as:
 
 This project is an educational simulation. The scenarios are synthetic abuse-like patterns for demonstrating order-book anomaly detection and AI-generated explanations.
 
+## Status Legend
+
+- `[done]` Implemented and committed.
+- `[partial]` Implemented enough for the current MVP, with known follow-up gaps.
+- `[todo]` Not implemented yet.
+
 ## Phase 1: Core Live Arena
+
+Status: `[done]`
 
 Goal: build the minimum live simulator and visual order book loop.
 
@@ -27,25 +35,29 @@ Scope:
 
 Deliverables:
 
-- `backend/app/exchange/order_book.py`
-- `backend/app/exchange/matching_engine.py`
-- `backend/app/agents/market_maker.py`
-- `backend/app/agents/noise_trader.py`
-- `backend/app/agents/liquidity_taker.py`
-- `backend/app/arena/clock.py`
-- `backend/app/arena/engine.py`
-- `backend/app/websocket/broadcaster.py`
-- basic React order book ladder in the Arena screen
+- `[done]` `backend/app/exchange/order_book.py`
+- `[done]` `backend/app/exchange/matching_engine.py`
+- `[done]` `backend/app/agents/market_maker.py`
+- `[done]` `backend/app/agents/noise_trader.py`
+- `[done]` `backend/app/agents/liquidity_taker.py`
+- `[done]` `backend/app/arena/clock.py`
+- `[done]` `backend/app/arena/engine.py`
+- `[done]` `backend/app/websocket/broadcaster.py`
+- `[done]` `backend/app/websocket/manager.py`
+- `[done]` `backend/app/websocket/routes.py`
+- `[done]` basic React order book ladder in the Arena screen
 
 Exit criteria:
 
-- The simulator ticks continuously when started.
-- Normal agents generate baseline activity.
-- The matching engine updates the synthetic book.
-- The frontend receives or can display live state.
-- The UI shows bids, asks, best levels, and basic market state.
+- `[done]` The simulator ticks continuously when started.
+- `[done]` Normal agents generate baseline activity.
+- `[done]` The matching engine updates the synthetic book.
+- `[done]` The frontend receives or can display live state.
+- `[done]` The UI shows bids, asks, best levels, and basic market state.
 
 ## Phase 2: Scenario Agents And Operator Controls
+
+Status: `[done]`
 
 Goal: add manually launched synthetic abuse-like scenarios and visible agent activity.
 
@@ -59,21 +71,23 @@ Scope:
 
 Deliverables:
 
-- `SpoofingLikeAgent`
-- `LayeringLikeAgent`
-- `QuoteStuffingLikeAgent`
-- scenario launch controls in the UI
-- agent activity feed in the Arena screen
-- backend scenario controller endpoints
+- `[done]` `SpoofingLikeAgent`
+- `[done]` `LayeringLikeAgent`
+- `[done]` `QuoteStuffingLikeAgent`
+- `[done]` scenario launch controls in the UI
+- `[done]` agent activity feed in the Arena screen
+- `[done]` backend scenario controller endpoints
 
 Exit criteria:
 
-- The UI can launch each scenario manually.
-- Active scenario state is visible in the UI.
-- Agent activity appears in the feed.
-- Scenario events are labeled for detector and benchmark use.
+- `[done]` The UI can launch each scenario manually.
+- `[done]` Active scenario state is visible in the UI.
+- `[done]` Agent activity appears in the feed.
+- `[done]` Scenario events are labeled for detector and benchmark use.
 
 ## Phase 3: Deterministic Detectors And Incidents
+
+Status: `[done]`
 
 Goal: add deterministic detector logic, confidence scores, incident cards, and evidence extraction.
 
@@ -86,14 +100,14 @@ Scope:
 
 Deliverables:
 
-- `backend/app/detectors/features.py`
-- spoofing-like detector
-- layering-like detector
-- quote-stuffing-like detector
-- liquidity-shock detector
-- aggregate detector score model
-- incident card UI
-- incident drawer evidence section
+- `[done]` `backend/app/detectors/features.py`
+- `[done]` spoofing-like detector
+- `[done]` layering-like detector
+- `[done]` quote-stuffing detector
+- `[done]` liquidity-shock detector
+- `[done]` aggregate detector score model
+- `[done]` incident card UI
+- `[done]` incident drawer evidence section
 
 Core features:
 
@@ -108,12 +122,14 @@ Core features:
 
 Exit criteria:
 
-- Detector confidence scores update as the simulation runs.
-- Scenario activity can create incident cards.
-- Each incident includes structured evidence.
-- Detector behavior is deterministic for a fixed simulation seed.
+- `[done]` Detector confidence scores update as the simulation runs.
+- `[done]` Scenario activity can create incident cards.
+- `[done]` Each incident includes structured evidence.
+- `[done]` Detector behavior is deterministic for a fixed simulation seed.
 
 ## Phase 4: Nebius Benchmark And Explanation Runtime
+
+Status: `[partial]`
 
 Goal: integrate Nebius serverless components for offline benchmark runs and AI-generated explanations.
 
@@ -126,33 +142,46 @@ Scope:
 
 Deliverables:
 
-- `serverless/jobs/run_batch_benchmark.py`
-- `serverless/jobs/job_config.example.yaml`
-- benchmark output directory structure
-- `serverless/endpoint/app.py`
-- explanation prompts and schemas
-- backend client for endpoint calls
-- `docs/nebius-deployment.md`
-- screenshots under `assets/screenshots/`
+- `[done]` `serverless/jobs/detector_tournament.py`
+- `[done]` `serverless/jobs/synthetic_dataset_factory.py`
+- `[done]` `serverless/jobs/job_config.example.yaml`
+- `[done]` `serverless/jobs/dataset_job_config.example.yaml`
+- `[done]` benchmark output directory structure
+- `[done]` `serverless/endpoint/app.py`
+- `[done]` endpoint explanation and scenario-generation prompts
+- `[done]` backend client for endpoint calls
+- `[done]` `docs/nebius-deployment.md`
+- `[partial]` screenshots under `assets/screenshots/` exist as placeholders; real Nebius logs/metrics screenshots are still needed.
 
 Benchmark outputs:
 
-- `outputs/benchmark/benchmark_report.md`
-- `outputs/benchmark/benchmark_results.json`
-- `outputs/benchmark/incidents.jsonl`
-- `outputs/benchmark/detector_metrics.csv`
-- `outputs/benchmark/charts/f1_by_scenario.png`
-- `outputs/benchmark/charts/confidence_distribution.png`
-- `outputs/benchmark/charts/detection_latency.png`
+- Detector tournament writes:
+  - `outputs/benchmark/benchmark_report.md`
+  - `outputs/benchmark/metrics.csv`
+  - `outputs/benchmark/results.json`
+- Synthetic dataset factory writes:
+  - `outputs/synthetic-dataset/events.jsonl`
+  - `outputs/synthetic-dataset/incidents.jsonl`
+  - `outputs/synthetic-dataset/labels.jsonl`
+  - `outputs/synthetic-dataset/snapshots.parquet` when Parquet dependencies are available
+  - `outputs/synthetic-dataset/snapshots.parquet.jsonl` when Parquet dependencies are unavailable
+  - `outputs/synthetic-dataset/manifest.json`
+- `[todo]` Optional chart artifacts:
+  - `outputs/benchmark/charts/f1_by_scenario.png`
+  - `outputs/benchmark/charts/confidence_distribution.png`
+  - `outputs/benchmark/charts/detection_latency.png`
 
 Exit criteria:
 
-- The benchmark job can run multiple synthetic scenarios.
-- Precision, recall, and F1 are reported by scenario family.
-- The explanation endpoint returns structured summaries for incidents.
-- Deployment documentation includes the commands and screenshots needed for review.
+- `[done]` The benchmark job can run multiple synthetic scenarios.
+- `[done]` Precision, recall, and F1 are reported by scenario family.
+- `[done]` The explanation endpoint returns structured summaries for incidents.
+- `[partial]` Deployment documentation includes commands and placeholder screenshots; real Nebius logs/metrics screenshots are still needed for final review.
+- `[todo]` Run and archive one real end-to-end Nebius endpoint + job execution with outputs.
 
 ## Phase 5: Polish And Submission Assets
+
+Status: `[partial]`
 
 Goal: package the project so it is easy to understand, review, and present.
 
@@ -167,19 +196,19 @@ Scope:
 
 Deliverables:
 
-- polished root `README.md`
-- `docs/architecture.md`
-- architecture diagram under `assets/diagrams/`
-- blog post draft
-- short demo video under `assets/demo-video/`
-- `docs/research-notes.md`
-- sample benchmark report under `outputs/benchmark/`
-- final disclaimer and safety language
+- `[done]` polished root `README.md`
+- `[done]` `docs/architecture.md`
+- `[partial]` architecture diagrams exist in Mermaid docs; standalone assets under `assets/diagrams/` are still optional/future work.
+- `[todo]` blog post draft
+- `[todo]` short demo video under `assets/demo-video/`
+- `[done]` `docs/research-notes.md`
+- `[todo]` committed sample benchmark report under `outputs/benchmark/`
+- `[done]` final disclaimer and safety language in README/docs/UI
 
 Exit criteria:
 
-- A reviewer can understand the system from the README and docs.
-- The demo can be started with documented commands.
-- The architecture and runtime model are documented.
-- The project includes supporting research notes and a sample benchmark report.
-- The submission avoids claims about real market manipulation detection, trading signals, or compliance use.
+- `[done]` A reviewer can understand the system from the README and docs.
+- `[done]` The demo can be started with documented commands.
+- `[done]` The architecture and runtime model are documented.
+- `[partial]` The project includes supporting research notes; sample benchmark report still needs to be generated and committed.
+- `[done]` The submission avoids claims about real market manipulation detection, trading signals, or compliance use.

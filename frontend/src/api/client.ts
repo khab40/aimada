@@ -23,6 +23,9 @@ export type IncidentExplanation = {
   mode: "nebius" | "mock";
   endpoint: string;
   incident_id: string;
+  explanation_id?: string | null;
+  created_at?: string | null;
+  stored_artifact?: string | null;
   risk_level: string;
   plain_english_summary: string;
   evidence: string[];
@@ -79,7 +82,7 @@ export type BenchmarkRunRequest = {
 
 export type BenchmarkRunResponse = {
   id: string;
-  mode: "mock_nebius_serverless_job";
+  mode: "local_serverless_job";
   status: "queued" | "running" | "generating_report" | "completed";
   created_at: string;
   command: string[];
@@ -91,6 +94,7 @@ export type ReportsSummary = {
   experiments: Record<string, unknown>[];
   benchmark_runs: Record<string, unknown>[];
   incidents: Record<string, unknown>[];
+  explanations: Record<string, unknown>[];
   attacks: Record<string, unknown>[];
   significant_events: Record<string, unknown>[];
 };

@@ -15,7 +15,8 @@ services:
 
   backend:
     build:
-      context: ./backend
+      context: .
+      dockerfile: backend/Dockerfile
     environment:
       LOG_LEVEL: INFO
       ARENA_OUTPUT_DIR: /app/outputs

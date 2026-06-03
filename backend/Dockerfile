@@ -14,7 +14,7 @@ RUN curl -sSL https://storage.eu-north1.nebius.cloud/cli/install.sh | bash
 # Add the Nebius binary directory directly to the system PATH
 ENV PATH="/root/.nebius/bin:${PATH}"
 
-COPY pyproject.toml ./
+COPY backend/pyproject.toml ./
 RUN pip install --no-cache-dir \
   fastapi \
   numpy \
@@ -25,7 +25,8 @@ RUN pip install --no-cache-dir \
   pyyaml \
   "uvicorn[standard]"
 
-COPY app ./app
+COPY backend/app ./app
+COPY serverless/jobs ./serverless/jobs
 
 EXPOSE 8000
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

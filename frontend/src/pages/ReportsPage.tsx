@@ -79,6 +79,10 @@ export function ReportsPage() {
     }));
   }, [summary]);
 
+  const explanationRows = useMemo(() => {
+    return summary?.explanations ?? [];
+  }, [summary]);
+
   return (
     <section className="reports-page">
       <div className="panel lab-hero-panel">
@@ -148,9 +152,42 @@ export function ReportsPage() {
             <li><code>results.json</code><span>Machine-readable benchmark output</span></li>
             <li><code>events.jsonl</code><span>Synthetic event stream</span></li>
             <li><code>incidents.jsonl</code><span>Detected synthetic incidents</span></li>
+            <li><code>incidents/explanations.jsonl</code><span>Persisted Nebius incident analyses</span></li>
             <li><code>experiments/attack_experiments.jsonl</code><span>Saved attack builder configs</span></li>
             <li><code>events/significant_events.jsonl</code><span>Detector, attack, and benchmark evidence log</span></li>
           </ul>
+        </section>
+
+        <section className="panel report-card wide">
+          <h3>Nebius Analysis History</h3>
+          {explanationRows.length ? (
+            <div className="report-table-wrap">
+              <table className="benchmark-table">
+                <thead>
+                  <tr>
+                    <th>Explanation</th>
+                    <th>Incident</th>
+                    <th>Mode</th>
+                    <th>Risk</th>
+                    <th>Saved</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {explanationRows.map((row) => (
+                    <tr key={String(row.id ?? row.explanation_id ?? row.created_at)}>
+                      <td>{String(row.id ?? "EXP-AI")}</td>
+                      <td>{String(row.incident_id ?? "n/a")}</td>
+                      <td>{String(row.mode ?? "n/a")}</td>
+                      <td>{String(row.risk_level ?? "n/a")}</td>
+                      <td>{String(row.created_at ?? "recorded")}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="empty-state">No persisted Nebius incident explanations yet.</p>
+          )}
         </section>
 
         <section className="panel report-card wide">
