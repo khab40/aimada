@@ -1,7 +1,1 @@
-export type Incident = {
-  id: string;
-  title: string;
-  scenario: string;
-  confidence: number;
-  evidence: unknown[];
-};
+export type { EvidenceItem, Incident } from "./arena";

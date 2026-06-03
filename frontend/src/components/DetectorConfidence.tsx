@@ -1,4 +1,6 @@
-export function DetectorConfidence({ scores = [] }: { scores?: Array<{ name: string; confidence: number }> }) {
+import type { DetectorScores } from "@/types/arena";
+
+export function DetectorConfidence({ scores = [] }: { scores?: DetectorScores["scores"] }) {
   return (
     <section>
       <h2>Detector Confidence</h2>
