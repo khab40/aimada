@@ -3,6 +3,16 @@
 This changelog lists significant commits in reverse chronological order.
 Update this file with each significant commit before pushing.
 
+## 2026-06-04
+
+### `pending` - docs: add 3D market battlefield concept artifacts
+
+- Documented the 3D Market Battlefield simulator idea in `docs/DESIGN-IDEAS.md`.
+- Added the detailed 3D LOB terrain concept under `docs/3d-concept-lob.md`.
+- Added detached frontend prototype artifacts under `frontend/src/tabs/MarketBattlefield3D/`.
+- Added game-scenario visual concept artifacts under `assets/game-scenario/`.
+- Kept the 3D tab detached from the main UI navigation while preserving the prototype code for future iteration.
+
 ## 2026-06-03
 
 ### `6709f20` - feat: wire Nebius jobs and polish arena operations
