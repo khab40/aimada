@@ -5,7 +5,7 @@ Update this file with each significant commit before pushing.
 
 ## 2026-06-04
 
-### `pending` - docs: add 3D market battlefield concept artifacts
+### `2ad792d` - docs: add 3D market battlefield concept artifacts
 
 - Documented the 3D Market Battlefield simulator idea in `docs/DESIGN-IDEAS.md`.
 - Added the detailed 3D LOB terrain concept under `docs/3d-concept-lob.md`.
