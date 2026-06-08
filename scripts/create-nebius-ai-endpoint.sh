@@ -1,0 +1,18 @@
+nebius ai endpoint create \
+  --name nebius-market-abuse-arena-endpoint \
+  --parent-id project-e00g6zvxpr00waz8t3y51k \
+  --image ghcr.io/khab40/nebius-market-abuse-arena-endpoint:latest \
+  --env NEBIUS_ENDPOINT_MODE=mock \
+  --env NEBIUS_AI_STUDIO_BASE_URL=https://api.studio.nebius.com/v1 \
+  --env NEBIUS_AI_MODEL=meta-llama/Meta-Llama-3.1-8B-Instruct \
+  --env NEBIUS_TEMPERATURE=0.2 \
+  --env NEBIUS_MAX_TOKENS=800 \
+  --env NEBIUS_REQUEST_TIMEOUT_SECONDS=12 \
+  --platform cpu-e2 \
+  --preset 2vcpu-8gb \
+  --disk-size 100Gi \
+  --subnet-id vpcsubnet-e00ssyqjq67vzb9yph \
+  --volume computefilesystem-e00w822m77a0dwyq9t:/job/outputs:rw \
+  --container-port 9000 \
+  --public  \
+  --auth none

@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { runBenchmarkExperiment, type BenchmarkRunResponse } from "@/api/client";
-import { AttackBuilder } from "@/components/AttackBuilder";
 import { BenchmarkTable } from "@/components/BenchmarkTable";
 import type { BenchmarkResult } from "@/types/arena";
 
@@ -86,9 +85,6 @@ export function ExperimentLabPage() {
         </div>
         <span className="endpoint-badge">Nebius Serverless AI Job</span>
       </div>
-
-      <AttackBuilder />
-
       <div className="lab-grid">
         <form className="panel experiment-form" onSubmit={(event) => { event.preventDefault(); void runJob(); }}>
           <h2>Batch Experiment</h2>

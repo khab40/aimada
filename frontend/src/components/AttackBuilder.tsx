@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { launchAttackExperiment, saveAttackExperiment, type AttackExperimentRequest } from "@/api/client";
+import type { ArenaScenarioType } from "@/hooks/useArenaSource";
 
 type CancelStyle = "instant" | "gradual" | "partial";
 type NoiseCover = "none" | "low" | "high";
@@ -8,7 +9,7 @@ const scenarioTypes = ["spoofing", "layering", "quote stuffing", "liquidity evap
 const cancelStyles: CancelStyle[] = ["instant", "gradual", "partial"];
 const noiseCovers: NoiseCover[] = ["none", "low", "high"];
 
-export function AttackBuilder() {
+export function AttackBuilder({ onLaunchScenario }: { onLaunchScenario?: (type: ArenaScenarioType) => void }) {
   const [cancelStyle, setCancelStyle] = useState<CancelStyle>("instant");
   const [distanceFromMidBps, setDistanceFromMidBps] = useState(12);
   const [lifetimeSeconds, setLifetimeSeconds] = useState(5);
@@ -39,6 +40,12 @@ export function AttackBuilder() {
   }), [cancelStyle, distanceFromMidBps, lifetimeSeconds, noiseCover, risk.score, scenarioType, wallSizeMultiplier]);
 
   async function handleLaunch() {
+    if (onLaunchScenario) {
+      onLaunchScenario(toArenaScenarioType(scenarioType));
+      setStatusMessage(`Launched ${scenarioType} in Arena.`);
+      return;
+    }
+
     setIsSubmitting(true);
     setStatusMessage("Launching scenario in Arena...");
     try {
@@ -66,7 +73,7 @@ export function AttackBuilder() {
   }
 
   return (
-    <section className="panel attack-builder">
+    <section className="attack-builder">
       <div className="section-heading-row">
         <div>
           <p className="eyebrow">Red-team scenario design</p>
@@ -153,6 +160,20 @@ export function AttackBuilder() {
       </div>
     </section>
   );
+}
+
+function toArenaScenarioType(value: string): ArenaScenarioType {
+  const normalized = value.toLowerCase().replaceAll("-", " ").replaceAll("_", " ");
+  if (normalized === "layering") {
+    return "layering_like";
+  }
+  if (normalized === "quote stuffing") {
+    return "quote_stuffing";
+  }
+  if (normalized === "liquidity evaporation") {
+    return "liquidity_evaporation";
+  }
+  return "spoofing_like_wall";
 }
 
 function calculateRisk(config: {

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { AttackBuilder } from "@/components/AttackBuilder";
 import { AttackTracker } from "@/components/AttackTracker";
 import { AgentEventTape } from "@/components/AgentEventTape";
 import { DetectorConfidencePanel } from "@/components/DetectorConfidencePanel";
@@ -7,7 +8,6 @@ import { IncidentReplayDrawer } from "@/components/IncidentReplayDrawer";
 import { LiquidityHeatmap } from "@/components/LiquidityHeatmap";
 import { MarketTimeline, type MarketTimelineFrame, type TimelineMarkerType } from "@/components/MarketTimeline";
 import { OrderBookLadder } from "@/components/OrderBookLadder";
-import { ScenarioLauncher } from "@/components/ScenarioLauncher";
 import { useArenaSource } from "@/hooks/useArenaSource";
 import type { ArenaState, Incident } from "@/types/arena";
 
@@ -141,7 +141,7 @@ export function ArenaPage() {
 
         <section className="panel cockpit-right">
           <AttackTracker attack={state.active_scenario} />
-          <ScenarioLauncher activeScenario={state.active_scenario?.scenario_name} onLaunch={launchScenario} />
+          <AttackBuilder onLaunchScenario={launchScenario} />
           <DetectorConfidencePanel detectors={state.detectors} />
         </section>
 
