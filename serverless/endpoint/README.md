@@ -5,11 +5,14 @@ FastAPI container for Nebius Serverless AI Endpoint deployment.
 It exposes the AI surfaces used by the backend:
 
 - `GET /health`
+- `POST /orderbook-alert`
+- `POST /investigation-report`
 - `POST /explain-event`
 - `POST /explain-simulation`
 - `POST /generate-report`
 - `POST /generate-incident-report`
 - `POST /generate-scenario`
+- `POST /generate-smart-scenario`
 
 ## Modes
 
@@ -68,6 +71,19 @@ curl -X POST http://localhost:9000/generate-scenario \
       "market_regime":"volatile",
       "goal":"hard_to_detect"
     }
+  }'
+```
+
+Score an order-book window:
+
+```bash
+curl -X POST http://localhost:9000/orderbook-alert \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "bids":[{"price":68120,"quantity":12.4,"owner":"abuser"}],
+    "asks":[{"price":68130,"quantity":1.8,"owner":"normal"}],
+    "features":{"wall_size_ratio":8.2,"message_rate":21,"cancel_to_trade_ratio":5.4},
+    "scenario_hint":"spoofing"
   }'
 ```
 

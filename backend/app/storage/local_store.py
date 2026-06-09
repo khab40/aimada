@@ -5,7 +5,7 @@ from typing import Any
 
 class LocalStore:
     def __init__(self, output_dir: Path) -> None:
-        self.output_dir = output_dir
+        self.output_dir = output_dir.resolve()
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
     def append_jsonl(self, name: str, payload: dict[str, Any]) -> Path:

@@ -71,22 +71,88 @@ optional API tokens, fallback behavior, and request shaping.
 | Experiment Mode | Serverless AI Job | Batch simulations, synthetic dataset generation, feature extraction, detector evaluation, and experiment reports. |
 | Judge Mode | Serverless AI Endpoint | Explain a selected timeline segment and produce an investigation-style report. |
 
-## Explanation Endpoint
+## Reproducibility Commands
+
+Another practitioner should be able to run the Phase 4 path from the repository
+root with these commands:
+
+```bash
+python scripts/generate_scenarios.py
+python scripts/run_local_eval.py
+python scripts/submit_nebius_job.py --dry-run
+python scripts/call_endpoint.py --base-url http://localhost:9000 --route orderbook-alert
+```
+
+For a real Nebius submission, build and push images first:
+
+```bash
+PUSH=true GHCR_OWNER=<your-org> IMAGE_TAG=<tag> ./scripts/build-serverless-images.sh
+```
+
+Then create the endpoint and job:
+
+```bash
+export NEBIUS_SUBNET_ID=<vpc-subnet-id>
+export NEBIUS_PARENT_ID=<project-id>
+export NEBIUS_ENDPOINT_IMAGE=ghcr.io/<your-org>/nebius-market-abuse-arena-endpoint:<tag>
+export NEBIUS_JOB_IMAGE=ghcr.io/<your-org>/nebius-market-abuse-arena-jobs:<tag>
+
+./scripts/create-nebius-ai-endpoint.sh
+./scripts/create-nebius-ai-job.sh
+```
+
+The shell scripts use the current deterministic CLI surfaces:
+
+- `nebius ai endpoint create`
+- `nebius ai job create`
+- `nebius ai endpoint logs <endpoint-id> --follow`
+- `nebius ai job logs <job-id> --follow`
+
+## Endpoint Contract
 
 The endpoint under `serverless/endpoint` exposes:
 
+- `POST /orderbook-alert`
+- `POST /investigation-report`
 - `POST /explain-event`
 - `POST /explain-simulation`
 - `POST /generate-incident-report`
 - `POST /generate-scenario`
+- `POST /generate-smart-scenario`
 
-Configuration starts from `serverless/endpoint/endpoint_config.example.yaml`.
+Primary routes:
+
+| Route | Input | Output |
+| --- | --- | --- |
+| `/orderbook-alert` | recent L2 order book window, events, feature snapshot | suspicion score, detected synthetic pattern, reasons |
+| `/investigation-report` | scenario trace, alerts, detector metrics | human-readable synthetic market abuse case report |
+
+Configuration starts from `serverless/endpoint/endpoint_config.yaml`.
 
 ## Batch Benchmark Job
 
 The batch job under `serverless/jobs` runs repeated synthetic simulations, injects labeled abuse-like patterns, computes detector metrics, and emits a benchmark report.
 
-Configuration starts from `serverless/jobs/job_config.example.yaml`.
+The smart batch job under `serverless/jobs/` runs attack/detect mode in parallel
+batches. It covers:
+
+- normal market
+- spoofing attack
+- layering attack
+- quote stuffing
+- pump-and-cancel pattern
+
+Outputs:
+
+- `order_book_events.jsonl`
+- `trades.jsonl`
+- `attack_labels.jsonl`
+- `blue_team_alerts.jsonl`
+- `detector_metrics.csv`
+- `generated_report.md`
+- `manifest.json`
+
+Configuration starts from `serverless/jobs/nebius_job_config.yaml`.
 
 ## Local Configuration
 
@@ -122,6 +188,8 @@ The endpoint exposes:
 
 ```text
 GET  /health
+POST /orderbook-alert
+POST /investigation-report
 POST /explain-event
 POST /generate-scenario
 POST /explain-simulation
@@ -174,11 +242,33 @@ Jobs do not need endpoint URLs for the first benchmark path. Configure job
 arguments instead:
 
 ```bash
-python detector_tournament.py --runs 100 --scenarios spoofing,layering,quote_stuffing,liquidity_evaporation --detectors spoofing_like,layering_like,quote_stuffing,liquidity_shock --output /job/outputs/benchmark
+python detector_tournament.py --runs 100 --scenarios normal_market,spoofing,layering,quote_stuffing,pump_and_cancel --detectors spoofing_like,layering_like,quote_stuffing,liquidity_shock --output /job/outputs/benchmark
 python synthetic_dataset_factory.py --samples 100 --output /job/outputs/synthetic-dataset
+python /job/serverless/jobs/run_batch_experiments.py --runs 1000 --batch-size 100 --output /job/outputs/serverless-batch
 ```
 
 Keep run counts small for first deployment checks.
+
+## Serverless Cost/Runtime Observatory
+
+The React `Nebius Control Panel` tab reads `/api/nebius/observatory` and displays
+submission evidence:
+
+```text
+Endpoint:
+- requests: 24
+- avg latency: 1.2s
+- purpose: incident explanation and order-book alert scoring
+
+Jobs:
+- simulations: 1,000
+- runtime: 7m 42s
+- output files: 7
+- artifacts: benchmark_report.md, detector_metrics.csv, generated_report.md, manifest.json
+```
+
+Before final review, replace placeholder evidence with real Nebius endpoint/job
+screenshots and archived logs/metrics.
 
 ## Architecture Records
 

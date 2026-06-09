@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { runBenchmarkExperiment, type BenchmarkRunResponse } from "@/api/client";
+import { ArtifactWorkbench, type ArtifactItem } from "@/components/ArtifactWorkbench";
 import { BenchmarkTable } from "@/components/BenchmarkTable";
 import type { BenchmarkResult } from "@/types/arena";
 
@@ -28,6 +29,13 @@ export function ExperimentLabPage() {
   const [jobRun, setJobRun] = useState<BenchmarkRunResponse | null>(null);
   const [jobError, setJobError] = useState<string | null>(null);
   const isJobRunning = currentStatusIndex !== null && currentStatusIndex < jobStatuses.length - 1;
+  const jobArtifacts: ArtifactItem[] = jobRun
+    ? Object.entries(jobRun.artifact_paths).map(([label, path]) => ({
+      description: path,
+      label: label.replaceAll("_", " "),
+      path
+    }))
+    : [];
 
   useEffect(() => {
     if (currentStatusIndex === null || currentStatusIndex >= jobStatuses.length - 1) {
@@ -130,7 +138,7 @@ export function ExperimentLabPage() {
           <button disabled={isJobRunning || selectedScenarios.size === 0} type="submit">
             {isJobRunning ? "Running Serverless Job..." : "Run on Nebius Serverless Job"}
           </button>
-          {jobRun ? <p className="lab-job-note">Recorded run {jobRun.id}. Artifacts: {Object.values(jobRun.artifact_paths).join(", ")}</p> : null}
+          {jobRun ? <p className="lab-job-note">Recorded run {jobRun.id}. Open artifacts in the panel below.</p> : null}
           {jobError ? <p className="lab-job-note error">{jobError}</p> : null}
         </form>
 
@@ -169,6 +177,15 @@ export function ExperimentLabPage() {
               </BarChart>
             </ResponsiveContainer>
           </div>
+        </section>
+
+        <section className="panel benchmark-results-panel">
+          <ArtifactWorkbench
+            artifacts={jobArtifacts}
+            runIds={jobRun ? [jobRun.id] : []}
+            selectedRunId={jobRun?.id ?? null}
+            title="Run Artifacts"
+          />
         </section>
       </div>
     </section>

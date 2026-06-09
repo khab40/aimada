@@ -61,6 +61,50 @@ class ScenarioGenerationResponse(BaseModel):
     safety_note: str = DISCLAIMER
 
 
+class L2Level(BaseModel):
+    price: float
+    quantity: float
+    owner: str | None = None
+    agent_id: str | None = None
+    scenario_id: str | None = None
+    scenario_name: str | None = None
+
+
+class OrderBookWindow(BaseModel):
+    bids: list[L2Level] = Field(default_factory=list)
+    asks: list[L2Level] = Field(default_factory=list)
+    events: list[dict[str, Any]] = Field(default_factory=list)
+    features: dict[str, Any] = Field(default_factory=dict)
+    scenario_hint: str | None = None
+    tick: int | None = None
+
+
+class OrderBookAlertResponse(BaseModel):
+    suspicion_score: float = Field(ge=0.0, le=1.0)
+    detected_pattern: str
+    confidence: float = Field(ge=0.0, le=1.0)
+    reasons: list[str]
+    recommended_action: str
+    model_mode: str
+    disclaimer: str = DISCLAIMER
+
+
+class InvestigationReportRequest(BaseModel):
+    scenario_trace: dict[str, Any] = Field(default_factory=dict)
+    alerts: list[dict[str, Any]] = Field(default_factory=list)
+    metrics: dict[str, Any] = Field(default_factory=dict)
+
+
+class InvestigationReportResponse(BaseModel):
+    title: str
+    summary: str
+    timeline: list[str]
+    detector_findings: list[str]
+    limitations: list[str]
+    recommended_next_steps: list[str]
+    disclaimer: str = DISCLAIMER
+
+
 class ExplainPayload(BaseModel):
     payload: dict[str, Any]
 
@@ -72,6 +116,38 @@ def health() -> dict[str, str]:
         "service": "nebius-market-abuse-arena-endpoint",
         "model_mode": "ai_studio" if _model_enabled() else "deterministic_fallback",
     }
+
+
+@app.post("/orderbook-alert", response_model=OrderBookAlertResponse)
+def orderbook_alert(request: OrderBookWindow) -> OrderBookAlertResponse:
+    fallback = _deterministic_orderbook_alert(request)
+    model_response = _call_model_json(
+        system_prompt=(
+            "Return JSON with suspicion_score, detected_pattern, confidence, reasons, "
+            "and recommended_action for a synthetic educational L2 order-book window. "
+            "Never claim real market surveillance capability."
+        ),
+        user_payload=request.model_dump(mode="json"),
+    )
+    if model_response is None:
+        return fallback
+    return _merge_alert_response(fallback, model_response)
+
+
+@app.post("/investigation-report", response_model=InvestigationReportResponse)
+def investigation_report(request: InvestigationReportRequest) -> InvestigationReportResponse:
+    fallback = _deterministic_investigation_report(request)
+    model_response = _call_model_json(
+        system_prompt=(
+            "Return a JSON market-abuse case report for an educational synthetic trace. "
+            "Required keys: title, summary, timeline, detector_findings, limitations, "
+            "recommended_next_steps. Avoid real-world enforcement or trading advice."
+        ),
+        user_payload=request.model_dump(mode="json"),
+    )
+    if model_response is None:
+        return fallback
+    return _merge_report_response(fallback, model_response)
 
 
 @app.post("/explain-event", response_model=IncidentExplanationResponse)
@@ -127,6 +203,11 @@ def generate_scenario(request: ScenarioGenerationRequest) -> ScenarioGenerationR
     if model_response is None:
         return fallback
     return _merge_scenario_response(fallback, model_response)
+
+
+@app.post("/generate-smart-scenario", response_model=ScenarioGenerationResponse)
+def generate_smart_scenario(request: ScenarioGenerationRequest) -> ScenarioGenerationResponse:
+    return generate_scenario(request)
 
 
 def _model_enabled() -> bool:
@@ -220,6 +301,131 @@ def _merge_explanation_response(
     )
 
 
+def _deterministic_orderbook_alert(request: OrderBookWindow) -> OrderBookAlertResponse:
+    features = request.features
+    wall_size_ratio = _float_feature(features, "wall_size_ratio")
+    message_rate = _float_feature(features, "message_rate")
+    cancel_to_trade_ratio = _float_feature(features, "cancel_to_trade_ratio")
+    depth_change_pct = _float_feature(features, "depth_change_pct")
+    imbalance = abs(_float_feature(features, "imbalance"))
+    scenario_hint = (request.scenario_hint or "").lower().replace("-", "_")
+
+    pattern = "normal_market"
+    score = 0.12
+    reasons = ["No dominant synthetic abuse-like pattern crossed the alert threshold."]
+
+    if scenario_hint in {"spoofing", "spoofing_like", "spoofing_like_wall"} or wall_size_ratio >= 5.0:
+        pattern = "spoofing_like_wall"
+        score = min(0.98, 0.48 + wall_size_ratio / 12.0 + imbalance / 3.0)
+        reasons = [
+            f"Wall size ratio is {wall_size_ratio:.2f}.",
+            f"Top-of-book imbalance magnitude is {imbalance:.2f}.",
+        ]
+    elif scenario_hint in {"layering", "layering_like"} or depth_change_pct >= 0.45:
+        pattern = "layering_like"
+        score = min(0.95, 0.44 + depth_change_pct + message_rate / 80.0)
+        reasons = [
+            f"Depth changed by {depth_change_pct:.2f}.",
+            f"Message rate is {message_rate:.2f} events/sec.",
+        ]
+    elif scenario_hint in {"quote_stuffing", "quote_stuffing_like"} or message_rate >= 18.0:
+        pattern = "quote_stuffing"
+        score = min(0.97, 0.40 + message_rate / 45.0 + cancel_to_trade_ratio / 15.0)
+        reasons = [
+            f"Message rate is {message_rate:.2f} events/sec.",
+            f"Cancel-to-trade ratio is {cancel_to_trade_ratio:.2f}.",
+        ]
+    elif scenario_hint in {"pump_and_cancel", "pump_cancel"} or cancel_to_trade_ratio >= 8.0:
+        pattern = "pump_and_cancel"
+        score = min(0.94, 0.42 + cancel_to_trade_ratio / 16.0 + depth_change_pct / 2.0)
+        reasons = [
+            f"Cancel-to-trade ratio is {cancel_to_trade_ratio:.2f}.",
+            f"Depth changed by {depth_change_pct:.2f}.",
+        ]
+
+    confidence = max(0.05, min(1.0, score))
+    return OrderBookAlertResponse(
+        suspicion_score=round(confidence, 4),
+        detected_pattern=pattern,
+        confidence=round(confidence, 4),
+        reasons=reasons,
+        recommended_action="Keep this synthetic interval in the demo investigation queue.",
+        model_mode="deterministic_fallback",
+    )
+
+
+def _merge_alert_response(
+    fallback: OrderBookAlertResponse,
+    response: dict[str, Any],
+) -> OrderBookAlertResponse:
+    reasons = response.get("reasons", fallback.reasons)
+    if isinstance(reasons, str):
+        reasons = [reasons]
+    if not isinstance(reasons, list):
+        reasons = fallback.reasons
+    suspicion_score = _bounded_float(response.get("suspicion_score"), fallback.suspicion_score)
+    confidence = _bounded_float(response.get("confidence"), suspicion_score)
+    return OrderBookAlertResponse(
+        suspicion_score=suspicion_score,
+        detected_pattern=str(response.get("detected_pattern") or fallback.detected_pattern),
+        confidence=confidence,
+        reasons=[str(item) for item in reasons],
+        recommended_action=str(response.get("recommended_action") or fallback.recommended_action),
+        model_mode="ai_studio",
+        disclaimer=str(response.get("disclaimer") or DISCLAIMER),
+    )
+
+
+def _deterministic_investigation_report(request: InvestigationReportRequest) -> InvestigationReportResponse:
+    trace = request.scenario_trace
+    scenario = str(trace.get("scenario") or trace.get("scenario_name") or "synthetic scenario")
+    alert_count = len(request.alerts)
+    metric_bits = [
+        f"{key}={value}"
+        for key, value in sorted(request.metrics.items())
+        if key in {"precision", "recall", "f1", "avg_detection_latency_ms", "runtime_seconds"}
+    ]
+    return InvestigationReportResponse(
+        title=f"Synthetic investigation report: {scenario}",
+        summary=(
+            f"The trace contains {alert_count} alert(s) for {scenario}. "
+            "Detector evidence is suitable for educational replay and benchmark review only."
+        ),
+        timeline=[
+            "Scenario generated inside the synthetic order-book simulator.",
+            "Detector confidence crossed the configured alert threshold.",
+            "Evidence and labels were archived as benchmark artifacts.",
+        ],
+        detector_findings=metric_bits or ["Structured detector metrics were included in the artifact bundle."],
+        limitations=[
+            "Synthetic labels are generated by scenario injection, not by real surveillance review.",
+            "Results must not be interpreted as real-world market abuse detection performance.",
+        ],
+        recommended_next_steps=[
+            "Open the replay drawer and compare alert timing with scenario labels.",
+            "Archive Nebius job logs, endpoint logs, metrics, and generated artifacts for submission.",
+        ],
+    )
+
+
+def _merge_report_response(
+    fallback: InvestigationReportResponse,
+    response: dict[str, Any],
+) -> InvestigationReportResponse:
+    return InvestigationReportResponse(
+        title=str(response.get("title") or fallback.title),
+        summary=str(response.get("summary") or fallback.summary),
+        timeline=_string_list(response.get("timeline"), fallback.timeline),
+        detector_findings=_string_list(response.get("detector_findings"), fallback.detector_findings),
+        limitations=_string_list(response.get("limitations"), fallback.limitations),
+        recommended_next_steps=_string_list(
+            response.get("recommended_next_steps"),
+            fallback.recommended_next_steps,
+        ),
+        disclaimer=str(response.get("disclaimer") or DISCLAIMER),
+    )
+
+
 def _deterministic_scenario(request: ScenarioGenerationRequest) -> ScenarioGenerationResponse:
     constraints = request.constraints
     scenario_family = str(constraints.get("scenario_family") or constraints.get("scenario_type") or "spoofing_like_wall")
@@ -281,3 +487,25 @@ def _normalize_scenario_type(value: str) -> str:
         "liquidity_shock": "liquidity_evaporation",
     }
     return mapping.get(normalized, "spoofing_like_wall")
+
+
+def _float_feature(features: dict[str, Any], key: str) -> float:
+    try:
+        return float(features.get(key) or 0.0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _bounded_float(value: Any, fallback: float) -> float:
+    try:
+        return round(max(0.0, min(1.0, float(value))), 4)
+    except (TypeError, ValueError):
+        return fallback
+
+
+def _string_list(value: Any, fallback: list[str]) -> list[str]:
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, list):
+        return [str(item) for item in value]
+    return fallback

@@ -3,6 +3,7 @@ import "./App.css";
 import { AboutPage } from "@/pages/AboutPage";
 import { ArenaPage } from "@/pages/ArenaPage";
 import { ExperimentLabPage } from "@/pages/ExperimentLabPage";
+import { NebiusControlPanelPage } from "@/pages/NebiusControlPanelPage";
 import { ReportsPage } from "@/pages/ReportsPage";
 
 const disclaimer =
@@ -20,6 +21,7 @@ export function App() {
           <nav className="top-nav" aria-label="Main screens">
             <NavLink to="/arena">Arena</NavLink>
             <NavLink to="/lab">Lab</NavLink>
+            <NavLink to="/nebius">Nebius Control Panel</NavLink>
             <NavLink to="/reports">Reports</NavLink>
             <NavLink to="/about">About</NavLink>
           </nav>
@@ -34,6 +36,7 @@ export function App() {
           <Route path="/" element={<Navigate to="/arena" replace />} />
           <Route path="/arena" element={<ArenaPage />} />
           <Route path="/lab" element={<ExperimentLabPage />} />
+          <Route path="/nebius" element={<NebiusControlPanelPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/about" element={<AboutPage />} />
         </Routes>

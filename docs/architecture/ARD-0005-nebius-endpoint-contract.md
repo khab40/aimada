@@ -6,11 +6,17 @@ Date: 2026-06-01
 
 ## Context
 
-The backend needs AI-generated explanations for detected synthetic incidents and simulation summaries. The UI should not call Nebius directly. The backend should pass structured detector evidence to the serverless endpoint and receive structured response fields that can be stored and rendered.
+The backend needs AI-generated explanations for detected synthetic incidents,
+simulation summaries, smart order-book alert scoring, and investigation-style
+reports. The UI should not call Nebius directly. The backend should pass
+structured detector evidence to the serverless endpoint and receive structured
+response fields that can be stored and rendered.
 
 ## Decision
 
-Expose Nebius Serverless AI Endpoints with explicit health, event explanation, simulation explanation, report-generation, and bounded scenario-generation routes.
+Expose Nebius Serverless AI Endpoints with explicit health, smart detection,
+investigation report, event explanation, simulation explanation,
+report-generation, and bounded scenario-generation routes.
 
 Endpoint roles:
 
@@ -29,10 +35,13 @@ graph TD
 Routes:
 
 - `GET /health`
+- `POST /orderbook-alert`
+- `POST /investigation-report`
 - `POST /explain-event`
 - `POST /explain-simulation`
 - `POST /generate-report`
 - `POST /generate-scenario`
+- `POST /generate-smart-scenario`
 
 The endpoint accepts structured JSON evidence and returns structured JSON explanation output.
 
@@ -63,17 +72,23 @@ graph TD
     IncidentRequest["ExplainIncidentRequest - id, type, confidence, severity, evidence, features"]
     SimulationRequest["ExplainSimulationRequest - simulation id, tick window, detector summary, incidents"]
     Explanation["ExplanationResponse - title, risk, summary, evidence, action, disclaimer"]
+    AlertRequest["OrderBookAlertRequest - L2 window, events, features, scenario hint"]
+    AlertResponse["OrderBookAlertResponse - suspicion score, detected pattern, reasons"]
+    ReportRequest["InvestigationReportRequest - trace, alerts, metrics"]
+    ReportResponse["InvestigationReportResponse - case report, timeline, findings"]
     ScenarioRequest["ScenarioGenerationRequest - prompt and constraints"]
     ScenarioResponse["ScenarioGenerationResponse - type, title, description, parameters, risk, safety note"]
 
     IncidentRequest --> Explanation
     SimulationRequest --> Explanation
+    AlertRequest --> AlertResponse
+    ReportRequest --> ReportResponse
     ScenarioRequest --> ScenarioResponse
 ```
 
 ## Response Requirements
 
-The endpoint response must include:
+Explanation responses must include:
 
 - `title`
 - `risk_level`
@@ -81,6 +96,23 @@ The endpoint response must include:
 - `evidence`
 - `recommended_action`
 - `disclaimer`
+
+Order-book alert responses must include:
+
+- `suspicion_score`
+- `detected_pattern`
+- `confidence`
+- `reasons`
+- `recommended_action`
+
+Investigation report responses must include:
+
+- `title`
+- `summary`
+- `timeline`
+- `detector_findings`
+- `limitations`
+- `recommended_next_steps`
 
 The disclaimer must preserve the project framing: educational simulation only, no real manipulation detection, no trading signals, and no compliance decisions.
 
@@ -90,6 +122,7 @@ The backend reads endpoint wiring from:
 
 - `NEBIUS_INCIDENT_EXPLAINER_URL`
 - `NEBIUS_SCENARIO_GENERATOR_URL`
+- `NEBIUS_ENDPOINT_BASE_URL`
 - `NEBIUS_API_KEY` optional
 - `NEBIUS_TENANT_ID` optional metadata/status field
 

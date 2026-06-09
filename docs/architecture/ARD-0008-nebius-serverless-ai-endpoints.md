@@ -11,9 +11,9 @@ Nebius endpoint URLs or API tokens to the browser. The backend should send
 structured, bounded evidence to Nebius and receive structured outputs that the
 UI can render safely.
 
-The endpoint path is not responsible for detector decisions. Deterministic
-detectors create incidents and evidence first; the AI endpoint explains,
-narrates, or formats that evidence.
+The endpoint path can run a small classifier, an LLM, or both. Deterministic
+backend detectors remain the primary local baseline; the endpoint adds smart
+order-book alert scoring and report generation for the Nebius demo path.
 
 ## Decision
 
@@ -58,6 +58,10 @@ graph TD
 
 The endpoints support:
 
+- `/orderbook-alert` for suspicion score plus detected synthetic pattern from a
+  recent L2 order-book window
+- `/investigation-report` for a human-readable synthetic case report from trace,
+  alerts, and metrics
 - incident explanation from detector evidence
 - selected timeline segment explanation for Judge Mode
 - scenario narration for demo playback
@@ -77,6 +81,7 @@ Endpoint wiring is controlled by environment variables:
 ```text
 NEBIUS_INCIDENT_EXPLAINER_URL
 NEBIUS_SCENARIO_GENERATOR_URL
+NEBIUS_ENDPOINT_BASE_URL
 NEBIUS_API_KEY optional
 NEBIUS_TENANT_ID optional metadata/status field
 ```

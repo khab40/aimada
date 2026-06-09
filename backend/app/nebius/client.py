@@ -65,6 +65,46 @@ class RedTeamScenarioResponse(BaseModel):
     raw_response: dict[str, Any] | None = None
 
 
+class OrderBookAlertRequest(BaseModel):
+    bids: list[dict[str, Any]] = Field(default_factory=list)
+    asks: list[dict[str, Any]] = Field(default_factory=list)
+    events: list[dict[str, Any]] = Field(default_factory=list)
+    features: dict[str, Any] = Field(default_factory=dict)
+    scenario_hint: str | None = None
+    tick: int | None = None
+
+
+class OrderBookAlertResponse(BaseModel):
+    mode: Literal["nebius", "mock"]
+    endpoint: str
+    suspicion_score: float = Field(ge=0.0, le=1.0)
+    detected_pattern: str
+    confidence: float = Field(ge=0.0, le=1.0)
+    reasons: list[str]
+    recommended_action: str
+    fallback_reason: str | None = None
+    raw_response: dict[str, Any] | None = None
+
+
+class InvestigationReportRequest(BaseModel):
+    scenario_trace: dict[str, Any] = Field(default_factory=dict)
+    alerts: list[dict[str, Any]] = Field(default_factory=list)
+    metrics: dict[str, Any] = Field(default_factory=dict)
+
+
+class InvestigationReportResponse(BaseModel):
+    mode: Literal["nebius", "mock"]
+    endpoint: str
+    title: str
+    summary: str
+    timeline: list[str]
+    detector_findings: list[str]
+    limitations: list[str]
+    recommended_next_steps: list[str]
+    fallback_reason: str | None = None
+    raw_response: dict[str, Any] | None = None
+
+
 class NebiusIntegrationStatus(BaseModel):
     tenant_id_configured: bool
     incident_explainer_configured: bool
@@ -136,6 +176,32 @@ class NebiusClient:
                 reason=f"Nebius scenario generator fallback: {exc}",
             )
 
+    def detect_orderbook_alert(self, request: OrderBookAlertRequest) -> OrderBookAlertResponse:
+        url = self._endpoint_url("/orderbook-alert")
+        if not url:
+            return self._mock_orderbook_alert(request, reason="NEBIUS_ENDPOINT_BASE_URL is not configured")
+        try:
+            response = self._post_json(url, request.model_dump(mode="json"))
+            return self._parse_orderbook_alert_response(response)
+        except (HTTPError, URLError, TimeoutError, json.JSONDecodeError, ValueError) as exc:
+            return self._mock_orderbook_alert(request, reason=f"Nebius order-book alert fallback: {exc}")
+
+    def investigation_report(self, request: InvestigationReportRequest) -> InvestigationReportResponse:
+        url = self._endpoint_url("/investigation-report")
+        if not url:
+            return self._mock_investigation_report(
+                request,
+                reason="NEBIUS_ENDPOINT_BASE_URL is not configured",
+            )
+        try:
+            response = self._post_json(url, request.model_dump(mode="json"))
+            return self._parse_investigation_report_response(response)
+        except (HTTPError, URLError, TimeoutError, json.JSONDecodeError, ValueError) as exc:
+            return self._mock_investigation_report(
+                request,
+                reason=f"Nebius investigation report fallback: {exc}",
+            )
+
     def integration_status(self) -> NebiusIntegrationStatus:
         settings = get_settings()
         cli_path = shutil.which("nebius")
@@ -179,6 +245,10 @@ class NebiusClient:
             if not isinstance(decoded, dict):
                 raise ValueError("Nebius endpoint returned a non-object JSON response")
             return decoded
+
+    def _endpoint_url(self, path: str) -> str | None:
+        settings = get_settings()
+        return settings.nebius_endpoint_url(path)
 
     def _incident_payload(
         self,
@@ -263,6 +333,41 @@ class NebiusClient:
             raw_response=response,
         )
 
+    def _parse_orderbook_alert_response(self, response: dict[str, Any]) -> OrderBookAlertResponse:
+        reasons = response.get("reasons", [])
+        if isinstance(reasons, str):
+            reasons = [reasons]
+        if not isinstance(reasons, list):
+            reasons = []
+        suspicion_score = _bounded_float(response.get("suspicion_score"), 0.0)
+        confidence = _bounded_float(response.get("confidence"), suspicion_score)
+        return OrderBookAlertResponse(
+            mode="nebius",
+            endpoint="Nebius Serverless AI Endpoint /orderbook-alert",
+            suspicion_score=suspicion_score,
+            detected_pattern=str(response.get("detected_pattern") or "unknown"),
+            confidence=confidence,
+            reasons=[str(item) for item in reasons],
+            recommended_action=str(response.get("recommended_action") or "Review the synthetic interval."),
+            raw_response=response,
+        )
+
+    def _parse_investigation_report_response(
+        self,
+        response: dict[str, Any],
+    ) -> InvestigationReportResponse:
+        return InvestigationReportResponse(
+            mode="nebius",
+            endpoint="Nebius Serverless AI Endpoint /investigation-report",
+            title=str(response.get("title") or "Synthetic investigation report"),
+            summary=str(response.get("summary") or "Nebius endpoint returned a report."),
+            timeline=_string_list(response.get("timeline")),
+            detector_findings=_string_list(response.get("detector_findings")),
+            limitations=_string_list(response.get("limitations")),
+            recommended_next_steps=_string_list(response.get("recommended_next_steps")),
+            raw_response=response,
+        )
+
     def _mock_explanation(self, incident: Incident, *, reason: str) -> IncidentExplanationResponse:
         return IncidentExplanationResponse(
             mode="mock",
@@ -313,5 +418,88 @@ class NebiusClient:
             ),
         )
 
+    def _mock_orderbook_alert(
+        self,
+        request: OrderBookAlertRequest,
+        *,
+        reason: str,
+    ) -> OrderBookAlertResponse:
+        features = request.features
+        wall = _feature_float(features, "wall_size_ratio")
+        message_rate = _feature_float(features, "message_rate")
+        cancel_ratio = _feature_float(features, "cancel_to_trade_ratio")
+        score = min(0.95, max(0.12, wall / 10 + message_rate / 80 + cancel_ratio / 30))
+        pattern = request.scenario_hint or (
+            "quote_stuffing" if message_rate >= 18 else "spoofing_like_wall" if wall >= 5 else "normal_market"
+        )
+        return OrderBookAlertResponse(
+            mode="mock",
+            endpoint="mock Nebius /orderbook-alert",
+            fallback_reason=reason,
+            suspicion_score=round(score, 4),
+            detected_pattern=pattern,
+            confidence=round(score, 4),
+            reasons=[
+                f"wall_size_ratio={wall:.2f}",
+                f"message_rate={message_rate:.2f}",
+                f"cancel_to_trade_ratio={cancel_ratio:.2f}",
+            ],
+            recommended_action="Queue the synthetic interval for replay and benchmark review.",
+        )
+
+    def _mock_investigation_report(
+        self,
+        request: InvestigationReportRequest,
+        *,
+        reason: str,
+    ) -> InvestigationReportResponse:
+        scenario = str(request.scenario_trace.get("scenario") or "synthetic scenario")
+        return InvestigationReportResponse(
+            mode="mock",
+            endpoint="mock Nebius /investigation-report",
+            fallback_reason=reason,
+            title=f"Synthetic investigation report: {scenario}",
+            summary=(
+                f"{len(request.alerts)} alert(s) were generated for {scenario}. "
+                "This is a bounded educational report."
+            ),
+            timeline=[
+                "Synthetic scenario generated.",
+                "Order-book window scored by detector endpoint.",
+                "Alerts and metrics archived for the demo.",
+            ],
+            detector_findings=[f"{key}: {value}" for key, value in request.metrics.items()],
+            limitations=[
+                "Synthetic simulator labels are not real surveillance labels.",
+                "Do not use these outputs for trading, compliance, or enforcement decisions.",
+            ],
+            recommended_next_steps=[
+                "Capture real Nebius endpoint and job logs.",
+                "Archive benchmark artifacts with the submission.",
+            ],
+        )
+
 
 NebiusAIClient = NebiusClient
+
+
+def _feature_float(features: dict[str, Any], key: str) -> float:
+    try:
+        return float(features.get(key) or 0.0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _bounded_float(value: Any, fallback: float) -> float:
+    try:
+        return max(0.0, min(1.0, float(value)))
+    except (TypeError, ValueError):
+        return fallback
+
+
+def _string_list(value: Any) -> list[str]:
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, list):
+        return [str(item) for item in value]
+    return []

@@ -24,6 +24,9 @@ Outputs:
 - `benchmark_report.md`
 - `metrics.csv`
 - `results.json`
+- `charts/f1_by_scenario.png`
+- `charts/confidence_distribution.png`
+- `charts/detection_latency.png`
 
 Metrics:
 
@@ -80,3 +83,26 @@ docker run --rm -v "$PWD/outputs:/job/outputs" nebius-market-abuse-jobs \
   engine.
 - The generated labels are synthetic ground truth from scenario injection, not
   real surveillance labels.
+
+## Smart Attack/Detect Batch
+
+The Phase 4 runner lives in `serverless/jobs/run_batch_experiments.py` and is
+also available through the compatibility wrapper `run_batch_benchmark.py`.
+
+```bash
+python serverless/jobs/run_batch_experiments.py \
+  --runs 1000 \
+  --batch-size 100 \
+  --scenarios normal_market,spoofing,layering,quote_stuffing,pump_and_cancel \
+  --output outputs/serverless-batch
+```
+
+Outputs:
+
+- `order_book_events.jsonl`
+- `trades.jsonl`
+- `attack_labels.jsonl`
+- `blue_team_alerts.jsonl`
+- `detector_metrics.csv`
+- `generated_report.md`
+- `manifest.json`

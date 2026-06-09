@@ -15,7 +15,7 @@ This project is an educational simulation. It does not detect real market manipu
 ```
 backend/          FastAPI simulator, detectors, reports, local storage
 frontend/         Vite React UI for live arena and benchmark views
-serverless/       Nebius serverless endpoint and batch job scaffolds
+serverless/       Nebius endpoint, job images, configs, and batch runners
 docs/             Complete architecture, deployment, and research notes
 assets/           Research articles, screenshots, diagrams, banners
 data/             Sample input data for local testing
@@ -118,6 +118,19 @@ curl -X POST http://localhost:8000/api/nebius/red-team-scenario \
   -d '{"prompt":"short spoofing-like wall in a thin book","constraints":{"scenario_type":"spoofing_like_wall"}}'
 ```
 
+Nebius control path:
+
+```bash
+curl -X POST http://localhost:8000/api/nebius/smart-scenario
+curl -X POST http://localhost:8000/api/nebius/smart-detection \
+  -H 'Content-Type: application/json' \
+  -d '{"features":{"wall_size_ratio":8.2,"message_rate":21,"cancel_to_trade_ratio":5.4},"scenario_hint":"spoofing"}'
+curl -X POST http://localhost:8000/api/nebius/smart-batches \
+  -H 'Content-Type: application/json' \
+  -d '{"runs":100,"batch_size":100,"scenarios":["normal_market","spoofing","layering","quote_stuffing","pump_and_cancel"]}'
+curl http://localhost:8000/api/nebius/observatory
+```
+
 ## Environment Configuration
 
 Nebius endpoint wiring is configured only through environment variables. Leave the URLs unset for local mock fallback mode:
@@ -128,7 +141,28 @@ NEBIUS_ENDPOINT_BASE_URL=https://your-nebius-endpoint
 NEBIUS_API_KEY=optional-token
 ```
 
-The backend derives `POST /explain-event` and `POST /generate-scenario` from `NEBIUS_ENDPOINT_BASE_URL`. Set `NEBIUS_INCIDENT_EXPLAINER_URL` and `NEBIUS_SCENARIO_GENERATOR_URL` only if you need explicit per-route overrides.
+The backend derives `POST /explain-event`, `POST /generate-scenario`, `POST /orderbook-alert`, and `POST /investigation-report` from `NEBIUS_ENDPOINT_BASE_URL`. Set `NEBIUS_INCIDENT_EXPLAINER_URL` and `NEBIUS_SCENARIO_GENERATOR_URL` only if you need explicit per-route overrides.
+
+Phase 4 reproducibility:
+
+```bash
+python scripts/generate_scenarios.py
+python scripts/run_local_eval.py
+python scripts/submit_nebius_job.py --dry-run
+python scripts/call_endpoint.py --base-url http://localhost:9000 --route orderbook-alert
+```
+
+Nebius resource creation:
+
+```bash
+export NEBIUS_PARENT_ID=<project-id>
+export NEBIUS_SUBNET_ID=<vpc-subnet-id>
+export NEBIUS_ENDPOINT_IMAGE=ghcr.io/<your-org>/nebius-market-abuse-arena-endpoint:<tag>
+export NEBIUS_JOB_IMAGE=ghcr.io/<your-org>/nebius-market-abuse-arena-jobs:<tag>
+
+./scripts/create-nebius-ai-endpoint.sh
+./scripts/create-nebius-ai-job.sh
+```
 
 Frontend WebSocket connection:
 
@@ -177,6 +211,7 @@ Start with the guides above, then explore:
 | **Incident** | A time window flagged by the detector with supporting evidence |
 | **Scenario** | A bounded abuse-like pattern (spoofing-like, layering-like, quote-stuffing-like) |
 | **Nebius Endpoint** | Serverless AI service called by the backend to generate explanations and scenario suggestions |
+| **Nebius Control Panel** | UI tab for smart endpoint scoring, parallel attack/detect batches, usage evidence, and benchmark charts |
 | **Benchmark** | Evaluation of detector quality against labeled synthetic scenarios |
 
 ## Screenshots

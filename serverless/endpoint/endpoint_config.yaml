@@ -1,0 +1,34 @@
+name: market-abuse-arena-ai-endpoint
+container_port: 9000
+public: true
+auth: token
+platform: cpu-d3
+preset: 4vcpu-16gb
+disk_size: 100Gi
+
+image:
+  repository: ghcr.io/your-org/nebius-market-abuse-arena-endpoint
+  tag: latest
+
+env:
+  NEBIUS_ENDPOINT_MODE: mock
+  NEBIUS_AI_STUDIO_BASE_URL: https://api.studio.nebius.com/v1
+  NEBIUS_AI_MODEL: meta-llama/Meta-Llama-3.1-8B-Instruct
+  NEBIUS_TEMPERATURE: "0.2"
+  NEBIUS_MAX_TOKENS: "800"
+  NEBIUS_REQUEST_TIMEOUT_SECONDS: "12"
+
+routes:
+  detector_endpoint:
+    path: /orderbook-alert
+    input: recent L2 order book window
+    output: suspicion score and detected synthetic pattern
+  investigation_report_endpoint:
+    path: /investigation-report
+    input: scenario trace, alerts, metrics
+    output: human-readable synthetic market abuse case report
+  compatibility:
+    - /health
+    - /explain-event
+    - /generate-scenario
+    - /generate-smart-scenario

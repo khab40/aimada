@@ -1,0 +1,30 @@
+name: market-abuse-smart-batch
+kind: smart_attack_detect_batch
+platform: cpu-d3
+preset: 4vcpu-16gb
+disk_size: 100Gi
+timeout: 1h
+container_command: python
+args: /job/serverless/jobs/run_batch_experiments.py --runs 1000 --batch-size 100 --output /job/outputs/serverless-batch
+
+image:
+  repository: ghcr.io/your-org/nebius-market-abuse-arena-jobs
+  tag: latest
+
+scenarios:
+  - normal_market
+  - spoofing
+  - layering
+  - quote_stuffing
+  - pump_and_cancel
+
+outputs:
+  directory: /job/outputs/serverless-batch
+  artifacts:
+    - order_book_events.jsonl
+    - trades.jsonl
+    - attack_labels.jsonl
+    - blue_team_alerts.jsonl
+    - detector_metrics.csv
+    - generated_report.md
+    - manifest.json

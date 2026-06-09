@@ -38,6 +38,11 @@ The job runner accepts a bounded configuration, runs synthetic simulations,
 collects detector outputs against known labels, and writes artifacts under a
 run-specific output directory.
 
+Phase 4 adds a smart attack/detect batch runner under `serverless/jobs/` that
+can execute many independent simulations concurrently. The default demo command
+uses 100 parallel workers so endpoint/job observability can show ramp-up and
+ramp-down behavior.
+
 ## Job Flow
 
 ```mermaid
@@ -67,6 +72,8 @@ In scope:
 
 - small and medium synthetic benchmark batches
 - detector tournament benchmarks
+- parallel attack/detect batches across normal, spoofing, layering, quote
+  stuffing, and pump-and-cancel scenarios
 - synthetic dataset generation from simulator events
 - feature extraction from event and snapshot artifacts
 - benchmark reports, metrics, and charts
@@ -103,6 +110,15 @@ outputs/benchmark/<run_id>/
   incidents.jsonl
   scenario_labels.jsonl
   charts/
+
+outputs/serverless-batch/<run_id>/
+  order_book_events.jsonl
+  trades.jsonl
+  attack_labels.jsonl
+  blue_team_alerts.jsonl
+  detector_metrics.csv
+  generated_report.md
+  manifest.json
 ```
 
 ## Consequences

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { getReportsSummary, type ReportsSummary } from "@/api/client";
+import { ArtifactWorkbench, type ArtifactItem } from "@/components/ArtifactWorkbench";
 
 const previousRuns = [
   { id: "RUN-2026-0602-001", mode: "Detector tournament", scenarios: 4, incidents: 37, f1: 0.88, status: "completed" },
@@ -82,6 +83,35 @@ export function ReportsPage() {
   const explanationRows = useMemo(() => {
     return summary?.explanations ?? [];
   }, [summary]);
+  const benchmarkArtifacts = useMemo<ArtifactItem[]>(() => {
+    const runs = summary?.benchmark_runs ?? [];
+    if (!runs.length) {
+      return [
+        { description: "Detector tournament narrative", label: "benchmark_report.md", path: "outputs/benchmark/benchmark_report.md" },
+        { description: "Precision, recall, F1, latency", label: "metrics.csv", path: "outputs/benchmark/metrics.csv" },
+        { description: "Machine-readable benchmark output", label: "results.json", path: "outputs/benchmark/results.json" }
+      ];
+    }
+    return runs.flatMap((run) => {
+      const paths = typeof run.artifact_paths === "object" && run.artifact_paths !== null
+        ? run.artifact_paths as Record<string, string>
+        : {};
+      return Object.entries(paths).map(([label, path]) => ({
+        description: `${String(run.id ?? "run")} · ${path}`,
+        label: `${String(run.id ?? "run")} · ${label.replaceAll("_", " ")}`,
+        path
+      }));
+    });
+  }, [summary]);
+  const explanationArtifacts = useMemo<ArtifactItem[]>(() => [
+    {
+      description: "Persisted Nebius incident analyses",
+      label: "incidents/explanations.jsonl",
+      path: "outputs/incidents/explanations.jsonl"
+    }
+  ], []);
+  const runIds = useMemo(() => (summary?.benchmark_runs ?? []).map((run) => String(run.id ?? "")).filter(Boolean), [summary]);
+  const incidentIds = useMemo(() => (summary?.incidents ?? []).map((incident) => String(incident.id ?? "")).filter(Boolean), [summary]);
 
   return (
     <section className="reports-page">
@@ -144,18 +174,15 @@ export function ReportsPage() {
           </div>
         </section>
 
-        <section className="panel report-card">
+        <section className="panel report-card wide">
           <h3>Generated Artifacts</h3>
-          <ul className="artifact-list">
-            <li><code>benchmark_report.md</code><span>Detector tournament narrative</span></li>
-            <li><code>metrics.csv</code><span>Precision, recall, F1, latency</span></li>
-            <li><code>results.json</code><span>Machine-readable benchmark output</span></li>
-            <li><code>events.jsonl</code><span>Synthetic event stream</span></li>
-            <li><code>incidents.jsonl</code><span>Detected synthetic incidents</span></li>
-            <li><code>incidents/explanations.jsonl</code><span>Persisted Nebius incident analyses</span></li>
-            <li><code>experiments/attack_experiments.jsonl</code><span>Saved attack builder configs</span></li>
-            <li><code>events/significant_events.jsonl</code><span>Detector, attack, and benchmark evidence log</span></li>
-          </ul>
+          <ArtifactWorkbench
+            artifacts={benchmarkArtifacts}
+            incidentIds={incidentIds}
+            runIds={runIds}
+            selectedRunId={runIds[0] ?? null}
+            title="Benchmark Reports"
+          />
         </section>
 
         <section className="panel report-card wide">
@@ -191,14 +218,14 @@ export function ReportsPage() {
         </section>
 
         <section className="panel report-card wide">
-          <h3>Decisions To Make Later</h3>
-          <div className="decision-grid">
-            <span>Export report to Markdown or PDF</span>
-            <span>Compare multiple benchmark runs</span>
-            <span>Replay selected incident windows</span>
-            <span>Attach Nebius logs and metrics screenshots</span>
-            <span>Promote selected run to challenge submission evidence</span>
-          </div>
+          <ArtifactWorkbench
+            artifacts={explanationArtifacts}
+            explanationRows={explanationRows}
+            incidentIds={incidentIds}
+            runIds={runIds}
+            selectedRunId={runIds[0] ?? null}
+            title="Explanations"
+          />
         </section>
       </div>
     </section>

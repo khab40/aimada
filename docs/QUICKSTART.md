@@ -21,8 +21,7 @@ cp .env.example .env
 # (Optional) If you have Nebius credentials, add them to .env:
 # NEBIUS_TENANT_ID=your-tenant-id
 # NEBIUS_API_KEY=your-api-key
-# NEBIUS_INCIDENT_EXPLAINER_URL=https://your-endpoint
-# NEBIUS_SCENARIO_GENERATOR_URL=https://your-endpoint
+# NEBIUS_ENDPOINT_BASE_URL=https://your-endpoint
 ```
 
 ## 2. Start the System
@@ -86,8 +85,18 @@ curl -X POST http://localhost:8000/api/scenarios/spoofing-like
 
 ### Advanced Features
 - WebSocket connection: `ws://localhost:8000/ws/arena`
-- Batch benchmark scaffolding: See [Nebius Deployment](nebius-deployment.md)
+- Nebius Control Panel: open `/nebius` in the frontend
+- Batch benchmark and smart attack/detect jobs: See [Nebius Deployment](nebius-deployment.md)
 - Red-team scenario generation: See [Use Cases](USE_CASES.md)
+
+### Phase 4 Reproducibility
+
+```bash
+python scripts/generate_scenarios.py
+python scripts/run_local_eval.py
+python scripts/submit_nebius_job.py --dry-run
+python scripts/call_endpoint.py --base-url http://localhost:9000 --route orderbook-alert
+```
 
 ## Next Steps
 

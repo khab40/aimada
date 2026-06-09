@@ -150,6 +150,12 @@ Deliverables:
 - `[done]` `serverless/endpoint/app.py`
 - `[done]` endpoint explanation and scenario-generation prompts
 - `[done]` backend client for endpoint calls
+- `[done]` `/orderbook-alert` and `/investigation-report` endpoint contracts for smart detection and report generation
+- `[done]` `serverless/jobs/run_batch_experiments.py` for parallel attack/detect batches
+- `[done]` `serverless/jobs/nebius_job_config.yaml`
+- `[done]` `serverless/endpoint/endpoint_config.yaml`
+- `[done]` reproducibility scripts under `scripts/`
+- `[done]` `Nebius Control Panel` UI tab with observatory widgets and benchmark charts
 - `[done]` `docs/nebius-deployment.md`
 - `[partial]` screenshots under `assets/screenshots/` exist as placeholders; real Nebius logs/metrics screenshots are still needed.
 
@@ -166,7 +172,7 @@ Benchmark outputs:
   - `outputs/synthetic-dataset/snapshots.parquet` when Parquet dependencies are available
   - `outputs/synthetic-dataset/snapshots.parquet.jsonl` when Parquet dependencies are unavailable
   - `outputs/synthetic-dataset/manifest.json`
-- `[todo]` Optional chart artifacts:
+- `[done]` Optional chart artifacts:
   - `outputs/benchmark/charts/f1_by_scenario.png`
   - `outputs/benchmark/charts/confidence_distribution.png`
   - `outputs/benchmark/charts/detection_latency.png`
