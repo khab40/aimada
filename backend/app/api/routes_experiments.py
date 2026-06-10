@@ -1,5 +1,6 @@
 import csv
 import json
+import shutil
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -60,10 +61,14 @@ class BenchmarkRunResponse(BaseModel):
 class ReportsSummary(BaseModel):
     experiments: list[dict[str, Any]]
     benchmark_runs: list[dict[str, Any]]
+    nebius_batches: list[dict[str, Any]]
+    nebius_artifacts: list[dict[str, Any]]
     incidents: list[dict[str, Any]]
     explanations: list[dict[str, Any]]
     attacks: list[dict[str, Any]]
     significant_events: list[dict[str, Any]]
+    evidence_screenshots: list[dict[str, Any]]
+    promoted_runs: list[dict[str, Any]]
 
 
 class ArtifactReadResponse(BaseModel):
@@ -116,6 +121,16 @@ class PromoteEvidenceResponse(BaseModel):
     run_id: str
     path: str
     download_url: str
+
+
+class ClearReportsRequest(BaseModel):
+    confirmation: str
+
+
+class ClearReportsResponse(BaseModel):
+    deleted_files: list[str]
+    deleted_dirs: list[str]
+    message: str
 
 
 @router.post("/attacks", response_model=SavedExperiment)
@@ -242,10 +257,41 @@ def reports_summary(request: Request) -> ReportsSummary:
     return ReportsSummary(
         experiments=store.read_jsonl("experiments/attack_experiments.jsonl", limit=25),
         benchmark_runs=store.read_jsonl("experiments/benchmark_runs.jsonl", limit=25),
+        nebius_batches=store.read_jsonl("nebius/smart_batches.jsonl", limit=25),
+        nebius_artifacts=store.read_jsonl("nebius/artifacts.jsonl", limit=50),
         incidents=store.read_jsonl("incidents/incidents.jsonl", limit=50),
         explanations=store.read_jsonl("incidents/explanations.jsonl", limit=50),
         attacks=store.read_jsonl("attacks/attacks.jsonl", limit=50),
         significant_events=store.read_jsonl("events/significant_events.jsonl", limit=100),
+        evidence_screenshots=store.read_jsonl("evidence/screenshots.jsonl", limit=25),
+        promoted_runs=store.read_jsonl("evidence/promoted_runs.jsonl", limit=25),
+    )
+
+
+@router.post("/reports/clear", response_model=ClearReportsResponse)
+def clear_reports(payload: ClearReportsRequest, request: Request) -> ClearReportsResponse:
+    if payload.confirmation != "DELETE REPORTS":
+        raise HTTPException(status_code=400, detail="confirmation must equal DELETE REPORTS")
+
+    store = _store(request)
+    deleted_files: list[str] = []
+    deleted_dirs: list[str] = []
+    for relative_path in _report_index_files():
+        path = store.output_dir / relative_path
+        if path.exists() and path.is_file():
+            path.unlink()
+            deleted_files.append(str(path))
+
+    for relative_dir in _report_artifact_dirs():
+        path = store.output_dir / relative_dir
+        if path.exists() and path.is_dir():
+            shutil.rmtree(path)
+            deleted_dirs.append(str(path))
+
+    return ClearReportsResponse(
+        deleted_dirs=deleted_dirs,
+        deleted_files=deleted_files,
+        message=f"Cleared {len(deleted_files)} report indexes and {len(deleted_dirs)} artifact directories.",
     )
 
 
@@ -347,6 +393,9 @@ def promote_run_to_evidence(run_id: str, request: Request) -> PromoteEvidenceRes
     store = _store(request)
     runs = store.read_jsonl("experiments/benchmark_runs.jsonl", limit=None)
     run = next((row for row in runs if str(row.get("id")) == run_id), None)
+    if run is None:
+        smart_batches = store.read_jsonl("nebius/smart_batches.jsonl", limit=None)
+        run = next((row for row in smart_batches if str(row.get("id")) == run_id), None)
     if run is None:
         raise HTTPException(status_code=404, detail=f"unknown benchmark run: {run_id}")
     target_dir = store.output_dir / "challenge-submission"
@@ -465,6 +514,35 @@ def _repo_root() -> Path:
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _report_index_files() -> list[str]:
+    return [
+        "experiments/attack_experiments.jsonl",
+        "experiments/attack_launches.jsonl",
+        "experiments/benchmark_runs.jsonl",
+        "nebius/smart_batches.jsonl",
+        "nebius/artifacts.jsonl",
+        "incidents/incidents.jsonl",
+        "incidents/explanations.jsonl",
+        "attacks/attacks.jsonl",
+        "events/events.jsonl",
+        "events/significant_events.jsonl",
+        "labels/scenario_labels.jsonl",
+        "evidence/screenshots.jsonl",
+        "evidence/promoted_runs.jsonl",
+    ]
+
+
+def _report_artifact_dirs() -> list[str]:
+    return [
+        "benchmark",
+        "serverless-batch",
+        "exports",
+        "challenge-submission",
+        "evidence",
+        "datasets",
+    ]
 
 
 def _scenario_to_route_name(value: str) -> str:

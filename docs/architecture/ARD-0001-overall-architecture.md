@@ -38,18 +38,19 @@ graph TD
 
 ```mermaid
 graph TD
-    UI["React / Vite UI - Arena, Incident Drawer, Benchmark"]
+    UI["React / Vite UI - Arena, Nebius Control Panel, Reports"]
     Backend["FastAPI Backend - control plane"]
     Runtime["Live Arena Runtime - simulation clock"]
     Exchange["Synthetic Exchange - order book + matching engine"]
     Agents["Agents - normal + scenario"]
     Detectors["Deterministic Detectors - microstructure features"]
     Incidents["Incident Store - evidence + confidence"]
-    Endpoint["Nebius Serverless AI Endpoint - explanations"]
+    Endpoint["Nebius Serverless AI Endpoint - alert scoring, explanations, reports"]
     Store["Local Artifacts - events, snapshots, incidents, reports"]
 
-    UI -->|REST commands| Backend
+    UI -->|WebSocket live commands| Backend
     Backend -->|WebSocket arena_state| UI
+    UI -->|REST Nebius/artifact/report APIs| Backend
     Backend --> Runtime
     Runtime --> Agents
     Agents --> Exchange
@@ -104,14 +105,15 @@ Responsibilities:
 
 - show the live order book ladder
 - show mid-price, spread, imbalance, and detector confidence views
-- provide Start, Pause, Reset, Auto Arena, and Market Regime controls
+- provide Start, Pause, Reset, and scenario controls
 - provide scenario launch buttons
 - show agent activity and active agents
 - show incident cards and an incident drawer
-- show benchmark summary results
+- show Nebius Control Panel operations for attack scenarios, smart detection, investigation reports, serverless jobs, artifacts, usage, and health
+- show Reports evidence for persisted jobs, explanations, screenshots, exports, and promoted evidence
 - show the educational disclaimer
 
-The UI communicates with the backend through REST for commands and WebSocket for live state.
+The UI communicates with the backend through WebSocket for live Arena commands and state, and through REST for Nebius control-plane, artifact, and report actions.
 
 ```mermaid
 graph LR
@@ -126,7 +128,7 @@ graph LR
     BackendState --> Charts
     BackendState --> Feed
     BackendState --> IncidentsUI
-    Controls -->|REST commands| BackendState
+    Controls -->|WebSocket arena_control / launch_scenario| BackendState
 ```
 
 ### Backend Layer
@@ -150,8 +152,8 @@ The backend isolates the browser from direct simulation internals and from direc
 
 ```mermaid
 graph TD
-    UIStart["1. UI posts /simulation/start"]
-    APIStart["2. FastAPI route calls runtime start"]
+    UIStart["1. UI sends WebSocket arena_control start"]
+    APIStart["2. FastAPI WebSocket handler calls runtime start"]
     InitialBroadcast["3. Runtime broadcasts initial state"]
     Tick["4. Runtime steps simulation clock"]
     Store["5. Local store appends events and snapshots"]

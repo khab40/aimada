@@ -1,4 +1,11 @@
 import type { BenchmarkResult, ScenarioConfig } from "@/types/arena";
+import type {
+  AttackScenario,
+  AttackScenarioInput,
+  ExperimentArtifact,
+  GeneratedScenario,
+  ScenarioGridConfig
+} from "@/features/nebius/types";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
@@ -128,13 +135,23 @@ export type PromoteEvidenceResponse = {
   download_url: string;
 };
 
+export type ClearReportsResponse = {
+  deleted_files: string[];
+  deleted_dirs: string[];
+  message: string;
+};
+
 export type ReportsSummary = {
   experiments: Record<string, unknown>[];
   benchmark_runs: Record<string, unknown>[];
+  nebius_batches: Record<string, unknown>[];
+  nebius_artifacts: Record<string, unknown>[];
   incidents: Record<string, unknown>[];
   explanations: Record<string, unknown>[];
   attacks: Record<string, unknown>[];
   significant_events: Record<string, unknown>[];
+  evidence_screenshots: Record<string, unknown>[];
+  promoted_runs: Record<string, unknown>[];
 };
 
 export type NebiusStatus = {
@@ -170,6 +187,25 @@ export type OrderBookAlertResponse = {
   fallback_reason?: string | null;
 };
 
+export type InvestigationReportResponse = {
+  mode: "nebius" | "mock";
+  endpoint: string;
+  title: string;
+  summary: string;
+  timeline: string[];
+  detector_findings: string[];
+  limitations: string[];
+  recommended_next_steps: string[];
+  fallback_reason?: string | null;
+  raw_response?: Record<string, unknown> | null;
+};
+
+export type ScenarioActionResponse = {
+  message: string;
+  scenario?: AttackScenario | null;
+  artifact?: ExperimentArtifact | null;
+};
+
 export type SmartBatchRunResponse = {
   id: string;
   mode: "local_parallel_batch";
@@ -181,9 +217,28 @@ export type SmartBatchRunResponse = {
   scenarios: string[];
   artifact_paths: Record<string, string>;
   metrics: Record<string, string>[];
+  job_image: string;
+  deployment_target: string;
 };
 
 export type NebiusObservatory = {
+  adapter: {
+    name: string;
+    mode: string;
+    replacement_target: string;
+  };
+  capabilities: {
+    name: string;
+    surface: string;
+    status: string;
+    detail: string;
+  }[];
+  runtime_health: {
+    name: string;
+    status: string;
+    detail: string;
+    checked_at: string;
+  }[];
   usage: {
     endpoint_requests: number;
     endpoint_avg_latency_seconds: number;
@@ -323,6 +378,18 @@ export async function promoteBenchmarkRun(runId: string): Promise<PromoteEvidenc
   return response.json();
 }
 
+export async function clearReportsData(confirmation: string): Promise<ClearReportsResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/experiments/reports/clear`, {
+    body: JSON.stringify({ confirmation }),
+    headers: { "Content-Type": "application/json" },
+    method: "POST"
+  });
+  if (!response.ok) {
+    throw new Error(`Clear reports failed: ${response.status}`);
+  }
+  return response.json();
+}
+
 export async function getNebiusStatus(): Promise<NebiusStatus> {
   const response = await fetch(`${API_BASE_URL}/api/nebius/status`);
   if (!response.ok) {
@@ -379,18 +446,143 @@ export async function runSmartDetection(): Promise<OrderBookAlertResponse> {
   return response.json();
 }
 
-export async function runSmartBatches(runs = 100, batchSize = 100): Promise<SmartBatchRunResponse> {
+export async function runSmartBatches(runs = 100, batchSize = 100, scenarios = ["normal_market", "spoofing", "layering", "quote_stuffing", "pump_and_cancel"]): Promise<SmartBatchRunResponse> {
   const response = await fetch(`${API_BASE_URL}/api/nebius/smart-batches`, {
     body: JSON.stringify({
       batch_size: batchSize,
       runs,
-      scenarios: ["normal_market", "spoofing", "layering", "quote_stuffing", "pump_and_cancel"]
+      scenarios
     }),
     headers: { "Content-Type": "application/json" },
     method: "POST"
   });
   if (!response.ok) {
     throw new Error(`Smart batch run failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function createInvestigationReport(): Promise<InvestigationReportResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/nebius/investigation-report`, {
+    body: JSON.stringify({
+      alerts: [
+        {
+          agent_id: "R-17",
+          confidence: 0.91,
+          detected_pattern: "spoofing",
+          suspicion_score: 0.88
+        }
+      ],
+      metrics: {
+        cancel_to_trade_ratio: 5.4,
+        precision: 0.82,
+        wall_size_ratio: 8.2
+      },
+      scenario_trace: {
+        active_window: "last 60 seconds",
+        id: "Spoofing Attack #042",
+        source: "Nebius Control Panel"
+      }
+    }),
+    headers: { "Content-Type": "application/json" },
+    method: "POST"
+  });
+  if (!response.ok) {
+    throw new Error(`Investigation report failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function generateNebiusAttackScenario(input: AttackScenarioInput): Promise<AttackScenario> {
+  const response = await fetch(`${API_BASE_URL}/api/nebius/attack-scenario`, {
+    body: JSON.stringify(input),
+    headers: { "Content-Type": "application/json" },
+    method: "POST"
+  });
+  if (!response.ok) {
+    throw new Error(`Attack scenario generation failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function listNebiusAttackScenarios(): Promise<AttackScenario[]> {
+  const response = await fetch(`${API_BASE_URL}/api/nebius/attack-scenarios`);
+  if (!response.ok) {
+    throw new Error(`Attack scenario list failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function generateNebiusAttackVariants(input: AttackScenarioInput, count = 10): Promise<AttackScenario[]> {
+  const response = await fetch(`${API_BASE_URL}/api/nebius/attack-scenario/variants`, {
+    body: JSON.stringify({ count, input }),
+    headers: { "Content-Type": "application/json" },
+    method: "POST"
+  });
+  if (!response.ok) {
+    throw new Error(`Attack variants generation failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function injectNebiusAttackScenario(scenarioId: string): Promise<ScenarioActionResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/nebius/attack-scenario/${encodeURIComponent(scenarioId)}/inject`, {
+    method: "POST"
+  });
+  if (!response.ok) {
+    throw new Error(`Attack injection failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function saveNebiusAttackTemplate(scenarioId: string): Promise<ScenarioActionResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/nebius/attack-scenario/${encodeURIComponent(scenarioId)}/template`, {
+    method: "POST"
+  });
+  if (!response.ok) {
+    throw new Error(`Scenario template save failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function generateNebiusScenarioGrid(config: ScenarioGridConfig, sourceAttackScenarioId?: string | null): Promise<GeneratedScenario[]> {
+  const response = await fetch(`${API_BASE_URL}/api/nebius/scenario-grid`, {
+    body: JSON.stringify({ ...config, sourceAttackScenarioId }),
+    headers: { "Content-Type": "application/json" },
+    method: "POST"
+  });
+  if (!response.ok) {
+    throw new Error(`Scenario grid generation failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function saveNebiusEvidenceBundle(): Promise<ExperimentArtifact> {
+  const response = await fetch(`${API_BASE_URL}/api/nebius/evidence-bundle`, {
+    method: "POST"
+  });
+  if (!response.ok) {
+    throw new Error(`Evidence bundle save failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function exportNebiusDataset(): Promise<ExperimentArtifact> {
+  const response = await fetch(`${API_BASE_URL}/api/nebius/dataset-export`, {
+    method: "POST"
+  });
+  if (!response.ok) {
+    throw new Error(`Dataset export failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function generateNebiusTrainingData(): Promise<ExperimentArtifact> {
+  const response = await fetch(`${API_BASE_URL}/api/nebius/training-data`, {
+    method: "POST"
+  });
+  if (!response.ok) {
+    throw new Error(`Training data generation failed: ${response.status}`);
   }
   return response.json();
 }

@@ -11,18 +11,20 @@ The design keeps the browser UI, demo orchestration backend, local simulation en
 
 ```mermaid
 graph TD
-    UI["React / Vite UI - Arena, Incident Drawer, Benchmark"]
-    API["FastAPI Demo Backend - REST control API"]
-    WS["WebSocket Broadcaster - live arena_state stream"]
+    UI["React / Vite UI - Arena, Nebius Control Panel, Reports"]
+    API["FastAPI Demo Backend - REST control-plane APIs"]
+    WS["WebSocket Manager - live arena controls and arena_state stream"]
     Runtime["Live Arena Runtime - 250-500 ms simulation ticks"]
     Agents["Normal + Scenario Agents"]
     Exchange["Synthetic Exchange - Order Book + Matching Engine"]
     Detectors["Deterministic Detectors - features + confidence scores"]
     Incidents["Incident Store - evidence + metadata"]
-    Explain["Nebius Serverless AI Endpoint - explain-event, explain-simulation, generate-report"]
+    Explain["Nebius Serverless AI Endpoint - orderbook-alert, investigation-report, scenario generation"]
     Artifacts["Local Artifacts - events, snapshots, incidents, reports"]
 
-    UI -->|REST commands| API
+    UI -->|WebSocket live commands| WS
+    UI -->|REST Nebius/artifact/report APIs| API
+    WS --> API
     API --> Runtime
     Runtime --> Agents
     Agents --> Exchange
@@ -40,7 +42,7 @@ graph TD
 
 | Component | Responsibility |
 | --- | --- |
-| React / Vite UI | Presents the live order book, charts, agent activity, scenario controls, alerts, and incident explanations. It consumes real-time updates over WebSocket and invokes backend actions through REST. |
+| React / Vite UI | Presents the live order book, charts, agent activity, scenario controls, alerts, Nebius Control Panel operations, and Reports evidence. Arena live controls and state use WebSocket; Nebius, artifact, and report actions use backend REST APIs. |
 | FastAPI demo backend | Owns the demo control plane. It starts and stops simulations, launches scenarios, broadcasts state to the UI, persists incidents, and calls Nebius AI endpoints for explanation and report generation. |
 | Local live simulation | Runs the in-process market simulation. It models an exchange, normal trading agents, synthetic abuse-like behaviors, and the detector engine. |
 | Nebius Serverless AI endpoint | Provides LLM-assisted explanation and summarization APIs for events, whole simulations, and incident reports. |
@@ -49,8 +51,8 @@ graph TD
 ### Runtime Flow
 
 1. The user starts or controls a scenario from the React / Vite UI.
-2. The UI sends a REST request to the FastAPI backend.
-3. The backend starts or updates the local simulation and subscribes to generated events.
+2. The UI sends a WebSocket command to `/ws/arena`.
+3. The backend starts or updates the local simulation and returns complete `arena_state` messages over the same stream.
 4. The simulation emits order events, snapshots, agent actions, detector signals, and incidents.
 5. The backend persists events and snapshots, then broadcasts live updates to connected UI clients over WebSocket.
 6. When an explanation or report is requested, the backend calls the Nebius Serverless AI endpoint and stores the generated result.
@@ -60,7 +62,7 @@ graph TD
 
 ```mermaid
 graph TD
-    Start["1. UI posts /simulation/start"]
+    Start["1. UI sends WebSocket arena_control start"]
     RuntimeStart["2. Backend starts runtime"]
     AgentsStep["3. Agents act on each tick"]
     ExchangeStep["4. Matching engine updates book"]
@@ -152,12 +154,13 @@ graph TD
 
 This architecture supports all workflows described in [Use Cases](USE_CASES.md):
 
-1. **Live Arena Mode** — Supported by the Interactive Path with WebSocket and REST
-2. **Manual Scenario Launch** — Scenario launcher in the FastAPI backend
+1. **Live Arena Mode** — Supported by WebSocket live commands and `arena_state` streaming
+2. **Manual Scenario Launch** — Scenario launcher through the WebSocket-backed Arena UI
 3. **Incident Investigation** — Incident store and Nebius Serverless AI Endpoint
-4. **Red-Team Scenario Generation** — Nebius Serverless AI Endpoint `/generate-scenario`
-5. **Detector Tournament Benchmark** — Batch / Benchmark Path with Nebius Jobs
+4. **Red-Team Scenario Generation** — Nebius Control Panel attack generator through backend Nebius adapters
+5. **Detector Tournament / Smart Batch Benchmark** — Batch / Benchmark Path with Nebius Jobs
 6. **Synthetic Dataset Generation** — Batch / Benchmark Path artifact outputs
+7. **Reports And Evidence Review** — Reports tab reads persisted benchmark, Nebius, explanation, screenshot, and promoted evidence artifacts
 
 Detailed architecture decisions are recorded in [Architecture Records (ARDs)](architecture/README.md):
 

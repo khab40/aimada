@@ -74,7 +74,7 @@ export function ArtifactWorkbench({
       if (item.kind === "artifact") {
         const response = await readArtifact(item.path);
         setPreviewTitle(`${response.name} · ${response.content_type}`);
-        setPreview(response.content);
+        setPreview(cleanArtifactPreview(response.content, response.content_type));
       } else {
         setPreviewTitle(item.label);
         setPreview(JSON.stringify(item.payload, null, 2));
@@ -242,4 +242,40 @@ export function ArtifactWorkbench({
 
 function itemDomId(key: string) {
   return `artifact-${key.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+}
+
+function cleanArtifactPreview(content: string, contentType: string) {
+  if (!contentType.includes("json")) {
+    return content;
+  }
+  const lines = content.split(/\r?\n/);
+  if (lines.length > 1) {
+    return lines.map((line) => {
+      if (!line.trim()) return line;
+      try {
+        return JSON.stringify(dropNullFields(JSON.parse(line)));
+      } catch {
+        return line;
+      }
+    }).join("\n");
+  }
+  try {
+    return JSON.stringify(dropNullFields(JSON.parse(content)), null, 2);
+  } catch {
+    return content;
+  }
+}
+
+function dropNullFields(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(dropNullFields);
+  }
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .filter(([, entryValue]) => entryValue !== null)
+        .map(([key, entryValue]) => [key, dropNullFields(entryValue)])
+    );
+  }
+  return value;
 }

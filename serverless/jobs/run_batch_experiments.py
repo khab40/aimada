@@ -202,7 +202,11 @@ def _aggregate_metrics(results: list[BatchResult]) -> list[dict[str, Any]]:
 def _write_jsonl(path: Path, rows: Any) -> None:
     with path.open("w", encoding="utf-8") as handle:
         for row in rows:
-            handle.write(json.dumps(row) + "\n")
+            handle.write(json.dumps(_drop_nulls(row)) + "\n")
+
+
+def _drop_nulls(row: dict[str, Any]) -> dict[str, Any]:
+    return {key: value for key, value in row.items() if value is not None}
 
 
 def _write_metrics(path: Path, rows: list[dict[str, Any]]) -> None:

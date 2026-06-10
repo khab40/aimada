@@ -47,6 +47,31 @@ export function AboutPage() {
 
       <div className="about-grid">
         <section className="panel about-card">
+          <h3>Educational Story: Why These Attacks Matter</h3>
+          <p>
+            The demo can be read as a training story for market participants, engineers, and reviewers. It shows
+            what abuse-like pressure looks like in a limit order book, how detectors collect evidence, and why even
+            short synthetic incidents can damage confidence in a market.
+          </p>
+          <ul>
+            <li><strong>Spoofing-like pressure:</strong> fake visible liquidity can make other participants believe supply or demand is stronger than it is.</li>
+            <li><strong>Layering-like pressure:</strong> repeated stacked orders can distort the apparent shape of the book across several price levels.</li>
+            <li><strong>Quote stuffing-like bursts:</strong> rapid message flow can make the market harder to read and increase surveillance and infrastructure load.</li>
+            <li><strong>Momentum ignition-like moves:</strong> a burst of activity can try to trigger follow-on orders, stops, or reactive algorithms.</li>
+          </ul>
+          <p>
+            In the educational narrative, an attacker may seek illegal profit by inducing a price move, trading on the
+            distorted price, and cancelling misleading orders before execution. The wider harm is larger than one
+            trade: the exchange can look unreliable, liquidity providers may retreat, spreads can widen, and trust in
+            the affected stock or crypto instrument can deteriorate.
+          </p>
+          <p>
+            The purpose here is defensive literacy: recognize the pattern, preserve replay evidence, explain the
+            detector decision, and compare surveillance quality under repeatable synthetic scenarios.
+          </p>
+        </section>
+
+        <section className="panel about-card">
           <h3>What We Solve</h3>
           <p>
             The project makes order-book anomaly detection understandable without using real trading data. It lets a
@@ -63,16 +88,40 @@ export function AboutPage() {
         </section>
 
         <section className="panel about-card">
+          <h3>ML-Friendly Mental Model</h3>
+          <ul>
+            <li><strong>Market state:</strong> the order book is the feature stream, similar to a time-series sensor feed.</li>
+            <li><strong>Red-team scenario:</strong> a controlled synthetic perturbation with known labels and expected signals.</li>
+            <li><strong>Blue-team detector:</strong> a scoring function over recent book windows, event rates, imbalance, cancels, and price impact.</li>
+            <li><strong>Incident evidence:</strong> the replay window, detector scores, labels, and agent events used to justify an alert.</li>
+            <li><strong>AI explanation:</strong> narrative summarization of evidence; the deterministic detector remains the source of the decision.</li>
+            <li><strong>Batch benchmark:</strong> repeated scenario runs used to compare precision, recall, F1, latency, and artifact quality.</li>
+          </ul>
+        </section>
+
+        <section className="panel about-card">
           <h3>How Nebius Is Used</h3>
           <p>
             Nebius is split into online AI endpoints and offline jobs. The browser never receives Nebius secrets; it
             calls the FastAPI backend, and the backend calls Nebius.
           </p>
           <ul>
-            <li><strong>Serverless AI Endpoint:</strong> explains incidents at <code>/explain-event</code>.</li>
-            <li><strong>Serverless AI Endpoint:</strong> generates bounded scenario drafts at <code>/generate-scenario</code>.</li>
-            <li><strong>Serverless AI Jobs:</strong> run detector tournament benchmarks.</li>
+            <li><strong>Serverless AI Endpoint:</strong> scores order-book windows at <code>/orderbook-alert</code>.</li>
+            <li><strong>Serverless AI Endpoint:</strong> generates investigation reports at <code>/investigation-report</code>.</li>
+            <li><strong>Serverless AI Endpoint:</strong> drafts bounded red-team scenarios through the backend adapter.</li>
+            <li><strong>Serverless AI Jobs:</strong> run smart attack/detect batches and detector tournaments.</li>
             <li><strong>Serverless AI Jobs:</strong> generate labeled synthetic event and snapshot datasets.</li>
+          </ul>
+        </section>
+
+        <section className="panel about-card">
+          <h3>Project Guardrails</h3>
+          <ul>
+            <li>Show the market first; explanations should be grounded in visible state.</li>
+            <li>Keep red-team scenarios synthetic, bounded, and explicitly labeled.</li>
+            <li>Separate live demo latency from batch benchmark workloads.</li>
+            <li>Use deterministic detectors for evidence and AI only for explanation and narration.</li>
+            <li>Preserve the disclaimer: no real manipulation detection, no trading signals, no compliance use.</li>
           </ul>
         </section>
 
@@ -83,23 +132,15 @@ export function AboutPage() {
             <li>Open the UI at <code>http://localhost:5173/arena</code>.</li>
             <li>Click <code>Start</code>, then launch a red-team scenario.</li>
             <li>When an incident appears, open the replay drawer and run Nebius AI Investigator.</li>
-            <li>Use Lab for batch-style benchmark and scenario configuration flows.</li>
+            <li>Use Attack Scenario Generator for concrete red-team plans that can be injected, expanded into grids, or submitted to Nebius batches.</li>
+            <li>Use Blue Team Surveillance for detector scores, suspicious agents, evidence, and AI-assisted investigation.</li>
+            <li>Use Nebius Control Panel for the full cloud workflow: scenario creation, cloud batch runs, detector scoring, explanations, and artifact storage.</li>
+            <li>Use Replay & Reports to reload persisted jobs, explanations, artifacts, exports, replay windows, and promoted evidence.</li>
           </ol>
           <p>
             In mock endpoint mode, Docker Compose runs the local serverless endpoint and the backend calls
             <code> http://endpoint:9000</code> inside the Docker network.
           </p>
-        </section>
-
-        <section className="panel about-card">
-          <h3>Key Ideas</h3>
-          <ul>
-            <li>Show the market first; explanations should be grounded in visible state.</li>
-            <li>Keep red-team scenarios synthetic, bounded, and explicitly labeled.</li>
-            <li>Separate live demo latency from batch benchmark workloads.</li>
-            <li>Use deterministic detectors for evidence and AI only for explanation and narration.</li>
-            <li>Preserve the disclaimer: no real manipulation detection, no trading signals, no compliance use.</li>
-          </ul>
         </section>
       </div>
 

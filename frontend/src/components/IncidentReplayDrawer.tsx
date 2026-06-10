@@ -16,7 +16,7 @@ const replaySteps: ReplayStep[] = [
   { label: "Confirmed", offset: "T+5s", summary: "Evidence bundle confirms the mock incident." }
 ];
 
-export function IncidentReplayDrawer({ activeIncident }: { activeIncident?: Incident | null }) {
+export function IncidentReplayDrawer({ activeIncident, live = true }: { activeIncident?: Incident | null; live?: boolean }) {
   const [closedIncidentId, setClosedIncidentId] = useState<string | null>(null);
   const [stepIndex, setStepIndex] = useState(0);
 
@@ -41,7 +41,7 @@ export function IncidentReplayDrawer({ activeIncident }: { activeIncident?: Inci
       <div className="section-heading-row">
         <h2>{activeIncident.title}</h2>
         <span className={`severity-chip ${activeIncident.severity.toLowerCase()}`}>
-          {activeIncident.severity}
+          {live ? activeIncident.severity : `Last ${activeIncident.severity}`}
         </span>
       </div>
 

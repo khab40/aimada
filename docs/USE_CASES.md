@@ -55,7 +55,7 @@ Nebius Serverless AI Endpoint:
 
 - receives compact evidence from the backend
 - generates incident explanations for the Arena UI
-- generates bounded red-team scenario drafts for the Attack Builder
+- generates bounded red-team scenario drafts for the Nebius Control Panel Attack Scenario Generator
 - supports Judge Mode timeline explanations
 - runs in deterministic mock mode for first wiring and AI mode after deployment
 
@@ -84,7 +84,7 @@ graph LR
     Operator -->|"start / pause / reset arena"| UI
     Operator -->|"launch red-team scenario"| UI
     Operator -->|"request AI explanation"| UI
-    UI -->|"REST + WebSocket"| Backend
+    UI -->|"WebSocket live arena + REST control-plane APIs"| Backend
     Backend --> Simulation
     Simulation --> Detectors
     Detectors --> Backend
@@ -124,7 +124,7 @@ graph TD
     Stream["WebSocket State Stream"]
 
     Actor -->|"Start / Pause / Reset"| UI
-    UI -->|"POST /api/simulation/*"| Backend
+    UI -->|"WebSocket arena_control commands"| Backend
     Backend --> Clock
     Clock --> Agents
     Agents --> Exchange
@@ -151,8 +151,8 @@ Purpose: let an operator inject bounded synthetic abuse-like patterns.
 ```mermaid
 graph LR
     Operator["Demo Operator"]
-    Launcher["Scenario Launcher"]
-    API["Scenario REST API"]
+    Launcher["Arena Scenario Launcher"]
+    API["WebSocket launch_scenario command"]
     Controller["Scenario Controller"]
     ScenarioAgents["Scenario Agents"]
     OrderBook["Synthetic Order Book"]
@@ -222,33 +222,33 @@ constraints.
 ```mermaid
 graph TD
     Operator["Demo Operator"]
-    Lab["Experiment Lab / Attack Builder"]
-    Backend["POST /api/red-team/generate-scenario"]
+    Control["Nebius Control Panel - Attack Scenario Generator"]
+    Backend["POST /api/nebius/attack-scenario"]
     NebiusClient["NebiusClient"]
-    Endpoint["Nebius /generate-scenario Endpoint"]
-    Config["ScenarioConfig"]
-    Launcher["Arena Scenario Launcher"]
+    Endpoint["Nebius scenario endpoint or typed fallback adapter"]
+    Config["AttackScenario"]
+    Batch["Scenario Batch Generator / Serverless Runner"]
 
-    Operator -->|"family, regime, goal, constraints"| Lab
-    Lab --> Backend
+    Operator -->|"attack type, market condition, objective, stealth, duration"| Control
+    Control --> Backend
     Backend --> NebiusClient
     NebiusClient --> Endpoint
-    Endpoint -->|"scenario draft or fallback mock"| NebiusClient
+    Endpoint -->|"bounded scenario draft or fallback mock"| NebiusClient
     NebiusClient --> Config
-    Config -->|"slug + launch endpoint"| Launcher
+    Config -->|"selected ATTACK-* source context"| Batch
 ```
 
 Business value:
 
 - Lets the demo create scenario variants without hardcoding every variant.
-- Keeps generated scenarios bounded and launchable by existing controls.
+- Keeps generated scenarios bounded, persisted, selectable, and usable as source context for scenario grids or Nebius Serverless batches.
 - Supports both Nebius endpoint mode and local mock fallback mode.
 
 Nebius role:
 
-- Backend calls `NEBIUS_SCENARIO_GENERATOR_URL`, deployed as `/generate-scenario`.
-- Input includes `scenario_family`, `market_regime`, `goal`, and constraints.
-- Output is normalized into `ScenarioConfig` so the frontend can launch it.
+- Backend calls the configured Nebius scenario endpoint when available and falls back to a typed local adapter.
+- Input includes attack type, market condition, objective, stealth level, attack duration, red-team agent count, and detector difficulty.
+- Output is normalized into `AttackScenario`; persisted scenarios can be selected later in the Control Panel and submitted to the Scenario Batch Generator or Serverless Batch Experiment Runner.
 
 ## Detector Tournament Benchmark
 

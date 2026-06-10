@@ -47,6 +47,17 @@ button {
   cursor: pointer;
 }
 
+.primary-link-button {
+  border: 1px solid rgba(34, 211, 238, 0.45);
+  border-radius: 6px;
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.22), rgba(34, 171, 148, 0.18));
+  color: #e6f7ff;
+  display: inline-flex;
+  font-weight: 700;
+  padding: 10px 12px;
+  text-decoration: none;
+}
+
 button:disabled {
   cursor: not-allowed;
   opacity: 0.46;
@@ -120,6 +131,7 @@ h3 {
   border: 1px solid var(--panel-border);
   border-radius: 6px;
   color: var(--text-soft);
+  font-size: 13px;
   padding: 6px 10px;
   text-decoration: none;
 }
@@ -129,6 +141,66 @@ h3 {
   border-color: var(--accent);
   background: rgba(25, 167, 206, 0.14);
   color: #e6f7ff;
+}
+
+.team-nav-link {
+  align-items: center;
+  display: inline-flex;
+  gap: 7px;
+}
+
+.team-nav-link.red {
+  border-color: rgba(248, 113, 113, 0.28);
+}
+
+.team-nav-link.blue {
+  border-color: rgba(56, 189, 248, 0.28);
+}
+
+.team-nav-link.red:hover,
+.team-nav-link.red.active {
+  border-color: rgba(248, 113, 113, 0.72);
+  background: rgba(127, 29, 29, 0.24);
+  color: #fee2e2;
+}
+
+.team-nav-link.blue:hover,
+.team-nav-link.blue.active {
+  border-color: rgba(56, 189, 248, 0.72);
+  background: rgba(12, 74, 110, 0.28);
+  color: #e0f2fe;
+}
+
+.team-mark {
+  align-items: center;
+  border-radius: 999px;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 24px;
+  justify-content: center;
+  width: 24px;
+}
+
+.team-mark svg {
+  fill: none;
+  height: 17px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+  width: 17px;
+}
+
+.team-mark.red {
+  background: rgba(127, 29, 29, 0.34);
+  box-shadow: inset 0 0 0 1px rgba(248, 113, 113, 0.46);
+  color: #fca5a5;
+}
+
+.team-mark.blue {
+  background: rgba(12, 74, 110, 0.34);
+  box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.46);
+  color: #7dd3fc;
 }
 
 .disclaimer {
@@ -496,6 +568,78 @@ h3 {
   margin: 0;
 }
 
+.team-hero {
+  align-items: center;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  position: relative;
+}
+
+.team-hero::before {
+  content: "";
+  inset: 0 auto 0 0;
+  position: absolute;
+  width: 4px;
+}
+
+.team-hero.red {
+  border-color: rgba(248, 113, 113, 0.32);
+  background: linear-gradient(90deg, rgba(127, 29, 29, 0.18), rgba(3, 9, 16, 0.7));
+}
+
+.team-hero.red::before {
+  background: #ef4444;
+}
+
+.team-hero.blue {
+  border-color: rgba(56, 189, 248, 0.32);
+  background: linear-gradient(90deg, rgba(12, 74, 110, 0.2), rgba(3, 9, 16, 0.7));
+}
+
+.team-hero.blue::before {
+  background: #38bdf8;
+}
+
+.team-hero > .team-mark {
+  height: 42px;
+  width: 42px;
+}
+
+.team-hero > .team-mark svg {
+  height: 25px;
+  width: 25px;
+}
+
+.team-hero-badges {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.team-badge {
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 6px 9px;
+  text-transform: uppercase;
+}
+
+.team-badge.red {
+  background: rgba(127, 29, 29, 0.34);
+  box-shadow: inset 0 0 0 1px rgba(248, 113, 113, 0.4);
+  color: #fecaca;
+}
+
+.team-badge.blue {
+  background: rgba(12, 74, 110, 0.34);
+  box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.4);
+  color: #bae6fd;
+}
+
 .lab-grid {
   grid-template-columns: minmax(320px, 0.85fr) minmax(420px, 1.15fr);
 }
@@ -579,10 +723,16 @@ h3 {
 }
 
 .nebius-control-page,
+.attack-scenario-page,
+.blue-team-page,
 .nebius-control-grid,
+.attack-scenario-page-grid,
+.blue-team-grid,
 .nebius-actions-panel,
 .nebius-usage-panel,
 .nebius-evidence-panel,
+.nebius-platform-panel,
+.runtime-health-panel,
 .nebius-chart-panel,
 .nebius-result-stack {
   display: grid;
@@ -611,19 +761,229 @@ h3 {
 }
 
 .nebius-control-grid {
-  grid-template-columns: minmax(340px, 0.9fr) minmax(420px, 1.1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .nebius-chart-panel {
   grid-column: span 2;
 }
 
+.nebius-platform-panel {
+  grid-column: span 2;
+}
+
+.experiment-artifacts-card {
+  grid-column: span 2;
+}
+
+.attack-scenario-generator-card {
+  grid-column: span 2;
+}
+
+.deployment-health-card {
+  grid-column: span 3;
+}
+
+.attack-scenario-page-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.attack-scenario-page-grid .serverless-runner-card,
+.attack-scenario-page-grid .attack-scenario-generator-card {
+  grid-column: span 2;
+}
+
+.attack-scenario-page .attack-scenario-generator-card,
+.attack-scenario-page .scenario-generator-card,
+.attack-scenario-page .serverless-runner-card {
+  border-color: rgba(248, 113, 113, 0.18);
+}
+
+.attack-scenario-page .nebius-card-heading .eyebrow {
+  color: #fca5a5;
+}
+
+.surveillance-status-strip {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.surveillance-actions {
+  border: 1px solid rgba(43, 90, 120, 0.32);
+  border-radius: 6px;
+  background: rgba(3, 9, 16, 0.66);
+  padding: 10px;
+}
+
+.blue-team-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.surveillance-card.wide {
+  grid-column: span 2;
+}
+
+.blue-team-page .surveillance-card,
+.blue-team-page .surveillance-actions {
+  border-color: rgba(56, 189, 248, 0.2);
+}
+
+.blue-team-page .surveillance-card > h3,
+.blue-team-page .detector-confidence-panel h2,
+.blue-team-page .evidence-panel h2,
+.blue-team-page .incident-replay-drawer h2 {
+  color: #bae6fd;
+}
+
+.suspicious-agent-list,
+.endpoint-result,
+.ai-report-summary {
+  display: grid;
+  gap: 10px;
+}
+
+.suspicious-agent-list article {
+  align-items: center;
+  border: 1px solid rgba(34, 211, 238, 0.13);
+  border-radius: 6px;
+  background: rgba(2, 6, 23, 0.42);
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px;
+}
+
+.suspicious-agent-list span,
+.endpoint-result p,
+.endpoint-result li,
+.ai-report-summary p,
+.ai-report-summary li {
+  color: #a7c7d8;
+}
+
+.suspicious-agent-list article > strong,
+.endpoint-score strong {
+  color: #fbbf24;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.endpoint-score {
+  align-items: baseline;
+  border: 1px solid rgba(244, 63, 94, 0.24);
+  border-radius: 6px;
+  background: rgba(244, 63, 94, 0.1);
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+}
+
+.endpoint-score span {
+  color: #fecdd3;
+  text-transform: uppercase;
+}
+
+.nebius-panel-heading {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.nebius-panel-heading h2 {
+  margin: 0;
+}
+
+.nebius-panel-heading span {
+  color: #8fb7c9;
+  font-size: 13px;
+}
+
+.capability-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.capability-card,
+.runtime-health-list article,
 .nebius-result-block,
 .evidence-placeholder {
   border: 1px solid rgba(34, 211, 238, 0.14);
   border-radius: 6px;
   background: rgba(2, 6, 23, 0.48);
   padding: 12px;
+}
+
+.capability-card {
+  min-width: 0;
+}
+
+.capability-card span {
+  color: #8fb7c9;
+  display: block;
+  font-size: 12px;
+  margin-bottom: 5px;
+}
+
+.capability-card strong {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 7px;
+}
+
+.capability-card em,
+.runtime-status {
+  border-radius: 999px;
+  background: rgba(34, 211, 238, 0.12);
+  color: #67e8f9;
+  display: inline-flex;
+  font-size: 11px;
+  font-style: normal;
+  padding: 3px 7px;
+  text-transform: uppercase;
+}
+
+.capability-card p,
+.runtime-health-list p {
+  color: #8fb7c9;
+  font-size: 12px;
+  line-height: 1.4;
+  margin: 8px 0 0;
+}
+
+.runtime-health-list {
+  display: grid;
+  gap: 8px;
+}
+
+.runtime-health-list article div {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.runtime-status.healthy,
+.runtime-status.configured,
+.runtime-status.recent_run,
+.runtime-status.ready,
+.runtime-status.mounted {
+  background: rgba(16, 185, 129, 0.14);
+  color: #86efac;
+}
+
+.runtime-status.mock_fallback,
+.runtime-status.not_configured {
+  background: rgba(245, 184, 65, 0.12);
+  color: #fde68a;
+}
+
+.runtime-status.not_detected,
+.runtime-status.missing {
+  background: rgba(244, 63, 94, 0.14);
+  color: #fda4af;
 }
 
 .nebius-result-block span,
@@ -805,6 +1165,401 @@ h3 {
   margin-bottom: 8px;
 }
 
+.nebius-runtime-card,
+.ai-analyst-console,
+.attack-scenario-generator-card,
+.serverless-runner-card,
+.scenario-generator-card,
+.experiment-artifacts-card,
+.usage-cost-card,
+.deployment-health-card {
+  min-width: 0;
+}
+
+.nebius-runtime-card {
+  gap: 12px;
+}
+
+.runtime-badge-strip {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.runtime-top-badge {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.12);
+  color: #cbd5e1;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 700;
+  justify-content: center;
+  padding: 7px 10px;
+}
+
+.runtime-top-badge.online,
+.runtime-top-badge.ready,
+.runtime-top-badge.synced,
+.runtime-top-badge.healthy,
+.runtime-top-badge.connected {
+  border-color: rgba(16, 185, 129, 0.36);
+  background: rgba(16, 185, 129, 0.14);
+  color: #86efac;
+}
+
+.runtime-top-badge.running,
+.runtime-top-badge.busy,
+.runtime-status.running {
+  border-color: rgba(34, 211, 238, 0.38);
+  background: rgba(34, 211, 238, 0.13);
+  color: #67e8f9;
+}
+
+.runtime-top-badge.degraded,
+.runtime-top-badge.pending {
+  border-color: rgba(245, 184, 65, 0.38);
+  background: rgba(245, 184, 65, 0.13);
+  color: #fde68a;
+}
+
+.runtime-top-badge.error,
+.runtime-top-badge.offline {
+  border-color: rgba(244, 63, 94, 0.38);
+  background: rgba(244, 63, 94, 0.14);
+  color: #fda4af;
+}
+
+.nebius-card-heading {
+  align-items: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.nebius-card-heading h1,
+.nebius-card-heading h2 {
+  margin: 0;
+}
+
+.nebius-card-purpose {
+  color: #8fb7c9;
+  font-size: 13px;
+  margin: 0;
+}
+
+.runtime-status-grid,
+.ai-console-meta,
+.serverless-config-grid,
+.scenario-generator-grid,
+.usage-monitor-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.runtime-status-grid {
+  grid-template-columns: repeat(7, minmax(120px, 1fr));
+}
+
+.runtime-metric,
+.usage-monitor-metric {
+  border: 1px solid rgba(34, 211, 238, 0.14);
+  border-radius: 6px;
+  background: rgba(2, 6, 23, 0.42);
+  min-width: 0;
+  padding: 10px;
+}
+
+.runtime-metric span,
+.usage-monitor-metric span {
+  color: #8fb7c9;
+  display: block;
+  font-size: 12px;
+  margin-bottom: 5px;
+}
+
+.runtime-metric strong,
+.usage-monitor-metric strong {
+  color: #e6f7ff;
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+
+.ai-console-meta {
+  grid-template-columns: repeat(3, minmax(120px, 1fr));
+}
+
+.ai-console-meta span {
+  border: 1px solid rgba(34, 211, 238, 0.14);
+  border-radius: 6px;
+  background: rgba(2, 6, 23, 0.42);
+  color: #d8f3ff;
+  display: grid;
+  gap: 4px;
+  padding: 9px 10px;
+}
+
+.ai-console-meta strong {
+  color: #8fb7c9;
+  font-size: 12px;
+}
+
+.ai-response-panel {
+  border: 1px solid rgba(34, 211, 238, 0.14);
+  border-radius: 6px;
+  background: rgba(2, 6, 23, 0.45);
+  min-height: 220px;
+  overflow: auto;
+  padding: 12px;
+}
+
+.ai-response-panel h3 {
+  margin-bottom: 8px;
+}
+
+.ai-response-panel ol,
+.ai-response-panel ul {
+  color: #d8f3ff;
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 12px;
+  padding-left: 22px;
+}
+
+.serverless-config-grid,
+.scenario-generator-grid {
+  grid-template-columns: repeat(3, minmax(150px, 1fr));
+}
+
+.serverless-output-options {
+  border: 1px solid rgba(34, 211, 238, 0.14);
+  border-radius: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin: 0;
+  padding: 10px;
+}
+
+.serverless-output-options legend {
+  color: #8fb7c9;
+  font-size: 13px;
+  padding: 0 4px;
+}
+
+.serverless-output-options label {
+  align-items: center;
+  color: #d8f3ff;
+  display: inline-flex;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.attack-generator-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+}
+
+.attack-plan-layout {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(420px, 1.2fr) minmax(260px, 0.8fr);
+}
+
+.attack-plan-preview,
+.attack-variant-list article,
+.attack-scenario-select {
+  border: 1px solid rgba(34, 211, 238, 0.14);
+  border-radius: 6px;
+  background: rgba(2, 6, 23, 0.42);
+  padding: 10px;
+}
+
+.attack-plan-header {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.attack-plan-header strong {
+  color: #67e8f9;
+}
+
+.attack-plan-header span {
+  color: #d8f3ff;
+}
+
+.attack-plan-meta {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0 0 10px;
+}
+
+.attack-plan-meta div {
+  border: 1px solid rgba(34, 211, 238, 0.12);
+  border-radius: 4px;
+  padding: 7px;
+}
+
+.attack-plan-meta dt {
+  color: #8fb7c9;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.attack-plan-meta dd {
+  color: #d8f3ff;
+  margin: 3px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.attack-plan-preview p,
+.attack-plan-preview li {
+  color: #d8f3ff;
+}
+
+.attack-plan-preview ul,
+.attack-plan-preview ol {
+  display: grid;
+  gap: 5px;
+  margin: 8px 0 12px;
+  padding-left: 20px;
+}
+
+.attack-variant-list {
+  align-content: start;
+  display: grid;
+  gap: 8px;
+}
+
+.attack-variant-list h3 {
+  margin: 0;
+}
+
+.attack-variant-list article,
+.attack-scenario-select {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  text-align: left;
+}
+
+.attack-scenario-select {
+  color: inherit;
+  width: 100%;
+}
+
+.attack-scenario-select.selected {
+  border-color: rgba(34, 211, 238, 0.72);
+  background: rgba(34, 211, 238, 0.12);
+}
+
+.attack-variant-list span,
+.attack-scenario-select span {
+  color: #d8f3ff;
+}
+
+.attack-variant-list em,
+.attack-scenario-select em {
+  color: #8fb7c9;
+  font-size: 12px;
+  font-style: normal;
+  text-transform: uppercase;
+}
+
+.compact-job-table,
+.artifact-table {
+  font-size: 13px;
+}
+
+.job-status {
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.12);
+  color: #cbd5e1;
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 7px;
+  text-transform: uppercase;
+}
+
+.job-status.running,
+.job-status.pending {
+  background: rgba(34, 211, 238, 0.13);
+  color: #67e8f9;
+}
+
+.job-status.done,
+.job-status.stored {
+  background: rgba(16, 185, 129, 0.14);
+  color: #86efac;
+}
+
+.job-status.failed {
+  background: rgba(244, 63, 94, 0.14);
+  color: #fda4af;
+}
+
+.generated-scenario-list {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.generated-scenario-list article {
+  border: 1px solid rgba(34, 211, 238, 0.14);
+  border-radius: 6px;
+  background: rgba(2, 6, 23, 0.42);
+  display: grid;
+  gap: 4px;
+  padding: 9px 10px;
+}
+
+.generated-scenario-list span {
+  color: #8fb7c9;
+  font-size: 12px;
+}
+
+.artifact-table code {
+  color: #d8f3ff;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.usage-monitor-grid {
+  grid-template-columns: repeat(4, minmax(130px, 1fr));
+}
+
+.usage-monitor-metric p {
+  color: #8fb7c9;
+  font-size: 12px;
+  margin: 6px 0 0;
+}
+
+.deployment-health-list {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.deployment-health-list article {
+  align-items: center;
+  border: 1px solid rgba(34, 211, 238, 0.14);
+  border-radius: 6px;
+  background: rgba(2, 6, 23, 0.42);
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  min-height: 42px;
+  padding: 9px 10px;
+}
+
 .f1-chart-frame {
   height: 260px;
   border: 1px solid rgba(34, 211, 238, 0.14);
@@ -895,6 +1650,19 @@ h3 {
   margin: 0;
 }
 
+.about-card {
+  border-color: rgba(251, 191, 36, 0.24);
+  background: linear-gradient(180deg, rgba(251, 191, 36, 0.08), rgba(3, 9, 16, 0.72));
+}
+
+.about-card h3 {
+  color: #fde68a;
+}
+
+.about-card strong {
+  color: #fef3c7;
+}
+
 .about-grid,
 .reports-grid {
   grid-template-columns: repeat(2, minmax(280px, 1fr));
@@ -949,6 +1717,62 @@ h3 {
 
 .report-card.wide {
   grid-column: span 2;
+}
+
+.reports-hero-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.danger-button {
+  border-color: rgba(244, 63, 94, 0.48);
+  background: rgba(244, 63, 94, 0.14);
+  color: #fda4af;
+}
+
+.danger-button:disabled {
+  border-color: rgba(148, 163, 184, 0.16);
+  background: rgba(148, 163, 184, 0.08);
+  color: #64748b;
+}
+
+.dialog-backdrop {
+  align-items: center;
+  background: rgba(2, 6, 23, 0.74);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 18px;
+  position: fixed;
+  z-index: 60;
+}
+
+.confirm-dialog {
+  border: 1px solid rgba(244, 63, 94, 0.34);
+  border-radius: 8px;
+  background: #071426;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+  display: grid;
+  gap: 14px;
+  max-width: 560px;
+  padding: 18px;
+  width: min(560px, 100%);
+}
+
+.confirm-dialog h2,
+.confirm-dialog p {
+  margin: 0;
+}
+
+.confirm-dialog p {
+  color: #a7c7d8;
+  line-height: 1.5;
+}
+
+.confirm-dialog .form-row strong {
+  color: #fda4af;
 }
 
 .report-table-wrap {
@@ -1495,6 +2319,10 @@ kbd {
   align-items: baseline;
   justify-content: space-between;
   gap: 10px;
+}
+
+.section-heading-row h2 {
+  color: #e6f7ff;
 }
 
 .section-heading-row span {
@@ -2460,6 +3288,8 @@ kbd {
 
   .lab-grid,
   .nebius-control-grid,
+  .attack-scenario-page-grid,
+  .blue-team-grid,
   .artifact-workbench-layout,
   .attack-builder-grid,
   .about-grid,
@@ -2484,12 +3314,39 @@ kbd {
   .benchmark-results-panel,
   .f1-chart-panel,
   .nebius-chart-panel,
+  .nebius-platform-panel,
+  .attack-scenario-generator-card,
+  .experiment-artifacts-card,
+  .deployment-health-card,
+  .attack-scenario-page-grid .serverless-runner-card,
+  .attack-scenario-page-grid .attack-scenario-generator-card,
+  .surveillance-card.wide,
   .report-card.wide {
     grid-column: span 2;
   }
 
+  .capability-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .nebius-chart-grid {
     grid-template-columns: 1fr;
+  }
+
+  .runtime-status-grid,
+  .serverless-config-grid,
+  .attack-generator-grid,
+  .scenario-generator-grid,
+  .usage-monitor-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .attack-plan-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .attack-plan-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -2527,6 +3384,8 @@ kbd {
 
   .lab-grid,
   .nebius-control-grid,
+  .attack-scenario-page-grid,
+  .blue-team-grid,
   .artifact-workbench-layout,
   .attack-builder-grid,
   .about-grid,
@@ -2552,8 +3411,38 @@ kbd {
   .benchmark-results-panel,
   .f1-chart-panel,
   .nebius-chart-panel,
+  .nebius-platform-panel,
+  .attack-scenario-generator-card,
+  .experiment-artifacts-card,
+  .deployment-health-card,
+  .attack-scenario-page-grid .serverless-runner-card,
+  .attack-scenario-page-grid .attack-scenario-generator-card,
+  .surveillance-card.wide,
   .report-card.wide {
     grid-column: auto;
+  }
+
+  .capability-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .runtime-badge-strip,
+  .team-hero,
+  .runtime-status-grid,
+  .ai-console-meta,
+  .serverless-config-grid,
+  .attack-generator-grid,
+  .attack-plan-meta,
+  .scenario-generator-grid,
+  .usage-monitor-grid,
+  .generated-scenario-list,
+  .deployment-health-list,
+  .surveillance-status-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .team-hero-badges {
+    justify-content: flex-start;
   }
 
   .job-status-timeline {

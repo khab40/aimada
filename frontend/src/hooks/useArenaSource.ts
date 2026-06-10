@@ -9,13 +9,6 @@ export type ArenaSourceStatus = "mock" | "connecting" | "connected" | "disconnec
 const DEFAULT_WS_URL = "ws://localhost:8000/ws/arena";
 const DEFAULT_API_BASE_URL = "http://localhost:8000";
 
-const scenarioEndpoints: Record<ArenaScenarioType, string> = {
-  layering_like: "/api/scenarios/layering-like",
-  liquidity_evaporation: "/api/scenarios/liquidity-evaporation",
-  quote_stuffing: "/api/scenarios/quote-stuffing",
-  spoofing_like_wall: "/api/scenarios/spoofing-like"
-};
-
 export function useArenaSource() {
   const mockArena = useMockArena();
   const mode = getArenaMode();
@@ -63,49 +56,47 @@ export function useArenaSource() {
     };
   }, [mode, wsUrl]);
 
-  const postBackendCommand = useCallback(async (path: string) => {
-    try {
-      const response = await fetch(`${apiBaseUrl}${path}`, { method: "POST" });
-      if (!response.ok) {
-        throw new Error(`Backend command failed: ${response.status}`);
-      }
-    } catch (error) {
-      console.error(error);
+  const sendWebSocketCommand = useCallback((message: Record<string, unknown>) => {
+    const socket = socketRef.current;
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
       setSourceStatus("error");
+      return false;
     }
-  }, [apiBaseUrl]);
+    socket.send(JSON.stringify(message));
+    return true;
+  }, []);
 
   const start = useCallback(() => {
     if (mode === "mock") {
       mockArena.start();
       return;
     }
-    void postBackendCommand("/api/simulation/start");
-  }, [mockArena, mode, postBackendCommand]);
+    sendWebSocketCommand({ action: "start", type: "arena_control" });
+  }, [mockArena, mode, sendWebSocketCommand]);
 
   const pause = useCallback(() => {
     if (mode === "mock") {
       mockArena.pause();
       return;
     }
-    void postBackendCommand("/api/simulation/pause");
-  }, [mockArena, mode, postBackendCommand]);
+    sendWebSocketCommand({ action: "pause", type: "arena_control" });
+  }, [mockArena, mode, sendWebSocketCommand]);
 
   const reset = useCallback(() => {
     if (mode === "mock") {
       mockArena.reset();
       return;
     }
-    void postBackendCommand("/api/simulation/reset");
-  }, [mockArena, mode, postBackendCommand]);
+    sendWebSocketCommand({ action: "reset", type: "arena_control" });
+  }, [mockArena, mode, sendWebSocketCommand]);
 
   const launchScenario = useCallback((scenario: ArenaScenarioType) => {
     if (mode === "mock") {
       mockArena.launchScenario(scenario);
       return;
     }
-    void postBackendCommand(scenarioEndpoints[scenario]);
-  }, [mockArena, mode, postBackendCommand]);
+    sendWebSocketCommand({ scenario: scenarioToBackendName(scenario), type: "launch_scenario" });
+  }, [mockArena, mode, sendWebSocketCommand]);
 
   const state = mode === "mock" ? mockArena.state : websocketState;
 
@@ -129,7 +120,17 @@ export function useArenaSource() {
 }
 
 function getArenaMode(): ArenaMode {
-  return import.meta.env.VITE_ARENA_MODE === "websocket" ? "websocket" : "mock";
+  return import.meta.env.VITE_ARENA_MODE === "mock" ? "mock" : "websocket";
+}
+
+function scenarioToBackendName(scenario: ArenaScenarioType) {
+  const mapping: Record<ArenaScenarioType, string> = {
+    layering_like: "layering-like",
+    liquidity_evaporation: "liquidity-evaporation",
+    quote_stuffing: "quote-stuffing",
+    spoofing_like_wall: "spoofing-like"
+  };
+  return mapping[scenario];
 }
 
 function isArenaState(value: unknown): value is ArenaState {

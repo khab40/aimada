@@ -155,7 +155,7 @@ Deliverables:
 - `[done]` `serverless/jobs/nebius_job_config.yaml`
 - `[done]` `serverless/endpoint/endpoint_config.yaml`
 - `[done]` reproducibility scripts under `scripts/`
-- `[done]` `Nebius Control Panel` UI tab with observatory widgets and benchmark charts
+- `[done]` `Nebius Control Panel` UI tab with observatory widgets, attack scenario generation, smart detection/report actions, serverless batch runs, and artifact workbench access to benchmark outputs
 - `[done]` `docs/nebius-deployment.md`
 - `[partial]` screenshots under `assets/screenshots/` exist as placeholders; real Nebius logs/metrics screenshots are still needed.
 

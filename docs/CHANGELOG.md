@@ -3,6 +3,39 @@
 This changelog lists significant commits in reverse chronological order.
 Update this file with each significant commit before pushing.
 
+## Unreleased
+
+### Current - fix: align cloud lab UI, replay reports, and education flow
+
+- Split the high-level UI into clearer newcomer workflows: Market Arena, Red Team Attack Scenario Generator, Blue Team Surveillance, Nebius Control Panel, Replay & Reports, and About.
+- Moved concrete attack-plan creation out of Nebius Control Panel so the red-team tab owns attack scenario generation, variants, injection, Nebius batch submission, and scenario templates.
+- Added blue-team surveillance views for live detector scores, suspicious agents, evidence, incident replay, Nebius detection, and AI incident reports.
+- Added replay/report cleanup with a typed confirmation dialog and backend clear endpoint for local persisted evidence.
+- Added backend-backed artifact workbench actions for preview, keyboard navigation, export to Markdown/PDF, benchmark comparison, incident replay, screenshot attachment, and evidence promotion.
+- Added red/blue geometric team marks and route-level branding without cartoon imagery.
+- Updated About copy for a newcomer-friendly educational story, ML mental model, market-abuse consequences, guardrails, and runtime flow.
+- Updated architecture, use-case, ARD, and phase documentation to match the current cloud-native AI laboratory workflow.
+
+## 2026-06-09
+
+### `4553a5e` - Add Nebius control panel and serverless workflows
+
+- Added a Nebius Control Panel UI for cloud runtime status, AI analyst actions, serverless batch experiments, scenario grids, artifacts, usage/cost, and deployment health.
+- Added backend Nebius observatory and smart batch APIs with typed mock adapters that can later be replaced by real Nebius SDK/API calls.
+- Added reproducible scripts for scenario generation, local evaluation, Nebius job submission, endpoint calls, and endpoint/job creation.
+- Added serverless endpoint and job Docker/config artifacts under the consolidated `serverless/` tree.
+- Added report/artifact UI actions for benchmark outputs, Nebius logs/metrics evidence, export, comparison, replay, and promoted challenge bundles.
+- Updated README, quickstart, deployment docs, ARDs, and phase tracking for Nebius Serverless AI Jobs and Endpoints.
+
+## 2026-06-08
+
+### `ee25dd5` - fix: documentation updates
+
+- Added editor recommendations and a one-slide market-abuse arena visual asset.
+- Added a Nebius Market Abuse Arena one-pager and updated the overall architecture ARD.
+- Refined Arena/Lab UI copy and scenario-launch styling.
+- Updated Nebius endpoint creation script details and included the modeling document artifact.
+
 ## 2026-06-04
 
 ### `2ad792d` - docs: add 3D market battlefield concept artifacts

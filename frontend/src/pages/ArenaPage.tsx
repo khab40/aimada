@@ -26,7 +26,14 @@ export function ArenaPage() {
   const [timeline, setTimeline] = useState<MarketTimelineFrame[]>(() => [toTimelineFrame(state)]);
   const [hasStarted, setHasStarted] = useState(false);
   const incident = useMemo(() => createIncident(state), [state]);
+  const [lastIncident, setLastIncident] = useState<Incident | null>(incident);
   const loading = mode === "websocket" && sourceStatus === "connecting";
+
+  useEffect(() => {
+    if (incident) {
+      setLastIncident(incident);
+    }
+  }, [incident]);
 
   useEffect(() => {
     setHeatmapSnapshots((snapshots) => [...snapshots, state.book].slice(-120));
@@ -67,6 +74,7 @@ export function ArenaPage() {
         setHasStarted(false);
         setHeatmapSnapshots([]);
         setTimeline([]);
+        setLastIncident(null);
       }
     }
 
@@ -87,6 +95,7 @@ export function ArenaPage() {
           setHasStarted(false);
           setHeatmapSnapshots([]);
           setTimeline([]);
+          setLastIncident(null);
         }}
         onStart={() => {
           if (running) {
@@ -100,7 +109,7 @@ export function ArenaPage() {
         spread={state.spread}
         symbol={symbol}
         tick={tick}
-        source={`${mode}:${sourceStatus}`}
+        source={mode === "websocket" ? `backend websocket:${sourceStatus}` : `local mock:${sourceStatus}`}
       />
 
       <div className="shortcut-strip" aria-label="Keyboard shortcuts">
@@ -151,7 +160,7 @@ export function ArenaPage() {
 
         <section className="panel cockpit-bottom-right">
           <EvidencePanel state={state} />
-          <IncidentReplayDrawer activeIncident={incident} />
+          <IncidentReplayDrawer activeIncident={incident ?? lastIncident} live={Boolean(incident)} />
         </section>
       </div>
     </section>
