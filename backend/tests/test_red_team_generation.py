@@ -1,4 +1,6 @@
 from typing import Any
+from pathlib import Path
+from types import SimpleNamespace
 
 from app.api import routes_red_team
 from app.nebius.client import RedTeamScenarioResponse
@@ -8,9 +10,10 @@ from app.schemas.arena import (
     RedTeamScenarioGenerateRequest,
     ScenarioType,
 )
+from app.storage.local_store import LocalStore
 
 
-def test_generate_red_team_scenario_returns_launchable_config(monkeypatch: Any) -> None:
+def test_generate_red_team_scenario_returns_launchable_config(monkeypatch: Any, tmp_path: Path) -> None:
     captured: dict[str, Any] = {}
 
     class FakeNebiusClient:
@@ -40,7 +43,8 @@ def test_generate_red_team_scenario_returns_launchable_config(monkeypatch: Any) 
             market_regime=MarketRegime.VOLATILE,
             goal=RedTeamGoal.HARD_TO_DETECT,
             constraints={"max_duration_seconds": 5},
-        )
+        ),
+        SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace(store=LocalStore(tmp_path)))),
     )
 
     assert captured["constraints"]["scenario_family"] == "quote_stuffing"

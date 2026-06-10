@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { clearReportsData, getReportsSummary, type ReportsSummary } from "@/api/client";
+import { clearReportsData, getReportsSummary, type HistoryRecord, type ReportsSummary } from "@/api/client";
 import { ArtifactWorkbench, type ArtifactItem } from "@/components/ArtifactWorkbench";
 
 const previousRuns = [
@@ -183,6 +183,16 @@ export function ReportsPage() {
     ...(summary?.benchmark_runs ?? []).map((run) => String(run.id ?? ""))
   ].filter(Boolean), [summary]);
   const incidentIds = useMemo(() => (summary?.incidents ?? []).map((incident) => String(incident.id ?? "")).filter(Boolean), [summary]);
+  const historyRows = useMemo<HistoryRecord[]>(() => {
+    return [...(summary?.history_artifacts ?? [])].reverse().slice(0, 25);
+  }, [summary]);
+  const historyCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const row of summary?.history_artifacts ?? []) {
+      counts.set(row.kind, (counts.get(row.kind) ?? 0) + 1);
+    }
+    return Array.from(counts.entries()).sort(([left], [right]) => left.localeCompare(right));
+  }, [summary]);
 
   return (
     <section className="reports-page">
@@ -201,6 +211,51 @@ export function ReportsPage() {
       {clearMessage ? <div className="empty-state">{clearMessage}</div> : null}
 
       <div className="reports-grid">
+        <section className="panel report-card wide">
+          <h3>Unified History Model</h3>
+          <div className="surveillance-status-strip">
+            <Metric label="History Artifacts" value={String(summary?.history_artifacts.length ?? 0)} />
+            <Metric label="Recent Ticks" value={String(summary?.history_ticks.length ?? 0)} />
+            <Metric label="AI Reports" value={String((summary?.explanations.length ?? 0) + (summary?.nebius_investigation_reports.length ?? 0))} />
+            <Metric label="Detections" value={String((summary?.incidents.length ?? 0) + (summary?.nebius_detections.length ?? 0))} />
+          </div>
+          {historyCounts.length ? (
+            <div className="history-kind-list">
+              {historyCounts.map(([kind, count]) => (
+                <span className="endpoint-badge" key={kind}>{kind.replaceAll("_", " ")}: {count}</span>
+              ))}
+            </div>
+          ) : null}
+          {historyRows.length ? (
+            <div className="report-table-wrap">
+              <table className="benchmark-table">
+                <thead>
+                  <tr>
+                    <th>Kind</th>
+                    <th>Summary</th>
+                    <th>Run</th>
+                    <th>Tick</th>
+                    <th>Saved</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {historyRows.map((row) => (
+                    <tr key={row.history_id}>
+                      <td>{row.kind.replaceAll("_", " ")}</td>
+                      <td>{row.summary}</td>
+                      <td>{row.run_id ?? row.scenario_id ?? "n/a"}</td>
+                      <td>{row.tick ?? "n/a"}</td>
+                      <td>{formatSavedAt(row.created_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="empty-state">No unified history records yet. Start surveillance, inject a red-team scenario, run detection, or generate a report.</p>
+          )}
+        </section>
+
         <section className="panel report-card wide">
           <h3>Previous Runs</h3>
           <div className="report-table-wrap">
@@ -338,4 +393,26 @@ export function ReportsPage() {
       ) : null}
     </section>
   );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="cockpit-pill">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function formatSavedAt(value: string) {
+  const parsed = Date.parse(value);
+  if (Number.isNaN(parsed)) {
+    return value || "recorded";
+  }
+  return new Intl.DateTimeFormat(undefined, {
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    month: "short"
+  }).format(parsed);
 }

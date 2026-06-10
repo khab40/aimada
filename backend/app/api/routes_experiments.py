@@ -13,6 +13,7 @@ from fastapi.responses import FileResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 
 from app.schemas.arena import AttackTrackerState, BenchmarkResult, MarketRegime
+from app.storage.history import append_history_artifact, history_window
 from app.storage.local_store import LocalStore
 
 router = APIRouter(prefix="/api/experiments", tags=["experiments"])
@@ -69,6 +70,20 @@ class ReportsSummary(BaseModel):
     significant_events: list[dict[str, Any]]
     evidence_screenshots: list[dict[str, Any]]
     promoted_runs: list[dict[str, Any]]
+    nebius_detections: list[dict[str, Any]]
+    nebius_investigation_reports: list[dict[str, Any]]
+    history_artifacts: list[dict[str, Any]]
+    history_ticks: list[dict[str, Any]]
+
+
+class HistoryReplayResponse(BaseModel):
+    window_hours: float
+    generated_at: str
+    filters: dict[str, Any]
+    tick_count: int
+    artifact_count: int
+    ticks: list[dict[str, Any]]
+    artifacts: list[dict[str, Any]]
 
 
 class ArtifactReadResponse(BaseModel):
@@ -103,6 +118,7 @@ class IncidentReplayResponse(BaseModel):
     incident: dict[str, Any] | None
     events: list[dict[str, Any]]
     labels: list[dict[str, Any]]
+    ticks: list[dict[str, Any]]
 
 
 class ScreenshotAttachmentRequest(BaseModel):
@@ -142,6 +158,16 @@ def save_attack_experiment(payload: AttackExperimentRequest, request: Request) -
         config=payload,
     )
     _store(request).append_jsonl("experiments/attack_experiments.jsonl", experiment.model_dump(mode="json"))
+    append_history_artifact(
+        _store(request),
+        kind="run",
+        payload=experiment.model_dump(mode="json"),
+        summary=f"Attack experiment {experiment.id} saved",
+        created_at=experiment.created_at,
+        run_id=experiment.id,
+        source="attack_builder",
+        source_path="experiments/attack_experiments.jsonl",
+    )
     _store(request).append_jsonl(
         "events/significant_events.jsonl",
         {
@@ -172,6 +198,21 @@ async def launch_attack_experiment(payload: AttackExperimentRequest, request: Re
             "launch_endpoint": launch_endpoint,
             "attack": attack.model_dump(mode="json"),
         },
+    )
+    append_history_artifact(
+        _store(request),
+        kind="run",
+        payload={
+            "experiment_id": experiment.id,
+            "launch_endpoint": launch_endpoint,
+            "attack": attack.model_dump(mode="json"),
+        },
+        summary=f"Attack experiment {experiment.id} launched",
+        run_id=experiment.id,
+        tick=attack.start_tick,
+        scenario_id=attack.scenario_id,
+        source="attack_builder_launch",
+        source_path="experiments/attack_launches.jsonl",
     )
     return LabLaunchResponse(
         experiment_id=experiment.id,
@@ -236,6 +277,16 @@ def run_benchmark_experiment(payload: BenchmarkRunRequest, request: Request) -> 
         },
     )
     _store(request).append_jsonl("experiments/benchmark_runs.jsonl", response.model_dump(mode="json"))
+    append_history_artifact(
+        _store(request),
+        kind="run",
+        payload=response.model_dump(mode="json"),
+        summary=f"Benchmark run {response.id} completed",
+        created_at=response.created_at,
+        run_id=response.id,
+        source="benchmark_runner",
+        source_path="experiments/benchmark_runs.jsonl",
+    )
     _store(request).append_jsonl(
         "events/significant_events.jsonl",
         {
@@ -265,7 +316,29 @@ def reports_summary(request: Request) -> ReportsSummary:
         significant_events=store.read_jsonl("events/significant_events.jsonl", limit=100),
         evidence_screenshots=store.read_jsonl("evidence/screenshots.jsonl", limit=25),
         promoted_runs=store.read_jsonl("evidence/promoted_runs.jsonl", limit=25),
+        nebius_detections=store.read_jsonl("nebius/detections.jsonl", limit=50),
+        nebius_investigation_reports=store.read_jsonl("nebius/investigation_reports.jsonl", limit=50),
+        history_artifacts=store.read_jsonl("history/artifacts.jsonl", limit=200),
+        history_ticks=store.read_jsonl("history/ticks.jsonl", limit=120),
     )
+
+
+@router.get("/history/replay", response_model=HistoryReplayResponse)
+def replay_history_window(
+    request: Request,
+    window_hours: float = 1.0,
+    limit: int = 5000,
+    scenario_id: str | None = None,
+    incident_id: str | None = None,
+) -> HistoryReplayResponse:
+    replay = history_window(
+        _store(request),
+        window_hours=window_hours,
+        limit=max(1, min(limit, 20_000)),
+        scenario_id=scenario_id,
+        incident_id=incident_id,
+    )
+    return HistoryReplayResponse(**replay)
 
 
 @router.post("/reports/clear", response_model=ClearReportsResponse)
@@ -373,7 +446,12 @@ def replay_incident_window(incident_id: str, request: Request) -> IncidentReplay
         for row in store.read_jsonl("labels/scenario_labels.jsonl", limit=None)
         if scenario_id and str(row.get("scenario_id")) == scenario_id
     ]
-    return IncidentReplayResponse(incident_id=incident_id, incident=incident, events=events, labels=labels)
+    ticks = [
+        row
+        for row in store.read_jsonl("history/ticks.jsonl", limit=None)
+        if str(row.get("incident_id")) == incident_id or (scenario_id and str(row.get("scenario_id")) == scenario_id)
+    ][-240:]
+    return IncidentReplayResponse(incident_id=incident_id, incident=incident, events=events, labels=labels, ticks=ticks)
 
 
 @router.post("/evidence/screenshots", response_model=ScreenshotAttachmentResponse)
@@ -385,6 +463,15 @@ def attach_screenshot(payload: ScreenshotAttachmentRequest, request: Request) ->
         created_at=_now(),
     )
     _store(request).append_jsonl("evidence/screenshots.jsonl", screenshot.model_dump(mode="json"))
+    append_history_artifact(
+        _store(request),
+        kind="artifact",
+        payload=screenshot.model_dump(mode="json"),
+        summary=f"Screenshot evidence attached: {screenshot.title}",
+        created_at=screenshot.created_at,
+        source="evidence_screenshot",
+        source_path="evidence/screenshots.jsonl",
+    )
     return screenshot
 
 
@@ -421,6 +508,15 @@ def promote_run_to_evidence(run_id: str, request: Request) -> PromoteEvidenceRes
     store.append_jsonl(
         "evidence/promoted_runs.jsonl",
         {"run_id": run_id, "created_at": _now(), "path": str(target), "source": run},
+    )
+    append_history_artifact(
+        store,
+        kind="artifact",
+        payload={"run_id": run_id, "path": str(target), "source": run},
+        summary=f"Run {run_id} promoted to evidence",
+        run_id=run_id,
+        source="promote_run_to_evidence",
+        source_path="evidence/promoted_runs.jsonl",
     )
     return PromoteEvidenceResponse(
         run_id=run_id,
@@ -521,14 +617,19 @@ def _report_index_files() -> list[str]:
         "experiments/attack_experiments.jsonl",
         "experiments/attack_launches.jsonl",
         "experiments/benchmark_runs.jsonl",
+        "red-team/generated_scenarios.jsonl",
         "nebius/smart_batches.jsonl",
         "nebius/artifacts.jsonl",
+        "nebius/detections.jsonl",
+        "nebius/investigation_reports.jsonl",
         "incidents/incidents.jsonl",
         "incidents/explanations.jsonl",
         "attacks/attacks.jsonl",
         "events/events.jsonl",
         "events/significant_events.jsonl",
         "labels/scenario_labels.jsonl",
+        "history/artifacts.jsonl",
+        "history/ticks.jsonl",
         "evidence/screenshots.jsonl",
         "evidence/promoted_runs.jsonl",
     ]

@@ -13,6 +13,7 @@ from app.detectors.features import extract_features
 from app.exchange.order_book import OrderBook
 from app.schemas.arena import AgentEvent, ArenaState, AttackTrackerState, DetectorScore, EvidenceItem, Incident
 from app.scenarios.controller import ScenarioController
+from app.storage.history import append_history_artifact, append_tick_snapshot
 from app.storage.local_store import LocalStore
 
 
@@ -161,6 +162,7 @@ class SimulationEngine:
             current_events=tick_events,
             previous_depth_top_n=previous_depth_top_n,
         )
+        self._persist_tick_snapshot(tick_events)
 
     def _market_maker_refresh(self, tick: int) -> AgentEvent:
         best_bid = self.order_book.best_bid()
@@ -307,11 +309,35 @@ class SimulationEngine:
         self.store.append_jsonl("events/events.jsonl", payload)
         if significant:
             self.store.append_jsonl("events/significant_events.jsonl", payload)
+            append_history_artifact(
+                self.store,
+                kind="event",
+                payload=payload,
+                summary=str(payload.get("message") or payload.get("type") or "Significant event"),
+                run_id=self.run_id,
+                tick=int(payload.get("tick", self.clock.tick)),
+                scenario_id=payload.get("scenario_id"),
+                incident_id=payload.get("incident_id"),
+                source="simulation_engine",
+                source_path="events/significant_events.jsonl",
+            )
 
     def _persist_attack(self, tracker: AttackTrackerState) -> None:
         if self.store is None:
             return
-        self.store.append_jsonl("attacks/attacks.jsonl", tracker.model_dump(mode="json"))
+        payload = tracker.model_dump(mode="json")
+        self.store.append_jsonl("attacks/attacks.jsonl", payload)
+        append_history_artifact(
+            self.store,
+            kind="attack",
+            payload=payload,
+            summary=f"{tracker.scenario_name} armed",
+            run_id=self.run_id,
+            tick=tracker.start_tick,
+            scenario_id=tracker.scenario_id,
+            source="simulation_engine",
+            source_path="attacks/attacks.jsonl",
+        )
         self._persist_label(tracker)
 
     def _persist_label(self, tracker: AttackTrackerState) -> None:
@@ -327,7 +353,42 @@ class SimulationEngine:
     def _persist_incident(self, incident: Incident) -> None:
         if self.store is None:
             return
-        self.store.append_jsonl("incidents/incidents.jsonl", incident.model_dump(mode="json"))
+        payload = incident.model_dump(mode="json")
+        self.store.append_jsonl("incidents/incidents.jsonl", payload)
+        append_history_artifact(
+            self.store,
+            kind="incident",
+            payload=payload,
+            summary=incident.title,
+            run_id=self.run_id,
+            tick=self.clock.tick,
+            scenario_id=incident.scenario_id,
+            incident_id=incident.id,
+            source="simulation_engine",
+            source_path="incidents/incidents.jsonl",
+        )
+        append_history_artifact(
+            self.store,
+            kind="detected_attack",
+            payload=payload,
+            summary=f"{incident.type} detected for {incident.scenario_id or incident.agent}",
+            run_id=self.run_id,
+            tick=self.clock.tick,
+            scenario_id=incident.scenario_id,
+            incident_id=incident.id,
+            source="detector_engine",
+            source_path="incidents/incidents.jsonl",
+        )
+
+    def _persist_tick_snapshot(self, tick_events: list[AgentEvent]) -> None:
+        if self.store is None:
+            return
+        append_tick_snapshot(
+            self.store,
+            state=self.state,
+            run_id=self.run_id,
+            tick_events=tick_events,
+        )
 
 
 def _format_detector_name(name: str) -> str:

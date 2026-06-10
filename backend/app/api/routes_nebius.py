@@ -21,6 +21,7 @@ from app.nebius.client import (
     RedTeamScenarioRequest,
     RedTeamScenarioResponse,
 )
+from app.storage.history import append_history_artifact
 
 router = APIRouter(prefix="/api/nebius", tags=["nebius"])
 nebius_client = NebiusClient()
@@ -195,13 +196,48 @@ def smart_scenario(request: SmartScenarioRequest) -> RedTeamScenarioResponse:
 
 
 @router.post("/smart-detection", response_model=OrderBookAlertResponse)
-def smart_detection(request: OrderBookAlertRequest) -> OrderBookAlertResponse:
-    return nebius_client.detect_orderbook_alert(request)
+def smart_detection(payload: OrderBookAlertRequest, request: Request) -> OrderBookAlertResponse:
+    alert = nebius_client.detect_orderbook_alert(payload)
+    created_at = _now()
+    row = {
+        "created_at": created_at,
+        "request": payload.model_dump(mode="json"),
+        "response": alert.model_dump(mode="json"),
+    }
+    request.app.state.store.append_jsonl("nebius/detections.jsonl", row)
+    append_history_artifact(
+        request.app.state.store,
+        kind="detected_attack",
+        payload=row,
+        summary=f"Nebius detection: {alert.detected_pattern} ({alert.suspicion_score:.2f})",
+        created_at=created_at,
+        tick=payload.tick,
+        source="nebius_smart_detection",
+        source_path="nebius/detections.jsonl",
+    )
+    return alert
 
 
 @router.post("/investigation-report", response_model=InvestigationReportResponse)
-def investigation_report(request: InvestigationReportRequest) -> InvestigationReportResponse:
-    return nebius_client.investigation_report(request)
+def investigation_report(payload: InvestigationReportRequest, request: Request) -> InvestigationReportResponse:
+    report = nebius_client.investigation_report(payload)
+    created_at = _now()
+    row = {
+        "created_at": created_at,
+        "request": payload.model_dump(mode="json"),
+        "response": report.model_dump(mode="json"),
+    }
+    request.app.state.store.append_jsonl("nebius/investigation_reports.jsonl", row)
+    append_history_artifact(
+        request.app.state.store,
+        kind="ai_explanation",
+        payload=row,
+        summary=report.title,
+        created_at=created_at,
+        source="nebius_investigation_report",
+        source_path="nebius/investigation_reports.jsonl",
+    )
+    return report
 
 
 @router.post("/attack-scenario", response_model=AttackScenario)
@@ -213,6 +249,15 @@ def generate_attack_scenario(payload: AttackScenarioInput, request: Request) -> 
     )
     scenario.source = generated.model_dump(mode="json")
     request.app.state.store.append_jsonl("nebius/attack_scenarios.jsonl", scenario.model_dump(mode="json"))
+    append_history_artifact(
+        request.app.state.store,
+        kind="attack_scenario",
+        payload=scenario.model_dump(mode="json"),
+        summary=scenario.name,
+        scenario_id=scenario.id,
+        source="attack_scenario_generator",
+        source_path="nebius/attack_scenarios.jsonl",
+    )
     request.app.state.store.append_jsonl(
         "events/significant_events.jsonl",
         {"type": "attack_scenario_generated", "scenario_id": scenario.id, "created_at": _now()},
@@ -245,6 +290,15 @@ def generate_attack_variants(payload: AttackScenarioVariantsRequest, request: Re
         scenario = _build_attack_scenario(variant_input, variant_index=index)
         variants.append(scenario)
         request.app.state.store.append_jsonl("nebius/attack_scenarios.jsonl", scenario.model_dump(mode="json"))
+        append_history_artifact(
+            request.app.state.store,
+            kind="attack_scenario",
+            payload=scenario.model_dump(mode="json"),
+            summary=scenario.name,
+            scenario_id=scenario.id,
+            source="attack_scenario_variants",
+            source_path="nebius/attack_scenarios.jsonl",
+        )
     request.app.state.store.append_jsonl(
         "events/significant_events.jsonl",
         {"type": "attack_variants_generated", "count": len(variants), "created_at": _now()},
@@ -269,6 +323,17 @@ async def inject_attack_scenario(scenario_id: str, request: Request) -> Scenario
             "created_at": _now(),
         },
     )
+    append_history_artifact(
+        request.app.state.store,
+        kind="attack",
+        payload={"scenario": scenario.model_dump(mode="json"), "attack": attack.model_dump(mode="json")},
+        summary=f"{scenario.id} injected into live simulation queue",
+        run_id=attack.label.run_id if attack.label else None,
+        tick=attack.start_tick,
+        scenario_id=scenario.id,
+        source="attack_scenario_inject",
+        source_path="events/significant_events.jsonl",
+    )
     return ScenarioActionResponse(message=f"{scenario.id} injected into live simulation queue.", scenario=scenario)
 
 
@@ -280,6 +345,15 @@ def save_attack_scenario_template(scenario_id: str, request: Request) -> Scenari
     path = request.app.state.store.write_json(f"scenario-templates/{scenario.id.lower()}_template.json", scenario.model_dump(mode="json"))
     artifact = _artifact(path, "scenario_template")
     request.app.state.store.append_jsonl("nebius/artifacts.jsonl", artifact.model_dump(mode="json"))
+    append_history_artifact(
+        request.app.state.store,
+        kind="artifact",
+        payload=artifact.model_dump(mode="json"),
+        summary=f"{scenario.id} scenario template saved",
+        scenario_id=scenario.id,
+        source="scenario_template",
+        source_path="nebius/artifacts.jsonl",
+    )
     return ScenarioActionResponse(
         message=f"{scenario.id} saved as scenario template: {artifact.path}",
         scenario=scenario,
@@ -301,6 +375,15 @@ def generate_scenario_grid(payload: ScenarioGridRequest, request: Request) -> li
     request.app.state.store.append_jsonl(
         "nebius/scenario_grids.jsonl",
         {"created_at": _now(), "config": payload.model_dump(mode="json"), "scenarios": [item.model_dump(mode="json") for item in scenarios]},
+    )
+    append_history_artifact(
+        request.app.state.store,
+        kind="scenario_grid",
+        payload={"config": payload.model_dump(mode="json"), "scenarios": [item.model_dump(mode="json") for item in scenarios]},
+        summary=f"Generated scenario grid with {len(scenarios)} rows",
+        scenario_id=payload.sourceAttackScenarioId,
+        source="scenario_grid_generator",
+        source_path="nebius/scenario_grids.jsonl",
     )
     return scenarios
 
@@ -358,6 +441,16 @@ def run_smart_batches(payload: SmartBatchRunRequest, request: Request) -> SmartB
         deployment_target="Nebius Serverless AI Job via GHCR job container",
     )
     request.app.state.store.append_jsonl("nebius/smart_batches.jsonl", response.model_dump(mode="json"))
+    append_history_artifact(
+        request.app.state.store,
+        kind="run",
+        payload=response.model_dump(mode="json"),
+        summary=f"Smart batch {response.id} completed",
+        created_at=response.created_at,
+        run_id=response.id,
+        source="nebius_smart_batch",
+        source_path="nebius/smart_batches.jsonl",
+    )
     return response
 
 
@@ -372,6 +465,14 @@ def save_evidence_bundle(request: Request) -> StoredArtifact:
     path = request.app.state.store.write_json(f"evidence/nebius_bundle_{uuid4().hex[:8]}.json", payload)
     artifact = _artifact(path, "report")
     request.app.state.store.append_jsonl("nebius/artifacts.jsonl", artifact.model_dump(mode="json"))
+    append_history_artifact(
+        request.app.state.store,
+        kind="artifact",
+        payload=artifact.model_dump(mode="json"),
+        summary="Nebius evidence bundle saved",
+        source="evidence_bundle",
+        source_path="nebius/artifacts.jsonl",
+    )
     return artifact
 
 
@@ -383,6 +484,14 @@ def export_dataset(request: Request) -> StoredArtifact:
     )
     artifact = _artifact(path, "dataset", size_label="91 MB")
     request.app.state.store.append_jsonl("nebius/artifacts.jsonl", artifact.model_dump(mode="json"))
+    append_history_artifact(
+        request.app.state.store,
+        kind="artifact",
+        payload=artifact.model_dump(mode="json"),
+        summary="Synthetic LOB dataset exported",
+        source="dataset_export",
+        source_path="nebius/artifacts.jsonl",
+    )
     return artifact
 
 
@@ -394,6 +503,14 @@ def generate_training_data(request: Request) -> StoredArtifact:
     )
     artifact = _artifact(path, "dataset", size_label="34 MB", status="pending")
     request.app.state.store.append_jsonl("nebius/artifacts.jsonl", artifact.model_dump(mode="json"))
+    append_history_artifact(
+        request.app.state.store,
+        kind="artifact",
+        payload=artifact.model_dump(mode="json"),
+        summary="Training label generation queued",
+        source="training_data",
+        source_path="nebius/artifacts.jsonl",
+    )
     return artifact
 
 

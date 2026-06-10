@@ -7,7 +7,8 @@ import type {
   ScenarioGridConfig
 } from "@/features/nebius/types";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
+export const AUTH_SESSION_HEADER = "X-NMAA-Session-ID";
 
 export async function getHealth(): Promise<{ status: string }> {
   const response = await fetch(`${API_BASE_URL}/health`);
@@ -120,6 +121,7 @@ export type IncidentReplayResponse = {
   incident: Record<string, unknown> | null;
   events: Record<string, unknown>[];
   labels: Record<string, unknown>[];
+  ticks: Record<string, unknown>[];
 };
 
 export type ScreenshotAttachmentResponse = {
@@ -141,6 +143,39 @@ export type ClearReportsResponse = {
   message: string;
 };
 
+export type ArenaRole = "attacker" | "defender" | "observer" | "judge";
+
+export type AuthUser = {
+  user_id: string;
+  provider: string;
+  provider_mode?: string | null;
+  google_subject?: string | null;
+  email: string;
+  name: string;
+  avatar_url?: string | null;
+  created_at: string;
+};
+
+export type AuthSession = {
+  session_id: string;
+  user_id: string;
+  role: ArenaRole;
+  created_at: string;
+  last_seen_at: string;
+  active: boolean;
+};
+
+export type AuthSessionResponse = {
+  user: AuthUser;
+  session: AuthSession;
+  restored_history?: Record<string, unknown> | null;
+};
+
+export type SessionSaveResponse = {
+  saved: boolean;
+  snapshot?: Record<string, unknown> | null;
+};
+
 export type ReportsSummary = {
   experiments: Record<string, unknown>[];
   benchmark_runs: Record<string, unknown>[];
@@ -152,6 +187,34 @@ export type ReportsSummary = {
   significant_events: Record<string, unknown>[];
   evidence_screenshots: Record<string, unknown>[];
   promoted_runs: Record<string, unknown>[];
+  nebius_detections: Record<string, unknown>[];
+  nebius_investigation_reports: Record<string, unknown>[];
+  history_artifacts: HistoryRecord[];
+  history_ticks: HistoryRecord[];
+};
+
+export type HistoryRecord = {
+  history_id: string;
+  kind: string;
+  created_at: string;
+  run_id?: string | null;
+  tick?: number | null;
+  scenario_id?: string | null;
+  incident_id?: string | null;
+  source?: string | null;
+  source_path?: string | null;
+  summary: string;
+  payload: Record<string, unknown>;
+};
+
+export type HistoryReplayResponse = {
+  window_hours: number;
+  generated_at: string;
+  filters: Record<string, unknown>;
+  tick_count: number;
+  artifact_count: number;
+  ticks: HistoryRecord[];
+  artifacts: HistoryRecord[];
 };
 
 export type NebiusStatus = {
@@ -308,6 +371,77 @@ export async function getReportsSummary(): Promise<ReportsSummary> {
   const response = await fetch(`${API_BASE_URL}/api/experiments/reports`);
   if (!response.ok) {
     throw new Error(`Reports summary failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function completeGoogleLogin(role: ArenaRole): Promise<AuthSessionResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/auth/google/complete`, {
+    body: JSON.stringify({ role }),
+    headers: { "Content-Type": "application/json" },
+    method: "POST"
+  });
+  if (!response.ok) {
+    throw new Error(`Google login failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function getCurrentAuthSession(sessionId: string): Promise<AuthSessionResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+    headers: { [AUTH_SESSION_HEADER]: sessionId }
+  });
+  if (!response.ok) {
+    throw new Error(`Auth session lookup failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function updateAuthRole(sessionId: string, role: ArenaRole): Promise<AuthSessionResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/auth/role`, {
+    body: JSON.stringify({ role }),
+    headers: { "Content-Type": "application/json", [AUTH_SESSION_HEADER]: sessionId },
+    method: "PATCH"
+  });
+  if (!response.ok) {
+    throw new Error(`Role update failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function saveAuthSession(sessionId: string, keepalive = false): Promise<SessionSaveResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/auth/session/save`, {
+    body: JSON.stringify({ window_hours: 24 }),
+    headers: { "Content-Type": "application/json", [AUTH_SESSION_HEADER]: sessionId },
+    keepalive,
+    method: "POST"
+  });
+  if (!response.ok) {
+    throw new Error(`Session save failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function logoutAuthSession(sessionId: string): Promise<SessionSaveResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/auth/logout`, {
+    body: JSON.stringify({ window_hours: 24 }),
+    headers: { "Content-Type": "application/json", [AUTH_SESSION_HEADER]: sessionId },
+    method: "POST"
+  });
+  if (!response.ok) {
+    throw new Error(`Logout failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function replayHistoryWindow(windowHours = 1, limit = 5000): Promise<HistoryReplayResponse> {
+  const params = new URLSearchParams({
+    limit: String(limit),
+    window_hours: String(windowHours)
+  });
+  const response = await fetch(`${API_BASE_URL}/api/experiments/history/replay?${params.toString()}`);
+  if (!response.ok) {
+    throw new Error(`History replay failed: ${response.status}`);
   }
   return response.json();
 }

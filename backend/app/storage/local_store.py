@@ -21,6 +21,12 @@ class LocalStore:
         path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
         return path
 
+    def read_json(self, name: str) -> object | None:
+        path = self.output_dir / name
+        if not path.exists():
+            return None
+        return json.loads(path.read_text(encoding="utf-8"))
+
     def read_jsonl(self, name: str, limit: int | None = None) -> list[dict[str, Any]]:
         path = self.output_dir / name
         if not path.exists():

@@ -16,7 +16,7 @@ import { useArenaSource } from "@/hooks/useArenaSource";
 import type { AgentEvent, ArenaState, DetectorScore, EvidenceItem, Incident } from "@/types/arena";
 
 export function BlueTeamSurveillancePage() {
-  const { launchScenario, mode, pause, running, sourceStatus, start, state, tick } = useArenaSource();
+  const { mode, pause, running, sourceStatus, start, state, tick } = useArenaSource();
   const [endpointAlert, setEndpointAlert] = useState<OrderBookAlertResponse | null>(null);
   const [report, setReport] = useState<InvestigationReportResponse | null>(null);
   const [reportsSummary, setReportsSummary] = useState<ReportsSummary | null>(null);
@@ -76,9 +76,6 @@ export function BlueTeamSurveillancePage() {
       <div className="nebius-button-row surveillance-actions">
         <button disabled={running} onClick={start} type="button">Start Surveillance</button>
         <button disabled={!running} onClick={pause} type="button">Pause</button>
-        <button onClick={() => launchScenario("spoofing_like_wall")} type="button">Inject Spoofing</button>
-        <button onClick={() => launchScenario("layering_like")} type="button">Inject Layering</button>
-        <button onClick={() => launchScenario("quote_stuffing")} type="button">Inject Quote Stuffing</button>
         <button
           disabled={busy !== null}
           onClick={() => void runAction("endpoint detection", async () => {

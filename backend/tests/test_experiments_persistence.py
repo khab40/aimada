@@ -55,12 +55,15 @@ def test_launch_attack_experiment_starts_arena_and_records_launch(tmp_path: Path
         launched = await launch_attack_experiment(_attack_payload(), request)
         launches = request.app.state.store.read_jsonl("experiments/attack_launches.jsonl")
         attacks = request.app.state.store.read_jsonl("attacks/attacks.jsonl")
+        history = request.app.state.store.read_jsonl("history/artifacts.jsonl")
 
         assert launched.experiment_id.startswith("EXP-")
         assert launched.launch_endpoint == "/api/scenarios/quote-stuffing"
         assert launched.attack.scenario_family == "quote_stuffing"
         assert launches
         assert attacks
+        assert any(row["kind"] == "attack" for row in history)
+        assert any(row["kind"] == "run" for row in history)
 
     asyncio.run(run())
 
@@ -83,3 +86,16 @@ def test_run_benchmark_experiment_persists_run_and_report_summary(tmp_path: Path
     assert run.results
     assert summary.benchmark_runs
     assert summary.significant_events
+    assert summary.history_artifacts
+
+
+def test_simulation_ticks_are_persisted_for_history_replay(tmp_path: Path) -> None:
+    request = _request(tmp_path)
+
+    request.app.state.simulation.step()
+    request.app.state.simulation.step()
+    summary = reports_summary(request)
+
+    assert len(summary.history_ticks) == 2
+    assert summary.history_ticks[-1]["kind"] == "exchange_tick"
+    assert summary.history_ticks[-1]["payload"]["book"]["bids"]

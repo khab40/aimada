@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
 from app.nebius.client import NebiusClient, RedTeamScenarioResponse
 from app.schemas.arena import (
@@ -6,6 +6,7 @@ from app.schemas.arena import (
     ScenarioConfig,
     ScenarioType,
 )
+from app.storage.history import append_history_artifact, utc_now
 
 router = APIRouter(prefix="/api/red-team", tags=["red-team"])
 nebius_client = NebiusClient()
@@ -26,18 +27,37 @@ SCENARIO_LABELS: dict[ScenarioType, str] = {
 
 
 @router.post("/generate-scenario", response_model=ScenarioConfig)
-def generate_red_team_scenario(request: RedTeamScenarioGenerateRequest) -> ScenarioConfig:
+def generate_red_team_scenario(payload: RedTeamScenarioGenerateRequest, request: Request) -> ScenarioConfig:
     constraints = {
-        **request.constraints,
-        "scenario_family": request.scenario_family,
-        "market_regime": request.market_regime.value,
-        "goal": request.goal.value,
+        **payload.constraints,
+        "scenario_family": payload.scenario_family,
+        "market_regime": payload.market_regime.value,
+        "goal": payload.goal.value,
     }
     draft = nebius_client.generate_red_team_scenario(
-        prompt=_build_generation_prompt(request),
+        prompt=_build_generation_prompt(payload),
         constraints=constraints,
     )
-    return scenario_config_from_draft(draft, request)
+    scenario = scenario_config_from_draft(draft, payload)
+    created_at = utc_now()
+    row = {
+        "created_at": created_at,
+        "request": payload.model_dump(mode="json"),
+        "scenario": scenario.model_dump(mode="json"),
+        "draft": draft.model_dump(mode="json"),
+    }
+    request.app.state.store.append_jsonl("red-team/generated_scenarios.jsonl", row)
+    append_history_artifact(
+        request.app.state.store,
+        kind="attack_scenario",
+        payload=row,
+        summary=scenario.label,
+        created_at=created_at,
+        scenario_id=scenario.slug.value,
+        source="red_team_generator",
+        source_path="red-team/generated_scenarios.jsonl",
+    )
+    return scenario
 
 
 def scenario_config_from_draft(

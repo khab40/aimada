@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 from app.nebius.client import IncidentExplanationResponse, NebiusClient
 from app.schemas.arena import AgentEvent, ArenaState, AttackTrackerState, Incident, MarketFeatures, PriceLevel
+from app.storage.history import append_history_artifact
 from app.storage.local_store import LocalStore
 
 router = APIRouter(prefix="/api/incidents", tags=["incidents"])
@@ -75,6 +76,26 @@ def persist_explanation_result(
             "explanation": enriched.model_dump(mode="json"),
             "replay": replay_payload,
         },
+    )
+    append_history_artifact(
+        store,
+        kind="ai_explanation",
+        payload={
+            "id": explanation_id,
+            "created_at": created_at,
+            "incident_id": incident.id,
+            "incident_type": incident.type,
+            "scenario_id": incident.scenario_id,
+            "scenario_family": incident.scenario_family,
+            "explanation": enriched.model_dump(mode="json"),
+            "replay": replay_payload,
+        },
+        summary=f"AI explanation for {incident.id}",
+        created_at=created_at,
+        scenario_id=incident.scenario_id,
+        incident_id=incident.id,
+        source="incident_explainer",
+        source_path=stored_artifact,
     )
     store.append_jsonl(
         "events/significant_events.jsonl",
