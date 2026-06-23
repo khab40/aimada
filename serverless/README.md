@@ -62,19 +62,19 @@ PUSH=true ./scripts/build-serverless-images.sh
 The script builds:
 
 ```text
-ghcr.io/khab40/nebius-market-abuse-arena-endpoint:latest
-ghcr.io/khab40/nebius-market-abuse-arena-jobs:latest
+ghcr.io/khab40/ai-market-abuse-detection-arena-endpoint:latest
+ghcr.io/khab40/ai-market-abuse-detection-arena-jobs:latest
 ```
 
 Equivalent manual commands:
 
 ```bash
 docker build -f serverless/endpoint/Dockerfile \
-  -t ghcr.io/khab40/nebius-market-abuse-arena-endpoint:latest \
+  -t ghcr.io/khab40/ai-market-abuse-detection-arena-endpoint:latest \
   serverless/endpoint
 
 docker build -f serverless/jobs/Dockerfile \
-  -t ghcr.io/khab40/nebius-market-abuse-arena-jobs:latest \
+  -t ghcr.io/khab40/ai-market-abuse-detection-arena-jobs:latest \
   .
 ```
 

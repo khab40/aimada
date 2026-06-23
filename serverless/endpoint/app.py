@@ -14,7 +14,7 @@ DISCLAIMER = (
     "does not provide trading signals, and must not be used for compliance decisions."
 )
 
-app = FastAPI(title="Nebius Market Abuse Arena Serverless Endpoint")
+app = FastAPI(title="AI Market Abuse Detection Arena Serverless Endpoint")
 
 
 class EvidenceItem(BaseModel):
@@ -113,7 +113,7 @@ class ExplainPayload(BaseModel):
 def health() -> dict[str, str]:
     return {
         "status": "ok",
-        "service": "nebius-market-abuse-arena-endpoint",
+        "service": "ai-market-abuse-detection-arena-endpoint",
         "model_mode": "ai_studio" if _model_enabled() else "deterministic_fallback",
     }
 

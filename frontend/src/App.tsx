@@ -26,7 +26,7 @@ export function App() {
           <div className="sidebar-brand">
             <div>
               <p className="eyebrow">Synthetic order-book arena</p>
-              <h1>Market Abuse Arena</h1>
+              <h1>AI Market Abuse Detection Arena</h1>
             </div>
             <button
               aria-label={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}
@@ -77,7 +77,7 @@ export function App() {
   );
 }
 
-const SPLASH_HIDE_KEY = "nmaa.hideArenaSplash";
+const SPLASH_HIDE_KEY = "aimada.hideArenaSplash";
 const oneSlideUrl = "/img/ai_market_abuse_arena_one_slide.jpg";
 
 function ArenaSplashOverlay() {
@@ -111,13 +111,13 @@ function ArenaSplashOverlay() {
       <section aria-labelledby="arena-splash-title" aria-modal="true" className="arena-splash-panel" role="dialog">
         <div className="arena-splash-copy">
           <p className="eyebrow">Arena overview</p>
-          <h2 id="arena-splash-title">Market Abuse Arena</h2>
+          <h2 id="arena-splash-title">AI Market Abuse Detection Arena</h2>
           <p>
             Synthetic market state, red-team scenarios, detector evidence, replay history, and reports in one shared arena.
           </p>
         </div>
         <img
-          alt="One-slide overview of the Market Abuse Arena workflow"
+          alt="One-slide overview of the AI Market Abuse Detection Arena workflow"
           className="arena-splash-image"
           src={oneSlideUrl}
         />

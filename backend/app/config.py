@@ -11,7 +11,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    app_name: str = "Nebius Market Abuse Arena"
+    app_name: str = "AI Market Abuse Detection Arena"
     nebius_api_key: str | None = Field(default=None, alias="NEBIUS_API_KEY")
     nebius_tenant_id: str | None = Field(default=None, alias="NEBIUS_TENANT_ID")
     nebius_endpoint_base_url: str | None = Field(

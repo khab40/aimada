@@ -5,7 +5,7 @@ preset: 4vcpu-16gb
 subnet_name: default-subnet
 
 image:
-  repository: ghcr.io/your-org/nebius-market-abuse-arena-jobs
+  repository: ghcr.io/your-org/ai-market-abuse-detection-arena-jobs
   tag: latest
 
 args:

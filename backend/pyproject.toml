@@ -1,7 +1,7 @@
 [project]
-name = "nebius-market-abuse-arena-backend"
+name = "ai-market-abuse-detection-arena-backend"
 version = "0.1.0"
-description = "FastAPI backend and synthetic market simulation for Nebius Market Abuse Arena."
+description = "FastAPI backend and synthetic market simulation for AI Market Abuse Detection Arena."
 requires-python = ">=3.11"
 dependencies = [
   "fastapi>=0.111.0",

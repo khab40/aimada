@@ -38,7 +38,7 @@ export function AboutPage() {
         <p className="eyebrow">What this project does</p>
         <h2>Visual synthetic market arena for detection, explanation, and benchmarks</h2>
         <p>
-          Nebius Market Abuse Arena is a React visual cockpit plus FastAPI simulator that creates a synthetic
+          AI Market Abuse Detection Arena is a React visual cockpit plus FastAPI simulator that creates a synthetic
           limit-order-book market. Normal agents provide baseline activity, red-team scenarios inject bounded
           abuse-like patterns, deterministic detectors score the market state, and Nebius Serverless components
           explain incidents or run offline experiments.

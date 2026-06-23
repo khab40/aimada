@@ -94,8 +94,8 @@ Then create the endpoint and job:
 ```bash
 export NEBIUS_SUBNET_ID=<vpc-subnet-id>
 export NEBIUS_PARENT_ID=<project-id>
-export NEBIUS_ENDPOINT_IMAGE=ghcr.io/<your-org>/nebius-market-abuse-arena-endpoint:<tag>
-export NEBIUS_JOB_IMAGE=ghcr.io/<your-org>/nebius-market-abuse-arena-jobs:<tag>
+export NEBIUS_ENDPOINT_IMAGE=ghcr.io/<your-org>/ai-market-abuse-detection-arena-endpoint:<tag>
+export NEBIUS_JOB_IMAGE=ghcr.io/<your-org>/ai-market-abuse-detection-arena-jobs:<tag>
 
 ./scripts/create-nebius-ai-endpoint.sh
 ./scripts/create-nebius-ai-job.sh

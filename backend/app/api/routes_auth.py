@@ -81,8 +81,8 @@ def google_complete(payload: GoogleCompleteRequest, request: Request) -> AuthSes
 
 
 @router.get("/me", response_model=AuthSessionResponse)
-def me(request: Request, x_nmaa_session_id: str | None = Header(default=None, alias=SESSION_HEADER)) -> AuthSessionResponse:
-    current = find_session(request.app.state.store, x_nmaa_session_id)
+def me(request: Request, x_aimada_session_id: str | None = Header(default=None, alias=SESSION_HEADER)) -> AuthSessionResponse:
+    current = find_session(request.app.state.store, x_aimada_session_id)
     if current is None:
         raise HTTPException(status_code=401, detail="not logged in")
     return AuthSessionResponse(user=current["user"], session=current["session"], restored_history=None)
@@ -92,9 +92,9 @@ def me(request: Request, x_nmaa_session_id: str | None = Header(default=None, al
 def select_role(
     payload: RoleUpdateRequest,
     request: Request,
-    x_nmaa_session_id: str | None = Header(default=None, alias=SESSION_HEADER),
+    x_aimada_session_id: str | None = Header(default=None, alias=SESSION_HEADER),
 ) -> AuthSessionResponse:
-    current = update_role(request.app.state.store, session_id=x_nmaa_session_id or "", role=payload.role)
+    current = update_role(request.app.state.store, session_id=x_aimada_session_id or "", role=payload.role)
     if current is None:
         raise HTTPException(status_code=401, detail="not logged in")
     return AuthSessionResponse(user=current["user"], session=current["session"], restored_history=None)
@@ -104,9 +104,9 @@ def select_role(
 def save_current_session(
     payload: SessionSaveRequest,
     request: Request,
-    x_nmaa_session_id: str | None = Header(default=None, alias=SESSION_HEADER),
+    x_aimada_session_id: str | None = Header(default=None, alias=SESSION_HEADER),
 ) -> SessionSaveResponse:
-    snapshot = save_session_history(request.app.state.store, session_id=x_nmaa_session_id or "", window_hours=payload.window_hours)
+    snapshot = save_session_history(request.app.state.store, session_id=x_aimada_session_id or "", window_hours=payload.window_hours)
     if snapshot is None:
         raise HTTPException(status_code=401, detail="not logged in")
     return SessionSaveResponse(saved=True, snapshot=snapshot)
@@ -116,10 +116,10 @@ def save_current_session(
 def logout(
     payload: SessionSaveRequest,
     request: Request,
-    x_nmaa_session_id: str | None = Header(default=None, alias=SESSION_HEADER),
+    x_aimada_session_id: str | None = Header(default=None, alias=SESSION_HEADER),
 ) -> SessionSaveResponse:
-    snapshot = save_session_history(request.app.state.store, session_id=x_nmaa_session_id or "", window_hours=payload.window_hours)
-    closed = close_session(request.app.state.store, session_id=x_nmaa_session_id or "")
+    snapshot = save_session_history(request.app.state.store, session_id=x_aimada_session_id or "", window_hours=payload.window_hours)
+    closed = close_session(request.app.state.store, session_id=x_aimada_session_id or "")
     if snapshot is None or closed is None:
         raise HTTPException(status_code=401, detail="not logged in")
     return SessionSaveResponse(saved=True, snapshot=snapshot)

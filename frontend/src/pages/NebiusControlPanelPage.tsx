@@ -216,8 +216,8 @@ export function NebiusControlPanelPage() {
       <div className="panel nebius-hero-panel">
         <div>
           <p className="eyebrow">Nebius Control Panel</p>
-          <h1>Market Abuse Arena</h1>
-          <p>Nebius Market Abuse Arena is a cloud-native AI laboratory for generating, detecting, explaining, and replaying market-abuse scenarios at scale.</p>
+          <h1>AI Market Abuse Detection Arena</h1>
+          <p>AI Market Abuse Detection Arena is a cloud-native AI laboratory for generating, detecting, explaining, and replaying market-abuse scenarios at scale.</p>
         </div>
       </div>
 

@@ -26,7 +26,7 @@ def test_google_stub_login_creates_session_and_logout_saves_history(tmp_path: Pa
         GoogleCompleteRequest(email="player@example.com", name="Player One", role="attacker"),
         request,
     )
-    response = logout(SessionSaveRequest(window_hours=24), request, x_nmaa_session_id=login.session["session_id"])
+    response = logout(SessionSaveRequest(window_hours=24), request, x_aimada_session_id=login.session["session_id"])
 
     snapshots = request.app.state.store.read_jsonl(f"auth/users/{login.user['user_id']}/history_snapshots.jsonl")
 
@@ -44,7 +44,7 @@ def test_login_restores_latest_saved_history(tmp_path: Path) -> None:
         GoogleCompleteRequest(email="player@example.com", name="Player One", role="defender"),
         request,
     )
-    logout(SessionSaveRequest(window_hours=24), request, x_nmaa_session_id=first_login.session["session_id"])
+    logout(SessionSaveRequest(window_hours=24), request, x_aimada_session_id=first_login.session["session_id"])
 
     second_login = google_complete(
         GoogleCompleteRequest(email="player@example.com", name="Player One", role="observer"),

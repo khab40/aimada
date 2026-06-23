@@ -1,9 +1,9 @@
 {
-  "name": "Nebius Market Abuse Arena",
-  "short_name": "NMAA",
+  "name": "AI Market Abuse Detection Arena",
+  "short_name": "AIMADA",
   "icons": [
     {
-      "src": "/nmaa-icon.svg",
+      "src": "/aimada-icon.svg",
       "sizes": "64x64",
       "type": "image/svg+xml"
     }

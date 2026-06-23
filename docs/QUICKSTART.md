@@ -1,4 +1,4 @@
-# Quick Start - Nebius Market Abuse Arena
+# Quick Start - AI Market Abuse Detection Arena
 
 Get the system running locally in 5 minutes.
 
@@ -12,8 +12,8 @@ Get the system running locally in 5 minutes.
 
 ```bash
 # Clone the repository
-git clone https://github.com/khab40/nebius-market-abuse-arena.git
-cd nebius-market-abuse-arena
+git clone https://github.com/khab40/ai-market-abuse-detection-arena.git
+cd ai-market-abuse-detection-arena
 
 # Copy environment template
 cp .env.example .env

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 NAME="${NEBIUS_ENDPOINT_NAME:-market-abuse-arena-ai-endpoint}"
-IMAGE="${NEBIUS_ENDPOINT_IMAGE:-ghcr.io/your-org/nebius-market-abuse-arena-endpoint:latest}"
+IMAGE="${NEBIUS_ENDPOINT_IMAGE:-ghcr.io/your-org/ai-market-abuse-detection-arena-endpoint:latest}"
 PLATFORM="${NEBIUS_ENDPOINT_PLATFORM:-cpu-d3}"
 PRESET="${NEBIUS_ENDPOINT_PRESET:-4vcpu-16gb}"
 DISK_SIZE="${NEBIUS_ENDPOINT_DISK_SIZE:-100Gi}"

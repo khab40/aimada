@@ -4,6 +4,22 @@ Status: Accepted
 
 Date: 2026-06-01
 
+## Implementation Status
+
+Status as of 2026-06-23: `[partial]`
+
+Implemented:
+
+- Local detector tournament writes benchmark JSON, CSV, Markdown report, and optional chart artifacts.
+- Synthetic dataset factory writes events, incidents, labels, snapshots, and manifest artifacts, with a JSONL fallback when Parquet dependencies are unavailable.
+- Smart batch runner writes serverless-batch style artifacts for attack/detect experiments.
+
+Not yet complete:
+
+- The canonical ARD path shape is run-specific (`outputs/benchmark/<run_id>/...`), while the current local detector tournament path still uses flatter files such as `outputs/benchmark/results.json`, `metrics.csv`, and `benchmark_report.md`.
+- A committed sample benchmark report and one archived final run are still missing.
+- Artifact schema versioning is not yet formalized.
+
 ## Context
 
 The Nebius Serverless AI Job must run many synthetic simulations and produce artifacts that are easy to inspect, reproduce, and cite in submission material. The benchmark should compare detector outputs against known scenario labels and preserve enough raw data for debugging.

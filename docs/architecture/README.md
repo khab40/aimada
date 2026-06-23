@@ -1,8 +1,24 @@
 # Architecture Records
 
-This folder contains Architecture Record Documents (ARDs) for Nebius Market Abuse Arena.
+This folder contains Architecture Record Documents (ARDs) for AI Market Abuse Detection Arena.
 
 ARDs capture architecture decisions, context, tradeoffs, implementation phases, and links to supporting documentation. They are meant to complement the higher-level architecture overview in [../architecture.md](../architecture.md).
+
+## Implementation Summary
+
+Status as of 2026-06-23:
+
+| ARD | Implementation | Main Gap |
+|-----|----------------|----------|
+| [ARD-0001](ARD-0001-overall-architecture.md) | `[partial]` | Real archived Nebius endpoint/job run is still missing |
+| [ARD-0002](ARD-0002-websocket-state-schema.md) | `[done]` | Optional exported JSON schema and load-test throttling |
+| [ARD-0003](ARD-0003-detector-evidence-model.md) | `[done]` | Broader threshold calibration and validation |
+| [ARD-0004](ARD-0004-benchmark-artifact-format.md) | `[partial]` | Run-specific canonical path and schema versioning are not complete |
+| [ARD-0005](ARD-0005-nebius-endpoint-contract.md) | `[partial]` | Contract not yet proven with archived real endpoint execution |
+| [ARD-0006](ARD-0006-scenario-labeling-and-reproducibility.md) | `[partial]` | Live label finalization and full event/order ID linkage remain incomplete |
+| [ARD-0007](ARD-0007-nebius-serverless-ai-jobs.md) | `[partial]` | Real Serverless AI Job run and observability evidence are missing |
+| [ARD-0008](ARD-0008-nebius-serverless-ai-endpoints.md) | `[partial]` | Real deployed endpoint logs, latency metrics, and screenshots are missing |
+| [ARD-0009](ARD-0009-judge-mode-investigation-reports.md) | `[partial]` | Dedicated Judge Mode timeline selector is not fully implemented |
 
 ## Records
 
@@ -35,6 +51,7 @@ Each ARD includes:
 |---------|---------|
 | **Status** | Accepted, Proposed, Rejected, Superseded |
 | **Date** | When the record was written |
+| **Implementation Status** | What has landed and what is still missing |
 | **Context** | Business and technical background |
 | **Decision** | What was decided and why |
 | **Architecture** | Diagrams and component overview |

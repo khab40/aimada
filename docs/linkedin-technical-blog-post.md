@@ -1,14 +1,14 @@
 # LinkedIn Technical Blog Post
 
-Repository: https://github.com/khab40/nebius-market-abuse-arena
+Repository: https://github.com/khab40/ai-market-abuse-detection-arena
 
 Hashtag: #NebiusServerlessChallenge
 
 ## Post
 
-I built Nebius Market Abuse Arena for the #NebiusServerlessChallenge: a synthetic, serverless-oriented market simulation that makes order-book abuse-like patterns visible, testable, and explainable without using real trading data.
+I built AI Market Abuse Detection Arena for the #NebiusServerlessChallenge: a synthetic, serverless-oriented market simulation that makes order-book abuse-like patterns visible, testable, and explainable without using real trading data.
 
-Repository: https://github.com/khab40/nebius-market-abuse-arena
+Repository: https://github.com/khab40/ai-market-abuse-detection-arena
 
 The problem I wanted to explore is a common one in technical AI demos: the interesting part of the domain is hard to show safely. Market surveillance involves sensitive data, specialized microstructure concepts, noisy event streams, and a lot of language that can become misleading if the system is presented as a real compliance tool. I did not want to build a product that claims to detect real manipulation. Instead, I built an educational arena where synthetic normal agents and synthetic abuse-like agents interact inside a controlled limit-order-book simulation. That gives the project a concrete engineering surface: generate market events, inject labeled scenarios, run deterministic detectors, preserve evidence, and use AI to explain what the detector already found.
 

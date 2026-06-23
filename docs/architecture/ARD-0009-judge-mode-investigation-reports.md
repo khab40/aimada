@@ -4,6 +4,21 @@ Status: Accepted
 
 Date: 2026-06-02
 
+## Implementation Status
+
+Status as of 2026-06-23: `[partial]`
+
+Implemented:
+
+- Backend investigation-report endpoint contract and Nebius client response model.
+- UI report/replay surfaces for incident-centered evidence review and generated investigation summaries.
+- Artifact workbench actions for exporting, replaying, comparing, and promoting report evidence.
+
+Not yet complete:
+
+- A dedicated Judge Mode timeline-window selector with bounded evidence bundling is not fully implemented.
+- Persisted report workflow exists through the artifact/report surfaces, but the full state machine in this ARD remains future work.
+
 ## Context
 
 Judge Mode should let an operator select a timeline segment and ask an AI judge

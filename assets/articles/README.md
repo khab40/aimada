@@ -1,6 +1,6 @@
-# Articles for Nebius Market Abuse Arena
+# Articles for AI Market Abuse Detection Arena
 
-This folder contains open/public research references used for the `nebius-market-abuse-arena` project idea: agent-based market simulation, order-book spoofing-like behavior, LOB realism metrics, and synthetic market simulation.
+This folder contains open/public research references used for the `ai-market-abuse-detection-arena` project idea: agent-based market simulation, order-book spoofing-like behavior, LOB realism metrics, and synthetic market simulation.
 
 The PDFs were downloaded from public arXiv or public proceedings pages where available. Use them for project research and cite the original sources in the README/blog.
 

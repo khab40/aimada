@@ -8,7 +8,7 @@ import type {
 } from "@/features/nebius/types";
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
-export const AUTH_SESSION_HEADER = "X-NMAA-Session-ID";
+export const AUTH_SESSION_HEADER = "X-AIMADA-Session-ID";
 
 export async function getHealth(): Promise<{ status: string }> {
   const response = await fetch(`${API_BASE_URL}/health`);

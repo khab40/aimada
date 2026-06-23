@@ -4,6 +4,22 @@ Status: Accepted
 
 Date: 2026-06-01
 
+## Implementation Status
+
+Status as of 2026-06-23: `[partial]`
+
+Implemented:
+
+- Serverless endpoint app exposes health, explanation, scenario generation, smart scenario, order-book alert, and investigation-report routes.
+- Backend `NebiusClient` shapes typed requests, handles environment-based URLs, and falls back to deterministic typed mock responses.
+- UI and backend routes support incident explanation, smart detection, investigation report generation, and scenario drafting without exposing endpoint credentials to the browser.
+- Endpoint contract tests cover the local serverless app.
+
+Not yet complete:
+
+- The contract has not yet been proven with an archived real Nebius endpoint execution.
+- Production authentication, rate limiting, and endpoint observability evidence remain follow-up work.
+
 ## Context
 
 The backend needs AI-generated explanations for detected synthetic incidents,

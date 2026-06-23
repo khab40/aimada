@@ -4,6 +4,21 @@ Status: Accepted
 
 Date: 2026-06-02
 
+## Implementation Status
+
+Status as of 2026-06-23: `[partial]`
+
+Implemented:
+
+- Detector tournament, batch benchmark, synthetic dataset factory, and parallel attack/detect batch scripts under `serverless/jobs/`.
+- Job Dockerfile, example configs, Nebius job config, image build script, and submit script with dry-run support.
+- Backend and UI paths for smart batch creation, artifact workbench access, usage evidence, and local parsing of benchmark artifacts.
+
+Not yet complete:
+
+- One real Nebius Serverless AI Job execution has not yet been archived with logs, metrics screenshots, and resulting artifacts.
+- Cost/runtime guardrails are documented but not enforced by a remote job policy layer.
+
 ## Context
 
 Experiment Mode needs repeatable offline work that is too heavy or too slow for

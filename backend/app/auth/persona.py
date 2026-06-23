@@ -7,7 +7,7 @@ from app.storage.local_store import LocalStore
 
 ArenaRole = Literal["attacker", "defender", "observer", "judge"]
 
-SESSION_HEADER = "X-NMAA-Session-ID"
+SESSION_HEADER = "X-AIMADA-Session-ID"
 
 
 def user_id_for_google_identity(subject: str | None, email: str | None) -> str:

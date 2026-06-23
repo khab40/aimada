@@ -5,6 +5,13 @@ Update this file with each significant commit before pushing.
 
 ## Unreleased
 
+### Current - rename product and mark implementation status
+
+- Renamed the product identity from the old Nebius-branded project name to AI Market Abuse Detection Arena across UI labels, package/service names, docs, scripts, manifests, and demo assets.
+- Updated the README with a current implementation snapshot and open gaps.
+- Added implementation status sections to ARD-0001 through ARD-0009 and summarized done/partial work in the ARD index.
+- Updated design ideas and phase tracking to mark implemented, partial, and missing pieces, including Judge Mode, screenshots, demo video, and sample benchmark artifacts.
+
 ### Current - fix: align cloud lab UI, replay reports, and education flow
 
 - Split the high-level UI into clearer newcomer workflows: Market Arena, Red Team Attack Scenario Generator, Blue Team Surveillance, Nebius Control Panel, Replay & Reports, and About.
@@ -32,7 +39,7 @@ Update this file with each significant commit before pushing.
 ### `ee25dd5` - fix: documentation updates
 
 - Added editor recommendations and a one-slide market-abuse arena visual asset.
-- Added a Nebius Market Abuse Arena one-pager and updated the overall architecture ARD.
+- Added an AI Market Abuse Detection Arena one-pager and updated the overall architecture ARD.
 - Refined Arena/Lab UI copy and scenario-launch styling.
 - Updated Nebius endpoint creation script details and included the modeling document artifact.
 
@@ -55,8 +62,8 @@ Update this file with each significant commit before pushing.
 - Added persistent incident explanation records under `incidents/explanations.jsonl` and exposed them in Reports as Nebius analysis history.
 - Polished the Arena cockpit toward a denser FinTech terminal UI with better viewport usage, responsive heatmap sizing, tighter panels, and clearer market-data styling.
 - Made Arena Start/Pause/Reset controls state-dependent to avoid duplicate starts and invalid resets.
-- Added a browser/site icon and web manifest for the Nebius Market Abuse Arena UI.
-- Added a concise one-pager under `assets/` describing Market Abuse Arena as an early-stage product demo and future near-real-time detection direction.
+- Added a browser/site icon and web manifest for the AI Market Abuse Detection Arena UI.
+- Added a concise one-pager under `assets/` describing AI Market Abuse Detection Arena as an early-stage product demo and future near-real-time detection direction.
 - Updated `docs/PHASES.md` with status markers and aligned Phase 4 artifacts with the current serverless job outputs.
 
 ### `0c1f58b` - fix: preserve labeled legacy scenario runtime

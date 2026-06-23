@@ -6,8 +6,8 @@ TAG="${IMAGE_TAG:-latest}"
 PUSH="${PUSH:-false}"
 PLATFORM="${IMAGE_PLATFORM:-linux/amd64}"
 
-ENDPOINT_IMAGE="ghcr.io/${OWNER}/nebius-market-abuse-arena-endpoint:${TAG}"
-JOBS_IMAGE="ghcr.io/${OWNER}/nebius-market-abuse-arena-jobs:${TAG}"
+ENDPOINT_IMAGE="ghcr.io/${OWNER}/ai-market-abuse-detection-arena-endpoint:${TAG}"
+JOBS_IMAGE="ghcr.io/${OWNER}/ai-market-abuse-detection-arena-jobs:${TAG}"
 
 cd "$(dirname "$0")/.."
 

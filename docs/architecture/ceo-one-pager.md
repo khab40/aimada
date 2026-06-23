@@ -2,7 +2,7 @@
 
 ### What It Is Today
 
-Nebius Market Abuse Arena is a visual AI demo and research prototype for showing how synthetic market abuse patterns can appear inside a live limit-order-book simulation. It is intentionally framed as an educational simulator, not a production surveillance product, trading system, or compliance decision engine.
+AI Market Abuse Detection Arena is a visual AI demo and research prototype for showing how synthetic market abuse patterns can appear inside a live limit-order-book simulation. It is intentionally framed as an educational simulator, not a production surveillance product, trading system, or compliance decision engine.
 
 The current architecture combines three things in one coherent demo:
 

@@ -1,6 +1,6 @@
 # Use Cases
 
-Nebius Market Abuse Arena is an educational synthetic market simulation for demonstrating order-book anomaly detection, red-team scenario injection, deterministic detector evaluation, and AI-assisted explanations.
+AI Market Abuse Detection Arena is an educational synthetic market simulation for demonstrating order-book anomaly detection, red-team scenario injection, deterministic detector evaluation, and AI-assisted explanations.
 
 This document describes business-style use cases. It does not describe real market surveillance, trading signals, or compliance decisioning.
 

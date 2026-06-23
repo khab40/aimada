@@ -1,6 +1,6 @@
-# Nebius Market Abuse Arena
+# AI Market Abuse Detection Arena
 
-Nebius Market Abuse Arena is a live synthetic market simulation for demonstrating how suspicious order-book behavior can be generated, detected, explained, and benchmarked without using real trading data.
+AI Market Abuse Detection Arena is a live synthetic market simulation for demonstrating how suspicious order-book behavior can be generated, detected, explained, and benchmarked without using real trading data.
 
 The system combines a React visual arena, a FastAPI exchange simulator, synthetic normal and red-team agents, deterministic market microstructure detectors, and Nebius serverless infrastructure.
 

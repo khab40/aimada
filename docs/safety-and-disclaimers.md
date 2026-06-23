@@ -1,6 +1,6 @@
 # Safety and Disclaimers
 
-Nebius Market Abuse Arena is a synthetic simulation and detector evaluation project.
+AI Market Abuse Detection Arena is a synthetic simulation and detector evaluation project.
 
 ## Not Production Surveillance
 

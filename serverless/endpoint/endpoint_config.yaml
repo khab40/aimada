@@ -7,7 +7,7 @@ preset: 4vcpu-16gb
 disk_size: 100Gi
 
 image:
-  repository: ghcr.io/your-org/nebius-market-abuse-arena-endpoint
+  repository: ghcr.io/your-org/ai-market-abuse-detection-arena-endpoint
   tag: latest
 
 env:

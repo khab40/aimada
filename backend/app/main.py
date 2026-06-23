@@ -17,7 +17,7 @@ from app.storage.local_store import LocalStore
 from app.websocket.manager import WebSocketManager
 from app.websocket.routes import router as websocket_router
 
-app = FastAPI(title="Nebius Market Abuse Arena")
+app = FastAPI(title="AI Market Abuse Detection Arena")
 settings = get_settings()
 app.state.store = LocalStore(settings.arena_output_dir)
 app.state.simulation = SimulationEngine(store=app.state.store)
@@ -51,7 +51,7 @@ app.include_router(websocket_router)
 @app.get("/api/status", tags=["status"])
 def api_status() -> dict[str, object]:
     return {
-        "service": "nebius-market-abuse-arena-backend",
+        "service": "ai-market-abuse-detection-arena-backend",
         "status": "ok",
         "nebius": nebius_client.integration_status().model_dump(mode="json"),
     }

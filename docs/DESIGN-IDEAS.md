@@ -2,6 +2,8 @@
 
 ## Theme Mode Switcher
 
+Status: `[todo]`
+
 Add a compact widget in the top-right corner of the shared UI shell that lets the operator switch between:
 
 - Day mode
@@ -12,21 +14,31 @@ The control should persist the selected preference locally and apply the theme a
 
 ## Product Modes
 
+Status: `[partial]`
+
 1. Live Arena Mode
 
 A visual, game-like market where red-team and blue-team agents act in real time.
+
+Implementation: `[done]` through the main Arena, scenario controls, detector panels, incident views, and WebSocket state path.
 
 2. Experiment Mode
 
 Batch simulations using Nebius Serverless AI Jobs.
 
+Implementation: `[partial]` through local job scripts, configs, backend/UI smart batch surfaces, and artifact workbench flows. A real archived Nebius Serverless AI Job run is still missing.
+
 3. Judge Mode
 
 AI explains a selected timeline segment and produces an investigation report.
 
+Implementation: `[partial]` through incident-centered AI investigation/report flows. A dedicated timeline-window selector with bounded evidence bundling is still not complete.
+
 This gives the project both the visual demo surface and the serious engineering path needed for the challenge.
 
 ## 3D Market Battlefield Simulator
+
+Status: `[partial]`
 
 Create an optional visual simulator that renders the live limit order book as terrain.
 

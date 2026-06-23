@@ -1,10 +1,10 @@
 # RELEVENCE.md
 
-# Nebius Market Abuse Arena — Relevance to Nebius Serverless Build Challenge
+# AI Market Abuse Detection Arena — Relevance to Nebius Serverless Build Challenge
 
 ## 1. Project summary
 
-**Nebius Market Abuse Arena: Red Team vs Blue Team** is a cloud-native AI laboratory for simulating, detecting, explaining, and replaying financial market-abuse scenarios. The project combines a lightweight limit-order-book simulator, red-team manipulation agents, blue-team surveillance agents, AI-generated explanations, and serverless batch experiments.
+**AI Market Abuse Detection Arena: Red Team vs Blue Team** is a cloud-native AI laboratory for simulating, detecting, explaining, and replaying financial market-abuse scenarios. The project combines a lightweight limit-order-book simulator, red-team manipulation agents, blue-team surveillance agents, AI-generated explanations, and serverless batch experiments.
 
 The core demo story is simple:
 
@@ -152,7 +152,7 @@ The project has several qualities that are useful in a build challenge:
 
 The best short positioning is:
 
-> Nebius Market Abuse Arena is a cloud-native AI laboratory for generating, detecting, explaining, and replaying market-abuse scenarios at scale.
+> AI Market Abuse Detection Arena is a cloud-native AI laboratory for generating, detecting, explaining, and replaying market-abuse scenarios at scale.
 
 The practical punchline is:
 
@@ -229,7 +229,7 @@ This scope is narrow enough to build, but strong enough to be credible.
 
 ## 8. Final value statement
 
-**Nebius Market Abuse Arena** is valuable because it turns market-abuse surveillance from a static demo into a scalable AI-driven experimentation lab. It lets users generate manipulation scenarios, simulate market impact, detect suspicious behavior, explain alerts, run many variants on serverless infrastructure, and store replayable evidence.
+**AI Market Abuse Detection Arena** is valuable because it turns market-abuse surveillance from a static demo into a scalable AI-driven experimentation lab. It lets users generate manipulation scenarios, simulate market impact, detect suspicious behavior, explain alerts, run many variants on serverless infrastructure, and store replayable evidence.
 
 For Nebius, it demonstrates a serious AI + Serverless use case:
 

@@ -1,6 +1,6 @@
 # Project Phases
 
-Nebius Market Abuse Arena will be built as:
+AI Market Abuse Detection Arena will be built as:
 
 - React visual arena
 - FastAPI simulator
@@ -157,7 +157,7 @@ Deliverables:
 - `[done]` reproducibility scripts under `scripts/`
 - `[done]` `Nebius Control Panel` UI tab with observatory widgets, attack scenario generation, smart detection/report actions, serverless batch runs, and artifact workbench access to benchmark outputs
 - `[done]` `docs/nebius-deployment.md`
-- `[partial]` screenshots under `assets/screenshots/` exist as placeholders; real Nebius logs/metrics screenshots are still needed.
+- `[todo]` screenshots under `assets/screenshots/` are still missing except for `.gitkeep`; real Nebius logs/metrics screenshots are still needed.
 
 Benchmark outputs:
 
@@ -182,7 +182,7 @@ Exit criteria:
 - `[done]` The benchmark job can run multiple synthetic scenarios.
 - `[done]` Precision, recall, and F1 are reported by scenario family.
 - `[done]` The explanation endpoint returns structured summaries for incidents.
-- `[partial]` Deployment documentation includes commands and placeholder screenshots; real Nebius logs/metrics screenshots are still needed for final review.
+- `[partial]` Deployment documentation includes commands; real Nebius logs/metrics screenshots are still needed for final review.
 - `[todo]` Run and archive one real end-to-end Nebius endpoint + job execution with outputs.
 
 ## Phase 5: Polish And Submission Assets
@@ -205,8 +205,8 @@ Deliverables:
 - `[done]` polished root `README.md`
 - `[done]` `docs/architecture.md`
 - `[partial]` architecture diagrams exist in Mermaid docs; standalone assets under `assets/diagrams/` are still optional/future work.
-- `[todo]` blog post draft
-- `[todo]` short demo video under `assets/demo-video/`
+- `[done]` blog post draft in `docs/linkedin-technical-blog-post.md`
+- `[partial]` demo narration scripts and captions under `assets/demo-video/`; rendered demo video is still missing.
 - `[done]` `docs/research-notes.md`
 - `[todo]` committed sample benchmark report under `outputs/benchmark/`
 - `[done]` final disclaimer and safety language in README/docs/UI
@@ -216,5 +216,5 @@ Exit criteria:
 - `[done]` A reviewer can understand the system from the README and docs.
 - `[done]` The demo can be started with documented commands.
 - `[done]` The architecture and runtime model are documented.
-- `[partial]` The project includes supporting research notes; sample benchmark report still needs to be generated and committed.
+- `[partial]` The project includes supporting research notes, a blog draft, and demo narration assets; sample benchmark report and rendered video still need to be generated and committed.
 - `[done]` The submission avoids claims about real market manipulation detection, trading signals, or compliance use.

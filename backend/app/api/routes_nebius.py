@@ -574,7 +574,7 @@ def _now() -> str:
 
 
 def _jobs_image() -> str:
-    return "ghcr.io/khab40/nebius-market-abuse-arena-jobs:latest"
+    return "ghcr.io/khab40/ai-market-abuse-detection-arena-jobs:latest"
 
 
 def _build_attack_scenario(payload: AttackScenarioInput, variant_index: int = 0) -> AttackScenario:

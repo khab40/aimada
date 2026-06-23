@@ -10,7 +10,7 @@ import {
   type AuthUser
 } from "@/api/client";
 import { AuthContext, type AuthState } from "@/auth/authState";
-const STORAGE_KEY = "nmaa.auth.session";
+const STORAGE_KEY = "aimada.auth.session";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [busy, setBusy] = useState(false);

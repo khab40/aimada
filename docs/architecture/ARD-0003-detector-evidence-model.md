@@ -4,6 +4,20 @@ Status: Accepted
 
 Date: 2026-06-01
 
+## Implementation Status
+
+Status as of 2026-06-23: `[done]`
+
+Implemented:
+
+- Deterministic feature extraction and detector modules for spoofing-like, layering-like, quote-stuffing-like, and liquidity shock patterns.
+- Aggregate detector scores, incident cards, incident drawer evidence, persisted incident records, and backend explanation payloads grounded in structured evidence.
+- Benchmark and report surfaces that reuse detector evidence rather than relying on generated prose as the detector.
+
+Follow-up:
+
+- Threshold calibration against broader synthetic distributions and historical-style replay datasets remains future validation work.
+
 ## Context
 
 Detector alerts must be explainable without relying on AI-generated text. The project needs deterministic confidence scores and evidence items that can be shown in the UI, written to benchmark artifacts, and sent to the Nebius explanation endpoint.

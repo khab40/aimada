@@ -1,6 +1,6 @@
-# Nebius Market Abuse Arena
+# AI Market Abuse Detection Arena
 
-![Nebius Market Abuse Arena GitHub banner](assets/img/github-banner.png)
+![AI Market Abuse Detection Arena GitHub banner](assets/img/github-banner.png)
 
 A research and performance engineering workspace for synthetic order-book market abuse detection, live visualization, benchmark runs, and AI-generated incident explanations.
 
@@ -9,6 +9,22 @@ A research and performance engineering workspace for synthetic order-book market
 ## ⚠️ Disclaimer
 
 This project is an educational simulation. It does not detect real market manipulation, does not provide trading signals, and should not be used for compliance decisions. The scenarios are synthetic "abuse-like" patterns designed to demonstrate order-book anomaly detection and AI-generated explanations. See [docs/safety-and-disclaimers.md](docs/safety-and-disclaimers.md) for details.
+
+## Current Implementation Status
+
+Implemented:
+
+- Live React/FastAPI arena with WebSocket state, order-book visualization, scenario launch, detector scores, incidents, and report/replay workflows.
+- Deterministic detector evidence model for synthetic spoofing-like, layering-like, quote-stuffing-like, and liquidity-shock patterns.
+- Nebius endpoint and job scaffolds with local typed fallbacks, Docker/config files, scripts, and UI control surfaces.
+- Documentation set for quick start, architecture, ARDs, runtime model, benchmark methodology, safety framing, deployment, and design ideas.
+
+Not yet complete:
+
+- Archived real Nebius endpoint and Serverless AI Job run with logs, metrics screenshots, and produced artifacts.
+- Committed sample benchmark report under `outputs/benchmark/`.
+- Final screenshot assets for the README screenshot table.
+- Dedicated Judge Mode timeline-window selector and formal benchmark artifact schema versioning.
 
 ## Repository Structure
 
@@ -27,8 +43,8 @@ outputs/          Generated logs, incidents, reports, artifacts
 ### 1. Clone and Configure
 
 ```bash
-git clone https://github.com/khab40/nebius-market-abuse-arena.git
-cd nebius-market-abuse-arena
+git clone https://github.com/khab40/ai-market-abuse-detection-arena.git
+cd ai-market-abuse-detection-arena
 cp .env.example .env
 ```
 
@@ -157,8 +173,8 @@ Nebius resource creation:
 ```bash
 export NEBIUS_PARENT_ID=<project-id>
 export NEBIUS_SUBNET_ID=<vpc-subnet-id>
-export NEBIUS_ENDPOINT_IMAGE=ghcr.io/<your-org>/nebius-market-abuse-arena-endpoint:<tag>
-export NEBIUS_JOB_IMAGE=ghcr.io/<your-org>/nebius-market-abuse-arena-jobs:<tag>
+export NEBIUS_ENDPOINT_IMAGE=ghcr.io/<your-org>/ai-market-abuse-detection-arena-endpoint:<tag>
+export NEBIUS_JOB_IMAGE=ghcr.io/<your-org>/ai-market-abuse-detection-arena-jobs:<tag>
 
 ./scripts/create-nebius-ai-endpoint.sh
 ./scripts/create-nebius-ai-job.sh
@@ -216,14 +232,16 @@ Start with the guides above, then explore:
 
 ## Screenshots
 
-Interactive SVG mockups of the system UI:
+Status: `[todo]`
 
-| View | Path | Description |
+`assets/screenshots/` currently contains only `.gitkeep`. Planned screenshot assets:
+
+| View | Planned Path | Description |
 | --- | --- | --- |
-| Arena cockpit | [assets/screenshots/arena-cockpit.svg](assets/screenshots/arena-cockpit.svg) | Live order-book, detector alerts, incident details |
-| Incident replay drawer | [assets/screenshots/incident-replay-drawer.svg](assets/screenshots/incident-replay-drawer.svg) | Timeline replay, evidence metrics, AI explanation |
-| Experiment Lab / Nebius job | [assets/screenshots/experiment-lab.svg](assets/screenshots/experiment-lab.svg) | Batch job config, live metrics, results streaming |
-| Nebius logs and metrics | [assets/screenshots/nebius-logs-metrics.svg](assets/screenshots/nebius-logs-metrics.svg) | Log stream, CPU/memory/latency charts, worker health |
+| Arena cockpit | `assets/screenshots/arena-cockpit.svg` | Live order-book, detector alerts, incident details |
+| Incident replay drawer | `assets/screenshots/incident-replay-drawer.svg` | Timeline replay, evidence metrics, AI explanation |
+| Experiment Lab / Nebius job | `assets/screenshots/experiment-lab.svg` | Batch job config, live metrics, results streaming |
+| Nebius logs and metrics | `assets/screenshots/nebius-logs-metrics.svg` | Log stream, CPU/memory/latency charts, worker health |
 
 ## For Maintainers & Contributors
 

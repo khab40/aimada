@@ -1,6 +1,6 @@
 # High-Level Architecture
 
-Nebius Market Abuse Arena is organized around two execution paths:
+AI Market Abuse Detection Arena is organized around two execution paths:
 
 - an interactive demo path for live simulation, visualization, incident review, and AI-assisted explanations
 - a batch benchmark path for running many synthetic simulations and measuring detector quality

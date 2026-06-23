@@ -4,9 +4,25 @@ Status: Accepted
 
 Date: 2026-05-31
 
+## Implementation Status
+
+Status as of 2026-06-23: `[partial]`
+
+Implemented:
+
+- React/Vite routed UI for Arena, red-team scenario generation, blue-team surveillance, Nebius control operations, reports, and About pages.
+- FastAPI backend with simulation lifecycle APIs, WebSocket live state, scenario launch, incident persistence, benchmark/report APIs, and Nebius endpoint client fallback behavior.
+- Synthetic exchange, matching engine, normal agents, scenario agents, deterministic detectors, evidence objects, and local artifact storage.
+- Serverless endpoint/job scaffolds, Dockerfiles, configs, scripts, and local mock/cloud-adapter paths.
+
+Not yet complete:
+
+- One archived real Nebius endpoint and Serverless AI Job run with logs, metrics, and produced artifacts.
+- Production-grade surveillance integrations, real market data ingestion, compliance workflows, and trading signals remain intentionally out of scope.
+
 ## Context
 
-Nebius Market Abuse Arena is an educational simulation for demonstrating synthetic order-book anomaly detection and AI-generated explanations. It is not a production market surveillance system, does not detect real market manipulation, does not provide trading signals, and must not be used for compliance decisions.
+AI Market Abuse Detection Arena is an educational simulation for demonstrating synthetic order-book anomaly detection and AI-generated explanations. It is not a production market surveillance system, does not detect real market manipulation, does not provide trading signals, and must not be used for compliance decisions.
 
 The project needs to support two complementary workflows:
 
@@ -531,7 +547,7 @@ Architecture records that refine this decision:
 
 ### What It Is Today
 
-Nebius Market Abuse Arena is a visual AI demo and research prototype for showing how synthetic market abuse patterns can appear inside a live limit-order-book simulation. It is intentionally framed as an educational simulator, not a production surveillance product, trading system, or compliance decision engine.
+AI Market Abuse Detection Arena is a visual AI demo and research prototype for showing how synthetic market abuse patterns can appear inside a live limit-order-book simulation. It is intentionally framed as an educational simulator, not a production surveillance product, trading system, or compliance decision engine.
 
 The current architecture combines three things in one coherent demo:
 

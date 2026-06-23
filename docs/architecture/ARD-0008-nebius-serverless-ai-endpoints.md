@@ -4,6 +4,21 @@ Status: Accepted
 
 Date: 2026-06-02
 
+## Implementation Status
+
+Status as of 2026-06-23: `[partial]`
+
+Implemented:
+
+- Serverless endpoint app, endpoint Dockerfile/configs, prompt scaffolding, and endpoint contract tests.
+- FastAPI backend integration boundary with URL/env configuration, optional API key, timeout handling, and typed fallback responses.
+- UI flows for AI incident explanation, smart order-book alert scoring, investigation reports, and bounded red-team scenario drafting.
+
+Not yet complete:
+
+- Real deployed Nebius endpoint logs, latency metrics, and screenshots are still missing.
+- The endpoint path remains a demo/integration surface, not a production monitoring service.
+
 ## Context
 
 Live Arena Mode and Judge Mode need low-latency AI assistance without exposing

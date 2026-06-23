@@ -4,6 +4,21 @@ Status: Accepted
 
 Date: 2026-06-01
 
+## Implementation Status
+
+Status as of 2026-06-23: `[partial]`
+
+Implemented:
+
+- Scenario IDs, families, parameters, and metadata propagate through scenario controllers, agents, exchange events, detector inputs, and benchmark outputs.
+- Benchmark and dataset scripts write scenario/attack labels for detector evaluation.
+- Tests cover scenario launch, metadata preservation, and deterministic scenario behavior.
+
+Not yet complete:
+
+- Live-demo label records do not yet fully finalize every event/order ID linkage described in this ARD.
+- Reproducible replay packaging from a saved label set is still limited to local benchmark and dataset scripts.
+
 ## Context
 
 Scenario agents generate synthetic abuse-like behavior for demos and benchmarks. To measure detector precision and recall, the system needs ground-truth labels describing which scenario ran, when it was active, and which events belong to it.

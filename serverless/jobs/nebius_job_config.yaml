@@ -8,7 +8,7 @@ container_command: python
 args: /job/serverless/jobs/run_batch_experiments.py --runs 1000 --batch-size 100 --output /job/outputs/serverless-batch
 
 image:
-  repository: ghcr.io/your-org/nebius-market-abuse-arena-jobs
+  repository: ghcr.io/your-org/ai-market-abuse-detection-arena-jobs
   tag: latest
 
 scenarios:

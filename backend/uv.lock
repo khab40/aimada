@@ -141,7 +141,7 @@ wheels = [
 ]
 
 [[package]]
-name = "nebius-market-abuse-arena-backend"
+name = "ai-market-abuse-detection-arena-backend"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

@@ -1,6 +1,6 @@
 # Challenge Submission
 
-Nebius Market Abuse Arena is a visual, synthetic, serverless learning arena for order-book abuse-like pattern detection and AI-generated incident explanations.
+AI Market Abuse Detection Arena is a visual, synthetic, serverless learning arena for order-book abuse-like pattern detection and AI-generated incident explanations.
 
 ## What It Demonstrates
 

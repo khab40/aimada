@@ -83,7 +83,7 @@ def scenario_config_from_draft(
 
 def _build_generation_prompt(request: RedTeamScenarioGenerateRequest) -> str:
     return (
-        "Generate one bounded educational red-team scenario for the synthetic market abuse arena. "
+        "Generate one bounded educational red-team scenario for the synthetic market abuse detection arena. "
         f"Scenario family: {request.scenario_family}. "
         f"Market regime: {request.market_regime.value}. "
         f"Goal: {request.goal.value}. "

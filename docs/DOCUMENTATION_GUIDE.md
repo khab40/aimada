@@ -1,6 +1,6 @@
 # Documentation Guide
 
-This guide explains the documentation structure and conventions for Nebius Market Abuse Arena.
+This guide explains the documentation structure and conventions for AI Market Abuse Detection Arena.
 
 ## Documentation Structure
 
