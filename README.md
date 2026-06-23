@@ -15,6 +15,9 @@ This project is an educational simulation. It does not detect real market manipu
 Implemented:
 
 - Live React/FastAPI arena with WebSocket state, order-book visualization, scenario launch, detector scores, incidents, and report/replay workflows.
+- In-process `AgentManager` for hundreds of lightweight normal agents with per-tick deadlines and single-writer exchange application.
+- Separate `agent-runner` service for out-of-process agents over HTTP, while the backend keeps the exchange/order book authoritative.
+- LangGraph-compatible generic remote agents and worker-pool heavy agents inside `agent-runner`.
 - Deterministic detector evidence model for synthetic spoofing-like, layering-like, quote-stuffing-like, and liquidity-shock patterns.
 - Nebius endpoint and job scaffolds with local typed fallbacks, Docker/config files, scripts, and UI control surfaces.
 - Documentation set for quick start, architecture, ARDs, runtime model, benchmark methodology, safety framing, deployment, and design ideas.
@@ -186,6 +189,27 @@ Frontend WebSocket connection:
 VITE_ARENA_MODE=websocket
 VITE_ARENA_WS_URL=ws://localhost:8000/ws/arena
 ```
+
+Agent scheduler:
+
+```bash
+ARENA_AGENT_COUNT=3
+ARENA_AGENT_DECISION_TIMEOUT_SECONDS=0.05
+ARENA_REMOTE_AGENT_URLS=http://agent-runner:9100
+ARENA_REMOTE_AGENT_TIMEOUT_SECONDS=0.05
+ARENA_BASELINE_LIQUIDITY_LEVELS=12
+ARENA_BASELINE_LIQUIDITY_BASE_SIZE=1.5
+ARENA_BASELINE_LIQUIDITY_TICK_SIZE=1.0
+ARENA_BASELINE_LIQUIDITY_REFERENCE_PRICE=68125.0
+ARENA_MAX_AGENT_QUOTE_SIZE=25.0
+AGENT_RUNNER_AGENT_COUNT=200
+AGENT_RUNNER_HEAVY_AGENT_COUNT=8
+AGENT_RUNNER_HEAVY_AGENT_WORKERS=2
+AGENT_RUNNER_LANGGRAPH_AGENT_COUNT=16
+AGENT_RUNNER_LANGGRAPH_STRATEGY=liquidity_rebalancer
+```
+
+Use a comma-separated `ARENA_REMOTE_AGENT_URLS` value to point the backend at agent runners in other containers or on other machines. The backend receives only `AgentIntent` objects; LangGraph and heavy-agent execution stay inside the runner. The `ARENA_BASELINE_LIQUIDITY_*` settings maintain a minimum bid/ask ladder around the reference price so market orders and scenarios cannot leave one side permanently empty. Agent `set_level` intents are additive per agent at a price level and capped by `ARENA_MAX_AGENT_QUOTE_SIZE`; scenarios can still replace whole levels when they need scripted walls or cancellations.
 
 ## WebSocket
 

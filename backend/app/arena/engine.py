@@ -1,8 +1,8 @@
 import asyncio
-import random
 from collections import deque
 from contextlib import suppress
 
+from app.agents.runtime import AgentIntent, MarketSnapshot, build_agent_manager
 from app.arena.clock import SimulationClock
 from app.arena.state import (
     arena_state_from_book,
@@ -18,12 +18,40 @@ from app.storage.local_store import LocalStore
 
 
 class SimulationEngine:
-    def __init__(self, tick_interval_seconds: float = 0.5, seed: int = 7, store: LocalStore | None = None) -> None:
+    def __init__(
+        self,
+        tick_interval_seconds: float = 0.5,
+        seed: int = 7,
+        store: LocalStore | None = None,
+        normal_agent_count: int = 3,
+        agent_decision_timeout_seconds: float = 0.05,
+        remote_agent_urls: list[str] | None = None,
+        remote_agent_timeout_seconds: float | None = None,
+        baseline_liquidity_levels: int = 12,
+        baseline_liquidity_base_size: float = 1.5,
+        baseline_liquidity_tick_size: float = 1.0,
+        baseline_liquidity_reference_price: float = 68_125.0,
+        max_agent_quote_size: float = 25.0,
+    ) -> None:
         self.tick_interval_seconds = tick_interval_seconds
         self.seed = seed
         self.run_id = f"RUN-{seed:06d}"
         self.clock = SimulationClock(tick_interval_ms=int(tick_interval_seconds * 1000))
-        self.random = random.Random(seed)
+        self.baseline_liquidity_levels = max(0, baseline_liquidity_levels)
+        self.baseline_liquidity_base_size = max(0.0, baseline_liquidity_base_size)
+        self.baseline_liquidity_tick_size = max(0.01, baseline_liquidity_tick_size)
+        self.baseline_liquidity_reference_price = baseline_liquidity_reference_price
+        self.max_agent_quote_size = max(0.0, max_agent_quote_size)
+        self.normal_agent_count = normal_agent_count
+        self.agent_decision_timeout_seconds = agent_decision_timeout_seconds
+        self.remote_agent_urls = remote_agent_urls or []
+        self.remote_agent_timeout_seconds = remote_agent_timeout_seconds
+        self.agent_manager = build_agent_manager(
+            local_agent_count=normal_agent_count,
+            remote_agent_urls=self.remote_agent_urls,
+            decision_timeout_seconds=agent_decision_timeout_seconds,
+            remote_timeout_seconds=remote_agent_timeout_seconds,
+        )
         self.order_book = self._new_order_book()
         self.events: deque[AgentEvent] = deque(maxlen=20)
         self.scenarios = ScenarioController()
@@ -39,7 +67,12 @@ class SimulationEngine:
         self.state = self._build_state(running=False)
 
     def _new_order_book(self) -> OrderBook:
-        return OrderBook(mid_price=68_125.0, levels=12, tick_size=1.0, base_size=1.5)
+        return OrderBook(
+            mid_price=self.baseline_liquidity_reference_price,
+            levels=self.baseline_liquidity_levels,
+            tick_size=self.baseline_liquidity_tick_size,
+            base_size=self.baseline_liquidity_base_size,
+        )
 
     async def start(self) -> ArenaState:
         async with self._lock:
@@ -60,6 +93,12 @@ class SimulationEngine:
             self.running = False
             self.clock.reset()
             self.order_book = self._new_order_book()
+            self.agent_manager = build_agent_manager(
+                local_agent_count=self.normal_agent_count,
+                remote_agent_urls=self.remote_agent_urls,
+                decision_timeout_seconds=self.agent_decision_timeout_seconds,
+                remote_timeout_seconds=self.remote_agent_timeout_seconds,
+            )
             self.events.clear()
             self.scenarios.reset()
             self.incidents.clear()
@@ -138,19 +177,14 @@ class SimulationEngine:
             if not self.running:
                 continue
             async with self._lock:
-                self._advance_tick(running=True)
+                await self._advance_tick_async(running=True)
 
     def _advance_tick(self, running: bool) -> None:
         tick = self.clock.step()
         previous_depth_top_n = self._top_depth()
-        tick_events = [
-            self._market_maker_refresh(tick),
-            self._noise_trader_update(tick),
-        ]
-        taker_event = self._liquidity_taker_update(tick)
-        if taker_event is not None:
-            tick_events.append(taker_event)
+        tick_events = self._apply_agent_intents(self.agent_manager.collect_intents_sync(self._market_snapshot(tick)))
         tick_events.extend(self.scenarios.advance(self.order_book, tick))
+        self._maintain_baseline_liquidity()
 
         for event in tick_events:
             self.events.appendleft(event)
@@ -164,63 +198,142 @@ class SimulationEngine:
         )
         self._persist_tick_snapshot(tick_events)
 
-    def _market_maker_refresh(self, tick: int) -> AgentEvent:
-        best_bid = self.order_book.best_bid()
-        best_ask = self.order_book.best_ask()
-        if best_bid is None or best_ask is None:
-            return AgentEvent(type="market_maker", timestamp=tick, agent_id="MM_01")
+    async def _advance_tick_async(self, running: bool) -> None:
+        tick = self.clock.step()
+        previous_depth_top_n = self._top_depth()
+        tick_events = self._apply_agent_intents(await self.agent_manager.collect_intents(self._market_snapshot(tick)))
+        tick_events.extend(self.scenarios.advance(self.order_book, tick))
+        self._maintain_baseline_liquidity()
 
-        bid_size = round(2.0 + (tick % 5) * 0.25, 3)
-        ask_size = round(2.1 + ((tick + 2) % 5) * 0.25, 3)
-        self.order_book.update_level("bid", best_bid, bid_size, owner="normal")
-        self.order_book.update_level("ask", best_ask, ask_size, owner="normal")
-        return AgentEvent(
-            type="market_maker",
-            timestamp=tick,
-            agent_id="MM_01",
-            price=(best_bid + best_ask) / 2,
-            quantity=round(bid_size + ask_size, 3),
-            message="refreshed best bid/ask depth",
+        for event in tick_events:
+            self.events.appendleft(event)
+            is_significant = event.type in {"red_team", "detector", "nebius"} or event.scenario_id is not None
+            self._persist_event(event, significant=is_significant)
+
+        self.state = self._build_state(
+            running=running,
+            current_events=tick_events,
+            previous_depth_top_n=previous_depth_top_n,
+        )
+        self._persist_tick_snapshot(tick_events)
+
+    def _market_snapshot(self, tick: int) -> MarketSnapshot:
+        snapshot = self.order_book.get_l2_snapshot(depth=12)
+        return MarketSnapshot(
+            tick=tick,
+            bids=list(snapshot["bids"]),
+            asks=list(snapshot["asks"]),
+            best_bid=snapshot["best_bid"],
+            best_ask=snapshot["best_ask"],
+            mid=snapshot["mid"],
+            spread=snapshot["spread"],
         )
 
-    def _noise_trader_update(self, tick: int) -> AgentEvent:
-        side = "bid" if tick % 2 else "ask"
-        levels = self.order_book.bids if side == "bid" else self.order_book.asks
-        prices = sorted(levels, reverse=side == "bid")
-        level_index = min((tick + 2) % 5, len(prices) - 1)
-        price = prices[level_index]
-        current_size = self.order_book._level_quantity(side, price)
-        delta = self.random.choice([-0.35, -0.2, 0.2, 0.35])
-        next_size = max(0.25, round(current_size + delta, 3))
-        self.order_book.update_level(side, price, next_size, owner="normal")
+    def _apply_agent_intents(self, intents: list[AgentIntent]) -> list[AgentEvent]:
+        events: list[AgentEvent] = []
+        for intent in intents:
+            event = self._apply_agent_intent(intent)
+            if event is not None:
+                events.append(event)
+        return events
+
+    def _apply_agent_intent(self, intent: AgentIntent) -> AgentEvent | None:
+        if intent.kind == "set_level":
+            if intent.side is None or intent.price is None:
+                return None
+            book_side = "bid" if intent.side in {"bid", "buy"} else "ask"
+            quantity = min(max(0.0, intent.quantity), self.max_agent_quote_size)
+            self.order_book.update_agent_level(
+                book_side,
+                intent.price,
+                quantity,
+                agent_id=intent.agent_id,
+                owner="normal",
+            )
+            return AgentEvent(
+                type=intent.event_type,
+                timestamp=intent.tick,
+                agent_id=intent.agent_id,
+                side="buy" if book_side == "bid" else "sell",
+                price=intent.price,
+                quantity=intent.quantity,
+                message=intent.message or "updated visible depth",
+            )
+
+        if intent.kind == "market":
+            order = intent.to_order()
+            trades = self.order_book.apply_market_order(order)
+            traded_quantity = sum(float(trade["quantity"]) for trade in trades)
+            trade_price = trades[0]["price"] if trades else None
+            return AgentEvent(
+                type=intent.event_type,
+                timestamp=intent.tick,
+                agent_id=intent.agent_id,
+                side=order.side,
+                price=trade_price,
+                quantity=traded_quantity,
+                message=intent.message or "submitted market order",
+            )
+
+        if intent.kind == "limit":
+            order = intent.to_order()
+            self.order_book.add_limit_order(order)
+            return AgentEvent(
+                type=intent.event_type,
+                timestamp=intent.tick,
+                order_id=order.order_id,
+                agent_id=order.agent_id,
+                side=order.side,
+                price=order.price,
+                quantity=order.quantity,
+                message=intent.message or "submitted limit order",
+            )
+
+        if intent.kind == "cancel" and intent.order_id:
+            cancelled = self.order_book.cancel_order(intent.order_id)
+            if cancelled is None:
+                return None
+            return AgentEvent(
+                type=intent.event_type,
+                timestamp=intent.tick,
+                order_id=cancelled.order_id,
+                agent_id=intent.agent_id,
+                side=cancelled.side,
+                price=cancelled.price,
+                quantity=cancelled.quantity,
+                message=intent.message or "cancelled resting order",
+            )
         return AgentEvent(
-            type="normal",
-            timestamp=tick,
-            agent_id="NOISE_01",
-            side="buy" if side == "bid" else "sell",
-            price=price,
-            quantity=next_size,
-            message="small visible depth changed",
+            type=intent.event_type,
+            timestamp=intent.tick,
+            agent_id=intent.agent_id,
+            message=intent.message or "agent intent ignored",
         )
 
-    def _liquidity_taker_update(self, tick: int) -> AgentEvent | None:
-        if tick % 4 != 0:
-            return None
+    def _maintain_baseline_liquidity(self) -> None:
+        if self.baseline_liquidity_levels <= 0 or self.baseline_liquidity_base_size <= 0:
+            return
 
-        side = "buy" if (tick // 4) % 2 else "sell"
-        quantity = 0.5
-        trades = self.order_book.apply_market_order(side, quantity)
-        traded_quantity = sum(float(trade["quantity"]) for trade in trades)
-        trade_price = trades[0]["price"] if trades else None
-        return AgentEvent(
-            type="normal",
-            timestamp=tick,
-            agent_id="TAKER_01",
-            side=side,
-            price=trade_price,
-            quantity=traded_quantity,
-            message="consumed small top-of-book quantity",
-        )
+        reference = self.baseline_liquidity_reference_price
+        for index in range(self.baseline_liquidity_levels):
+            distance = index + 1
+            target_size = round(self.baseline_liquidity_base_size + index, 6)
+            bid_price = round(reference - distance * self.baseline_liquidity_tick_size, 8)
+            ask_price = round(reference + distance * self.baseline_liquidity_tick_size, 8)
+            self.order_book.ensure_level_minimum(
+                "bid",
+                bid_price,
+                target_size,
+                agent_id="BASELINE_MM",
+                owner="normal",
+            )
+            self.order_book.ensure_level_minimum(
+                "ask",
+                ask_price,
+                target_size,
+                agent_id="BASELINE_MM",
+                owner="normal",
+            )
 
     def _build_state(
         self,
@@ -241,7 +354,7 @@ class SimulationEngine:
         )
         detector_scores = self.detectors.detect(features)
         evidence = flatten_evidence(detector_scores)
-        active_agents = ["MM_01", "NOISE_01", "TAKER_01"]
+        active_agents = self.agent_manager.agent_ids
         if active_scenario is not None:
             active_agents.append(active_scenario.agent_id)
             active_scenario = active_scenario.model_copy(update={"evidence": evidence})

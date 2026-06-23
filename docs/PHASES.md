@@ -37,6 +37,7 @@ Deliverables:
 
 - `[done]` `backend/app/exchange/order_book.py`
 - `[done]` `backend/app/exchange/matching_engine.py`
+- `[done]` `backend/app/agents/runtime.py` in-process `AgentManager` with deterministic intent sorting and per-tick deadlines
 - `[done]` `backend/app/agents/market_maker.py`
 - `[done]` `backend/app/agents/noise_trader.py`
 - `[done]` `backend/app/agents/liquidity_taker.py`
@@ -51,9 +52,30 @@ Exit criteria:
 
 - `[done]` The simulator ticks continuously when started.
 - `[done]` Normal agents generate baseline activity.
+- `[done]` The backend can register hundreds of lightweight normal agents while keeping exchange mutation single-writer.
 - `[done]` The matching engine updates the synthetic book.
 - `[done]` The frontend receives or can display live state.
 - `[done]` The UI shows bids, asks, best levels, and basic market state.
+
+## Phase 2A: Out-of-Process Agent Runners
+
+Status: `[done]`
+
+Goal: let normal agents run outside the exchange/backend container while preserving one authoritative exchange writer.
+
+Deliverables:
+
+- `[done]` HTTP remote-agent protocol using `MarketSnapshot` requests and `AgentIntent` responses.
+- `[done]` backend `RemoteAgentClient` support through `ARENA_REMOTE_AGENT_URLS`.
+- `[done]` separate `agent-runner` service and Dockerfile.
+- `[done]` Docker Compose wiring for local backend + remote runner separation.
+- `[done]` tests for remote intent parsing and local/remote manager composition.
+
+Exit criteria:
+
+- `[done]` Agents can run in a separate container.
+- `[done]` Agent runners can be moved to another server by changing `ARENA_REMOTE_AGENT_URLS`.
+- `[done]` The exchange/order book remains single-writer in the backend.
 
 ## Phase 2: Scenario Agents And Operator Controls
 
@@ -84,6 +106,44 @@ Exit criteria:
 - `[done]` Active scenario state is visible in the UI.
 - `[done]` Agent activity appears in the feed.
 - `[done]` Scenario events are labeled for detector and benchmark use.
+
+## Phase 3B: Baseline Liquidity And Quote Ownership
+
+Status: `[done]`
+
+Goal: keep the synthetic exchange two-sided and bounded while hundreds of agents quote into the same book.
+
+Deliverables:
+
+- `[done]` baseline liquidity guard restores configured bid/ask ladder after each tick.
+- `[done]` runtime `set_level` intents update per-agent synthetic quotes instead of replacing whole price levels.
+- `[done]` `ARENA_BASELINE_LIQUIDITY_*` and `ARENA_MAX_AGENT_QUOTE_SIZE` backend configuration.
+- `[done]` regression tests for empty-side reseeding, additive shared-price liquidity, quote clamping, and long-run bounded depth.
+
+Remaining gaps:
+
+- `[todo]` browser controls for ladder and quote-cap tuning.
+- `[todo]` dynamic reference-price model for drifting market regimes.
+
+## Phase 3A: Heavy And LangGraph Remote Agents
+
+Status: `[done]`
+
+Goal: keep CPU-heavy and LangGraph-based agent decisions outside the exchange/backend process while preserving the same intent protocol.
+
+Deliverables:
+
+- `[done]` `HeavyAnalysisAgent` support with worker-pool execution.
+- `[done]` `agent-runner` process-pool configuration for heavy agents.
+- `[done]` generic LangGraph remote agents using `StateGraph` observe/decide nodes.
+- `[done]` Docker image dependency on `langgraph` for the runner only.
+- `[done]` environment controls for heavy and LangGraph agent counts, strategy, and worker pool size.
+
+Exit criteria:
+
+- `[done]` Expensive agent decision work runs outside the backend/exchange process.
+- `[done]` LangGraph agents emit the same `AgentIntent` contract as other agents.
+- `[done]` The backend stays framework-agnostic and remains the only exchange writer.
 
 ## Phase 3: Deterministic Detectors And Incidents
 

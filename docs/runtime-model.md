@@ -31,6 +31,33 @@ graph TD
 
 The backend owns the clock and publishes each state update to connected browser clients. REST endpoints control start, pause, reset, scenario launch, incident explanation, and benchmark summary retrieval.
 
+Normal agents are scheduled in process by `AgentManager`. Agents receive a read-only market snapshot and return order intents. The exchange/order-book path remains a single writer: intents are sorted by tick, latency bucket, agent id, and sequence before they mutate the book. This lets the arena register hundreds of lightweight agents without allowing concurrent writes to shared market state.
+
+Runtime scale knobs:
+
+```text
+ARENA_AGENT_COUNT=3
+ARENA_AGENT_DECISION_TIMEOUT_SECONDS=0.05
+ARENA_REMOTE_AGENT_URLS=http://agent-runner:9100
+ARENA_REMOTE_AGENT_TIMEOUT_SECONDS=0.05
+ARENA_BASELINE_LIQUIDITY_LEVELS=12
+ARENA_BASELINE_LIQUIDITY_BASE_SIZE=1.5
+ARENA_BASELINE_LIQUIDITY_TICK_SIZE=1.0
+ARENA_BASELINE_LIQUIDITY_REFERENCE_PRICE=68125.0
+ARENA_MAX_AGENT_QUOTE_SIZE=25.0
+AGENT_RUNNER_AGENT_COUNT=200
+AGENT_RUNNER_HEAVY_AGENT_COUNT=8
+AGENT_RUNNER_HEAVY_AGENT_WORKERS=2
+AGENT_RUNNER_LANGGRAPH_AGENT_COUNT=16
+AGENT_RUNNER_LANGGRAPH_STRATEGY=liquidity_rebalancer
+```
+
+Agents that miss the per-tick decision deadline are skipped for that tick. This keeps the live arena responsive. Runtime agent `set_level` intents update that agent's own bounded synthetic quote at a price level, so hundreds of agents can share one price without overwriting each other or compounding aggregate depth. The backend caps these quotes with `ARENA_MAX_AGENT_QUOTE_SIZE`. After each tick, the backend applies a baseline liquidity guard that restores the configured minimum bid/ask ladder around `ARENA_BASELINE_LIQUIDITY_REFERENCE_PRICE`, including when a side has been fully consumed.
+
+Phase 2 adds out-of-process agent runners. A runner exposes `POST /decide`, receives the same read-only `MarketSnapshot`, and returns `AgentIntent` JSON. The backend can call runners in other containers or on other machines through `ARENA_REMOTE_AGENT_URLS`; only the backend applies accepted intents to the exchange. This preserves deterministic single-writer market state while allowing agent decision work to scale independently.
+
+Phase 3 adds heavy and LangGraph-compatible remote agents. Heavy agents run their expensive decision function through a worker pool inside `agent-runner`. Generic LangGraph agents use `StateGraph` with `observe` and `decide` nodes, then emit the same `AgentIntent` contract. The backend does not import LangGraph and does not know whether a remote intent came from a simple function, a process-pool worker, or a LangGraph graph.
+
 ## Agent Model
 
 ### Always-On Agents
@@ -39,9 +66,10 @@ These agents provide baseline market activity whenever the arena is running.
 
 | Agent | Runtime Behavior |
 | --- | --- |
-| `MarketMakerAgent` | Maintains bid and ask liquidity around the current mid price. |
-| `NoiseTraderAgent` | Sends random small limit and market orders to create background activity. |
-| `LiquidityTakerAgent` | Occasionally sends aggressive buy or sell orders that consume visible liquidity. |
+| `TopOfBookMarketMaker` | Maintains bid and ask liquidity around the current mid price. |
+| `DeterministicNoiseTrader` | Sends deterministic small depth updates to create background activity. |
+| `PeriodicLiquidityTaker` | Occasionally sends aggressive buy or sell orders that consume visible liquidity. |
+| Additional generated normal agents | Scale the same lightweight decision model to hundreds of registered agents. |
 
 ### Scenario Agents
 
@@ -154,15 +182,23 @@ The benchmark screen summarizes offline detector quality by scenario family.
 
 ### `agents/`
 
-`MarketMakerAgent`
+`runtime.py`
+
+- `AgentIntent`
+- `MarketSnapshot`
+- `AgentManager`
+- `build_normal_agents()`
+- `build_heavy_agents()`
+
+`TopOfBookMarketMaker`
 
 - maintains bid and ask liquidity around mid price
 
-`NoiseTraderAgent`
+`DeterministicNoiseTrader`
 
-- emits random small limit and market orders
+- emits deterministic small depth updates
 
-`LiquidityTakerAgent`
+`PeriodicLiquidityTaker`
 
 - occasionally sends aggressive buy and sell orders
 

@@ -28,7 +28,54 @@ class Settings(BaseSettings):
     )
     arena_output_dir: Path = Field(default=Path("../outputs"), alias="ARENA_OUTPUT_DIR")
     arena_sample_data_dir: Path = Field(default=Path("../data/sample"), alias="ARENA_SAMPLE_DATA_DIR")
+    arena_agent_count: int = Field(default=200, ge=1, le=1000, alias="ARENA_AGENT_COUNT")
+    arena_agent_decision_timeout_seconds: float = Field(
+        default=0.05,
+        ge=0.001,
+        le=1.0,
+        alias="ARENA_AGENT_DECISION_TIMEOUT_SECONDS",
+    )
+    arena_remote_agent_urls: str = Field(default="", alias="ARENA_REMOTE_AGENT_URLS")
+    arena_remote_agent_timeout_seconds: float = Field(
+        default=0.05,
+        ge=0.001,
+        le=2.0,
+        alias="ARENA_REMOTE_AGENT_TIMEOUT_SECONDS",
+    )
+    arena_baseline_liquidity_levels: int = Field(
+        default=12,
+        ge=0,
+        le=100,
+        alias="ARENA_BASELINE_LIQUIDITY_LEVELS",
+    )
+    arena_baseline_liquidity_base_size: float = Field(
+        default=1.5,
+        ge=0.0,
+        le=1_000.0,
+        alias="ARENA_BASELINE_LIQUIDITY_BASE_SIZE",
+    )
+    arena_baseline_liquidity_tick_size: float = Field(
+        default=1.0,
+        gt=0.0,
+        le=1_000.0,
+        alias="ARENA_BASELINE_LIQUIDITY_TICK_SIZE",
+    )
+    arena_baseline_liquidity_reference_price: float = Field(
+        default=68_125.0,
+        gt=0.0,
+        alias="ARENA_BASELINE_LIQUIDITY_REFERENCE_PRICE",
+    )
+    arena_max_agent_quote_size: float = Field(
+        default=25.0,
+        ge=0.0,
+        le=1_000.0,
+        alias="ARENA_MAX_AGENT_QUOTE_SIZE",
+    )
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
+
+    @property
+    def remote_agent_url_list(self) -> list[str]:
+        return [url.strip() for url in self.arena_remote_agent_urls.split(",") if url.strip()]
 
     @property
     def nebius_explain_endpoint_url(self) -> str | None:

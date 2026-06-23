@@ -20,7 +20,18 @@ from app.websocket.routes import router as websocket_router
 app = FastAPI(title="AI Market Abuse Detection Arena")
 settings = get_settings()
 app.state.store = LocalStore(settings.arena_output_dir)
-app.state.simulation = SimulationEngine(store=app.state.store)
+app.state.simulation = SimulationEngine(
+    store=app.state.store,
+    normal_agent_count=settings.arena_agent_count,
+    agent_decision_timeout_seconds=settings.arena_agent_decision_timeout_seconds,
+    remote_agent_urls=settings.remote_agent_url_list,
+    remote_agent_timeout_seconds=settings.arena_remote_agent_timeout_seconds,
+    baseline_liquidity_levels=settings.arena_baseline_liquidity_levels,
+    baseline_liquidity_base_size=settings.arena_baseline_liquidity_base_size,
+    baseline_liquidity_tick_size=settings.arena_baseline_liquidity_tick_size,
+    baseline_liquidity_reference_price=settings.arena_baseline_liquidity_reference_price,
+    max_agent_quote_size=settings.arena_max_agent_quote_size,
+)
 app.state.websocket_manager = WebSocketManager()
 
 app.add_middleware(

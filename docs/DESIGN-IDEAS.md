@@ -36,6 +36,18 @@ Implementation: `[partial]` through incident-centered AI investigation/report fl
 
 This gives the project both the visual demo surface and the serious engineering path needed for the challenge.
 
+## Exchange Liquidity Invariant
+
+Status: `[done]`
+
+Maintain a stable two-sided synthetic market while many local, remote, heavy, and LangGraph agents act concurrently. Runtime agent quotes are additive per agent at a shared price level, bounded by a backend quote-size cap, and protected by a baseline ladder guard that restores configured bid/ask depth after each tick.
+
+Future design work:
+
+- Add a UI control for baseline ladder levels, base size, and quote cap.
+- Add a drifting reference-price model for market regimes where the mid should move materially.
+- Add per-agent inventory and risk budgets so richer strategies can quote based on exposure.
+
 ## 3D Market Battlefield Simulator
 
 Status: `[partial]`

@@ -19,6 +19,8 @@ Status as of 2026-06-23:
 | [ARD-0007](ARD-0007-nebius-serverless-ai-jobs.md) | `[partial]` | Real Serverless AI Job run and observability evidence are missing |
 | [ARD-0008](ARD-0008-nebius-serverless-ai-endpoints.md) | `[partial]` | Real deployed endpoint logs, latency metrics, and screenshots are missing |
 | [ARD-0009](ARD-0009-judge-mode-investigation-reports.md) | `[partial]` | Dedicated Judge Mode timeline selector is not fully implemented |
+| [ARD-0010](ARD-0010-agent-runner-execution.md) | `[done]` | Auth/signing and durable transport for remote runners are future work |
+| [ARD-0011](ARD-0011-exchange-liquidity-invariant.md) | `[done]` | Dynamic reference-price tracking and UI tuning are future work |
 
 ## Records
 
@@ -35,6 +37,11 @@ Status as of 2026-06-23:
 ### Data & Artifacts
 
 - [ARD-0004: Benchmark Artifact Format](ARD-0004-benchmark-artifact-format.md) — Persisted data formats (JSON, Parquet, CSV, Markdown)
+
+### Agent Execution
+
+- [ARD-0010: Agent Runner Execution Architecture](ARD-0010-agent-runner-execution.md) — Local, remote, heavy, and LangGraph-compatible agent execution
+- [ARD-0011: Exchange Liquidity Invariant And Agent Quote Ownership](ARD-0011-exchange-liquidity-invariant.md) — Baseline ladder guard and additive per-agent quote ownership
 
 ### Nebius Integration
 

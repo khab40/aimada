@@ -78,3 +78,29 @@ def test_level_removal_deletes_level_and_recalculates_market_state() -> None:
     assert snapshot["best_bid"] == 98.0
     assert snapshot["mid"] == 99.5
     assert snapshot["spread"] == 3.0
+
+
+def test_agent_level_updates_are_additive_per_agent_at_same_price() -> None:
+    book = OrderBook()
+
+    book.update_agent_level("ask", 101.0, 2.0, agent_id="AGENT_A")
+    book.update_agent_level("ask", 101.0, 3.0, agent_id="AGENT_B")
+    assert book.get_l2_snapshot()["asks"][0] == {"price": 101.0, "quantity": 5.0}
+
+    book.update_agent_level("ask", 101.0, 4.0, agent_id="AGENT_A")
+    assert book.get_l2_snapshot()["asks"][0] == {"price": 101.0, "quantity": 7.0}
+
+    book.update_agent_level("ask", 101.0, 0.0, agent_id="AGENT_A")
+    assert book.get_l2_snapshot()["asks"][0] == {"price": 101.0, "quantity": 3.0}
+
+
+def test_ensure_level_minimum_adds_only_missing_baseline_quantity() -> None:
+    book = OrderBook()
+    book.add_limit_order(Order("existing", "maker", "sell", 1.0, 101.0))
+
+    book.ensure_level_minimum("ask", 101.0, 1.5, agent_id="BASELINE_MM")
+    assert book.get_l2_snapshot()["asks"][0] == {"price": 101.0, "quantity": 1.5}
+
+    book.update_agent_level("ask", 101.0, 3.0, agent_id="AGENT_A")
+    book.ensure_level_minimum("ask", 101.0, 1.5, agent_id="BASELINE_MM")
+    assert book.get_l2_snapshot()["asks"][0] == {"price": 101.0, "quantity": 4.0}

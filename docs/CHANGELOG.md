@@ -5,6 +5,33 @@ Update this file with each significant commit before pushing.
 
 ## Unreleased
 
+### Current - fix: preserve baseline exchange liquidity
+
+- Added a baseline liquidity guard that restores a configured minimum bid/ask ladder after each simulation tick.
+- Added per-agent level updates so runtime agents quoting the same price add independent synthetic orders instead of overwriting the whole price level.
+- Added `ARENA_BASELINE_LIQUIDITY_*` and `ARENA_MAX_AGENT_QUOTE_SIZE` backend configuration plus regression tests for empty-side reseeding, shared-price agent liquidity, quote clamping, and long-run bounded depth.
+
+### Current - feat: add phase-3 LangGraph remote agents
+
+- Added generic LangGraph remote agents in `agent-runner` using `StateGraph` observe/decide nodes.
+- Added heavy-agent worker-pool execution inside `agent-runner` so expensive decisions stay out of the backend/exchange process.
+- Added `AGENT_RUNNER_HEAVY_AGENT_*` and `AGENT_RUNNER_LANGGRAPH_*` configuration in Docker Compose.
+- Added ARD-0010 and updated architecture/runtime docs for local, remote, heavy, and LangGraph-compatible agent execution.
+
+### Current - feat: add phase-2 remote agent runners
+
+- Added HTTP remote-agent runner support through `RemoteAgentClient` and `ARENA_REMOTE_AGENT_URLS`.
+- Added a separate `agent-runner` service with `/health`, `/agents`, and `/decide` endpoints.
+- Updated Docker Compose so normal agents can run outside the backend/exchange container by default.
+- Added tests for remote runner intent parsing and local/remote agent manager composition.
+
+### Current - feat: add phase-1 in-process agent scheduler
+
+- Added an in-process `AgentManager` that registers scalable normal agents, gathers per-tick intents with a deadline, sorts intents deterministically, and keeps order-book mutation single-writer.
+- Added generated normal-agent support through `ARENA_AGENT_COUNT` and `ARENA_AGENT_DECISION_TIMEOUT_SECONDS`; Docker Compose defaults the backend to 200 normal agents.
+- Added focused tests for hundreds of registered agents, deterministic intent ordering, deadline drops, and high-agent-count engine ticks.
+- Updated runtime and phase docs to describe the agent scheduler boundary and future out-of-process agent-runner path.
+
 ### Current - rename product and mark implementation status
 
 - Renamed the product identity from the old Nebius-branded project name to AI Market Abuse Detection Arena across UI labels, package/service names, docs, scripts, manifests, and demo assets.

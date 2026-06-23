@@ -1,0 +1,12 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN pip install --no-cache-dir fastapi pydantic langgraph "uvicorn[standard]"
+
+COPY backend/app ./app
+COPY agent-runner/app.py ./agent_runner_app.py
+COPY agent-runner/langgraph_agents.py ./langgraph_agents.py
+
+EXPOSE 9100
+CMD ["uvicorn", "agent_runner_app:app", "--host", "0.0.0.0", "--port", "9100"]

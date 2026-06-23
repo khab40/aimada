@@ -57,6 +57,9 @@ class OrderBook:
     def _synthetic_order_id(self, side: BookSide, price: float) -> str:
         return f"l2-{side}-{price:.8f}"
 
+    def _agent_level_order_id(self, side: BookSide, price: float, agent_id: str) -> str:
+        return f"l2-{side}-{price:.8f}-{agent_id}"
+
     def _level_quantity(self, side: Side | BookSide, price: float) -> float:
         levels = self._levels_for_side(side)
         return sum(order.quantity for order in levels.get(price, []))
@@ -93,6 +96,62 @@ class OrderBook:
         self.orders[order.order_id] = order
         self.level_owners[(book_side, price)] = owner
         self.recalculate()
+
+    def update_agent_level(
+        self,
+        side: Side | BookSide,
+        price: float,
+        size: float,
+        *,
+        agent_id: str,
+        owner: str = "normal",
+    ) -> None:
+        book_side = self._normalize_side(side)
+        order_id = self._agent_level_order_id(book_side, price, agent_id)
+        if size <= 0:
+            self.cancel_order(order_id)
+            return
+
+        levels = self._levels_for_side(book_side)
+        existing_orders = levels.get(price, [])
+        kept_orders: list[Order] = []
+        for order in existing_orders:
+            if order.order_id == order_id:
+                self.orders.pop(order.order_id, None)
+            else:
+                kept_orders.append(order)
+
+        order = Order(
+            order_id=order_id,
+            agent_id=agent_id,
+            side="buy" if book_side == "bid" else "sell",
+            quantity=size,
+            price=price,
+        )
+        levels[price] = [*kept_orders, order]
+        self.orders[order.order_id] = order
+        existing_owner = self.level_owners.get((book_side, price))
+        if owner != "normal" or existing_owner is None:
+            self.level_owners[(book_side, price)] = owner
+        self.recalculate()
+
+    def ensure_level_minimum(
+        self,
+        side: Side | BookSide,
+        price: float,
+        minimum_size: float,
+        *,
+        agent_id: str,
+        owner: str = "normal",
+    ) -> None:
+        book_side = self._normalize_side(side)
+        order_id = self._agent_level_order_id(book_side, price, agent_id)
+        levels = self._levels_for_side(book_side)
+        current_without_agent = sum(
+            order.quantity for order in levels.get(price, []) if order.order_id != order_id
+        )
+        agent_size = max(0.0, round(minimum_size - current_without_agent, 6))
+        self.update_agent_level(book_side, price, agent_size, agent_id=agent_id, owner=owner)
 
     def remove_level(self, side: Side | BookSide, price: float) -> None:
         book_side = self._normalize_side(side)

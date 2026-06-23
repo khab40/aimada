@@ -13,6 +13,8 @@ Implemented:
 - React/Vite routed UI for Arena, red-team scenario generation, blue-team surveillance, Nebius control operations, reports, and About pages.
 - FastAPI backend with simulation lifecycle APIs, WebSocket live state, scenario launch, incident persistence, benchmark/report APIs, and Nebius endpoint client fallback behavior.
 - Synthetic exchange, matching engine, normal agents, scenario agents, deterministic detectors, evidence objects, and local artifact storage.
+- In-process and remote agent runners with HTTP `MarketSnapshot` / `AgentIntent` protocol, heavy-agent worker pools, and LangGraph-compatible generic remote agents.
+- Baseline liquidity invariant with additive per-agent quote ownership and quote-size guardrails.
 - Serverless endpoint/job scaffolds, Dockerfiles, configs, scripts, and local mock/cloud-adapter paths.
 
 Not yet complete:
@@ -58,7 +60,8 @@ graph TD
     Backend["FastAPI Backend - control plane"]
     Runtime["Live Arena Runtime - simulation clock"]
     Exchange["Synthetic Exchange - order book + matching engine"]
-    Agents["Agents - normal + scenario"]
+    Agents["Agents - local + remote + scenario"]
+    Runner["agent-runner - heavy + LangGraph agents"]
     Detectors["Deterministic Detectors - microstructure features"]
     Incidents["Incident Store - evidence + confidence"]
     Endpoint["Nebius Serverless AI Endpoint - alert scoring, explanations, reports"]
@@ -69,6 +72,8 @@ graph TD
     UI -->|REST Nebius/artifact/report APIs| Backend
     Backend --> Runtime
     Runtime --> Agents
+    Agents -->|remote snapshot / intents| Runner
+    Runner --> Agents
     Agents --> Exchange
     Exchange --> Detectors
     Detectors --> Incidents
@@ -156,7 +161,8 @@ Responsibilities:
 - own simulation lifecycle commands
 - maintain the simulation clock
 - launch and stop scenarios
-- run normal and scenario agents
+- schedule local agents and remote agent runners with bounded per-tick deadlines
+- run scenario agents
 - process exchange events
 - recalculate detector scores
 - emit incidents
