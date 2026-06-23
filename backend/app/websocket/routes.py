@@ -5,6 +5,7 @@ from typing import Any
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from app.arena.engine import SimulationEngine
+from app.schemas.arena import ArenaState
 from app.websocket.manager import WebSocketManager
 
 router = APIRouter(tags=["websocket"])
@@ -35,7 +36,9 @@ async def arena_websocket(websocket: WebSocket) -> None:
                     message = receive_task.result()
                 except (asyncio.CancelledError, WebSocketDisconnect, RuntimeError):
                     break
-                await _handle_client_message(message, simulation)
+                updated_state = await _handle_client_message(message, simulation)
+                if updated_state is not None:
+                    await manager.broadcast_state(updated_state)
                 receive_task = asyncio.create_task(websocket.receive_json())
 
             if sleep_task in pending:
@@ -53,17 +56,19 @@ async def arena_websocket(websocket: WebSocket) -> None:
         manager.disconnect(websocket)
 
 
-async def _handle_client_message(message: dict[str, Any], simulation: SimulationEngine) -> None:
+async def _handle_client_message(message: dict[str, Any], simulation: SimulationEngine) -> ArenaState | None:
     message_type = message.get("type")
     if message_type == "arena_control":
         action = message.get("action")
         if action == "start":
-            await simulation.start()
+            return await simulation.start()
         elif action == "pause":
-            await simulation.pause()
+            return await simulation.pause()
         elif action == "reset":
-            await simulation.reset()
+            return await simulation.reset()
     elif message_type == "launch_scenario":
         scenario = message.get("scenario")
         if isinstance(scenario, str):
             await simulation.start_scenario(scenario)
+            return await simulation.get_state()
+    return None

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { BrowserRouter, Navigate, NavLink, Route, Routes } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { BrowserRouter, Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
 import "./App.css";
 import { AboutPage } from "@/pages/AboutPage";
 import { useAuth } from "@/auth/useAuth";
@@ -7,7 +7,6 @@ import type { ArenaRole } from "@/api/client";
 import { ArenaPage } from "@/pages/ArenaPage";
 import { AttackScenarioGeneratorPage } from "@/pages/AttackScenarioGeneratorPage";
 import { BlueTeamSurveillancePage } from "@/pages/BlueTeamSurveillancePage";
-import { TeamMark } from "@/components/TeamMark";
 import { ExperimentLabPage } from "@/pages/ExperimentLabPage";
 import { NebiusControlPanelPage } from "@/pages/NebiusControlPanelPage";
 import { ReportsPage } from "@/pages/ReportsPage";
@@ -17,6 +16,8 @@ const disclaimer =
 
 export function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const { role } = useAuth();
+  const visibleSidebarItems = sidebarItems.filter((item) => item.visibleFor.includes(role));
 
   return (
     <BrowserRouter>
@@ -38,13 +39,16 @@ export function App() {
           </div>
 
           <nav className="side-nav" aria-label="Main screens">
-            <SidebarLink icon="arena" label="Market Arena" shortLabel="MA" to="/arena" />
-            <SidebarLink icon="attack" label="Attackers" shortLabel="AT" team="red" to="/attack-scenarios" />
-            <SidebarLink icon="detection" label="Detection" shortLabel="DT" team="blue" to="/blue-team" />
-            <SidebarLink icon="tournament" label="Tournament" shortLabel="TN" to="/lab" />
-            <SidebarLink icon="reports" label="Replay & Reports" shortLabel="RR" to="/reports" />
-            <SidebarLink icon="cloud" label="Nebius Control" shortLabel="NC" to="/nebius" />
-            <SidebarLink icon="about" label="About" shortLabel="AB" to="/about" />
+            {visibleSidebarItems.map((item) => (
+              <SidebarLink
+                icon={item.icon}
+                key={item.to}
+                label={item.label}
+                shortLabel={item.shortLabel}
+                team={item.team}
+                to={item.to}
+              />
+            ))}
           </nav>
 
           <AuthPanel collapsed={sidebarCollapsed} />
@@ -59,16 +63,77 @@ export function App() {
           <Routes>
             <Route path="/" element={<Navigate to="/arena" replace />} />
             <Route path="/arena" element={<ArenaPage />} />
-            <Route path="/attack-scenarios" element={<AttackScenarioGeneratorPage />} />
-            <Route path="/blue-team" element={<BlueTeamSurveillancePage />} />
-            <Route path="/lab" element={<ExperimentLabPage />} />
+            <Route path="/attack-scenarios" element={canAccessPath(role, "/attack-scenarios") ? <AttackScenarioGeneratorPage /> : <Navigate to="/arena" replace />} />
+            <Route path="/blue-team" element={canAccessPath(role, "/blue-team") ? <BlueTeamSurveillancePage /> : <Navigate to="/arena" replace />} />
+            <Route path="/lab" element={canAccessPath(role, "/lab") ? <ExperimentLabPage /> : <Navigate to="/arena" replace />} />
             <Route path="/nebius" element={<NebiusControlPanelPage />} />
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/about" element={<AboutPage />} />
           </Routes>
+          <ArenaSplashOverlay />
         </section>
       </main>
     </BrowserRouter>
+  );
+}
+
+const SPLASH_HIDE_KEY = "nmaa.hideArenaSplash";
+const oneSlideUrl = "/img/ai_market_abuse_arena_one_slide.jpg";
+
+function ArenaSplashOverlay() {
+  const location = useLocation();
+  const { session } = useAuth();
+  const [dismissedSessionId, setDismissedSessionId] = useState<string | null>(null);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const sessionId = session?.session_id ?? null;
+    const hidden = window.localStorage.getItem(SPLASH_HIDE_KEY) === "true";
+    setDontShowAgain(hidden);
+    setVisible(Boolean(sessionId && location.pathname === "/arena" && !hidden && dismissedSessionId !== sessionId));
+  }, [dismissedSessionId, location.pathname, session?.session_id]);
+
+  if (!visible || !session) {
+    return null;
+  }
+
+  function closeSplash() {
+    if (dontShowAgain) {
+      window.localStorage.setItem(SPLASH_HIDE_KEY, "true");
+    }
+    setDismissedSessionId(session?.session_id ?? null);
+    setVisible(false);
+  }
+
+  return (
+    <div className="arena-splash-backdrop" role="presentation">
+      <section aria-labelledby="arena-splash-title" aria-modal="true" className="arena-splash-panel" role="dialog">
+        <div className="arena-splash-copy">
+          <p className="eyebrow">Arena overview</p>
+          <h2 id="arena-splash-title">Market Abuse Arena</h2>
+          <p>
+            Synthetic market state, red-team scenarios, detector evidence, replay history, and reports in one shared arena.
+          </p>
+        </div>
+        <img
+          alt="One-slide overview of the Market Abuse Arena workflow"
+          className="arena-splash-image"
+          src={oneSlideUrl}
+        />
+        <div className="arena-splash-actions">
+          <label>
+            <input
+              checked={dontShowAgain}
+              onChange={(event) => setDontShowAgain(event.target.checked)}
+              type="checkbox"
+            />
+            Don&apos;t show on next login
+          </label>
+          <button onClick={closeSplash} type="button">Enter Arena</button>
+        </div>
+      </section>
+    </div>
   );
 }
 
@@ -89,13 +154,39 @@ function SidebarLink({
     <NavLink className={team ? `team-nav-link ${team}` : undefined} title={label} to={to}>
       <span className="nav-short">{shortLabel}</span>
       <AppIcon name={icon} />
-      {team ? <TeamMark team={team} /> : null}
       <span className="nav-label">{label}</span>
     </NavLink>
   );
 }
 
 type AppIconName = "arena" | "attack" | "detection" | "tournament" | "reports" | "cloud" | "about";
+
+type SidebarItem = {
+  icon: AppIconName;
+  label: string;
+  shortLabel: string;
+  team?: "red" | "blue";
+  to: string;
+  visibleFor: ArenaRole[];
+};
+
+const allRoles: ArenaRole[] = ["observer", "attacker", "defender", "judge"];
+const observerAndJudge: ArenaRole[] = ["observer", "judge"];
+
+const sidebarItems: SidebarItem[] = [
+  { icon: "arena", label: "Market Arena", shortLabel: "MA", to: "/arena", visibleFor: allRoles },
+  { icon: "attack", label: "Attackers", shortLabel: "AT", team: "red", to: "/attack-scenarios", visibleFor: ["observer", "attacker", "judge"] },
+  { icon: "detection", label: "Detection", shortLabel: "DT", team: "blue", to: "/blue-team", visibleFor: ["observer", "defender", "judge"] },
+  { icon: "tournament", label: "Tournament", shortLabel: "TN", to: "/lab", visibleFor: observerAndJudge },
+  { icon: "reports", label: "Replay & Reports", shortLabel: "RR", to: "/reports", visibleFor: allRoles },
+  { icon: "cloud", label: "Nebius Control", shortLabel: "NC", to: "/nebius", visibleFor: allRoles },
+  { icon: "about", label: "About", shortLabel: "AB", to: "/about", visibleFor: allRoles }
+];
+
+function canAccessPath(role: ArenaRole, path: string) {
+  const item = sidebarItems.find((candidate) => candidate.to === path);
+  return item ? item.visibleFor.includes(role) : true;
+}
 
 function AppIcon({ name }: { name: AppIconName }) {
   const paths: Record<AppIconName, string[]> = {

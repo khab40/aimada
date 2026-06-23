@@ -444,6 +444,69 @@ h3 {
   color: #fda4af;
 }
 
+.arena-splash-backdrop {
+  align-items: center;
+  background: rgba(2, 6, 23, 0.52);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 18px;
+  position: fixed;
+  z-index: 60;
+}
+
+.arena-splash-panel {
+  border: 1px solid rgba(34, 211, 238, 0.32);
+  border-radius: 8px;
+  background: rgba(7, 13, 20, 0.82);
+  box-shadow: 0 22px 80px rgba(0, 0, 0, 0.48);
+  display: grid;
+  gap: 12px;
+  max-width: min(980px, calc(100vw - 28px));
+  padding: 14px;
+}
+
+.arena-splash-copy {
+  display: grid;
+  gap: 7px;
+}
+
+.arena-splash-copy h2,
+.arena-splash-copy p {
+  margin: 0;
+}
+
+.arena-splash-copy p {
+  color: #a7c7d8;
+  line-height: 1.45;
+}
+
+.arena-splash-image {
+  border: 1px solid rgba(43, 90, 120, 0.42);
+  border-radius: 6px;
+  display: block;
+  max-height: 420px;
+  object-fit: contain;
+  opacity: 0.92;
+  width: 100%;
+}
+
+.arena-splash-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.arena-splash-actions label {
+  align-items: center;
+  color: #a7c7d8;
+  display: inline-flex;
+  gap: 8px;
+  font-size: 13px;
+}
+
 .arena-grid {
   display: grid;
   grid-template-columns: minmax(220px, 0.85fr) minmax(360px, 1.5fr) minmax(280px, 1fr);
@@ -1914,12 +1977,15 @@ h3 {
 }
 
 .about-card {
+  align-content: start;
   border-color: rgba(251, 191, 36, 0.24);
   background: linear-gradient(180deg, rgba(251, 191, 36, 0.08), rgba(3, 9, 16, 0.72));
+  gap: 9px;
 }
 
 .about-card h3 {
   color: #fde68a;
+  margin: 0;
 }
 
 .about-card strong {
@@ -1935,7 +2001,7 @@ h3 {
 .about-card ol,
 .artifact-list {
   display: grid;
-  gap: 8px;
+  gap: 6px;
   margin: 0;
   padding-left: 20px;
 }
@@ -2337,10 +2403,10 @@ kbd {
 .cockpit-center {
   grid-area: center;
   display: grid;
-  grid-template-rows: minmax(420px, auto) minmax(380px, auto);
+  grid-template-rows: 420px minmax(380px, auto);
   gap: 8px;
   min-height: 0;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .cockpit-right {
@@ -2415,20 +2481,28 @@ kbd {
 }
 
 .liquidity-heatmap {
+  contain: layout paint;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 8px;
+  height: 420px;
   min-height: 0;
+  overflow: hidden;
+}
+
+.heatmap-canvas-wrap {
+  min-height: 0;
+  overflow: hidden;
 }
 
 .cockpit-heatmap {
-  width: 100%;
-  height: 100%;
-  min-height: 360px;
   border: 1px solid rgba(43, 90, 120, 0.45);
   border-radius: 4px;
   background: #050b12;
   display: block;
+  height: 100%;
+  min-height: 0;
+  width: 100%;
 }
 
 .heatmap-legend {
@@ -3556,7 +3630,11 @@ kbd {
   }
 
   .cockpit-center {
-    grid-template-rows: minmax(380px, auto) minmax(320px, auto);
+    grid-template-rows: 380px minmax(320px, auto);
+  }
+
+  .liquidity-heatmap {
+    height: 380px;
   }
 
   .lab-grid,
@@ -3757,6 +3835,87 @@ kbd {
 }
 
 @media (max-width: 640px) {
+  .app-shell,
+  .app-shell.sidebar-collapsed {
+    grid-template-columns: 1fr;
+  }
+
+  .app-sidebar {
+    border-right: 0;
+    border-bottom: 1px solid rgba(43, 90, 120, 0.42);
+    gap: 8px;
+    grid-template-rows: auto auto auto;
+    min-height: 0;
+    overflow: visible;
+    padding: 8px;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+
+  .sidebar-brand {
+    align-items: center;
+    display: flex;
+    justify-items: stretch;
+  }
+
+  .sidebar-brand .eyebrow {
+    display: none;
+  }
+
+  .sidebar-brand h1 {
+    display: block;
+    font-size: 15px;
+  }
+
+  .sidebar-toggle {
+    display: none;
+  }
+
+  .side-nav {
+    display: flex;
+    gap: 7px;
+    margin: 0 -2px;
+    overflow-x: auto;
+    padding: 1px 2px 6px;
+    scrollbar-width: thin;
+  }
+
+  .side-nav a,
+  .sidebar-collapsed .side-nav a {
+    flex: 0 0 auto;
+    gap: 7px;
+    justify-content: center;
+    min-height: 38px;
+    min-width: 44px;
+    padding: 7px 9px;
+  }
+
+  .side-nav .nav-label,
+  .sidebar-collapsed .side-nav .nav-label {
+    display: inline;
+    max-width: 94px;
+  }
+
+  .side-nav .team-mark {
+    display: none;
+  }
+
+  .app-icon {
+    flex-basis: 18px;
+    height: 18px;
+    width: 18px;
+  }
+
+  .app-workspace {
+    padding: 8px;
+  }
+
+  .disclaimer {
+    font-size: 11px;
+    padding: 7px 9px;
+  }
+
   .auth-panel,
   .shortcut-strip,
   .cockpit-controls,
@@ -3766,13 +3925,62 @@ kbd {
   }
 
   .auth-panel {
-    grid-template-columns: 1fr;
+    align-items: end;
+    grid-template-columns: minmax(0, 1fr) minmax(112px, auto) auto;
   }
 
   .auth-main > div,
   .auth-role-select,
   .auth-actions {
+    display: flex;
     flex-wrap: wrap;
+  }
+
+  .auth-main,
+  .auth-role-select {
+    display: flex;
+  }
+
+  .auth-status {
+    display: block;
+    grid-column: 1 / -1;
+  }
+
+  .auth-actions {
+    align-items: stretch;
+    justify-content: flex-end;
+  }
+
+  .auth-panel .google-login-button {
+    min-width: 42px;
+    padding-left: 9px;
+    padding-right: 9px;
+    width: auto;
+  }
+
+  .auth-panel .google-login-button span:not(.google-icon) {
+    display: none;
+  }
+
+  .arena-splash-backdrop {
+    align-items: flex-start;
+    padding: 10px;
+  }
+
+  .arena-splash-panel {
+    max-height: calc(100vh - 20px);
+    overflow: auto;
+    padding: 10px;
+  }
+
+  .arena-splash-image {
+    max-height: 240px;
+  }
+
+  .arena-splash-actions {
+    align-items: stretch;
+    display: grid;
+    grid-template-columns: 1fr;
   }
 
   .cockpit-controls button,

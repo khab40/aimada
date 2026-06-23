@@ -1,0 +1,43 @@
+1
+00:00:00,000 --> 00:00:05,000
+Nebius Market Abuse Arena
+
+2
+00:00:05,000 --> 00:00:13,000
+Market abuse hides inside normal-looking order flow.
+
+3
+00:00:13,000 --> 00:00:25,000
+The Arena makes invisible behaviour observable.
+
+4
+00:00:25,000 --> 00:00:38,000
+Baseline: liquidity, orders, trades, and healthy market behaviour.
+
+5
+00:00:38,000 --> 00:00:53,000
+Red team: abusive pressure enters the order book.
+
+6
+00:00:53,000 --> 00:01:08,000
+Blue team: detection, risk score, and incident evidence.
+
+7
+00:01:08,000 --> 00:01:24,000
+Experiments can be generated, replayed, and compared.
+
+8
+00:01:24,000 --> 00:01:38,000
+Surveillance becomes testable, measurable, and explainable.
+
+9
+00:01:38,000 --> 00:01:52,000
+Leadership sees risk visibility and system readiness.
+
+10
+00:01:52,000 --> 00:02:05,000
+From simulation to explanation: a stronger compliance narrative.
+
+11
+00:02:05,000 --> 00:02:11,000
+Simulate. Detect. Explain.

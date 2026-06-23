@@ -17,7 +17,7 @@ const LEFT_AXIS_WIDTH = 72;
 const BOTTOM_AXIS_HEIGHT = 18;
 
 export function LiquidityHeatmap({
-  maxFrames = 120,
+  maxFrames = 72,
   snapshots,
   visibleLevels = DEFAULT_VISIBLE_LEVELS
 }: {
@@ -25,23 +25,26 @@ export function LiquidityHeatmap({
   snapshots: OrderBookSnapshot[];
   visibleLevels?: number;
 }) {
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [canvasSize, setCanvasSize] = useState({ height: 280, width: 900 });
+  const [canvasSize, setCanvasSize] = useState({ height: 320, width: 900 });
   const frames = useMemo(() => toHeatmapFrames(snapshots.slice(-maxFrames)), [maxFrames, snapshots]);
   const visiblePrices = useMemo(() => getVisiblePrices(snapshots.at(-1), visibleLevels), [snapshots, visibleLevels]);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) {
       return;
     }
 
     const observer = new ResizeObserver(([entry]) => {
       const width = Math.max(320, Math.floor(entry.contentRect.width));
-      const height = Math.max(220, Math.floor(entry.contentRect.height));
-      setCanvasSize({ height, width });
+      const height = Math.max(260, Math.floor(entry.contentRect.height));
+      setCanvasSize((current) => (
+        current.width === width && current.height === height ? current : { height, width }
+      ));
     });
-    observer.observe(canvas);
+    observer.observe(wrapper);
     return () => observer.disconnect();
   }, []);
 
@@ -53,8 +56,14 @@ export function LiquidityHeatmap({
     }
 
     const pixelRatio = window.devicePixelRatio || 1;
-    canvas.width = Math.floor(canvasSize.width * pixelRatio);
-    canvas.height = Math.floor(canvasSize.height * pixelRatio);
+    const nextWidth = Math.floor(canvasSize.width * pixelRatio);
+    const nextHeight = Math.floor(canvasSize.height * pixelRatio);
+    if (canvas.width !== nextWidth) {
+      canvas.width = nextWidth;
+    }
+    if (canvas.height !== nextHeight) {
+      canvas.height = nextHeight;
+    }
     context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     drawHeatmap(context, frames, visiblePrices);
   }, [canvasSize, frames, visiblePrices]);
@@ -65,11 +74,13 @@ export function LiquidityHeatmap({
         <h2>Liquidity Heatmap</h2>
         <span>{frames.length} frames</span>
       </div>
-      <canvas
-        ref={canvasRef}
-        className="cockpit-heatmap"
-        aria-label="Rolling liquidity heatmap by time frame and price level"
-      />
+      <div className="heatmap-canvas-wrap" ref={wrapperRef}>
+        <canvas
+          ref={canvasRef}
+          className="cockpit-heatmap"
+          aria-label="Rolling liquidity heatmap by time frame and price level"
+        />
+      </div>
       <div className="heatmap-legend">
         <span><i className="legend-swatch low" /> dark = low liquidity</span>
         <span><i className="legend-swatch high" /> bright = high liquidity</span>

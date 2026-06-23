@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AttackBuilder } from "@/components/AttackBuilder";
 import { AttackTracker } from "@/components/AttackTracker";
 import { AgentEventTape } from "@/components/AgentEventTape";
@@ -24,10 +24,12 @@ export function ArenaPage() {
   const { launchScenario, mode, pause, reset, running, sourceStatus, start, state, symbol, tick } = useArenaSource();
   const [heatmapSnapshots, setHeatmapSnapshots] = useState(() => [state.book]);
   const [timeline, setTimeline] = useState<MarketTimelineFrame[]>(() => [toTimelineFrame(state)]);
-  const [hasStarted, setHasStarted] = useState(false);
+  const [pendingControl, setPendingControl] = useState<"pause" | "reset" | "start" | null>(null);
   const incident = useMemo(() => createIncident(state), [state]);
   const [lastIncident, setLastIncident] = useState<Incident | null>(incident);
   const loading = mode === "websocket" && sourceStatus === "connecting";
+  const connected = mode === "mock" || sourceStatus === "connected";
+  const canReset = tick > 0 || running || state.events.length > 0 || Boolean(state.active_scenario) || Boolean(state.incidents?.length);
 
   useEffect(() => {
     if (incident) {
@@ -36,9 +38,40 @@ export function ArenaPage() {
   }, [incident]);
 
   useEffect(() => {
-    setHeatmapSnapshots((snapshots) => [...snapshots, state.book].slice(-120));
+    setHeatmapSnapshots((snapshots) => [...snapshots, state.book].slice(-72));
     setTimeline((points) => [...points, toTimelineFrame(state)].slice(-48));
   }, [state]);
+
+  useEffect(() => {
+    setPendingControl(null);
+  }, [running, sourceStatus, tick]);
+
+  const startArena = useCallback(() => {
+    if (running || !connected) {
+      return;
+    }
+    setPendingControl("start");
+    start();
+  }, [connected, running, start]);
+
+  const pauseArena = useCallback(() => {
+    if (!running || !connected) {
+      return;
+    }
+    setPendingControl("pause");
+    pause();
+  }, [connected, pause, running]);
+
+  const resetArena = useCallback(() => {
+    if (!canReset || !connected) {
+      return;
+    }
+    setPendingControl("reset");
+    reset();
+    setHeatmapSnapshots([]);
+    setTimeline([]);
+    setLastIncident(null);
+  }, [canReset, connected, reset]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -51,10 +84,9 @@ export function ArenaPage() {
       if (key === " ") {
         event.preventDefault();
         if (running) {
-          pause();
+          pauseArena();
         } else {
-          setHasStarted(true);
-          start();
+          startArena();
         }
       }
       if (key === "s") {
@@ -67,44 +99,24 @@ export function ArenaPage() {
         launchScenario("quote_stuffing");
       }
       if (key === "r") {
-        if (!hasStarted) {
-          return;
-        }
-        reset();
-        setHasStarted(false);
-        setHeatmapSnapshots([]);
-        setTimeline([]);
-        setLastIncident(null);
+        resetArena();
       }
     }
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [hasStarted, launchScenario, pause, reset, running, start]);
+  }, [launchScenario, pauseArena, resetArena, running, startArena]);
 
   return (
     <section className={`cockpit-page ${incident ? "incident-active" : ""}`} aria-label="Market microstructure cockpit">
       <TopStatusBar
         mid={state.mid}
-        onPause={pause}
-        onReset={() => {
-          if (!hasStarted) {
-            return;
-          }
-          reset();
-          setHasStarted(false);
-          setHeatmapSnapshots([]);
-          setTimeline([]);
-          setLastIncident(null);
-        }}
-        onStart={() => {
-          if (running) {
-            return;
-          }
-          setHasStarted(true);
-          start();
-        }}
-        canReset={hasStarted}
+        onPause={pauseArena}
+        onReset={resetArena}
+        onStart={startArena}
+        canReset={canReset}
+        connected={connected}
+        pendingControl={pendingControl}
         running={running}
         spread={state.spread}
         symbol={symbol}
@@ -144,7 +156,7 @@ export function ArenaPage() {
         </section>
 
         <section className="panel cockpit-center">
-          <LiquidityHeatmap snapshots={heatmapSnapshots} />
+          <LiquidityHeatmap maxFrames={72} snapshots={heatmapSnapshots} visibleLevels={20} />
           <MarketTimeline frames={timeline} />
         </section>
 
@@ -176,10 +188,12 @@ function isEditableTarget(target: EventTarget | null) {
 
 function TopStatusBar({
   canReset,
+  connected,
   mid,
   onPause,
   onReset,
   onStart,
+  pendingControl,
   running,
   spread,
   symbol,
@@ -187,10 +201,12 @@ function TopStatusBar({
   source
 }: {
   canReset: boolean;
+  connected: boolean;
   mid: number | null;
   onPause: () => void;
   onReset: () => void;
   onStart: () => void;
+  pendingControl: "pause" | "reset" | "start" | null;
   running: boolean;
   spread: number | null;
   source: string;
@@ -209,9 +225,9 @@ function TopStatusBar({
       <MetricPill label="State" value={running ? "Running" : "Paused"} tone={running ? "good" : "warn"} />
       <MetricPill label="Source" value={source} />
       <div className="cockpit-controls">
-        <button type="button" disabled={running} onClick={onStart}>Start</button>
-        <button type="button" disabled={!running} onClick={onPause}>Pause</button>
-        <button type="button" disabled={!canReset} onClick={onReset}>Reset</button>
+        <button type="button" disabled={!connected || running || pendingControl !== null} onClick={onStart}>{pendingControl === "start" ? "Starting..." : "Start"}</button>
+        <button type="button" disabled={!connected || !running || pendingControl !== null} onClick={onPause}>{pendingControl === "pause" ? "Pausing..." : "Pause"}</button>
+        <button type="button" disabled={!connected || !canReset || pendingControl !== null} onClick={onReset}>{pendingControl === "reset" ? "Resetting..." : "Reset"}</button>
       </div>
     </header>
   );
