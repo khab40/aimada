@@ -2,12 +2,15 @@ from hashlib import sha256
 from typing import Any, Literal
 from uuid import uuid4
 
+from app.auth.jwt import create_jwt, verify_jwt
+from app.auth.store import AuthStore
 from app.storage.history import append_history_artifact, history_window, utc_now
 from app.storage.local_store import LocalStore
 
 ArenaRole = Literal["attacker", "defender", "observer", "judge"]
 
 SESSION_HEADER = "X-AIMADA-Session-ID"
+AUTH_PROVIDER_GOOGLE = "google"
 
 
 def user_id_for_google_identity(subject: str | None, email: str | None) -> str:
@@ -23,18 +26,37 @@ def create_session(
     role: ArenaRole = "observer",
     google_subject: str | None = None,
     avatar_url: str | None = None,
+    auth_store: AuthStore | None = None,
+    jwt_secret: str | None = None,
+    jwt_expires_in_seconds: int = 43_200,
+    jwt_issuer: str = "ai-market-abuse-detection-arena",
 ) -> dict[str, Any]:
     now = utc_now()
-    user = {
-        "user_id": user_id_for_google_identity(google_subject, email),
-        "provider": "google",
-        "provider_mode": "stub_until_google_endpoints_are_configured",
-        "google_subject": google_subject,
-        "email": email,
-        "name": name,
-        "avatar_url": avatar_url,
-        "created_at": now,
-    }
+    user_id = user_id_for_google_identity(google_subject, email)
+    if auth_store is not None and google_subject:
+        user = auth_store.upsert_google_user(
+            google_id=google_subject,
+            email=email,
+            name=name,
+            avatar_url=avatar_url,
+            now=now,
+            user_id=user_id,
+        )
+    else:
+        user = {
+            "id": user_id,
+            "user_id": user_id,
+            "email": email,
+            "name": name,
+            "avatar_url": avatar_url,
+            "google_id": google_subject,
+            "google_subject": google_subject,
+            "auth_provider": AUTH_PROVIDER_GOOGLE,
+            "provider": AUTH_PROVIDER_GOOGLE,
+            "provider_mode": "local_stub" if auth_store is None else "google_verified",
+            "created_at": now,
+            "updated_at": now,
+        }
     session = {
         "session_id": f"SES-{uuid4().hex[:16].upper()}",
         "user_id": user["user_id"],
@@ -43,9 +65,31 @@ def create_session(
         "last_seen_at": now,
         "active": True,
     }
-    store.append_jsonl("auth/users.jsonl", _without_none(user))
-    store.append_jsonl("auth/sessions.jsonl", {"event": "login", "created_at": now, "user": _without_none(user), "session": session})
-    return {"user": _without_none(user), "session": session}
+    token: str | None = None
+    token_expires_at: str | None = None
+    if jwt_secret:
+        token = create_jwt(
+            {
+                "sub": user["user_id"],
+                "session_id": session["session_id"],
+                "role": role,
+                "email": user["email"],
+                "google_id": user.get("google_id") or user.get("google_subject"),
+            },
+            secret=jwt_secret,
+            expires_in_seconds=jwt_expires_in_seconds,
+            issuer=jwt_issuer,
+        )
+        token_expires_at = _iso_from_unix(jwt_expires_in_seconds)
+        session = {**session, "token_type": "bearer", "expires_in_seconds": jwt_expires_in_seconds, "expires_at": token_expires_at}
+    clean_user = _without_none(user)
+    store.append_jsonl("auth/users.jsonl", clean_user)
+    store.append_jsonl("auth/sessions.jsonl", {"event": "login", "created_at": now, "user": clean_user, "session": session})
+    response = {"user": clean_user, "session": session}
+    if token is not None:
+        response["access_token"] = token
+        response["token_type"] = "bearer"
+    return response
 
 
 def find_session(store: LocalStore, session_id: str | None) -> dict[str, Any] | None:
@@ -61,6 +105,37 @@ def find_session(store: LocalStore, session_id: str | None) -> dict[str, Any] | 
         if isinstance(user, dict):
             return {"user": user, "session": session}
     return None
+
+
+def find_session_by_jwt(
+    store: LocalStore,
+    token: str | None,
+    *,
+    jwt_secret: str,
+    jwt_issuer: str,
+) -> dict[str, Any] | None:
+    if not token:
+        return None
+    try:
+        claims = verify_jwt(token, secret=jwt_secret, issuer=jwt_issuer)
+    except ValueError:
+        return None
+    session_id = claims.get("session_id")
+    current = find_session(store, str(session_id) if session_id else None)
+    if current is None:
+        return None
+    if current["session"].get("active") is False:
+        return None
+    return current
+
+
+def bearer_token_from_authorization(authorization: str | None) -> str | None:
+    if not authorization:
+        return None
+    scheme, _, token = authorization.partition(" ")
+    if scheme.lower() != "bearer" or not token.strip():
+        return None
+    return token.strip()
 
 
 def update_role(store: LocalStore, *, session_id: str, role: ArenaRole) -> dict[str, Any] | None:
@@ -159,3 +234,9 @@ def _user_history_path(user_id: str) -> str:
 
 def _without_none(row: dict[str, Any]) -> dict[str, Any]:
     return {key: value for key, value in row.items() if value is not None}
+
+
+def _iso_from_unix(expires_in_seconds: int) -> str:
+    from datetime import UTC, datetime, timedelta
+
+    return (datetime.now(UTC) + timedelta(seconds=expires_in_seconds)).isoformat()

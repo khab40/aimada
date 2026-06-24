@@ -11,7 +11,7 @@ The design keeps the browser UI, demo orchestration backend, local simulation en
 
 ```mermaid
 graph TD
-    UI["React / Vite UI - Arena, Nebius Control Panel, Reports"]
+    UI["React / Vite UI - themed shell, Arena, Nebius Control Panel, Reports"]
     API["FastAPI Demo Backend - REST control-plane APIs"]
     WS["WebSocket Manager - live arena controls and arena_state stream"]
     Runtime["Live Arena Runtime - 250-500 ms simulation ticks"]
@@ -48,7 +48,7 @@ graph TD
 
 | Component | Responsibility |
 | --- | --- |
-| React / Vite UI | Presents the live order book, charts, agent activity, scenario controls, alerts, Nebius Control Panel operations, and Reports evidence. Arena live controls and state use WebSocket; Nebius, artifact, and report actions use backend REST APIs. |
+| React / Vite UI | Presents the themed product shell, Google/auth widget, role/session controls, live order book, charts, agent activity, scenario controls, alerts, Nebius Control Panel operations, and Reports evidence. Arena live controls and state use WebSocket; Nebius, artifact, and report actions use backend REST APIs. |
 | FastAPI demo backend | Owns the demo control plane. It starts and stops simulations, launches scenarios, broadcasts state to the UI, persists incidents, and calls Nebius AI endpoints for explanation and report generation. |
 | Local live simulation | Runs the authoritative exchange, scenario state, detector engine, local agent scheduling, single-writer book mutation, per-agent quote ownership, and baseline liquidity guard. |
 | Agent runner | Runs out-of-process normal, heavy, and LangGraph-compatible agents behind `/decide`; returns intents but never mutates the exchange. |
@@ -66,7 +66,7 @@ graph TD
 7. The simulation emits order events, snapshots, agent actions, detector signals, and incidents.
 8. The backend persists events and snapshots, then broadcasts live updates to connected UI clients over WebSocket.
 9. When an explanation or report is requested, the backend calls the Nebius Serverless AI endpoint and stores the generated result.
-10. The UI renders the latest market state, detector alerts, incident details, and AI-generated explanations.
+10. The UI renders the latest market state, detector alerts, incident details, and AI-generated explanations. Local shell preferences such as collapsed auth controls and day/night/system theme mode remain browser-side presentation state.
 
 ### Live Tick Sequence
 
@@ -159,6 +159,7 @@ graph TD
 ## Architectural Boundaries
 
 - The UI should not directly call the simulation engine or Nebius AI endpoints. It should communicate through the FastAPI backend.
+- UI shell preferences such as theme mode and auth-widget visibility are local browser preferences; the backend owns identity verification and app session issuance.
 - The simulation engine should emit structured events and detector results without depending on UI concerns.
 - Agent runners may decide remotely, but they must return intents only; they must not mutate exchange state directly.
 - The backend should be the integration boundary for live transport, persistence, scenario orchestration, and AI calls.
@@ -176,6 +177,7 @@ This architecture supports all workflows described in [Use Cases](USE_CASES.md):
 5. **Detector Tournament / Smart Batch Benchmark** — Batch / Benchmark Path with Nebius Jobs
 6. **Synthetic Dataset Generation** — Batch / Benchmark Path artifact outputs
 7. **Reports And Evidence Review** — Reports tab reads persisted benchmark, Nebius, explanation, screenshot, and promoted evidence artifacts
+8. **Role-Based Demo Review And UI Shell Personalization** — Google-authenticated role/session state plus local day/night/system and auth-widget preferences
 
 Detailed architecture decisions are recorded in [Architecture Records (ARDs)](architecture/README.md):
 
@@ -188,3 +190,6 @@ Detailed architecture decisions are recorded in [Architecture Records (ARDs)](ar
 - [ARD-0008: Nebius Serverless AI Endpoints](architecture/ARD-0008-nebius-serverless-ai-endpoints.md) — Interactive AI service
 - [ARD-0009: Judge Mode Investigation Reports](architecture/ARD-0009-judge-mode-investigation-reports.md) — Investigation mode
 - [ARD-0010: Agent Runner Execution Architecture](architecture/ARD-0010-agent-runner-execution.md) — Local, remote, heavy, and LangGraph-compatible agents
+- [ARD-0011: Exchange Liquidity Invariant And Agent Quote Ownership](architecture/ARD-0011-exchange-liquidity-invariant.md) — Baseline ladder and per-agent quote ownership
+- [ARD-0012: Google Authentication And App Sessions](architecture/ARD-0012-google-authentication.md) — Google verification, user persistence, and app JWT sessions
+- [ARD-0013: UI Shell Preferences And Demo Presentation](architecture/ARD-0013-ui-shell-preferences.md) — Banner asset, theme preference, collapsible auth widget, compact navigation, and paused visualizations

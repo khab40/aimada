@@ -14,10 +14,38 @@ import { ReportsPage } from "@/pages/ReportsPage";
 const disclaimer =
   "This project is an educational simulation. It does not detect real market manipulation, does not provide trading signals, and should not be used for compliance decisions. The scenarios are synthetic “abuse-like” patterns designed to demonstrate order-book anomaly detection and AI-generated explanations.";
 
+type ThemePreference = "system" | "light" | "dark";
+type ResolvedTheme = "light" | "dark";
+
+const THEME_PREFERENCE_KEY = "aimada.themePreference";
+
 export function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [themePreference, setThemePreference] = useState<ThemePreference>(() => getStoredThemePreference());
+  const [systemTheme, setSystemTheme] = useState<ResolvedTheme>(() => getSystemTheme());
+  const resolvedTheme = themePreference === "system" ? systemTheme : themePreference;
   const { role } = useAuth();
   const visibleSidebarItems = sidebarItems.filter((item) => item.visibleFor.includes(role));
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    function handleChange() {
+      setSystemTheme(media.matches ? "dark" : "light");
+    }
+    handleChange();
+    media.addEventListener("change", handleChange);
+    return () => media.removeEventListener("change", handleChange);
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(THEME_PREFERENCE_KEY, themePreference);
+  }, [themePreference]);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = resolvedTheme;
+    document.documentElement.dataset.themePreference = themePreference;
+    document.documentElement.style.colorScheme = resolvedTheme;
+  }, [resolvedTheme, themePreference]);
 
   return (
     <BrowserRouter>
@@ -25,7 +53,6 @@ export function App() {
         <aside className="app-sidebar" aria-label="Application navigation">
           <div className="sidebar-brand">
             <div>
-              <p className="eyebrow">Synthetic order-book arena</p>
               <h1>AI Market Abuse Detection Arena</h1>
             </div>
             <button
@@ -34,7 +61,7 @@ export function App() {
               onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}
               type="button"
             >
-              {sidebarCollapsed ? ">>" : "<<"}
+              <SidebarToggleIcon direction={sidebarCollapsed ? "right" : "left"} />
             </button>
           </div>
 
@@ -51,7 +78,15 @@ export function App() {
             ))}
           </nav>
 
-          <AuthPanel collapsed={sidebarCollapsed} />
+          <div className="sidebar-utility-stack">
+            <ThemePanel
+              collapsed={sidebarCollapsed}
+              onPreferenceChange={setThemePreference}
+              preference={themePreference}
+              resolvedTheme={resolvedTheme}
+            />
+            <AuthPanel collapsed={sidebarCollapsed} />
+          </div>
         </aside>
 
         <section className="app-workspace">
@@ -75,6 +110,15 @@ export function App() {
       </main>
     </BrowserRouter>
   );
+}
+
+function getStoredThemePreference(): ThemePreference {
+  const stored = window.localStorage.getItem(THEME_PREFERENCE_KEY);
+  return stored === "light" || stored === "dark" || stored === "system" ? stored : "system";
+}
+
+function getSystemTheme(): ResolvedTheme {
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
 const SPLASH_HIDE_KEY = "aimada.hideArenaSplash";
@@ -134,6 +178,17 @@ function ArenaSplashOverlay() {
         </div>
       </section>
     </div>
+  );
+}
+
+function SidebarToggleIcon({ direction }: { direction: "left" | "right" }) {
+  const paths = direction === "left"
+    ? ["M13 6l-5 6 5 6", "M18 6l-5 6 5 6"]
+    : ["M11 6l5 6-5 6", "M6 6l5 6-5 6"];
+  return (
+    <svg aria-hidden="true" className="sidebar-toggle-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
+      {paths.map((path) => <path d={path} key={path} />)}
+    </svg>
   );
 }
 
@@ -205,6 +260,88 @@ function AppIcon({ name }: { name: AppIconName }) {
   );
 }
 
+const themeOptions: { label: string; mode: ThemePreference }[] = [
+  { label: "System", mode: "system" },
+  { label: "Light", mode: "light" },
+  { label: "Dark", mode: "dark" }
+];
+
+function ThemePanel({
+  collapsed,
+  onPreferenceChange,
+  preference,
+  resolvedTheme
+}: {
+  collapsed: boolean;
+  onPreferenceChange: (preference: ThemePreference) => void;
+  preference: ThemePreference;
+  resolvedTheme: ResolvedTheme;
+}) {
+  function cycleTheme() {
+    const index = themeOptions.findIndex((option) => option.mode === preference);
+    onPreferenceChange(themeOptions[(index + 1) % themeOptions.length].mode);
+  }
+
+  if (collapsed) {
+    return (
+      <section className="theme-panel collapsed" aria-label="Theme mode">
+        <button
+          aria-label={`Theme: ${preference}`}
+          className="theme-cycle-button"
+          onClick={cycleTheme}
+          title={`Theme: ${preference}`}
+          type="button"
+        >
+          <ThemeIcon mode={preference === "system" ? "system" : resolvedTheme} />
+        </button>
+      </section>
+    );
+  }
+
+  return (
+    <section className="theme-panel" aria-label="Theme mode">
+      <span>Theme</span>
+      <div className="theme-segmented-control" role="group" aria-label="Theme mode">
+        {themeOptions.map((option) => (
+          <button
+            aria-pressed={preference === option.mode}
+            className={preference === option.mode ? "active" : ""}
+            key={option.mode}
+            onClick={() => onPreferenceChange(option.mode)}
+            title={option.label}
+            type="button"
+          >
+            <ThemeIcon mode={option.mode} />
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ThemeIcon({ mode }: { mode: ThemePreference | ResolvedTheme }) {
+  const paths: Record<string, string[]> = {
+    dark: ["M21 12.8A8.5 8.5 0 1 1 11.2 3a6.8 6.8 0 0 0 9.8 9.8Z"],
+    light: ["M12 4V2", "M12 22v-2", "M4 12H2", "M22 12h-2", "M5.6 5.6 4.2 4.2", "M19.8 19.8l-1.4-1.4", "M18.4 5.6l1.4-1.4", "M4.2 19.8l1.4-1.4", "M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"],
+    system: ["M5 5h14v10H5z", "M9 19h6", "M12 15v4"]
+  };
+  return (
+    <svg aria-hidden="true" className="theme-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24">
+      {paths[mode].map((path) => <path d={path} key={path} />)}
+    </svg>
+  );
+}
+
+function AuthToggleIcon({ expanded }: { expanded: boolean }) {
+  return (
+    <svg aria-hidden="true" className="auth-toggle-mark" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
+      <path d={expanded ? "M6 15l6-6 6 6" : "M6 9l6 6 6-6"} />
+    </svg>
+  );
+}
+
+const AUTH_PANEL_EXPANDED_KEY = "aimada.authPanelExpanded";
+
 const arenaRoles: { label: string; value: ArenaRole }[] = [
   { label: "Observer", value: "observer" },
   { label: "Attacker", value: "attacker" },
@@ -214,43 +351,67 @@ const arenaRoles: { label: string; value: ArenaRole }[] = [
 
 function AuthPanel({ collapsed }: { collapsed: boolean }) {
   const { busy, error, lastMessage, loginWithGoogle, logout, role, saveNow, session, setRole, user } = useAuth();
+  const [expanded, setExpanded] = useState(() => window.localStorage.getItem(AUTH_PANEL_EXPANDED_KEY) === "true");
+  const detailsVisible = expanded && !collapsed;
+  const displayName = user?.name || "Sign in";
+  const displayDetail = user?.email || "Google auth and role";
+  const initial = (user?.name || user?.email || "G").trim().charAt(0).toUpperCase() || "G";
+
+  useEffect(() => {
+    if (error) {
+      setExpanded(true);
+    }
+  }, [error]);
+
+  function toggleExpanded() {
+    setExpanded((current) => {
+      const next = !current;
+      window.localStorage.setItem(AUTH_PANEL_EXPANDED_KEY, String(next));
+      return next;
+    });
+  }
+
   return (
-    <section className="auth-panel" aria-label="Google login and tournament persona">
-      <div className="auth-main">
-        {user ? (
-          <div>
-            <span className="endpoint-badge">Google</span>
-            <strong>{user.name}</strong>
-            <span>{user.email}</span>
+    <section className={`auth-panel ${detailsVisible ? "expanded" : "compact"}`} aria-label="Google login and tournament persona">
+      <button
+        aria-expanded={detailsVisible}
+        className="auth-compact-toggle"
+        onClick={toggleExpanded}
+        title={detailsVisible ? "Hide account controls" : "Show account controls"}
+        type="button"
+      >
+        <span className="auth-avatar" aria-hidden="true">{initial}</span>
+        <span className="auth-compact-copy">
+          <strong>{displayName}</strong>
+          <span>{displayDetail}</span>
+        </span>
+        <AuthToggleIcon expanded={detailsVisible} />
+      </button>
+
+      {detailsVisible ? (
+        <div className="auth-details">
+          <label className="auth-role-select" title="Tournament role">
+            Role
+            <select disabled={busy} value={role} onChange={(event) => void setRole(event.target.value as ArenaRole)}>
+              {arenaRoles.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+            </select>
+          </label>
+          <div className="auth-actions">
+            {session ? (
+              <>
+                <button disabled={busy} onClick={() => void saveNow()} title="Save History" type="button">Save History</button>
+                <button disabled={busy} onClick={() => void logout()} title="Logout" type="button">Logout</button>
+              </>
+            ) : (
+              <button className="google-login-button" disabled={busy} onClick={() => void loginWithGoogle(role)} title="Continue with Google" type="button">
+                <span className="google-icon" aria-hidden="true">G</span>
+                <span>Continue with Google</span>
+              </button>
+            )}
           </div>
-        ) : (
-          <div>
-            <span className="endpoint-badge">anonymous</span>
-            <strong>Local arena mode</strong>
-            <span>Login persists history for replay.</span>
-          </div>
-        )}
-      </div>
-      <label className="auth-role-select" title="Tournament role">
-        Role
-        <select disabled={busy} value={role} onChange={(event) => void setRole(event.target.value as ArenaRole)}>
-          {arenaRoles.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-        </select>
-      </label>
-      <div className="auth-actions">
-        {session ? (
-          <>
-            <button disabled={busy} onClick={() => void saveNow()} title="Save History" type="button">{collapsed ? "S" : "Save History"}</button>
-            <button disabled={busy} onClick={() => void logout()} title="Logout" type="button">{collapsed ? "X" : "Logout"}</button>
-          </>
-        ) : (
-          <button className="google-login-button" disabled={busy} onClick={() => void loginWithGoogle(role)} title="Continue with Google" type="button">
-            <span className="google-icon" aria-hidden="true">G</span>
-            <span>{collapsed ? "G" : "Continue with Google"}</span>
-          </button>
-        )}
-      </div>
-      {error ? <span className="auth-status warning">{error}</span> : lastMessage ? <span className="auth-status">{lastMessage}</span> : null}
+          {error ? <span className="auth-status warning">{error}</span> : lastMessage ? <span className="auth-status">{lastMessage}</span> : null}
+        </div>
+      ) : null}
     </section>
   );
 }

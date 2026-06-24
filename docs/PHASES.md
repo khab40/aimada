@@ -254,15 +254,17 @@ Goal: package the project so it is easy to understand, review, and present.
 Scope:
 
 - README
+- GitHub banner and visual identity assets
 - architecture diagram
 - blog post
 - short video
 - research notes
 - sample benchmark report
+- UI shell presentation controls
 
 Deliverables:
 
-- `[done]` polished root `README.md`
+- `[done]` polished root `README.md` with `assets/img/ai-mada.jpg` GitHub banner
 - `[done]` `docs/architecture.md`
 - `[partial]` architecture diagrams exist in Mermaid docs; standalone assets under `assets/diagrams/` are still optional/future work.
 - `[done]` blog post draft in `docs/linkedin-technical-blog-post.md`
@@ -270,11 +272,12 @@ Deliverables:
 - `[done]` `docs/research-notes.md`
 - `[todo]` committed sample benchmark report under `outputs/benchmark/`
 - `[done]` final disclaimer and safety language in README/docs/UI
+- `[done]` professional UI shell controls: collapsible Google/auth widget, compact sidebar toggle, day/night/system theme selector, and paused-state-stable Liquidity Map
 
 Exit criteria:
 
 - `[done]` A reviewer can understand the system from the README and docs.
 - `[done]` The demo can be started with documented commands.
 - `[done]` The architecture and runtime model are documented.
-- `[partial]` The project includes supporting research notes, a blog draft, and demo narration assets; sample benchmark report and rendered video still need to be generated and committed.
+- `[partial]` The project includes supporting research notes, a blog draft, GitHub banner, UI shell presentation controls, and demo narration assets; sample benchmark report, screenshot set, and rendered video still need to be generated and committed.
 - `[done]` The submission avoids claims about real market manipulation detection, trading signals, or compliance use.

@@ -2,15 +2,21 @@
 
 ## Theme Mode Switcher
 
-Status: `[todo]`
+Status: `[done]`
 
-Add a compact widget in the top-right corner of the shared UI shell that lets the operator switch between:
+The shared UI shell includes a compact day/night/system theme selector in the sidebar controls. The selected preference is persisted locally as `aimada.themePreference`, applied through the document `data-theme` attribute, and updated when system mode follows `prefers-color-scheme`. The theme layer now covers shared panels, widget cards, status chips, order-book levels, timeline charts, Recharts tooltips, and the canvas Liquidity Map so Arena, Nebius Control Panel, Reports, and About screens use a coherent day/night visual language.
 
-- Day mode
-- Night mode
-- System mode
+Follow-up polish:
 
-The control should persist the selected preference locally and apply the theme across the arena, benchmark, lab, and about screens. System mode should follow the operating system `prefers-color-scheme` setting.
+- Add an accessibility contrast pass once the final screenshot set is ready.
+
+## Professional Shell And Auth Widget
+
+Status: `[done]`
+
+The shell now treats authentication and display preferences like professional product chrome rather than permanent marketing content. The Google/auth panel can collapse to a compact account control, the vertical navigation toggle is smaller and closer to browser vertical-tab controls, and the product subtitle has been removed from the shell.
+
+The Liquidity Map is also gated by simulation tick progression, so it does not animate or append frames while the arena is paused or has not started from the UI.
 
 ## Product Modes
 

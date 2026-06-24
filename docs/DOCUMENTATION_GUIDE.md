@@ -50,7 +50,7 @@ graph TD
 - **[README.md](../README.md)** — Master index and navigation guide
 - **[architecture.md](architecture.md)** — System design with component responsibilities and data flow
 - **[architecture/README.md](architecture/README.md)** — Index of all Architecture Records
-- **[USE_CASES.md](USE_CASES.md)** — Six primary workflows with business value
+- **[USE_CASES.md](USE_CASES.md)** — Eight primary workflows with business value
 
 ### Specialized Topics
 
@@ -108,6 +108,7 @@ graph TD
 | New workflow added | [USE_CASES.md](USE_CASES.md), [architecture.md](architecture.md), [README.md](../README.md) |
 | API changes | [backend/README.md](../backend/README.md), [QUICKSTART.md](QUICKSTART.md), affected ARDs |
 | New ARD created | [architecture/README.md](architecture/README.md), [architecture.md](architecture.md), [USE_CASES.md](USE_CASES.md) |
+| UI shell or presentation behavior changes | [DESIGN-IDEAS.md](DESIGN-IDEAS.md), [architecture.md](architecture.md), [USE_CASES.md](USE_CASES.md), affected ARDs |
 | Deployment changes | [nebius-deployment.md](nebius-deployment.md), [QUICKSTART.md](QUICKSTART.md) |
 | Safety/legal implications | [safety-and-disclaimers.md](safety-and-disclaimers.md) |
 

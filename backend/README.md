@@ -87,3 +87,7 @@ Tests:
 ```bash
 uv run pytest
 ```
+
+## Google Authentication
+
+Configure `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `AIMADA_JWT_SECRET` for real Google login. `POST /api/auth/google/complete` accepts either `id_token` or `authorization_code`; the Google Identity Services popup code flow sends the browser origin as `redirect_uri`, and redirect-mode clients may send their callback URI explicitly. Once verified, the backend stores the user in `ARENA_OUTPUT_DIR/auth/auth.db` and returns an app-issued JWT.

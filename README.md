@@ -1,6 +1,6 @@
 # AI Market Abuse Detection Arena
 
-![AI Market Abuse Detection Arena GitHub banner](assets/img/github-banner.png)
+![AI Market Abuse Detection Arena GitHub banner](assets/img/ai-mada.jpg)
 
 A research and performance engineering workspace for synthetic order-book market abuse detection, live visualization, benchmark runs, and AI-generated incident explanations.
 
@@ -18,9 +18,10 @@ Implemented:
 - In-process `AgentManager` for hundreds of lightweight normal agents with per-tick deadlines and single-writer exchange application.
 - Separate `agent-runner` service for out-of-process agents over HTTP, while the backend keeps the exchange/order book authoritative.
 - LangGraph-compatible generic remote agents and worker-pool heavy agents inside `agent-runner`.
+- Google authentication completion with verified Google identity storage, app-issued JWT sessions, and a collapsible professional auth widget.
 - Deterministic detector evidence model for synthetic spoofing-like, layering-like, quote-stuffing-like, and liquidity-shock patterns.
 - Nebius endpoint and job scaffolds with local typed fallbacks, Docker/config files, scripts, and UI control surfaces.
-- Documentation set for quick start, architecture, ARDs, runtime model, benchmark methodology, safety framing, deployment, and design ideas.
+- Coherent day/night/system UI theme behavior across widgets, charts, status chips, order-book levels, and canvas visualizations, plus compact vertical-navigation controls, paused-state-stable liquidity visualization, and documentation set for quick start, architecture, ARDs, runtime model, benchmark methodology, safety framing, deployment, and design ideas.
 
 Not yet complete:
 
@@ -211,6 +212,19 @@ AGENT_RUNNER_LANGGRAPH_STRATEGY=liquidity_rebalancer
 
 Use a comma-separated `ARENA_REMOTE_AGENT_URLS` value to point the backend at agent runners in other containers or on other machines. The backend receives only `AgentIntent` objects; LangGraph and heavy-agent execution stay inside the runner. The `ARENA_BASELINE_LIQUIDITY_*` settings maintain a minimum bid/ask ladder around the reference price so market orders and scenarios cannot leave one side permanently empty. Agent `set_level` intents are additive per agent at a price level and capped by `ARENA_MAX_AGENT_QUOTE_SIZE`; scenarios can still replace whole levels when they need scripted walls or cancellations.
 
+Google authentication:
+
+```bash
+GOOGLE_CLIENT_ID=your-google-oauth-client-id
+GOOGLE_CLIENT_SECRET=your-google-oauth-client-secret
+GOOGLE_REDIRECT_URI=http://localhost:5173
+AIMADA_JWT_SECRET=replace-with-a-long-random-secret
+AIMADA_JWT_ISSUER=ai-market-abuse-detection-arena
+AIMADA_JWT_EXPIRES_IN_SECONDS=43200
+```
+
+When `GOOGLE_CLIENT_ID` is configured, `POST /api/auth/google/complete` requires a Google `id_token` or authorization code. The backend verifies the Google token, stores/updates the user in `outputs/auth/auth.db`, and returns its own app JWT. Google tokens are not used as long-lived app sessions.
+
 ## WebSocket
 
 Browser smoke test:
@@ -229,8 +243,8 @@ Start with the guides above, then explore:
 |-------|------|---------|
 | **Quick Start** | [docs/QUICKSTART.md](docs/QUICKSTART.md) | 5-minute setup walkthrough |
 | **Architecture Overview** | [docs/architecture.md](docs/architecture.md) | System design with Mermaid diagrams |
-| **Architecture Records** | [docs/architecture/README.md](docs/architecture/README.md) | 9 detailed decision records (ARD-0001 to 0009) |
-| **Use Cases & Workflows** | [docs/USE_CASES.md](docs/USE_CASES.md) | Six primary workflows |
+| **Architecture Records** | [docs/architecture/README.md](docs/architecture/README.md) | 13 decision records (ARD-0001 to ARD-0013) |
+| **Use Cases & Workflows** | [docs/USE_CASES.md](docs/USE_CASES.md) | Eight primary workflows |
 | **Runtime Model** | [docs/runtime-model.md](docs/runtime-model.md) | How the simulation engine executes |
 | **Benchmark Methodology** | [docs/benchmark-methodology.md](docs/benchmark-methodology.md) | Detector quality metrics |
 | **Nebius Deployment** | [docs/nebius-deployment.md](docs/nebius-deployment.md) | Setup serverless components |
@@ -253,12 +267,13 @@ Start with the guides above, then explore:
 | **Nebius Endpoint** | Serverless AI service called by the backend to generate explanations and scenario suggestions |
 | **Nebius Control Panel** | UI tab for smart endpoint scoring, parallel attack/detect batches, usage evidence, and benchmark charts |
 | **Benchmark** | Evaluation of detector quality against labeled synthetic scenarios |
+| **UI Shell Preferences** | Local browser preferences for collapsed auth controls and day/night/system theme behavior |
 
 ## Screenshots
 
-Status: `[todo]`
+Status: `[partial]`
 
-`assets/screenshots/` currently contains only `.gitkeep`. Planned screenshot assets:
+The GitHub banner uses `assets/img/ai-mada.jpg`. `assets/screenshots/` currently contains only `.gitkeep`; the following screenshot assets are still planned:
 
 | View | Planned Path | Description |
 | --- | --- | --- |

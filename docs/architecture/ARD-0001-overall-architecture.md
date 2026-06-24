@@ -6,7 +6,7 @@ Date: 2026-05-31
 
 ## Implementation Status
 
-Status as of 2026-06-23: `[partial]`
+Status as of 2026-06-24: `[partial]`
 
 Implemented:
 
@@ -15,6 +15,8 @@ Implemented:
 - Synthetic exchange, matching engine, normal agents, scenario agents, deterministic detectors, evidence objects, and local artifact storage.
 - In-process and remote agent runners with HTTP `MarketSnapshot` / `AgentIntent` protocol, heavy-agent worker pools, and LangGraph-compatible generic remote agents.
 - Baseline liquidity invariant with additive per-agent quote ownership and quote-size guardrails.
+- Google-authenticated user persistence with app-issued JWT sessions.
+- UI shell with AI-MADA banner asset, compact navigation control, collapsible auth widget, persisted day/night/system theme, and paused-state-stable Liquidity Map behavior.
 - Serverless endpoint/job scaffolds, Dockerfiles, configs, scripts, and local mock/cloud-adapter paths.
 
 Not yet complete:
@@ -132,6 +134,9 @@ Responsibilities:
 - show incident cards and an incident drawer
 - show Nebius Control Panel operations for attack scenarios, smart detection, investigation reports, serverless jobs, artifacts, usage, and health
 - show Reports evidence for persisted jobs, explanations, screenshots, exports, and promoted evidence
+- provide role-aware Google auth/session controls that can collapse to a compact account widget
+- provide persisted day/night/system theme behavior across the shell
+- keep paused visualizations stable by updating timeline-style widgets only when the arena tick advances
 - show the educational disclaimer
 
 The UI communicates with the backend through WebSocket for live Arena commands and state, and through REST for Nebius control-plane, artifact, and report actions.
@@ -328,6 +333,8 @@ Architecture records:
 
 - `docs/architecture/README.md` - ARD index and conventions
 - `docs/architecture/ARD-0001-overall-architecture.md` - this record
+- `docs/architecture/ARD-0012-google-authentication.md` - Google verification, user persistence, and app sessions
+- `docs/architecture/ARD-0013-ui-shell-preferences.md` - UI shell preferences and demo presentation
 
 ## Phased Implementation Approach
 
@@ -544,8 +551,11 @@ Architecture records that refine this decision:
 - [ARD-0003: Detector Evidence Model](ARD-0003-detector-evidence-model.md)
 - [ARD-0004: Benchmark Artifact Format](ARD-0004-benchmark-artifact-format.md)
 - [ARD-0005: Nebius Endpoint Contract](ARD-0005-nebius-endpoint-contract.md)
-- [ARD-0006: Scenario Labeling and Reproducibility]
-- [ARD-0006-scenario-labeling-and-reproducibility.md]
+- [ARD-0006: Scenario Labeling and Reproducibility](ARD-0006-scenario-labeling-and-reproducibility.md)
+- [ARD-0010: Agent Runner Execution Architecture](ARD-0010-agent-runner-execution.md)
+- [ARD-0011: Exchange Liquidity Invariant And Agent Quote Ownership](ARD-0011-exchange-liquidity-invariant.md)
+- [ARD-0012: Google Authentication And App Sessions](ARD-0012-google-authentication.md)
+- [ARD-0013: UI Shell Preferences And Demo Presentation](ARD-0013-ui-shell-preferences.md)
 
 
 

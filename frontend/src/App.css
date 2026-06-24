@@ -3,9 +3,12 @@
 @tailwind utilities;
 
 :root {
-  color: #d8f3ff;
-  background: #020617;
+  color-scheme: dark;
+  color: var(--body-text);
+  background: var(--body-bg);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --body-bg: #020617;
+  --body-text: #d8f3ff;
   --terminal-bg: #070d14;
   --panel-bg: #0a121d;
   --panel-bg-soft: #0c1724;
@@ -13,11 +16,124 @@
   --panel-border-strong: #2b5a78;
   --text-muted: #8aa3b6;
   --text-soft: #b6c8d6;
+  --heading: #f8fbff;
+  --heading-soft: #d8f3ff;
+  --eyebrow: #52627a;
   --accent: #19a7ce;
+  --accent-soft: rgba(25, 167, 206, 0.14);
   --bid: #22ab94;
   --ask: #f23645;
   --warning: #f5b841;
+  --shell-bg: linear-gradient(180deg, #07111b 0%, #050b12 100%);
+  --sidebar-bg: rgba(3, 9, 16, 0.92);
+  --control-bg: #07111b;
+  --control-hover-bg: #0a2634;
+  --control-text: #d8f3ff;
+  --control-hover-text: #e0faff;
+  --panel-surface: linear-gradient(180deg, rgba(10, 18, 29, 0.98), rgba(7, 13, 20, 0.98));
+  --panel-highlight: rgba(255, 255, 255, 0.035);
+  --auth-bg: rgba(3, 9, 16, 0.68);
+  --warning-bg: rgba(245, 184, 65, 0.1);
+  --warning-border: rgba(245, 184, 65, 0.42);
+  --warning-text: #fde68a;
+  --widget-bg: rgba(4, 10, 18, 0.72);
+  --widget-bg-muted: rgba(2, 6, 23, 0.48);
+  --widget-bg-soft: rgba(15, 23, 42, 0.78);
+  --widget-border: rgba(43, 90, 120, 0.38);
+  --widget-border-soft: rgba(34, 211, 238, 0.14);
+  --chart-bg: #050b12;
+  --chart-grid: rgba(148, 163, 184, 0.16);
+  --chart-axis: #8fb7c9;
+  --chart-tooltip-bg: #071426;
+  --chart-tooltip-border: #1e3a5f;
+  --chart-tooltip-text: #d8f3ff;
+  --chart-line-primary: #22d3ee;
+  --chart-line-warning: #f59e0b;
+  --chart-line-violet: #a78bfa;
+  --bid-rgb: 34, 171, 148;
+  --ask-rgb: 242, 54, 69;
+  --info-rgb: 34, 211, 238;
+  --warning-rgb: 251, 191, 36;
+  --danger-rgb: 244, 63, 94;
+  --success-rgb: 16, 185, 129;
+  --violet-rgb: 167, 139, 250;
+  --neutral-rgb: 148, 163, 184;
+  --bid-text: #7ee1cf;
+  --ask-text: #ff9aa4;
+  --info-text: #67e8f9;
+  --success-text: #86efac;
+  --danger-text: #fda4af;
+  --neutral-text: #cbd5e1;
+  --violet-text: #ddd6fe;
+  --heatmap-low-cell: rgba(15, 23, 42, 0.72);
+  --overlay-bg: rgba(2, 6, 23, 0.74);
 }
+
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --body-bg: #f5f7fb;
+  --body-text: #172033;
+  --terminal-bg: #eef4f8;
+  --panel-bg: #ffffff;
+  --panel-bg-soft: #f4f8fb;
+  --panel-border: #cfdae4;
+  --panel-border-strong: #9eb2c3;
+  --text-muted: #5d7082;
+  --text-soft: #314255;
+  --heading: #0d1726;
+  --heading-soft: #17324a;
+  --eyebrow: #617487;
+  --accent: #087ea4;
+  --accent-soft: rgba(8, 126, 164, 0.11);
+  --bid: #0f8a72;
+  --ask: #c0293a;
+  --warning: #b7791f;
+  --shell-bg: linear-gradient(180deg, #f7fbff 0%, #eef4f8 100%);
+  --sidebar-bg: rgba(255, 255, 255, 0.9);
+  --control-bg: #ffffff;
+  --control-hover-bg: #eaf6fb;
+  --control-text: #172033;
+  --control-hover-text: #0d1726;
+  --panel-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(244, 248, 251, 0.98));
+  --panel-highlight: rgba(255, 255, 255, 0.72);
+  --auth-bg: rgba(255, 255, 255, 0.72);
+  --warning-bg: rgba(180, 115, 20, 0.1);
+  --warning-border: rgba(180, 115, 20, 0.32);
+  --warning-text: #7c4b08;
+  --widget-bg: rgba(255, 255, 255, 0.86);
+  --widget-bg-muted: rgba(248, 251, 255, 0.9);
+  --widget-bg-soft: rgba(241, 247, 251, 0.92);
+  --widget-border: rgba(151, 170, 188, 0.5);
+  --widget-border-soft: rgba(95, 130, 157, 0.24);
+  --chart-bg: #f8fbff;
+  --chart-grid: rgba(92, 112, 132, 0.2);
+  --chart-axis: #52677d;
+  --chart-tooltip-bg: #ffffff;
+  --chart-tooltip-border: #b9c8d6;
+  --chart-tooltip-text: #172033;
+  --chart-line-primary: #087ea4;
+  --chart-line-warning: #b7791f;
+  --chart-line-violet: #6d55b8;
+  --bid-rgb: 15, 138, 114;
+  --ask-rgb: 192, 41, 58;
+  --info-rgb: 8, 126, 164;
+  --warning-rgb: 180, 115, 20;
+  --danger-rgb: 192, 41, 58;
+  --success-rgb: 15, 138, 114;
+  --violet-rgb: 99, 76, 166;
+  --neutral-rgb: 101, 116, 134;
+  --bid-text: #086b58;
+  --ask-text: #9f1f32;
+  --info-text: #075f80;
+  --success-text: #086b58;
+  --danger-text: #9f1f32;
+  --neutral-text: #4e5f70;
+  --violet-text: #57419a;
+  --heatmap-low-cell: rgba(225, 233, 240, 0.82);
+  --overlay-bg: rgba(15, 23, 42, 0.3);
+}
+
 
 * {
   box-sizing: border-box;
@@ -26,6 +142,8 @@
 body {
   margin: 0;
   @apply bg-slate-950;
+  background: var(--body-bg);
+  color: var(--body-text);
 }
 
 input,
@@ -33,14 +151,14 @@ button,
 select {
   border: 1px solid var(--panel-border-strong);
   border-radius: 4px;
-  background: #07111b;
-  color: #d8f3ff;
+  background: var(--control-bg);
+  color: var(--control-text);
   font: inherit;
   padding: 6px 9px;
 }
 
 input {
-  accent-color: #22d3ee;
+  accent-color: var(--accent);
 }
 
 button {
@@ -65,20 +183,21 @@ button:disabled {
 
 button:disabled:hover {
   border-color: var(--panel-border-strong);
-  background: #07111b;
-  color: #d8f3ff;
+  background: var(--control-bg);
+  color: var(--control-text);
 }
 
 button:hover,
 button.active {
   border-color: var(--accent);
-  background: #0a2634;
-  color: #e0faff;
+  background: var(--control-hover-bg);
+  color: var(--control-hover-text);
 }
 
 .app-shell {
   @apply text-slate-100;
-  background: linear-gradient(180deg, #07111b 0%, #050b12 100%);
+  background: var(--shell-bg);
+  color: var(--body-text);
   display: grid;
   grid-template-columns: 292px minmax(0, 1fr);
   min-height: 100vh;
@@ -91,7 +210,7 @@ button.active {
 
 .app-sidebar {
   border-right: 1px solid rgba(43, 90, 120, 0.42);
-  background: rgba(3, 9, 16, 0.92);
+  background: var(--sidebar-bg);
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 14px;
@@ -125,7 +244,7 @@ button.active {
 }
 
 .eyebrow {
-  color: #52627a;
+  color: var(--eyebrow);
   font-size: 13px;
   margin: 0 0 4px;
   text-transform: uppercase;
@@ -139,7 +258,7 @@ p {
 }
 
 h1 {
-  color: #f8fbff;
+  color: var(--heading);
   font-size: 20px;
   letter-spacing: 0;
   margin: 0;
@@ -147,7 +266,7 @@ h1 {
 
 h2,
 h3 {
-  color: #d8f3ff;
+  color: var(--heading-soft);
 }
 
 .sidebar-brand {
@@ -163,9 +282,20 @@ h3 {
 }
 
 .sidebar-toggle {
+  align-items: center;
+  display: inline-flex;
   flex: 0 0 auto;
-  min-width: 36px;
-  padding: 6px 8px;
+  height: 26px;
+  justify-content: center;
+  min-height: 26px;
+  min-width: 26px;
+  padding: 0;
+  width: 26px;
+}
+
+.sidebar-toggle-icon {
+  height: 15px;
+  width: 15px;
 }
 
 .side-nav {
@@ -190,14 +320,14 @@ h3 {
 .side-nav a:hover,
 .side-nav a.active {
   border-color: var(--accent);
-  background: rgba(25, 167, 206, 0.14);
-  color: #e6f7ff;
+  background: var(--accent-soft);
+  color: var(--heading);
 }
 
 .nav-short {
   border: 1px solid rgba(43, 90, 120, 0.48);
   border-radius: 4px;
-  color: #8fb7c9;
+  color: var(--text-muted);
   display: none;
   flex: 0 0 34px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -213,7 +343,7 @@ h3 {
 }
 
 .app-icon {
-  color: #8fb7c9;
+  color: var(--text-muted);
   flex: 0 0 19px;
   height: 19px;
   width: 19px;
@@ -224,18 +354,149 @@ h3 {
   color: #67e8f9;
 }
 
+
+.sidebar-utility-stack {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.theme-panel {
+  align-items: center;
+  border: 1px solid rgba(43, 90, 120, 0.4);
+  border-radius: 6px;
+  background: var(--auth-bg);
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 6px;
+}
+
+.theme-panel > span {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.theme-segmented-control {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.theme-segmented-control button,
+.theme-cycle-button {
+  align-items: center;
+  display: inline-flex;
+  height: 28px;
+  justify-content: center;
+  min-height: 28px;
+  min-width: 28px;
+  padding: 0;
+  width: 28px;
+}
+
+.theme-segmented-control button.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--heading);
+}
+
+.theme-icon {
+  height: 15px;
+  width: 15px;
+}
+
+.sidebar-collapsed .sidebar-utility-stack {
+  justify-items: center;
+}
+
+.sidebar-collapsed .theme-panel {
+  display: inline-flex;
+  padding: 5px;
+}
+
 .auth-panel {
   border: 1px solid rgba(43, 90, 120, 0.4);
   border-radius: 6px;
-  background: rgba(3, 9, 16, 0.68);
+  background: var(--auth-bg);
   display: grid;
   gap: 8px;
-  grid-template-columns: 1fr;
   min-width: 0;
-  padding: 8px;
+  padding: 6px;
 }
 
-.auth-main > div,
+.auth-compact-toggle {
+  align-items: center;
+  background: transparent;
+  border-color: transparent;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 28px minmax(0, 1fr) 20px;
+  min-height: 36px;
+  padding: 3px;
+  text-align: left;
+  width: 100%;
+}
+
+.auth-compact-toggle:hover,
+.auth-compact-toggle:focus-visible {
+  background: rgba(43, 90, 120, 0.18);
+  border-color: rgba(103, 232, 249, 0.24);
+}
+
+.auth-avatar {
+  align-items: center;
+  background: linear-gradient(135deg, #67e8f9, #22c55e);
+  border-radius: 999px;
+  color: #031018;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 800;
+  height: 28px;
+  justify-content: center;
+  width: 28px;
+}
+
+.auth-compact-copy {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.auth-compact-copy strong {
+  color: var(--heading);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auth-compact-copy span,
+.auth-status,
+.auth-role-select {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.auth-compact-copy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auth-toggle-mark {
+  color: var(--text-muted);
+  height: 15px;
+  justify-self: center;
+  width: 15px;
+}
+
+.auth-details {
+  border-top: 1px solid rgba(43, 90, 120, 0.34);
+  display: grid;
+  gap: 8px;
+  padding: 8px 2px 2px;
+}
+
 .auth-role-select,
 .auth-actions {
   align-items: flex-start;
@@ -244,22 +505,7 @@ h3 {
   gap: 8px;
 }
 
-.auth-main strong {
-  color: #f8fbff;
-  font-size: 13px;
-}
-
-.auth-main span:not(.endpoint-badge),
-.auth-status,
-.auth-role-select {
-  color: #8fb7c9;
-  font-size: 12px;
-}
-
-.auth-role-select select {
-  width: 100%;
-}
-
+.auth-role-select select,
 .auth-actions button {
   width: 100%;
 }
@@ -286,11 +532,32 @@ h3 {
 }
 
 .auth-status {
+  display: block;
   line-height: 1.35;
 }
 
 .auth-status.warning {
   color: #fda4af;
+}
+
+.sidebar-collapsed .auth-panel {
+  justify-items: center;
+  padding: 5px;
+}
+
+.sidebar-collapsed .auth-compact-toggle {
+  display: inline-flex;
+  height: 34px;
+  justify-content: center;
+  min-height: 34px;
+  padding: 2px;
+  width: 34px;
+}
+
+.sidebar-collapsed .auth-compact-copy,
+.sidebar-collapsed .auth-toggle-mark,
+.sidebar-collapsed .auth-details {
+  display: none;
 }
 
 .team-nav-link {
@@ -304,27 +571,15 @@ h3 {
   justify-items: center;
 }
 
-.sidebar-collapsed .sidebar-brand .eyebrow,
 .sidebar-collapsed .sidebar-brand h1,
 .sidebar-collapsed .nav-label,
-.sidebar-collapsed .team-mark,
-.sidebar-collapsed .auth-main,
-.sidebar-collapsed .auth-status,
-.sidebar-collapsed .auth-role-select {
+.sidebar-collapsed .team-mark {
   display: none;
 }
 
 .sidebar-collapsed .side-nav a {
   justify-content: center;
   padding: 6px;
-}
-
-.sidebar-collapsed .auth-actions {
-  align-items: stretch;
-}
-
-.sidebar-collapsed .google-login-button span:not(.google-icon) {
-  display: none;
 }
 
 .team-nav-link.red {
@@ -382,10 +637,10 @@ h3 {
 }
 
 .disclaimer {
-  border: 1px solid rgba(245, 184, 65, 0.42);
+  border: 1px solid var(--warning-border);
   border-radius: 6px;
-  background: rgba(245, 184, 65, 0.1);
-  color: #fde68a;
+  background: var(--warning-bg);
+  color: var(--warning-text);
   font-size: 12px;
   margin-bottom: 10px;
   padding: 9px 12px;
@@ -397,8 +652,8 @@ h3 {
   @apply shadow-sm;
   border: 1px solid var(--panel-border);
   border-radius: 6px;
-  background: linear-gradient(180deg, rgba(10, 18, 29, 0.98), rgba(7, 13, 20, 0.98));
-  box-shadow: inset 0 1px rgba(255, 255, 255, 0.035);
+  background: var(--panel-surface);
+  box-shadow: inset 0 1px var(--panel-highlight);
   padding: 10px;
 }
 
@@ -630,7 +885,7 @@ h3 {
 .metric span,
 .confidence-grid span {
   display: block;
-  color: #8fb7c9;
+  color: var(--text-muted);
   font-size: 13px;
   margin-bottom: 4px;
 }
@@ -673,7 +928,7 @@ h3 {
 .heatmap-legend {
   display: flex;
   justify-content: space-between;
-  color: #8fb7c9;
+  color: var(--text-muted);
   font-size: 13px;
 }
 
@@ -740,7 +995,7 @@ h3 {
 }
 
 .incident-drawer dt {
-  color: #8fb7c9;
+  color: var(--text-muted);
 }
 
 .incident-drawer dd {
@@ -805,7 +1060,7 @@ h3 {
 }
 
 .lab-hero-panel p:last-child {
-  color: #8fb7c9;
+  color: var(--text-muted);
   margin: 0;
 }
 
@@ -829,7 +1084,7 @@ h3 {
 }
 
 .tournament-login-box strong {
-  color: #f8fbff;
+  color: var(--heading);
 }
 
 .tournament-role-panel,
@@ -860,13 +1115,13 @@ h3 {
 }
 
 .tournament-role-grid strong {
-  color: #f8fbff;
+  color: var(--heading);
 }
 
 .tournament-role-grid span,
 .tournament-workspace p,
 .tournament-locked-panel p {
-  color: #8fb7c9;
+  color: var(--text-muted);
   line-height: 1.45;
   margin: 0;
 }
@@ -984,7 +1239,7 @@ h3 {
 
 .experiment-form legend,
 .form-row {
-  color: #8fb7c9;
+  color: var(--text-muted);
   font-size: 13px;
 }
 
@@ -1005,7 +1260,7 @@ h3 {
   border: 1px solid rgba(34, 211, 238, 0.14);
   border-radius: 999px;
   background: rgba(2, 6, 23, 0.48);
-  color: #d8f3ff;
+  color: var(--heading-soft);
   cursor: pointer;
   display: inline-flex;
   gap: 6px;
@@ -1073,7 +1328,7 @@ h3 {
 }
 
 .nebius-hero-panel p:last-child {
-  color: #8fb7c9;
+  color: var(--text-muted);
   margin: 0;
 }
 
@@ -1222,7 +1477,7 @@ h3 {
 }
 
 .nebius-panel-heading span {
-  color: #8fb7c9;
+  color: var(--text-muted);
   font-size: 13px;
 }
 
@@ -1247,7 +1502,7 @@ h3 {
 }
 
 .capability-card span {
-  color: #8fb7c9;
+  color: var(--text-muted);
   display: block;
   font-size: 12px;
   margin-bottom: 5px;
@@ -1273,7 +1528,7 @@ h3 {
 
 .capability-card p,
 .runtime-health-list p {
-  color: #8fb7c9;
+  color: var(--text-muted);
   font-size: 12px;
   line-height: 1.4;
   margin: 8px 0 0;
@@ -1314,7 +1569,7 @@ h3 {
 
 .nebius-result-block span,
 .evidence-placeholder span {
-  color: #8fb7c9;
+  color: var(--text-muted);
   display: block;
   font-size: 13px;
   margin-bottom: 5px;
@@ -1322,13 +1577,13 @@ h3 {
 
 .nebius-result-block strong,
 .evidence-placeholder strong {
-  color: #d8f3ff;
+  color: var(--heading-soft);
   display: block;
   margin-bottom: 5px;
 }
 
 .nebius-result-block p {
-  color: #8fb7c9;
+  color: var(--text-muted);
   font-size: 13px;
   margin: 0;
   overflow-wrap: anywhere;
@@ -1354,13 +1609,13 @@ h3 {
 }
 
 .artifact-list span {
-  color: #8fb7c9;
+  color: var(--text-muted);
   font-size: 12px;
   text-transform: uppercase;
 }
 
 .artifact-list code {
-  color: #d8f3ff;
+  color: var(--heading-soft);
   font-size: 12px;
   overflow-wrap: anywhere;
 }
@@ -1387,7 +1642,7 @@ h3 {
 .artifact-workbench-header span,
 .artifact-preview-title a,
 .artifact-action-message {
-  color: #8fb7c9;
+  color: var(--text-muted);
   font-size: 13px;
 }
 
@@ -1430,7 +1685,7 @@ h3 {
 }
 
 .artifact-nav-list button span {
-  color: #8fb7c9;
+  color: var(--text-muted);
   font-size: 12px;
   overflow-wrap: anywhere;
 }
@@ -1449,7 +1704,7 @@ h3 {
 }
 
 .artifact-preview-panel pre {
-  color: #d8f3ff;
+  color: var(--heading-soft);
   font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   height: 292px;
   margin: 0;
@@ -1570,7 +1825,7 @@ h3 {
 }
 
 .nebius-card-purpose {
-  color: #8fb7c9;
+  color: var(--text-muted);
   font-size: 13px;
   margin: 0;
 }
@@ -1599,7 +1854,7 @@ h3 {
 
 .runtime-metric span,
 .usage-monitor-metric span {
-  color: #8fb7c9;
+  color: var(--text-muted);
   display: block;
   font-size: 12px;
   margin-bottom: 5px;
@@ -1620,14 +1875,14 @@ h3 {
   border: 1px solid rgba(34, 211, 238, 0.14);
   border-radius: 6px;
   background: rgba(2, 6, 23, 0.42);
-  color: #d8f3ff;
+  color: var(--heading-soft);
   display: grid;
   gap: 4px;
   padding: 9px 10px;
 }
 
 .ai-console-meta strong {
-  color: #8fb7c9;
+  color: var(--text-muted);
   font-size: 12px;
 }
 
@@ -1646,7 +1901,7 @@ h3 {
 
 .ai-response-panel ol,
 .ai-response-panel ul {
-  color: #d8f3ff;
+  color: var(--heading-soft);
   display: grid;
   gap: 6px;
   margin: 8px 0 12px;
@@ -1669,14 +1924,14 @@ h3 {
 }
 
 .serverless-output-options legend {
-  color: #8fb7c9;
+  color: var(--text-muted);
   font-size: 13px;
   padding: 0 4px;
 }
 
 .serverless-output-options label {
   align-items: center;
-  color: #d8f3ff;
+  color: var(--heading-soft);
   display: inline-flex;
   gap: 6px;
   font-size: 13px;
@@ -1717,7 +1972,7 @@ h3 {
 }
 
 .attack-plan-header span {
-  color: #d8f3ff;
+  color: var(--heading-soft);
 }
 
 .attack-plan-meta {
@@ -1734,20 +1989,20 @@ h3 {
 }
 
 .attack-plan-meta dt {
-  color: #8fb7c9;
+  color: var(--text-muted);
   font-size: 11px;
   text-transform: uppercase;
 }
 
 .attack-plan-meta dd {
-  color: #d8f3ff;
+  color: var(--heading-soft);
   margin: 3px 0 0;
   overflow-wrap: anywhere;
 }
 
 .attack-plan-preview p,
 .attack-plan-preview li {
-  color: #d8f3ff;
+  color: var(--heading-soft);
 }
 
 .attack-plan-preview ul,
@@ -1788,12 +2043,12 @@ h3 {
 
 .attack-variant-list span,
 .attack-scenario-select span {
-  color: #d8f3ff;
+  color: var(--heading-soft);
 }
 
 .attack-variant-list em,
 .attack-scenario-select em {
-  color: #8fb7c9;
+  color: var(--text-muted);
   font-size: 12px;
   font-style: normal;
   text-transform: uppercase;
@@ -1848,12 +2103,12 @@ h3 {
 }
 
 .generated-scenario-list span {
-  color: #8fb7c9;
+  color: var(--text-muted);
   font-size: 12px;
 }
 
 .artifact-table code {
-  color: #d8f3ff;
+  color: var(--heading-soft);
   font-size: 12px;
   overflow-wrap: anywhere;
 }
@@ -1863,7 +2118,7 @@ h3 {
 }
 
 .usage-monitor-metric p {
-  color: #8fb7c9;
+  color: var(--text-muted);
   font-size: 12px;
   margin: 6px 0 0;
 }
@@ -1925,7 +2180,7 @@ h3 {
 }
 
 .attack-builder .form-row strong {
-  color: #f8fbff;
+  color: var(--heading);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
@@ -2027,7 +2282,7 @@ h3 {
   border: 1px solid rgba(34, 211, 238, 0.14);
   border-radius: 8px;
   background: rgba(2, 6, 23, 0.48);
-  color: #d8f3ff;
+  color: var(--heading-soft);
   display: grid;
   gap: 5px;
   padding: 12px;
@@ -2040,7 +2295,7 @@ h3 {
 }
 
 .research-link-grid span {
-  color: #8fb7c9;
+  color: var(--text-muted);
   font-size: 13px;
 }
 
@@ -2160,7 +2415,7 @@ h3 {
 
 .detection-summary-list span,
 .artifact-list span {
-  color: #8fb7c9;
+  color: var(--text-muted);
   font-size: 13px;
 }
 
@@ -2178,12 +2433,12 @@ h3 {
 }
 
 .detection-summary-list dt {
-  color: #8fb7c9;
+  color: var(--text-muted);
   font-size: 12px;
 }
 
 .detection-summary-list dd {
-  color: #f8fbff;
+  color: var(--heading);
   font-weight: 700;
   margin: 0;
 }
@@ -2240,7 +2495,7 @@ h3 {
 }
 
 .attack-risk-panel p {
-  color: #8fb7c9;
+  color: var(--text-muted);
   margin: 0;
 }
 
@@ -2252,7 +2507,7 @@ h3 {
 }
 
 .attack-builder-actions span {
-  color: #8fb7c9;
+  color: var(--text-muted);
   font-size: 13px;
 }
 
@@ -2283,7 +2538,7 @@ kbd {
   border: 1px solid rgba(34, 211, 238, 0.28);
   border-radius: 5px;
   background: rgba(15, 23, 42, 0.9);
-  color: #d8f3ff;
+  color: var(--heading-soft);
   font: 700 11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   padding: 2px 5px;
 }
@@ -2304,7 +2559,7 @@ kbd {
 }
 
 .empty-state {
-  color: #8fb7c9;
+  color: var(--text-muted);
 }
 
 .empty-state.warning {
@@ -2781,7 +3036,7 @@ kbd {
 }
 
 .detector-meter-header span {
-  color: #d8f3ff;
+  color: var(--heading-soft);
   font-weight: 700;
 }
 
@@ -2921,7 +3176,7 @@ kbd {
 }
 
 .event-tape strong {
-  color: #f8fbff;
+  color: var(--heading);
 }
 
 .evidence-grid {
@@ -2971,7 +3226,7 @@ kbd {
 }
 
 .evidence-item strong {
-  color: #f8fbff;
+  color: var(--heading);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
@@ -3015,7 +3270,7 @@ kbd {
 }
 
 .incident-replay-drawer.empty p {
-  color: #8fb7c9;
+  color: var(--text-muted);
 }
 
 .severity-chip {
@@ -3048,7 +3303,7 @@ kbd {
 }
 
 .incident-replay-meta dt {
-  color: #8fb7c9;
+  color: var(--text-muted);
 }
 
 .incident-replay-meta dd {
@@ -3098,7 +3353,7 @@ kbd {
 }
 
 .incident-replay-timeline span {
-  color: #8fb7c9;
+  color: var(--text-muted);
   font-size: 11px;
 }
 
@@ -3153,7 +3408,7 @@ kbd {
 }
 
 .mock-endpoint {
-  color: #8fb7c9;
+  color: var(--text-muted);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 12px;
   margin: 0;
@@ -3362,7 +3617,7 @@ kbd {
 }
 
 .battlefield-probability strong {
-  color: #f8fbff;
+  color: var(--heading);
   font: 700 34px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
@@ -3417,7 +3672,7 @@ kbd {
 }
 
 .battlefield-signal-list strong {
-  color: #d8f3ff;
+  color: var(--heading-soft);
   font-size: 10px;
   text-transform: uppercase;
 }
@@ -3576,6 +3831,491 @@ kbd {
   }
 }
 
+
+:root[data-theme="light"] .toolbar,
+:root[data-theme="light"] .panel,
+:root[data-theme="light"] .scenario-launcher,
+:root[data-theme="light"] .cockpit-status-bar,
+:root[data-theme="light"] .cockpit-pill,
+:root[data-theme="light"] .shortcut-strip span,
+:root[data-theme="light"] .empty-state,
+:root[data-theme="light"] .loading-banner,
+:root[data-theme="light"] .liquidity-heatmap,
+:root[data-theme="light"] .arena-splash-panel {
+  background: var(--panel-surface);
+  color: var(--body-text);
+}
+
+:root[data-theme="light"] .heatmap-canvas-wrap,
+:root[data-theme="light"] .cockpit-heatmap,
+:root[data-theme="light"] .depth-chart,
+:root[data-theme="light"] .artifact-preview-panel,
+:root[data-theme="light"] .ai-response-panel {
+  background: #f8fbff;
+}
+
+:root[data-theme="light"] .cockpit-pill span,
+:root[data-theme="light"] .section-heading-row span,
+:root[data-theme="light"] .heatmap-legend,
+:root[data-theme="light"] .arena-splash-copy p {
+  color: var(--text-muted);
+}
+
+:root[data-theme="light"] .app-icon,
+:root[data-theme="light"] .nav-short {
+  color: var(--text-muted);
+}
+
+:root[data-theme="light"] .arena-splash-backdrop {
+  background: rgba(15, 23, 42, 0.3);
+}
+
+
+/* Theme-aware widget layer. Keep widget surfaces readable in day and night modes. */
+.primary-link-button {
+  border-color: rgba(var(--info-rgb), 0.42);
+  background: linear-gradient(135deg, rgba(var(--info-rgb), 0.18), rgba(var(--success-rgb), 0.14));
+  color: var(--heading);
+}
+
+.app-sidebar,
+.nav-short,
+.theme-panel,
+.auth-panel,
+.tournament-login-box,
+.surveillance-actions,
+.cockpit-right .attack-builder,
+.shortcut-strip span,
+.empty-state,
+.loading-banner,
+.incident-alert-banner,
+.cockpit-status-bar,
+.cockpit-pill,
+.attack-card,
+.attack-stage,
+.scenario-card,
+.detector-meter,
+.event-tape-item,
+.evidence-item,
+.battlefield-signal-list li,
+.battlefield-agent-grid article,
+.battlefield-events li,
+.battlefield-tick,
+.depth-chart {
+  border-color: var(--widget-border);
+  background: var(--widget-bg);
+}
+
+.metric,
+.chart,
+.recharts-frame,
+.heatmap-canvas,
+.feed-list li,
+.agent-list span,
+.segmented-options label,
+.checkbox-grid label,
+.job-status-timeline li,
+.suspicious-agent-list article,
+.capability-card,
+.runtime-health-list article,
+.nebius-result-block,
+.evidence-placeholder,
+.artifact-nav-list,
+.artifact-preview-panel,
+.runtime-metric,
+.usage-monitor-metric,
+.ai-console-meta span,
+.ai-response-panel,
+.attack-plan-preview,
+.attack-variant-list article,
+.attack-scenario-select,
+.generated-scenario-list article,
+.deployment-health-list article,
+.f1-chart-frame,
+.research-link-grid a,
+.detection-summary-list article,
+.detection-summary-list dl div,
+.artifact-list li,
+.decision-grid span,
+.attack-risk-panel,
+.incident-replay-timeline li,
+.serverless-output-options,
+.cockpit-chart,
+.timeline-chart,
+.cockpit-heatmap,
+.battlefield-terrain-canvas {
+  border-color: var(--widget-border-soft);
+  background: var(--widget-bg-muted);
+  color: var(--body-text);
+}
+
+.cockpit-chart,
+.timeline-chart,
+.chart,
+.recharts-frame,
+.heatmap-canvas,
+.cockpit-heatmap,
+.battlefield-terrain-canvas,
+.f1-chart-frame {
+  background: var(--chart-bg);
+}
+
+.book-level.ask {
+  background: rgba(var(--ask-rgb), 0.12);
+  color: var(--ask-text);
+}
+
+.book-level.ask .book-level-bar {
+  background: linear-gradient(90deg, rgba(var(--ask-rgb), 0.48), rgba(var(--ask-rgb), 0.06));
+}
+
+.book-level.bid {
+  background: rgba(var(--bid-rgb), 0.12);
+  color: var(--bid-text);
+}
+
+.book-level.bid .book-level-bar {
+  background: linear-gradient(90deg, rgba(var(--bid-rgb), 0.48), rgba(var(--bid-rgb), 0.06));
+}
+
+.book-level.abuser-owned,
+.scenario-card.active,
+.attack-stage.active,
+.detector-meter.highlighted,
+.event-tape-item.red_team,
+.job-status-timeline li.active,
+.incident-replay-timeline li.active,
+.empty-state.warning {
+  border-color: rgba(var(--warning-rgb), 0.62);
+  background: rgba(var(--warning-rgb), 0.12);
+  color: var(--warning-text);
+}
+
+.book-level.abuser-owned .book-level-bar {
+  background: linear-gradient(90deg, rgba(var(--warning-rgb), 0.62), rgba(var(--danger-rgb), 0.18));
+}
+
+.book-level em,
+.difficulty-tag.medium,
+.risk-chip.medium,
+.job-status-timeline li.active,
+.runtime-status.mock_fallback,
+.runtime-status.not_configured,
+.runtime-top-badge.degraded,
+.runtime-top-badge.pending,
+.risk-level,
+.risk-level.high,
+.severity-chip,
+.severity-chip.high,
+.event-badge.red_team,
+.battlefield-risk.warning,
+.battlefield-tick.has-event,
+.cockpit-pill.warn strong,
+.fallback-note {
+  color: var(--warning-text);
+}
+
+.status-pill,
+.status-pill.connected,
+.status-pill.connection.connected,
+.job-status.done,
+.job-status.stored,
+.report-status.completed,
+.runtime-status.healthy,
+.runtime-status.configured,
+.runtime-status.recent_run,
+.runtime-status.ready,
+.runtime-status.mounted,
+.runtime-top-badge.online,
+.runtime-top-badge.ready,
+.runtime-top-badge.synced,
+.runtime-top-badge.healthy,
+.runtime-top-badge.connected,
+.risk-chip,
+.job-status-timeline li.completed,
+.evidence-item.confirmed,
+.evidence-item.confirmed .evidence-item-header span,
+.incident-replay-timeline li.completed,
+.endpoint-badge.investigator-status.completed,
+.battlefield-risk.watch,
+.cockpit-pill.good strong {
+  color: var(--success-text);
+}
+
+.status-pill,
+.status-pill.connected,
+.status-pill.connection.connected,
+.job-status.done,
+.job-status.stored,
+.report-status.completed,
+.runtime-status.healthy,
+.runtime-status.configured,
+.runtime-status.recent_run,
+.runtime-status.ready,
+.runtime-status.mounted,
+.runtime-top-badge.online,
+.runtime-top-badge.ready,
+.runtime-top-badge.synced,
+.runtime-top-badge.healthy,
+.runtime-top-badge.connected,
+.risk-chip,
+.job-status-timeline li.completed,
+.evidence-item.confirmed,
+.evidence-item.confirmed .evidence-item-header span,
+.incident-replay-timeline li.completed,
+.endpoint-badge.investigator-status.completed {
+  border-color: rgba(var(--success-rgb), 0.34);
+  background: rgba(var(--success-rgb), 0.12);
+}
+
+.status-pill.connection.disconnected,
+.status-pill.disconnected,
+.auth-status.warning,
+.danger-button,
+.endpoint-score,
+.difficulty-tag.high,
+.risk-chip.high,
+.job-status.failed,
+.runtime-status.not_detected,
+.runtime-status.missing,
+.runtime-top-badge.error,
+.runtime-top-badge.offline,
+.event-tape-item.detector,
+.event-badge.detector,
+.detector-meter.critical .detector-severity,
+.severity-chip.critical,
+.endpoint-badge.investigator-status.error,
+.lab-job-note.error,
+.risk-level.critical,
+.battlefield-risk.critical,
+.incident-alert-banner {
+  color: var(--danger-text);
+}
+
+.status-pill.connection.disconnected,
+.status-pill.disconnected,
+.danger-button,
+.endpoint-score,
+.difficulty-tag.high,
+.risk-chip.high,
+.job-status.failed,
+.runtime-status.not_detected,
+.runtime-status.missing,
+.runtime-top-badge.error,
+.runtime-top-badge.offline,
+.event-tape-item.detector,
+.event-badge.detector,
+.detector-meter.critical .detector-severity,
+.severity-chip.critical,
+.endpoint-badge.investigator-status.error,
+.risk-level.critical,
+.battlefield-risk.critical,
+.incident-alert-banner {
+  border-color: rgba(var(--danger-rgb), 0.36);
+  background: rgba(var(--danger-rgb), 0.12);
+}
+
+.runtime-top-badge.running,
+.runtime-top-badge.busy,
+.runtime-status.running,
+.capability-card em,
+.runtime-status,
+.job-status.running,
+.job-status.pending,
+.event-badge.market_maker,
+.endpoint-badge.investigator-status.analyzing,
+.battlefield-tick.active,
+.research-link-grid a:hover,
+.segmented-options label.selected,
+.artifact-nav-list button.selected,
+.artifact-nav-list button[aria-selected="true"],
+.attack-scenario-select.selected,
+.tournament-role-grid button.selected {
+  border-color: rgba(var(--info-rgb), 0.38);
+  background: rgba(var(--info-rgb), 0.12);
+  color: var(--info-text);
+}
+
+.side-nav a:hover .app-icon,
+.side-nav a.active .app-icon,
+.capability-card em,
+.runtime-status,
+.runtime-top-badge.running,
+.runtime-top-badge.busy,
+.runtime-status.running,
+.job-status.running,
+.job-status.pending,
+.event-badge.market_maker,
+.loading-banner,
+.attack-plan-header strong,
+.about-card code,
+.artifact-list code,
+.research-link-grid a:hover,
+.battlefield-tick.active {
+  color: var(--info-text);
+}
+
+.event-badge,
+.report-status,
+.runtime-top-badge,
+.detector-severity,
+.evidence-item-header span,
+.job-status,
+.battlefield-risk,
+.endpoint-badge {
+  background: rgba(var(--neutral-rgb), 0.13);
+  color: var(--neutral-text);
+}
+
+.nebius-investigator-placeholder,
+.nebius-investigator-panel,
+.event-badge.nebius,
+.endpoint-badge,
+.investigator-progress {
+  border-color: rgba(var(--violet-rgb), 0.24);
+  background: rgba(var(--violet-rgb), 0.14);
+  color: var(--violet-text);
+}
+
+.team-hero.red {
+  background: linear-gradient(90deg, rgba(var(--danger-rgb), 0.13), var(--widget-bg));
+}
+
+.team-hero.blue {
+  background: linear-gradient(90deg, rgba(var(--info-rgb), 0.13), var(--widget-bg));
+}
+
+.team-badge.red,
+.team-mark.red,
+.team-nav-link.red:hover,
+.team-nav-link.red.active {
+  background: rgba(var(--danger-rgb), 0.14);
+  color: var(--danger-text);
+}
+
+.team-badge.blue,
+.team-mark.blue,
+.team-nav-link.blue:hover,
+.team-nav-link.blue.active {
+  background: rgba(var(--info-rgb), 0.14);
+  color: var(--info-text);
+}
+
+.attack-scenario-page .nebius-card-heading .eyebrow,
+.blue-team-page .surveillance-card > h3,
+.blue-team-page .detector-confidence-panel h2,
+.blue-team-page .evidence-panel h2,
+.blue-team-page .incident-replay-drawer h2,
+.section-heading-row h2,
+.runtime-metric strong,
+.usage-monitor-metric strong,
+.about-card strong,
+.about-card li,
+.artifact-list li,
+.incident-replay-timeline p,
+.nebius-investigator-placeholder p,
+.lab-job-note,
+.investigator-state p,
+.investigator-result p,
+.fallback-note,
+.confirm-dialog p,
+.suspicious-agent-list span,
+.endpoint-result p,
+.endpoint-result li,
+.ai-report-summary p,
+.ai-report-summary li,
+.scenario-defaults span,
+.decision-grid span,
+.empty-state,
+.loading-banner {
+  color: var(--text-soft);
+}
+
+.about-card {
+  border-color: rgba(var(--warning-rgb), 0.26);
+  background: linear-gradient(180deg, rgba(var(--warning-rgb), 0.08), var(--widget-bg-muted));
+}
+
+.about-card h3,
+.suspicious-agent-list article > strong,
+.endpoint-score strong {
+  color: var(--warning-text);
+}
+
+.dialog-backdrop,
+.arena-splash-backdrop {
+  background: var(--overlay-bg);
+}
+
+.confirm-dialog,
+.arena-splash-panel {
+  background: var(--panel-surface);
+  color: var(--body-text);
+}
+
+kbd,
+.scenario-defaults span,
+.google-icon {
+  border-color: var(--widget-border-soft);
+  background: var(--widget-bg-soft);
+  color: var(--heading-soft);
+}
+
+.legend-swatch.low,
+.legend-swatch.abuser {
+  background: var(--widget-bg-soft);
+}
+
+.legend-swatch.high {
+  background: rgba(var(--success-rgb), 0.86);
+}
+
+.loading-banner::after {
+  background: linear-gradient(90deg, transparent, var(--chart-line-primary), transparent);
+}
+
+.gauge-fill,
+.confidence-bar div,
+.detector-meter-track div {
+  background: linear-gradient(90deg, var(--chart-line-primary), rgb(var(--success-rgb)));
+}
+
+.detector-meter.watch .detector-meter-track div {
+  background: var(--chart-line-primary);
+}
+
+.detector-meter.warning .detector-meter-track div {
+  background: rgb(var(--warning-rgb));
+}
+
+.detector-meter.critical .detector-meter-track div {
+  background: rgb(var(--danger-rgb));
+}
+
+:root[data-theme="light"] .app-shell {
+  @apply text-slate-900;
+}
+
+:root[data-theme="light"] .side-nav a,
+:root[data-theme="light"] button,
+:root[data-theme="light"] input,
+:root[data-theme="light"] select {
+  box-shadow: 0 1px 0 rgba(12, 25, 40, 0.03);
+}
+
+:root[data-theme="light"] .toolbar,
+:root[data-theme="light"] .panel,
+:root[data-theme="light"] .scenario-launcher {
+  box-shadow: 0 1px 2px rgba(12, 25, 40, 0.05), inset 0 1px rgba(255, 255, 255, 0.8);
+}
+
+:root[data-theme="light"] .book-level-bar,
+:root[data-theme="light"] .gauge-fill,
+:root[data-theme="light"] .confidence-bar div,
+:root[data-theme="light"] .detector-meter-track div {
+  opacity: 0.78;
+}
+
 @media (max-width: 720px) {
   .incident-replay-timeline ol {
     grid-template-columns: 1fr;
@@ -3732,13 +4472,10 @@ kbd {
     padding: 10px;
   }
 
-  .sidebar-brand .eyebrow,
   .sidebar-brand h1,
   .nav-label,
   .team-mark,
-  .auth-main,
-  .auth-status,
-  .auth-role-select {
+  .auth-details {
     display: none;
   }
 
@@ -3925,41 +4662,19 @@ kbd {
   }
 
   .auth-panel {
-    align-items: end;
-    grid-template-columns: minmax(0, 1fr) minmax(112px, auto) auto;
+    padding: 5px;
   }
 
-  .auth-main > div,
-  .auth-role-select,
-  .auth-actions {
-    display: flex;
-    flex-wrap: wrap;
+  .auth-compact-toggle {
+    grid-template-columns: 28px minmax(0, 1fr) 18px;
   }
 
-  .auth-main,
-  .auth-role-select {
-    display: flex;
-  }
-
-  .auth-status {
-    display: block;
-    grid-column: 1 / -1;
+  .auth-details {
+    grid-template-columns: 1fr;
   }
 
   .auth-actions {
     align-items: stretch;
-    justify-content: flex-end;
-  }
-
-  .auth-panel .google-login-button {
-    min-width: 42px;
-    padding-left: 9px;
-    padding-right: 9px;
-    width: auto;
-  }
-
-  .auth-panel .google-login-button span:not(.google-icon) {
-    display: none;
   }
 
   .arena-splash-backdrop {

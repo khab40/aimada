@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AttackBuilder } from "@/components/AttackBuilder";
 import { AttackTracker } from "@/components/AttackTracker";
 import { AgentEventTape } from "@/components/AgentEventTape";
@@ -24,6 +24,7 @@ export function ArenaPage() {
   const { launchScenario, mode, pause, reset, running, sourceStatus, start, state, symbol, tick } = useArenaSource();
   const [heatmapSnapshots, setHeatmapSnapshots] = useState(() => [state.book]);
   const [timeline, setTimeline] = useState<MarketTimelineFrame[]>(() => [toTimelineFrame(state)]);
+  const lastRecordedTickRef = useRef(state.tick);
   const [pendingControl, setPendingControl] = useState<"pause" | "reset" | "start" | null>(null);
   const incident = useMemo(() => createIncident(state), [state]);
   const [lastIncident, setLastIncident] = useState<Incident | null>(incident);
@@ -38,6 +39,10 @@ export function ArenaPage() {
   }, [incident]);
 
   useEffect(() => {
+    if (state.tick === lastRecordedTickRef.current) {
+      return;
+    }
+    lastRecordedTickRef.current = state.tick;
     setHeatmapSnapshots((snapshots) => [...snapshots, state.book].slice(-72));
     setTimeline((points) => [...points, toTimelineFrame(state)].slice(-48));
   }, [state]);
@@ -68,6 +73,7 @@ export function ArenaPage() {
     }
     setPendingControl("reset");
     reset();
+    lastRecordedTickRef.current = -1;
     setHeatmapSnapshots([]);
     setTimeline([]);
     setLastIncident(null);

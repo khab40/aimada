@@ -19,6 +19,8 @@ We provide:
 - AI-assisted explanations that make detector evidence understandable to a reviewer
 - batch benchmarks that measure detector precision, recall, F1, and latency
 - synthetic labeled datasets for repeatable experiments
+- Google-authenticated demo personas with app-issued JWT sessions for role-aware review
+- local UI shell preferences for day/night/system display and compact auth controls
 - safety framing that keeps the project educational and non-compliance-oriented
 
 The core business value is not "detect manipulation in production." The value is
@@ -73,7 +75,7 @@ graph LR
     Operator["Demo Operator"]
     Reviewer["Technical Reviewer"]
     Researcher["Research / Benchmark User"]
-    UI["React Visual Arena"]
+    UI["React Visual Arena + Themed Shell"]
     Backend["FastAPI Simulator Backend"]
     Simulation["Synthetic Exchange + Agents"]
     Detectors["Deterministic Detector Engine"]
@@ -81,6 +83,7 @@ graph LR
     NebiusJobs["Nebius Serverless AI Jobs"]
     Artifacts["Reports, Metrics, Dataset Artifacts"]
 
+    Operator -->|"sign in, choose role, theme shell"| UI
     Operator -->|"start / pause / reset arena"| UI
     Operator -->|"launch red-team scenario"| UI
     Operator -->|"request AI explanation"| UI
@@ -108,6 +111,8 @@ graph LR
 | Detector Tournament Benchmark | Research / Benchmark User | Use Nebius Serverless AI Jobs to compare detector precision, recall, F1, and latency. |
 | Synthetic Dataset Generation | Research / Benchmark User | Use Nebius Serverless AI Jobs to produce labeled synthetic event/snapshot/incident artifacts. |
 | Challenge Submission Evidence | Technical Reviewer | Review architecture, metrics, screenshots, and safety framing. |
+| Role-Based Demo Review | Demo Operator / Reviewer | Sign in with Google, keep app JWT sessions separate from Google tokens, and use role/session context during demos. |
+| UI Shell Personalization | Demo Operator / Reviewer | Hide the auth panel, use compact navigation, and switch day/night/system display without changing backend state. |
 
 ## Live Arena Mode
 
@@ -143,6 +148,69 @@ Nebius role:
 
 - No direct Nebius call is needed for the baseline live loop.
 - The live arena creates the state and incidents later sent to Nebius Serverless AI Endpoints.
+
+## Role-Based Demo Review
+
+Purpose: let a demo operator or reviewer authenticate with Google, keep a stable local user record, and retain app-owned session state without using Google tokens as the arena session.
+
+```mermaid
+graph TD
+    Reviewer["Demo Operator / Reviewer"]
+    Shell["UI Auth Widget"]
+    Backend["POST /api/auth/google/complete"]
+    Google["Google ID Token / Code Verification"]
+    Users["SQLite users table"]
+    JWT["App-issued JWT"]
+
+    Reviewer --> Shell
+    Shell --> Backend
+    Backend --> Google
+    Backend --> Users
+    Backend --> JWT
+    JWT --> Shell
+```
+
+Business value:
+
+- Gives demos a familiar sign-in and account surface without exposing Google tokens as long-lived app sessions.
+- Supports Observer, Judge, Red Team, Blue Team, and Operator personas in a way reviewers can understand.
+- Keeps identity verification in the backend and session presentation in the UI shell.
+
+Nebius role:
+
+- No Nebius call is required for authentication.
+- Authenticated sessions can later be used to associate reports, promoted evidence, and benchmark review history.
+
+## UI Shell Personalization
+
+Purpose: make the arena usable in repeated demos, recordings, and reviews without changing simulation state.
+
+```mermaid
+graph LR
+    Operator["Operator"]
+    Theme["Day / Night / System"]
+    AuthPanel["Collapsed Auth Widget"]
+    Nav["Compact Vertical Navigation"]
+    Arena["Arena Visuals"]
+
+    Operator --> Theme
+    Operator --> AuthPanel
+    Operator --> Nav
+    Theme --> Arena
+    AuthPanel --> Arena
+    Nav --> Arena
+```
+
+Business value:
+
+- Makes the UI cleaner for screenshots and demos.
+- Supports dark rooms, light rooms, and system-following display behavior.
+- Keeps visual preferences local to the browser, separate from backend runtime and detector behavior.
+
+Nebius role:
+
+- No Nebius call is required.
+- Cleaner UI state improves review of Nebius-generated reports and benchmark artifacts.
 
 ## Manual Scenario Launch
 
@@ -410,6 +478,8 @@ Each use case is supported by specific architecture components:
 | Red-Team Scenario Generation | Interactive | Nebius Endpoint /generate-scenario | [ARD-0005](architecture/ARD-0005-nebius-endpoint-contract.md) |
 | Detector Tournament Benchmark | Batch | Nebius Jobs + Simulation + Metrics | [ARD-0004](architecture/ARD-0004-benchmark-artifact-format.md), [ARD-0007](architecture/ARD-0007-nebius-serverless-ai-jobs.md) |
 | Synthetic Dataset Generation | Batch | Nebius Jobs + Dataset Factory | [ARD-0004](architecture/ARD-0004-benchmark-artifact-format.md), [ARD-0007](architecture/ARD-0007-nebius-serverless-ai-jobs.md) |
+| Role-Based Demo Review | Interactive | UI Auth Widget + Backend Auth Store + JWT Session | [ARD-0012](architecture/ARD-0012-google-authentication.md), [ARD-0013](architecture/ARD-0013-ui-shell-preferences.md) |
+| UI Shell Personalization | Interactive | Themed Shell + Local Preferences + Arena Visual Stability | [ARD-0013](architecture/ARD-0013-ui-shell-preferences.md) |
 
 ## Related Documentation
 

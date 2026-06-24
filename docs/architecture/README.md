@@ -6,7 +6,7 @@ ARDs capture architecture decisions, context, tradeoffs, implementation phases, 
 
 ## Implementation Summary
 
-Status as of 2026-06-23:
+Status as of 2026-06-24:
 
 | ARD | Implementation | Main Gap |
 |-----|----------------|----------|
@@ -21,6 +21,8 @@ Status as of 2026-06-23:
 | [ARD-0009](ARD-0009-judge-mode-investigation-reports.md) | `[partial]` | Dedicated Judge Mode timeline selector is not fully implemented |
 | [ARD-0010](ARD-0010-agent-runner-execution.md) | `[done]` | Auth/signing and durable transport for remote runners are future work |
 | [ARD-0011](ARD-0011-exchange-liquidity-invariant.md) | `[done]` | Dynamic reference-price tracking and UI tuning are future work |
+| [ARD-0012](ARD-0012-google-authentication.md) | `[done]` | Refresh tokens, revocation, asymmetric signing, and external secret management are future work |
+| [ARD-0013](ARD-0013-ui-shell-preferences.md) | `[done]` | Screenshot capture and broader light-mode chart tuning are future work |
 
 ## Records
 
@@ -42,6 +44,14 @@ Status as of 2026-06-23:
 
 - [ARD-0010: Agent Runner Execution Architecture](ARD-0010-agent-runner-execution.md) — Local, remote, heavy, and LangGraph-compatible agent execution
 - [ARD-0011: Exchange Liquidity Invariant And Agent Quote Ownership](ARD-0011-exchange-liquidity-invariant.md) — Baseline ladder guard and additive per-agent quote ownership
+
+### Authentication
+
+- [ARD-0012: Google Authentication And App Sessions](ARD-0012-google-authentication.md) — Google ID token verification, SQLite user storage, and app JWT sessions
+
+### UI Shell And Presentation
+
+- [ARD-0013: UI Shell Preferences And Demo Presentation](ARD-0013-ui-shell-preferences.md) — Banner asset, theme preference, collapsible auth widget, compact navigation, and paused-state-stable visualizations
 
 ### Nebius Integration
 

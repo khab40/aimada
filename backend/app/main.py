@@ -12,6 +12,7 @@ from app.api.routes_red_team import router as red_team_router
 from app.api.routes_scenarios import router as scenarios_router
 from app.api.routes_simulation import router as simulation_router
 from app.arena.engine import SimulationEngine
+from app.auth.store import AuthStore
 from app.config import get_settings
 from app.storage.local_store import LocalStore
 from app.websocket.manager import WebSocketManager
@@ -20,6 +21,8 @@ from app.websocket.routes import router as websocket_router
 app = FastAPI(title="AI Market Abuse Detection Arena")
 settings = get_settings()
 app.state.store = LocalStore(settings.arena_output_dir)
+app.state.auth_store = AuthStore(settings.arena_output_dir / "auth" / "auth.db")
+app.state.settings = settings
 app.state.simulation = SimulationEngine(
     store=app.state.store,
     normal_agent_count=settings.arena_agent_count,

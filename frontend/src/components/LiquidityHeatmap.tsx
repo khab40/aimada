@@ -16,6 +16,17 @@ const DEFAULT_VISIBLE_LEVELS = 22;
 const LEFT_AXIS_WIDTH = 72;
 const BOTTOM_AXIS_HEIGHT = 18;
 
+type HeatmapTheme = {
+  axis: string;
+  background: string;
+  dangerRgb: string;
+  grid: string;
+  infoRgb: string;
+  lowCell: string;
+  successRgb: string;
+  warningRgb: string;
+};
+
 export function LiquidityHeatmap({
   maxFrames = 72,
   snapshots,
@@ -28,6 +39,7 @@ export function LiquidityHeatmap({
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [canvasSize, setCanvasSize] = useState({ height: 320, width: 900 });
+  const [themeVersion, setThemeVersion] = useState(0);
   const frames = useMemo(() => toHeatmapFrames(snapshots.slice(-maxFrames)), [maxFrames, snapshots]);
   const visiblePrices = useMemo(() => getVisiblePrices(snapshots.at(-1), visibleLevels), [snapshots, visibleLevels]);
 
@@ -48,6 +60,13 @@ export function LiquidityHeatmap({
     return () => observer.disconnect();
   }, []);
 
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => setThemeVersion((version) => version + 1));
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => observer.disconnect();
+  }, []);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     const context = canvas?.getContext("2d");
@@ -65,8 +84,8 @@ export function LiquidityHeatmap({
       canvas.height = nextHeight;
     }
     context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-    drawHeatmap(context, frames, visiblePrices);
-  }, [canvasSize, frames, visiblePrices]);
+    drawHeatmap(context, frames, visiblePrices, readHeatmapTheme());
+  }, [canvasSize, frames, themeVersion, visiblePrices]);
 
   return (
     <section className="liquidity-heatmap">
@@ -90,7 +109,7 @@ export function LiquidityHeatmap({
   );
 }
 
-function drawHeatmap(context: CanvasRenderingContext2D, frames: HeatmapFrame[], visiblePrices: number[]) {
+function drawHeatmap(context: CanvasRenderingContext2D, frames: HeatmapFrame[], visiblePrices: number[], theme: HeatmapTheme) {
   const { canvas } = context;
   const pixelRatio = window.devicePixelRatio || 1;
   const width = canvas.width / pixelRatio;
@@ -99,11 +118,11 @@ function drawHeatmap(context: CanvasRenderingContext2D, frames: HeatmapFrame[], 
   const plotHeight = height - BOTTOM_AXIS_HEIGHT;
 
   context.clearRect(0, 0, width, height);
-  context.fillStyle = "#020617";
+  context.fillStyle = theme.background;
   context.fillRect(0, 0, width, height);
 
   if (!frames.length || !visiblePrices.length) {
-    drawEmptyState(context);
+    drawEmptyState(context, theme);
     return;
   }
 
@@ -114,7 +133,7 @@ function drawHeatmap(context: CanvasRenderingContext2D, frames: HeatmapFrame[], 
   const cellWidth = plotWidth / frames.length;
   const cellHeight = plotHeight / visiblePrices.length;
 
-  drawYAxis(context, visiblePrices, cellHeight);
+  drawYAxis(context, visiblePrices, cellHeight, theme);
 
   frames.forEach((frame, frameIndex) => {
     const levelsByPrice = new Map(frame.levels.map((level) => [level.price, level]));
@@ -125,22 +144,22 @@ function drawHeatmap(context: CanvasRenderingContext2D, frames: HeatmapFrame[], 
       const x = LEFT_AXIS_WIDTH + frameIndex * cellWidth;
       const y = priceIndex * cellHeight;
 
-      context.fillStyle = getCellColor(level, intensity);
+      context.fillStyle = getCellColor(level, intensity, theme);
       context.fillRect(x, y, Math.max(1, cellWidth), Math.max(1, cellHeight));
 
       if ((level?.abuserSize ?? 0) > 0) {
-        context.strokeStyle = "rgba(251, 191, 36, 0.95)";
+        context.strokeStyle = `rgba(${theme.warningRgb}, 0.95)`;
         context.lineWidth = Math.max(1, Math.min(cellWidth, cellHeight) * 0.14);
         context.strokeRect(x + 0.5, y + 0.5, Math.max(1, cellWidth - 1), Math.max(1, cellHeight - 1));
       }
     });
   });
 
-  drawXAxis(context, frames, plotWidth, plotHeight);
+  drawXAxis(context, frames, plotWidth, plotHeight, theme);
 }
 
-function drawYAxis(context: CanvasRenderingContext2D, visiblePrices: number[], cellHeight: number) {
-  context.fillStyle = "rgba(143, 183, 201, 0.92)";
+function drawYAxis(context: CanvasRenderingContext2D, visiblePrices: number[], cellHeight: number, theme: HeatmapTheme) {
+  context.fillStyle = theme.axis;
   context.font = "11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
   visiblePrices.forEach((price, index) => {
     if (index % 3 !== 0 && index !== visiblePrices.length - 1) {
@@ -150,38 +169,54 @@ function drawYAxis(context: CanvasRenderingContext2D, visiblePrices: number[], c
   });
 }
 
-function drawXAxis(context: CanvasRenderingContext2D, frames: HeatmapFrame[], plotWidth: number, plotHeight: number) {
-  context.strokeStyle = "rgba(148, 163, 184, 0.16)";
+function drawXAxis(context: CanvasRenderingContext2D, frames: HeatmapFrame[], plotWidth: number, plotHeight: number, theme: HeatmapTheme) {
+  context.strokeStyle = theme.grid;
   context.beginPath();
   context.moveTo(LEFT_AXIS_WIDTH, plotHeight + 0.5);
   context.lineTo(LEFT_AXIS_WIDTH + plotWidth, plotHeight + 0.5);
   context.stroke();
 
-  context.fillStyle = "rgba(143, 183, 201, 0.92)";
+  context.fillStyle = theme.axis;
   context.font = "11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
   context.fillText(frames[0]?.timestamp ?? "", LEFT_AXIS_WIDTH, plotHeight + 14);
   context.fillText(frames.at(-1)?.timestamp ?? "", LEFT_AXIS_WIDTH + plotWidth - 44, plotHeight + 14);
 }
 
-function drawEmptyState(context: CanvasRenderingContext2D) {
-  context.fillStyle = "rgba(143, 183, 201, 0.86)";
+function drawEmptyState(context: CanvasRenderingContext2D, theme: HeatmapTheme) {
+  context.fillStyle = theme.axis;
   context.font = "13px Inter, system-ui, sans-serif";
   context.fillText("Waiting for order-book frames", LEFT_AXIS_WIDTH, 34);
 }
 
-function getCellColor(level: HeatmapFrame["levels"][number] | undefined, intensity: number) {
+function getCellColor(level: HeatmapFrame["levels"][number] | undefined, intensity: number, theme: HeatmapTheme) {
   if (!level || intensity <= 0) {
-    return "rgba(15, 23, 42, 0.72)";
+    return theme.lowCell;
   }
 
   const alpha = 0.18 + intensity * 0.74;
   if (level.askSize > level.bidSize) {
-    return `rgba(244, 63, 94, ${alpha})`;
+    return `rgba(${theme.dangerRgb}, ${alpha})`;
   }
   if (level.bidSize > level.askSize) {
-    return `rgba(16, 185, 129, ${alpha})`;
+    return `rgba(${theme.successRgb}, ${alpha})`;
   }
-  return `rgba(34, 211, 238, ${alpha})`;
+  return `rgba(${theme.infoRgb}, ${alpha})`;
+}
+
+function readHeatmapTheme(): HeatmapTheme {
+  const styles = getComputedStyle(document.documentElement);
+  const read = (name: string, fallback: string) => styles.getPropertyValue(name).trim() || fallback;
+
+  return {
+    axis: read("--chart-axis", "#8fb7c9"),
+    background: read("--chart-bg", "#050b12"),
+    dangerRgb: read("--danger-rgb", "244, 63, 94"),
+    grid: read("--chart-grid", "rgba(148, 163, 184, 0.16)"),
+    infoRgb: read("--info-rgb", "34, 211, 238"),
+    lowCell: read("--heatmap-low-cell", "rgba(15, 23, 42, 0.72)"),
+    successRgb: read("--success-rgb", "16, 185, 129"),
+    warningRgb: read("--warning-rgb", "251, 191, 36")
+  };
 }
 
 function toHeatmapFrames(snapshots: OrderBookSnapshot[]): HeatmapFrame[] {

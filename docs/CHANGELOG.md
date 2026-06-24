@@ -5,6 +5,24 @@ Update this file with each significant commit before pushing.
 
 ## Unreleased
 
+### Current - feat: polish AI-MADA branding and UI shell
+
+- Switched the README/GitHub banner to `assets/img/ai-mada.jpg`.
+- Added persisted day/night/system theme behavior for the shared UI shell and migrated widgets, charts, status chips, order-book levels, and the Liquidity Map canvas to theme-aware tokens.
+- Made the Google/auth widget collapsible and retained a compact authenticated account control.
+- Tightened the vertical navigation collapse/expand control and removed the stale product subtitle from the UI shell.
+- Stopped the Liquidity Map from appending or shifting frames while the arena tick is not advancing.
+- Added ARD-0013 and refreshed README, architecture, design ideas, phase status, and use-case docs for the current UI/auth/runtime state.
+
+### Current - feat: add Google authentication persistence
+
+- Added Google ID token verification with `google-auth` and optional authorization-code exchange using configured Google OAuth credentials.
+- Added SQLite-backed Google user persistence with `id`, `email`, `name`, `avatar_url`, `google_id`, `auth_provider`, `created_at`, and `updated_at`.
+- Added app-issued JWT sessions so Google tokens are only verification input, not long-lived app sessions.
+- Wired the frontend Google button to Google Identity Services authorization-code flow when Google auth is configured.
+- Fixed the GIS popup code exchange path to pass the browser origin consistently and return Google token-exchange details in 401 responses.
+- Added ARD-0012 and tests for verified Google login, DB storage, JWT lookup, and configured-mode validation.
+
 ### Current - fix: preserve baseline exchange liquidity
 
 - Added a baseline liquidity guard that restores a configured minimum bid/ask ladder after each simulation tick.

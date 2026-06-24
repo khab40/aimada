@@ -37,10 +37,19 @@ const markerLabels: Record<TimelineMarkerType, string> = {
 };
 
 const markerColors: Record<TimelineMarkerType, string> = {
-  attack_started: "#fbbf24",
-  detector_warning: "#f43f5e",
-  incident_confirmed: "#10b981"
+  attack_started: "rgb(var(--warning-rgb))",
+  detector_warning: "rgb(var(--danger-rgb))",
+  incident_confirmed: "rgb(var(--success-rgb))"
 };
+
+const tooltipStyle = {
+  background: "var(--chart-tooltip-bg)",
+  borderColor: "var(--chart-tooltip-border)",
+  color: "var(--chart-tooltip-text)"
+};
+
+const axisTick = { fontSize: 11, fill: "var(--chart-axis)" };
+const smallAxisTick = { fontSize: 10, fill: "var(--chart-axis)" };
 
 export function MarketTimeline({ frames }: { frames: MarketTimelineFrame[] }) {
   const points = frames.map(toChartPoint);
@@ -56,11 +65,11 @@ export function MarketTimeline({ frames }: { frames: MarketTimelineFrame[] }) {
       <div className="timeline-chart" role="img" aria-label="Mid price, spread bps, and imbalance timeline">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={points} margin={{ top: 8, right: 18, bottom: 0, left: -18 }}>
-            <CartesianGrid stroke="rgba(148, 163, 184, 0.18)" strokeDasharray="3 3" />
-            <XAxis dataKey="tick" tick={{ fontSize: 11, fill: "#8fb7c9" }} />
-            <YAxis yAxisId="price" tick={{ fontSize: 11, fill: "#8fb7c9" }} domain={["dataMin - 10", "dataMax + 10"]} />
-            <YAxis yAxisId="micro" orientation="right" tick={{ fontSize: 11, fill: "#8fb7c9" }} />
-            <Tooltip contentStyle={{ background: "#071426", borderColor: "#1e3a5f", color: "#d8f3ff" }} />
+            <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="3 3" />
+            <XAxis dataKey="tick" tick={axisTick} />
+            <YAxis yAxisId="price" tick={axisTick} domain={["dataMin - 10", "dataMax + 10"]} />
+            <YAxis yAxisId="micro" orientation="right" tick={axisTick} />
+            <Tooltip contentStyle={tooltipStyle} />
             {markers.map((marker) => (
               <ReferenceLine
                 ifOverflow="extendDomain"
@@ -72,9 +81,9 @@ export function MarketTimeline({ frames }: { frames: MarketTimelineFrame[] }) {
                 yAxisId="price"
               />
             ))}
-            <Line yAxisId="price" type="monotone" dataKey="mid" name="mid price" stroke="#22d3ee" dot={false} strokeWidth={2} isAnimationActive={false} />
-            <Line yAxisId="micro" type="monotone" dataKey="spreadBps" name="spread bps" stroke="#f59e0b" dot={false} strokeWidth={2} isAnimationActive={false} />
-            <Line yAxisId="micro" type="monotone" dataKey="imbalance" name="imbalance" stroke="#a78bfa" dot={false} strokeWidth={2} isAnimationActive={false} />
+            <Line yAxisId="price" type="monotone" dataKey="mid" name="mid price" stroke="var(--chart-line-primary)" dot={false} strokeWidth={2} isAnimationActive={false} />
+            <Line yAxisId="micro" type="monotone" dataKey="spreadBps" name="spread bps" stroke="var(--chart-line-warning)" dot={false} strokeWidth={2} isAnimationActive={false} />
+            <Line yAxisId="micro" type="monotone" dataKey="imbalance" name="imbalance" stroke="var(--chart-line-violet)" dot={false} strokeWidth={2} isAnimationActive={false} />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -82,10 +91,10 @@ export function MarketTimeline({ frames }: { frames: MarketTimelineFrame[] }) {
       <div className="timeline-chart small" role="img" aria-label="Detector confidence timeline">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={points} margin={{ top: 4, right: 18, bottom: 0, left: -18 }}>
-            <CartesianGrid stroke="rgba(148, 163, 184, 0.12)" strokeDasharray="3 3" />
-            <XAxis dataKey="tick" tick={{ fontSize: 10, fill: "#8fb7c9" }} />
-            <YAxis domain={[0, 1]} tick={{ fontSize: 10, fill: "#8fb7c9" }} />
-            <Tooltip contentStyle={{ background: "#071426", borderColor: "#1e3a5f", color: "#d8f3ff" }} />
+            <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="3 3" />
+            <XAxis dataKey="tick" tick={smallAxisTick} />
+            <YAxis domain={[0, 1]} tick={smallAxisTick} />
+            <Tooltip contentStyle={tooltipStyle} />
             {markers.map((marker) => (
               <ReferenceLine
                 ifOverflow="extendDomain"
@@ -99,8 +108,8 @@ export function MarketTimeline({ frames }: { frames: MarketTimelineFrame[] }) {
               type="monotone"
               dataKey="detectorConfidence"
               name="detector confidence"
-              stroke="#f43f5e"
-              fill="rgba(244, 63, 94, 0.24)"
+              stroke="rgb(var(--danger-rgb))"
+              fill="rgba(var(--danger-rgb), 0.24)"
               isAnimationActive={false}
             />
           </AreaChart>
