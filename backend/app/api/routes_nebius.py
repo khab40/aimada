@@ -1,7 +1,3 @@
-import csv
-import subprocess
-import sys
-import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal
@@ -21,6 +17,7 @@ from app.nebius.client import (
     RedTeamScenarioRequest,
     RedTeamScenarioResponse,
 )
+from app.nebius.smart_batch_runner import read_metrics, run_local_smart_batch
 from app.storage.history import append_history_artifact
 
 router = APIRouter(prefix="/api/nebius", tags=["nebius"])
@@ -393,28 +390,20 @@ def run_smart_batches(payload: SmartBatchRunRequest, request: Request) -> SmartB
     run_id = f"NEB-{uuid4().hex[:8].upper()}"
     repo_root = _repo_root()
     output_dir = request.app.state.store.output_dir / "serverless-batch" / run_id
-    command = [
-        sys.executable,
-        str(repo_root / "serverless" / "jobs" / "run_batch_experiments.py"),
-        "--runs",
-        str(payload.runs),
-        "--batch-size",
-        str(payload.batch_size),
-        "--scenarios",
-        ",".join(payload.scenarios),
-        "--output",
-        str(output_dir),
-    ]
-    started = time.perf_counter()
-    completed = subprocess.run(command, capture_output=True, check=False, cwd=repo_root, text=True, timeout=120)
-    elapsed = round(time.perf_counter() - started, 3)
-    if completed.returncode != 0:
+    batch = run_local_smart_batch(
+        repo_root=repo_root,
+        output_dir=output_dir,
+        runs=payload.runs,
+        batch_size=payload.batch_size,
+        scenarios=payload.scenarios,
+    )
+    if batch.returncode != 0:
         raise HTTPException(
             status_code=502,
             detail={
                 "message": "smart batch run failed",
-                "stderr": completed.stderr[-2000:],
-                "stdout": completed.stdout[-2000:],
+                "stderr": batch.stderr[-2000:],
+                "stdout": batch.stdout[-2000:],
             },
         )
 
@@ -423,20 +412,12 @@ def run_smart_batches(payload: SmartBatchRunRequest, request: Request) -> SmartB
         mode="local_parallel_batch",
         status="completed",
         created_at=_now(),
-        elapsed_seconds=elapsed,
+        elapsed_seconds=batch.elapsed_seconds,
         runs=payload.runs,
         batch_size=payload.batch_size,
         scenarios=payload.scenarios,
-        artifact_paths={
-            "order_book_event_logs": str(output_dir / "order_book_events.jsonl"),
-            "trades": str(output_dir / "trades.jsonl"),
-            "attack_labels": str(output_dir / "attack_labels.jsonl"),
-            "blue_team_alerts": str(output_dir / "blue_team_alerts.jsonl"),
-            "detector_metrics": str(output_dir / "detector_metrics.csv"),
-            "generated_report": str(output_dir / "generated_report.md"),
-            "manifest": str(output_dir / "manifest.json"),
-        },
-        metrics=_read_metrics(output_dir / "detector_metrics.csv"),
+        artifact_paths=batch.artifact_paths,
+        metrics=batch.metrics,
         job_image=_jobs_image(),
         deployment_target="Nebius Serverless AI Job via GHCR job container",
     )
@@ -710,7 +691,4 @@ def _expected_signals(attack_type: str, target_side: str) -> list[str]:
 
 
 def _read_metrics(path: Path) -> list[dict[str, Any]]:
-    if not path.exists():
-        return []
-    with path.open("r", encoding="utf-8", newline="") as handle:
-        return list(csv.DictReader(handle))
+    return read_metrics(path)

@@ -12,6 +12,15 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 
+from app.experiments.attack_manifest import AttackManifestResponse
+from app.experiments.manager import ExperimentManager
+from app.experiments.models import (
+    Experiment,
+    ExperimentCreateRequest,
+    ExperimentDeleteResponse,
+    ExperimentLocalBatchRunResponse,
+)
+from app.experiments.repository import ExperimentRepository
 from app.schemas.arena import AttackTrackerState, BenchmarkResult, MarketRegime
 from app.storage.history import append_history_artifact, history_window
 from app.storage.local_store import LocalStore
@@ -147,6 +156,26 @@ class ClearReportsResponse(BaseModel):
     deleted_files: list[str]
     deleted_dirs: list[str]
     message: str
+
+
+@router.post("", response_model=Experiment)
+def create_experiment(payload: ExperimentCreateRequest, request: Request) -> Experiment:
+    return _experiment_manager(request).create(payload)
+
+
+@router.post("/", response_model=Experiment, include_in_schema=False)
+def create_experiment_trailing(payload: ExperimentCreateRequest, request: Request) -> Experiment:
+    return create_experiment(payload, request)
+
+
+@router.get("", response_model=list[Experiment])
+def list_experiments(request: Request) -> list[Experiment]:
+    return _experiment_manager(request).list()
+
+
+@router.get("/", response_model=list[Experiment], include_in_schema=False)
+def list_experiments_trailing(request: Request) -> list[Experiment]:
+    return list_experiments(request)
 
 
 @router.post("/attacks", response_model=SavedExperiment)
@@ -302,11 +331,38 @@ def run_benchmark_experiment(payload: BenchmarkRunRequest, request: Request) -> 
     return response
 
 
+@router.post("/{experiment_id}/generate-manifest", response_model=AttackManifestResponse)
+def generate_experiment_attack_manifest(experiment_id: str, request: Request) -> AttackManifestResponse:
+    try:
+        response = _experiment_manager(request).generate_attack_manifest(experiment_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if response is None:
+        raise HTTPException(status_code=404, detail=f"unknown experiment: {experiment_id}")
+    return response
+
+
+@router.post("/{experiment_id}/run-local-batch", response_model=ExperimentLocalBatchRunResponse)
+def run_experiment_local_batch(experiment_id: str, request: Request) -> ExperimentLocalBatchRunResponse:
+    try:
+        response = _experiment_manager(request).run_local_batch(experiment_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if response is None:
+        raise HTTPException(status_code=404, detail=f"unknown experiment: {experiment_id}")
+    if response.status == "failed":
+        raise HTTPException(status_code=502, detail=response.model_dump(mode="json"))
+    return response
+
+
 @router.get("/reports", response_model=ReportsSummary)
 def reports_summary(request: Request) -> ReportsSummary:
     store = _store(request)
     return ReportsSummary(
-        experiments=store.read_jsonl("experiments/attack_experiments.jsonl", limit=25),
+        experiments=[
+            *[experiment.model_dump(mode="json") for experiment in _experiment_manager(request).list()],
+            *store.read_jsonl("experiments/attack_experiments.jsonl", limit=25),
+        ],
         benchmark_runs=store.read_jsonl("experiments/benchmark_runs.jsonl", limit=25),
         nebius_batches=store.read_jsonl("nebius/smart_batches.jsonl", limit=25),
         nebius_artifacts=store.read_jsonl("nebius/artifacts.jsonl", limit=50),
@@ -525,8 +581,34 @@ def promote_run_to_evidence(run_id: str, request: Request) -> PromoteEvidenceRes
     )
 
 
+@router.get("/{experiment_id}", response_model=Experiment)
+def get_experiment(experiment_id: str, request: Request) -> Experiment:
+    try:
+        experiment = _experiment_manager(request).get(experiment_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if experiment is None:
+        raise HTTPException(status_code=404, detail=f"unknown experiment: {experiment_id}")
+    return experiment
+
+
+@router.delete("/{experiment_id}", response_model=ExperimentDeleteResponse)
+def delete_experiment(experiment_id: str, request: Request) -> ExperimentDeleteResponse:
+    try:
+        deleted = _experiment_manager(request).delete(experiment_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if not deleted:
+        raise HTTPException(status_code=404, detail=f"unknown experiment: {experiment_id}")
+    return ExperimentDeleteResponse(id=experiment_id.upper(), deleted=True)
+
+
 def _store(request: Request) -> LocalStore:
     return request.app.state.store
+
+
+def _experiment_manager(request: Request) -> ExperimentManager:
+    return ExperimentManager(ExperimentRepository(_store(request)))
 
 
 def _resolve_readable_artifact(request: Request, raw_path: str) -> Path:

@@ -52,6 +52,7 @@ graph TD
 | FastAPI demo backend | Owns the demo control plane. It starts and stops simulations, launches scenarios, broadcasts state to the UI, persists incidents, and calls Nebius AI endpoints for explanation and report generation. |
 | Local live simulation | Runs the authoritative exchange, scenario state, detector engine, local agent scheduling, single-writer book mutation, per-agent quote ownership, and baseline liquidity guard. |
 | Agent runner | Runs out-of-process normal, heavy, and LangGraph-compatible agents behind `/decide`; returns intents but never mutates the exchange. |
+| Experiment manager | Owns Phase 4.5 experiment manifests on `/api/experiments`, persists `outputs/experiments/<experiment_id>/experiment.json`, and exposes smart-batch-compatible artifact paths to Reports without replacing the Nebius Control smart-batch API. |
 | Nebius Serverless AI endpoint | Provides LLM-assisted explanation and summarization APIs for events, whole simulations, and incident reports. |
 | Event / snapshot log | Stores replayable event streams, order book snapshots, detected incidents, and generated reports for inspection and offline analysis. |
 
@@ -97,6 +98,8 @@ graph TD
 
 ```mermaid
 graph LR
+    ExperimentAPI["Experiment Manager - /api/experiments"]
+    ExperimentManifest["Experiment Manifest - outputs/experiments/<id>/experiment.json"]
     Config["job_config.yaml - runs, scenarios, seed"]
     Job["Nebius Serverless AI Job"]
     Simulation["Synthetic Simulation Runner"]
@@ -107,6 +110,8 @@ graph LR
     Report["benchmark_report.md"]
     Results["benchmark_results.json - detector_metrics.csv - incidents.jsonl"]
 
+    ExperimentAPI --> ExperimentManifest
+    ExperimentManifest --> Config
     Config --> Job
     Job --> Simulation
     Simulation --> Labels
@@ -119,6 +124,8 @@ graph LR
 ```
 
 The batch path is intended for repeatable detector evaluation rather than live interaction. A serverless job runs many synthetic simulations, injects labeled abuse-like patterns, collects detector outputs, and compares them against the known scenario labels.
+
+Phase 4.5 adds an experiment manifest control plane before execution. The manifest records the requested attack count, batch size, scenarios, seed, Nebius mode, status, optional smart-batch link, artifact directory, artifact paths, and metrics. `POST /api/experiments/{id}/generate-manifest` writes deterministic `attacks.jsonl` rows from that manifest without running simulation. `POST /api/experiments/{id}/run-local-batch` reuses the same local smart-batch runner used by `/api/nebius/smart-batches`, writes outputs under `outputs/experiments/<id>/local-batch/`, records `jobs.jsonl`, and updates the experiment status. Nebius Control keeps owning its smart-batch UI/API while `/api/experiments` owns durable experiment intent, manifest lookup, and experiment-scoped local submission.
 
 ### Benchmark Outputs
 
@@ -133,6 +140,10 @@ The batch path is intended for repeatable detector evaluation rather than live i
 | Artifact | Purpose |
 | --- | --- |
 | `events.jsonl` | Append-only stream of simulation events, agent actions, detector signals, and state changes. |
+| `experiments/<experiment_id>/experiment.json` | Phase 4.5 experiment manifest with requested scenarios, execution mode, status, artifact paths, optional smart-batch link, and metrics. |
+| `experiments/<experiment_id>/attacks.jsonl` | Deterministic attack plan rows with expected labels, detector family, timing, agent profile, and parameters for each planned run. |
+| `experiments/<experiment_id>/jobs.jsonl` | Experiment-scoped job records, including `local_parallel_batch` submissions and elapsed time. |
+| `experiments/<experiment_id>/local-batch/` | Local smart-batch outputs for the experiment, including order-book events, trades, labels, alerts, metrics, report, and batch manifest. |
 | `snapshots.parquet` | Structured order book and market snapshots optimized for offline analysis. |
 | `incidents.json` | Detected incidents with metadata, timestamps, involved agents, scenario labels, and detector evidence. |
 | `reports.md` | Human-readable AI-generated explanations, incident summaries, and benchmark reports. |
@@ -163,6 +174,7 @@ graph TD
 - The simulation engine should emit structured events and detector results without depending on UI concerns.
 - Agent runners may decide remotely, but they must return intents only; they must not mutate exchange state directly.
 - The backend should be the integration boundary for live transport, persistence, scenario orchestration, and AI calls.
+- `/api/experiments` owns durable experiment manifests and report visibility; `/api/nebius/smart-batches` continues to own Nebius Control smart-batch execution.
 - Batch benchmark jobs should share simulation and detector code with the live path where practical, but should not depend on the interactive UI.
 - Persisted artifacts should be treated as replay and audit inputs, not only as transient logs.
 

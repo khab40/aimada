@@ -98,6 +98,63 @@ export type BenchmarkRunResponse = {
   artifact_paths: Record<string, string>;
 };
 
+export type ManagedExperimentStatus = "draft" | "manifest_generated" | "submitted" | "running" | "completed" | "failed";
+export type ManagedExperimentMode = "mock" | "local_parallel_batch" | "real_nebius_pending";
+
+export type ManagedExperimentCreateRequest = {
+  name?: string;
+  attack_count?: number;
+  batch_size?: number;
+  scenarios?: string[];
+  seed?: number;
+  nebius_mode?: ManagedExperimentMode;
+};
+
+export type ManagedExperiment = {
+  id: string;
+  name: string;
+  status: ManagedExperimentStatus;
+  attack_count: number;
+  batch_size: number;
+  scenarios: string[];
+  seed: number;
+  nebius_mode: ManagedExperimentMode;
+  smart_batch_id?: string | null;
+  artifact_dir: string;
+  artifact_paths: Record<string, string>;
+  metrics: Record<string, unknown>[];
+  created_at: string;
+  updated_at: string;
+};
+
+export type ManagedExperimentDeleteResponse = {
+  id: string;
+  deleted: boolean;
+};
+
+export type AttackManifestResponse = {
+  experiment_id: string;
+  path: string;
+  attack_count: number;
+  scenarios: string[];
+  status: ManagedExperimentStatus;
+};
+
+export type ExperimentLocalBatchRunResponse = {
+  id: string;
+  experiment_id: string;
+  mode: "local_parallel_batch";
+  status: "completed" | "failed";
+  created_at: string;
+  elapsed_seconds: number;
+  runs: number;
+  batch_size: number;
+  scenarios: string[];
+  artifact_paths: Record<string, string>;
+  metrics: Record<string, unknown>[];
+  error?: Record<string, unknown> | null;
+};
+
 export type ArtifactReadResponse = {
   path: string;
   name: string;
@@ -384,6 +441,66 @@ export async function runBenchmarkExperiment(request: BenchmarkRunRequest): Prom
   });
   if (!response.ok) {
     throw new Error(`Benchmark run failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function createManagedExperiment(request: ManagedExperimentCreateRequest): Promise<ManagedExperiment> {
+  const response = await fetch(`${API_BASE_URL}/api/experiments`, {
+    body: JSON.stringify(request),
+    headers: { "Content-Type": "application/json" },
+    method: "POST"
+  });
+  if (!response.ok) {
+    throw new Error(`Create experiment failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function listManagedExperiments(): Promise<ManagedExperiment[]> {
+  const response = await fetch(`${API_BASE_URL}/api/experiments`);
+  if (!response.ok) {
+    throw new Error(`List experiments failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function getManagedExperiment(experimentId: string): Promise<ManagedExperiment> {
+  const response = await fetch(`${API_BASE_URL}/api/experiments/${encodeURIComponent(experimentId)}`);
+  if (!response.ok) {
+    throw new Error(`Get experiment failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function generateManagedExperimentManifest(experimentId: string): Promise<AttackManifestResponse> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/experiments/${encodeURIComponent(experimentId)}/generate-manifest`,
+    { method: "POST" }
+  );
+  if (!response.ok) {
+    throw new Error(`Generate experiment manifest failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function runManagedExperimentLocalBatch(experimentId: string): Promise<ExperimentLocalBatchRunResponse> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/experiments/${encodeURIComponent(experimentId)}/run-local-batch`,
+    { method: "POST" }
+  );
+  if (!response.ok) {
+    throw new Error(`Run experiment local batch failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function deleteManagedExperiment(experimentId: string): Promise<ManagedExperimentDeleteResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/experiments/${encodeURIComponent(experimentId)}`, {
+    method: "DELETE"
+  });
+  if (!response.ok) {
+    throw new Error(`Delete experiment failed: ${response.status}`);
   }
   return response.json();
 }

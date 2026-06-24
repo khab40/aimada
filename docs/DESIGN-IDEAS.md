@@ -32,7 +32,9 @@ Implementation: `[done]` through the main Arena, scenario controls, detector pan
 
 Batch simulations using Nebius Serverless AI Jobs.
 
-Implementation: `[partial]` through local job scripts, configs, backend/UI smart batch surfaces, and artifact workbench flows. A real archived Nebius Serverless AI Job run is still missing.
+Implementation: `[partial]` through local job scripts, configs, backend/UI smart batch surfaces, the Phase 4.5 experiment manifest manager, and artifact workbench flows. A real archived Nebius Serverless AI Job run is still missing.
+
+Phase 4.5 adds `POST/GET/DELETE /api/experiments` as the durable experiment intent layer. It persists `outputs/experiments/<experiment_id>/experiment.json`, exposes the manifest in Reports, and uses smart-batch-compatible artifact path names without duplicating the Nebius Control Panel smart-batch runner. `POST /api/experiments/{id}/generate-manifest` adds deterministic attack manifests in `attacks.jsonl` from the experiment's attack count, scenarios, and seed without running simulation. `POST /api/experiments/{id}/run-local-batch` reuses the existing smart-batch runner, writes local batch outputs under the experiment artifact directory, and records one `local_parallel_batch` job in `jobs.jsonl`.
 
 3. Judge Mode
 

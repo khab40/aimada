@@ -5,6 +5,15 @@ Update this file with each significant commit before pushing.
 
 ## Unreleased
 
+### Current - feat: add phase-4.5 experiment manager
+
+- Added a managed experiment manifest layer under `/api/experiments` with create/list/get/delete routes.
+- Persisted experiment manifests at `outputs/experiments/<experiment_id>/experiment.json`.
+- Added deterministic attack manifest generation with `POST /api/experiments/{id}/generate-manifest`, writing `outputs/experiments/<experiment_id>/attacks.jsonl`.
+- Added `POST /api/experiments/{id}/run-local-batch`, reusing the existing smart-batch runner to write `outputs/experiments/<experiment_id>/local-batch/` and `jobs.jsonl`.
+- Reused smart-batch-compatible artifact path conventions and Reports history indexing without changing `/api/nebius/smart-batches`.
+- Added backend tests for managed experiment create, list, get, report visibility, delete behavior, deterministic attack manifests, attack counts, expected labels, and a 3-run local batch.
+
 ### Current - fix: sync arena tick widgets
 
 - Aligned Liquidity Map, Market Timeline, and Incidents on the same tick window and labels.

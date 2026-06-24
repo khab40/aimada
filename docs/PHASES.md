@@ -245,6 +245,34 @@ Exit criteria:
 - `[partial]` Deployment documentation includes commands; real Nebius logs/metrics screenshots are still needed for final review.
 - `[todo]` Run and archive one real end-to-end Nebius endpoint + job execution with outputs.
 
+## Phase 4.5: Experiment Manager
+
+Status: `[done]`
+
+Goal: add a first-class experiment manifest layer that coordinates benchmark intent, persisted artifacts, and report visibility without duplicating Nebius Control smart-batch execution.
+
+Deliverables:
+
+- `[done]` `backend/app/experiments/models.py` typed experiment request, status, mode, manifest, and delete response models.
+- `[done]` `backend/app/experiments/repository.py` manifest persistence under `outputs/experiments/<experiment_id>/experiment.json`.
+- `[done]` `backend/app/experiments/manager.py` experiment creation, listing, lookup, deletion, deterministic attack manifest generation, local batch submission, smart-batch-compatible artifact paths, and report history indexing.
+- `[done]` `backend/app/experiments/attack_manifest.py` writes deterministic attack manifests to `outputs/experiments/<experiment_id>/attacks.jsonl` without running the simulator.
+- `[done]` REST routes on the existing experiment API: `POST /api/experiments`, `GET /api/experiments`, `GET /api/experiments/{id}`, `DELETE /api/experiments/{id}`, `POST /api/experiments/{id}/generate-manifest`, and `POST /api/experiments/{id}/run-local-batch`.
+- `[done]` experiment local batches reuse the same `serverless/jobs/run_batch_experiments.py` execution path as `/api/nebius/smart-batches`.
+- `[done]` local batch outputs write to `outputs/experiments/<experiment_id>/local-batch/`, with one `local_parallel_batch` job record in `outputs/experiments/<experiment_id>/jobs.jsonl`.
+- `[done]` Reports summary includes managed experiment manifests alongside older attack-builder experiments.
+- `[done]` `/api/nebius/smart-batches` remains unchanged for Nebius Control Panel smart-batch execution.
+- `[done]` tests for create, list, get, report visibility, delete, deterministic attack manifests, attack counts, expected labels, and a 3-run local batch.
+
+Current behavior:
+
+- New experiments start in `manifest_generated` status.
+- Attack manifests use the experiment's `attack_count`, `scenarios`, and `seed`, preserve the requested scenario mix, and support 10, 100, and 1000-row experiments.
+- Expected detector labels are generated for `normal_market`, `spoofing`, `layering`, `quote_stuffing`, and `pump_and_cancel`.
+- `run-local-batch` ensures `attacks.jsonl` exists, runs the local parallel batch with experiment `attack_count`, `batch_size`, and `scenarios`, then updates status to `completed` or `failed`.
+- `nebius_mode` supports `mock`, `local_parallel_batch`, and `real_nebius_pending`.
+- `smart_batch_id` is optional and is set to the local batch id after `run-local-batch` completes.
+
 ## Phase 5: Polish And Submission Assets
 
 Status: `[partial]`
