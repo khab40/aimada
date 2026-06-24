@@ -4,19 +4,29 @@ import type { Incident } from "@/types/arena";
 
 type ReplayStep = {
   label: string;
-  offset: string;
+  tickOffset: number;
   summary: string;
 };
 
 const replaySteps: ReplayStep[] = [
-  { label: "Normal", offset: "T-5s", summary: "Baseline two-sided liquidity and normal message flow." },
-  { label: "Wall Placed", offset: "T-2s", summary: "Large visible ask-side wall appears near the top of book." },
-  { label: "Warning", offset: "T+0s", summary: "Detector confidence crosses warning threshold." },
-  { label: "Cancelled", offset: "T+2s", summary: "Synthetic wall is removed before meaningful execution." },
-  { label: "Confirmed", offset: "T+5s", summary: "Evidence bundle confirms the mock incident." }
+  { label: "Normal", tickOffset: -5, summary: "Baseline two-sided liquidity and normal message flow." },
+  { label: "Wall Placed", tickOffset: -2, summary: "Large visible ask-side wall appears near the top of book." },
+  { label: "Warning", tickOffset: 0, summary: "Detector confidence crosses warning threshold." },
+  { label: "Cancelled", tickOffset: 2, summary: "Synthetic wall is removed before meaningful execution." },
+  { label: "Confirmed", tickOffset: 5, summary: "Evidence bundle confirms the mock incident." }
 ];
 
-export function IncidentReplayDrawer({ activeIncident, live = true }: { activeIncident?: Incident | null; live?: boolean }) {
+export function IncidentReplayDrawer({
+  activeIncident,
+  currentTick,
+  incidentTick,
+  live = true
+}: {
+  activeIncident?: Incident | null;
+  currentTick?: number;
+  incidentTick?: number;
+  live?: boolean;
+}) {
   const [closedIncidentId, setClosedIncidentId] = useState<string | null>(null);
   const [stepIndex, setStepIndex] = useState(0);
 
@@ -28,18 +38,27 @@ export function IncidentReplayDrawer({ activeIncident, live = true }: { activeIn
   if (!activeIncident || closedIncidentId === activeIncident.id) {
     return (
       <aside className="incident-replay-drawer empty">
-        <h2>Incident Replay</h2>
+        <div className="section-heading-row">
+          <h2>Incidents</h2>
+          <span>{currentTick === undefined ? "no tick" : `current T${currentTick}`}</span>
+        </div>
         <p>No active incident replay.</p>
       </aside>
     );
   }
 
   const activeStep = replaySteps[stepIndex];
+  const baseTick = incidentTick ?? activeIncident.tick ?? currentTick;
 
   return (
     <aside className="incident-replay-drawer">
-      <div className="section-heading-row">
-        <h2>{activeIncident.title}</h2>
+      <div className="section-heading-row incident-widget-heading">
+        <h2>Incidents</h2>
+        <span>{baseTick === undefined ? "tick n/a" : `${live ? "live" : "last"} T${baseTick}`}</span>
+      </div>
+
+      <div className="section-heading-row incident-title-row">
+        <h3>{activeIncident.title}</h3>
         <span className={`severity-chip ${activeIncident.severity.toLowerCase()}`}>
           {live ? activeIncident.severity : `Last ${activeIncident.severity}`}
         </span>
@@ -49,6 +68,7 @@ export function IncidentReplayDrawer({ activeIncident, live = true }: { activeIn
         <div><dt>Confidence</dt><dd>{activeIncident.confidence.toFixed(2)}</dd></div>
         <div><dt>Type</dt><dd>{activeIncident.type}</dd></div>
         <div><dt>Agent</dt><dd>{activeIncident.agent}</dd></div>
+        <div><dt>Tick</dt><dd>{baseTick === undefined ? "n/a" : `T${baseTick}`}</dd></div>
       </dl>
 
       <section className="incident-evidence-summary">
@@ -69,13 +89,13 @@ export function IncidentReplayDrawer({ activeIncident, live = true }: { activeIn
         <ol>
           {replaySteps.map((step, index) => (
             <li className={index === stepIndex ? "active" : index < stepIndex ? "completed" : "pending"} key={step.label}>
-              <span>{step.offset}</span>
+              <span>{formatReplayTick(baseTick, step.tickOffset)}</span>
               <strong>{step.label}</strong>
             </li>
           ))}
         </ol>
         <p>
-          <strong>{activeStep.offset} {activeStep.label}: </strong>
+          <strong>{formatReplayTick(baseTick, activeStep.tickOffset)} {activeStep.label}: </strong>
           {activeStep.summary}
         </p>
       </section>
@@ -90,4 +110,11 @@ export function IncidentReplayDrawer({ activeIncident, live = true }: { activeIn
       <NebiusAIInvestigatorPanel incident={activeIncident} />
     </aside>
   );
+}
+
+function formatReplayTick(baseTick: number | undefined, offset: number) {
+  if (baseTick === undefined) {
+    return offset === 0 ? "T+0" : offset > 0 ? `T+${offset}` : `T${offset}`;
+  }
+  return `T${Math.max(0, baseTick + offset)}`;
 }

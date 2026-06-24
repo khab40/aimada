@@ -30,6 +30,11 @@ type ChartPoint = {
   tick: number;
 };
 
+type TimelineMarker = {
+  tick: number;
+  type: TimelineMarkerType;
+};
+
 const markerLabels: Record<TimelineMarkerType, string> = {
   attack_started: "attack started",
   detector_warning: "detector warning",
@@ -54,6 +59,7 @@ const smallAxisTick = { fontSize: 10, fill: "var(--chart-axis)" };
 export function MarketTimeline({ frames }: { frames: MarketTimelineFrame[] }) {
   const points = frames.map(toChartPoint);
   const markers = getMarkers(frames);
+  const confidenceMarkerPositions = getMarkerPositions(markers, points);
 
   return (
     <section className="market-timeline">
@@ -64,7 +70,7 @@ export function MarketTimeline({ frames }: { frames: MarketTimelineFrame[] }) {
 
       <div className="timeline-chart" role="img" aria-label="Mid price, spread bps, and imbalance timeline">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={points} margin={{ top: 8, right: 18, bottom: 0, left: -18 }}>
+          <LineChart data={points} margin={{ top: 24, right: 18, bottom: 0, left: -18 }}>
             <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="3 3" />
             <XAxis dataKey="tick" tick={axisTick} />
             <YAxis yAxisId="price" tick={axisTick} domain={["dataMin - 10", "dataMax + 10"]} />
@@ -74,7 +80,7 @@ export function MarketTimeline({ frames }: { frames: MarketTimelineFrame[] }) {
               <ReferenceLine
                 ifOverflow="extendDomain"
                 key={`${marker.type}-${marker.tick}`}
-                label={{ fill: markerColors[marker.type], fontSize: 11, position: "top", value: markerLabels[marker.type] }}
+                label={{ dy: 10, fill: markerColors[marker.type], fontSize: 11, fontWeight: 700, position: "insideTop", value: markerLabels[marker.type] }}
                 stroke={markerColors[marker.type]}
                 strokeDasharray="4 4"
                 x={marker.tick}
@@ -88,9 +94,21 @@ export function MarketTimeline({ frames }: { frames: MarketTimelineFrame[] }) {
         </ResponsiveContainer>
       </div>
 
-      <div className="timeline-chart small" role="img" aria-label="Detector confidence timeline">
+
+      {markers.length ? (
+        <div className="timeline-marker-strip" aria-label="Timeline attack markers">
+          {markers.map((marker) => (
+            <span className={`timeline-marker ${marker.type}`} key={`strip-${marker.type}-${marker.tick}`}>
+              <strong>{markerLabels[marker.type]}</strong>
+              <em>T{marker.tick}</em>
+            </span>
+          ))}
+        </div>
+      ) : null}
+
+      <div className="timeline-chart small confidence-chart" role="img" aria-label="Detector confidence timeline">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={points} margin={{ top: 4, right: 18, bottom: 0, left: -18 }}>
+          <AreaChart data={points} margin={{ top: 8, right: 18, bottom: 0, left: -18 }}>
             <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="3 3" />
             <XAxis dataKey="tick" tick={smallAxisTick} />
             <YAxis domain={[0, 1]} tick={smallAxisTick} />
@@ -114,6 +132,19 @@ export function MarketTimeline({ frames }: { frames: MarketTimelineFrame[] }) {
             />
           </AreaChart>
         </ResponsiveContainer>
+        {confidenceMarkerPositions.length ? (
+          <div className="confidence-marker-layer" aria-hidden="true">
+            {confidenceMarkerPositions.map((marker) => (
+              <span
+                className={`confidence-marker-label ${marker.type}`}
+                key={`confidence-label-${marker.type}-${marker.tick}`}
+                style={{ left: `${marker.leftPercent}%` }}
+              >
+                {markerLabels[marker.type]}
+              </span>
+            ))}
+          </div>
+        ) : null}
       </div>
     </section>
   );
@@ -129,7 +160,7 @@ function toChartPoint(frame: MarketTimelineFrame): ChartPoint {
   };
 }
 
-function getMarkers(frames: MarketTimelineFrame[]) {
+function getMarkers(frames: MarketTimelineFrame[]): TimelineMarker[] {
   const seen = new Set<TimelineMarkerType>();
   return frames.flatMap((frame) => (
     (frame.markers ?? []).flatMap((type) => {
@@ -140,4 +171,22 @@ function getMarkers(frames: MarketTimelineFrame[]) {
       return [{ tick: frame.tick, type }];
     })
   ));
+}
+
+function getMarkerPositions(markers: TimelineMarker[], points: ChartPoint[]) {
+  if (!markers.length || !points.length) {
+    return [];
+  }
+
+  const minTick = points[0]?.tick ?? 0;
+  const maxTick = points.at(-1)?.tick ?? minTick;
+  const tickRange = Math.max(1, maxTick - minTick);
+  return markers.map((marker) => ({
+    ...marker,
+    leftPercent: clamp(((marker.tick - minTick) / tickRange) * 100, 8, 92)
+  }));
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
 }

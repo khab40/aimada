@@ -1,8 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { OrderBookSnapshot, PriceLevel } from "@/types/arena";
 
+export type HeatmapSnapshotFrame = {
+  book: OrderBookSnapshot;
+  tick: number;
+};
+
 export type HeatmapFrame = {
-  timestamp: string;
+  tick: number;
   levels: {
     price: number;
     bidSize: number;
@@ -33,7 +38,7 @@ export function LiquidityHeatmap({
   visibleLevels = DEFAULT_VISIBLE_LEVELS
 }: {
   maxFrames?: number;
-  snapshots: OrderBookSnapshot[];
+  snapshots: HeatmapSnapshotFrame[];
   visibleLevels?: number;
 }) {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
@@ -41,7 +46,7 @@ export function LiquidityHeatmap({
   const [canvasSize, setCanvasSize] = useState({ height: 320, width: 900 });
   const [themeVersion, setThemeVersion] = useState(0);
   const frames = useMemo(() => toHeatmapFrames(snapshots.slice(-maxFrames)), [maxFrames, snapshots]);
-  const visiblePrices = useMemo(() => getVisiblePrices(snapshots.at(-1), visibleLevels), [snapshots, visibleLevels]);
+  const visiblePrices = useMemo(() => getVisiblePrices(snapshots.at(-1)?.book, visibleLevels), [snapshots, visibleLevels]);
 
   useEffect(() => {
     const wrapper = wrapperRef.current;
@@ -178,8 +183,8 @@ function drawXAxis(context: CanvasRenderingContext2D, frames: HeatmapFrame[], pl
 
   context.fillStyle = theme.axis;
   context.font = "11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
-  context.fillText(frames[0]?.timestamp ?? "", LEFT_AXIS_WIDTH, plotHeight + 14);
-  context.fillText(frames.at(-1)?.timestamp ?? "", LEFT_AXIS_WIDTH + plotWidth - 44, plotHeight + 14);
+  context.fillText(formatTick(frames[0]?.tick), LEFT_AXIS_WIDTH, plotHeight + 14);
+  context.fillText(formatTick(frames.at(-1)?.tick), LEFT_AXIS_WIDTH + plotWidth - 50, plotHeight + 14);
 }
 
 function drawEmptyState(context: CanvasRenderingContext2D, theme: HeatmapTheme) {
@@ -219,15 +224,15 @@ function readHeatmapTheme(): HeatmapTheme {
   };
 }
 
-function toHeatmapFrames(snapshots: OrderBookSnapshot[]): HeatmapFrame[] {
-  return snapshots.map((snapshot, index) => {
+function toHeatmapFrames(snapshots: HeatmapSnapshotFrame[]): HeatmapFrame[] {
+  return snapshots.map((snapshot) => {
     const levelsByPrice = new Map<number, HeatmapFrame["levels"][number]>();
-    snapshot.bids.forEach((level) => mergeLevel(levelsByPrice, level, "bid"));
-    snapshot.asks.forEach((level) => mergeLevel(levelsByPrice, level, "ask"));
+    snapshot.book.bids.forEach((level) => mergeLevel(levelsByPrice, level, "bid"));
+    snapshot.book.asks.forEach((level) => mergeLevel(levelsByPrice, level, "ask"));
 
     return {
       levels: Array.from(levelsByPrice.values()),
-      timestamp: String(index + 1).padStart(3, "0")
+      tick: snapshot.tick
     };
   });
 }
@@ -263,6 +268,10 @@ function getVisiblePrices(snapshot: OrderBookSnapshot | undefined, visibleLevels
   return Array.from({ length: visibleLevels }, (_, index) => (
     midpoint + (halfLevels - index) * PRICE_BUCKET
   ));
+}
+
+function formatTick(tick: number | undefined) {
+  return tick === undefined ? "" : `T${tick}`;
 }
 
 function bucketPrice(price: number) {

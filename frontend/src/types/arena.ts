@@ -81,6 +81,7 @@ export type Incident = {
   explanation: string;
   scenario_id?: string;
   scenario_family?: string;
+  tick?: number;
 };
 
 export type AttackStage =

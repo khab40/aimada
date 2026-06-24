@@ -2814,7 +2814,100 @@ kbd {
 }
 
 .timeline-chart.small {
-  min-height: 120px;
+  min-height: 156px;
+}
+
+.confidence-chart {
+  overflow: hidden;
+  position: relative;
+}
+
+.confidence-marker-layer {
+  inset: 10px 18px auto 42px;
+  height: 20px;
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
+}
+
+.confidence-marker-label {
+  border: 1px solid rgba(var(--neutral-rgb), 0.24);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--chart-bg) 84%, transparent);
+  color: var(--neutral-text);
+  font-size: 9px;
+  font-weight: 800;
+  max-width: 118px;
+  overflow: hidden;
+  padding: 2px 6px;
+  position: absolute;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  top: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.confidence-marker-label.attack_started {
+  border-color: rgba(var(--warning-rgb), 0.42);
+  color: var(--warning-text);
+}
+
+.confidence-marker-label.detector_warning {
+  border-color: rgba(var(--danger-rgb), 0.38);
+  color: var(--danger-text);
+}
+
+.confidence-marker-label.incident_confirmed {
+  border-color: rgba(var(--success-rgb), 0.36);
+  color: var(--success-text);
+}
+
+.timeline-marker-strip {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.timeline-marker {
+  align-items: center;
+  border: 1px solid rgba(var(--neutral-rgb), 0.24);
+  border-radius: 999px;
+  background: rgba(var(--neutral-rgb), 0.12);
+  color: var(--neutral-text);
+  display: inline-flex;
+  gap: 6px;
+  padding: 4px 8px;
+}
+
+.timeline-marker strong {
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.timeline-marker em {
+  color: var(--text-muted);
+  font: 700 10px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-style: normal;
+}
+
+.timeline-marker.attack_started {
+  border-color: rgba(var(--warning-rgb), 0.42);
+  background: rgba(var(--warning-rgb), 0.12);
+  color: var(--warning-text);
+}
+
+.timeline-marker.detector_warning {
+  border-color: rgba(var(--danger-rgb), 0.38);
+  background: rgba(var(--danger-rgb), 0.12);
+  color: var(--danger-text);
+}
+
+.timeline-marker.incident_confirmed {
+  border-color: rgba(var(--success-rgb), 0.36);
+  background: rgba(var(--success-rgb), 0.12);
+  color: var(--success-text);
 }
 
 .attack-card {
@@ -3271,6 +3364,16 @@ kbd {
 
 .incident-replay-drawer.empty p {
   color: var(--text-muted);
+}
+
+.incident-title-row h3 {
+  color: var(--heading-soft);
+  font-size: 12px;
+  margin: 0;
+}
+
+.incident-widget-heading h2 {
+  color: var(--heading-soft);
 }
 
 .severity-chip {

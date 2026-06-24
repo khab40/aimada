@@ -5,6 +5,13 @@ Update this file with each significant commit before pushing.
 
 ## Unreleased
 
+### Current - fix: sync arena tick widgets
+
+- Aligned Liquidity Map, Market Timeline, and Incidents on the same tick window and labels.
+- Changed Liquidity Map frame labels from local sequence numbers to real arena ticks.
+- Added a persistent Incidents widget label with current/live tick context.
+- Fixed detector Confidence graph attack-marker labels so they render as an overlay without shrinking the graph.
+
 ### Current - feat: polish AI-MADA branding and UI shell
 
 - Switched the README/GitHub banner to `assets/img/ai-mada.jpg`.

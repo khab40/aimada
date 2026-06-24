@@ -144,7 +144,7 @@ export function BlueTeamSurveillancePage() {
         </section>
 
         <section className="panel surveillance-card wide">
-          <IncidentReplayDrawer activeIncident={activeIncident} live={Boolean(activeIncident)} />
+          <IncidentReplayDrawer activeIncident={activeIncident} currentTick={state.tick} incidentTick={activeIncident?.tick ?? state.tick} live={Boolean(activeIncident)} />
         </section>
 
         <section className="panel surveillance-card">

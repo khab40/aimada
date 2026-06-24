@@ -9,7 +9,14 @@ import { LiquidityHeatmap } from "@/components/LiquidityHeatmap";
 import { MarketTimeline, type MarketTimelineFrame, type TimelineMarkerType } from "@/components/MarketTimeline";
 import { OrderBookLadder } from "@/components/OrderBookLadder";
 import { useArenaSource } from "@/hooks/useArenaSource";
-import type { ArenaState, Incident } from "@/types/arena";
+import type { ArenaState, Incident, OrderBookSnapshot } from "@/types/arena";
+
+const WIDGET_TICK_WINDOW = 48;
+
+type HeatmapSnapshotFrame = {
+  book: OrderBookSnapshot;
+  tick: number;
+};
 
 const scenarioLabels: Record<string, string> = Object.fromEntries(
   [
@@ -22,7 +29,7 @@ const scenarioLabels: Record<string, string> = Object.fromEntries(
 
 export function ArenaPage() {
   const { launchScenario, mode, pause, reset, running, sourceStatus, start, state, symbol, tick } = useArenaSource();
-  const [heatmapSnapshots, setHeatmapSnapshots] = useState(() => [state.book]);
+  const [heatmapSnapshots, setHeatmapSnapshots] = useState<HeatmapSnapshotFrame[]>(() => [toHeatmapSnapshotFrame(state)]);
   const [timeline, setTimeline] = useState<MarketTimelineFrame[]>(() => [toTimelineFrame(state)]);
   const lastRecordedTickRef = useRef(state.tick);
   const [pendingControl, setPendingControl] = useState<"pause" | "reset" | "start" | null>(null);
@@ -43,8 +50,8 @@ export function ArenaPage() {
       return;
     }
     lastRecordedTickRef.current = state.tick;
-    setHeatmapSnapshots((snapshots) => [...snapshots, state.book].slice(-72));
-    setTimeline((points) => [...points, toTimelineFrame(state)].slice(-48));
+    setHeatmapSnapshots((snapshots) => [...snapshots, toHeatmapSnapshotFrame(state)].slice(-WIDGET_TICK_WINDOW));
+    setTimeline((points) => [...points, toTimelineFrame(state)].slice(-WIDGET_TICK_WINDOW));
   }, [state]);
 
   useEffect(() => {
@@ -162,7 +169,7 @@ export function ArenaPage() {
         </section>
 
         <section className="panel cockpit-center">
-          <LiquidityHeatmap maxFrames={72} snapshots={heatmapSnapshots} visibleLevels={20} />
+          <LiquidityHeatmap maxFrames={WIDGET_TICK_WINDOW} snapshots={heatmapSnapshots} visibleLevels={20} />
           <MarketTimeline frames={timeline} />
         </section>
 
@@ -178,7 +185,7 @@ export function ArenaPage() {
 
         <section className="panel cockpit-bottom-right">
           <EvidencePanel state={state} />
-          <IncidentReplayDrawer activeIncident={incident ?? lastIncident} live={Boolean(incident)} />
+          <IncidentReplayDrawer activeIncident={incident ?? lastIncident} currentTick={tick} incidentTick={(incident ?? lastIncident)?.tick ?? tick} live={Boolean(incident)} />
         </section>
       </div>
     </section>
@@ -272,9 +279,17 @@ function createIncident(state: ArenaState): Incident | null {
     id: `MOCK-${state.tick}`,
     scenario_family: scenario.scenario_family,
     scenario_id: scenario.scenario_id,
+    tick: state.tick,
     severity: alert.severity === "critical" ? "Critical" : alert.severity === "high" ? "High" : "Medium",
     title: `${alert.name} alert`,
     type: scenario.scenario_name
+  };
+}
+
+function toHeatmapSnapshotFrame(state: ArenaState): HeatmapSnapshotFrame {
+  return {
+    book: state.book,
+    tick: state.tick
   };
 }
 
