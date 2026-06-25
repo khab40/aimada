@@ -3,9 +3,16 @@ from uuid import uuid4
 
 from app.experiments.artifact_normalizer import ArtifactNormalizationResponse, normalize_local_batch_artifacts
 from app.experiments.attack_manifest import AttackManifestResponse, generate_attack_manifest
+from app.experiments.investigation_pipeline import (
+    InvestigationRecord,
+    InvestigationRunResponse,
+    list_investigations,
+    run_batch_investigations,
+)
 from app.experiments.models import Experiment, ExperimentCreateRequest, ExperimentLocalBatchRunResponse, utc_now
 from app.experiments.nebius_orchestrator import ExperimentJobRecord
 from app.experiments.repository import ExperimentRepository
+from app.nebius.client import NebiusClient
 from app.nebius.smart_batch_runner import run_local_smart_batch
 from app.storage.history import append_history_artifact
 
@@ -206,6 +213,61 @@ class ExperimentManager:
             source_path=f"experiments/{experiment.id}/artifact_index.json",
         )
         return normalized
+
+    def run_investigations(
+        self,
+        experiment_id: str,
+        *,
+        client: NebiusClient,
+        top_k: int = 7,
+    ) -> InvestigationRunResponse | None:
+        experiment = self.repository.get(experiment_id)
+        if experiment is None:
+            return None
+        artifact_dir = self.repository.experiment_dir(experiment.id)
+        response = run_batch_investigations(
+            experiment_id=experiment.id,
+            artifact_dir=artifact_dir,
+            client=client,
+            top_k=top_k,
+        )
+        summary_metric = {
+            "investigation_count": response.investigation_count,
+            "investigation_mode": response.investigation_mode,
+            "endpoint_avg_latency_seconds": response.endpoint_avg_latency_seconds,
+        }
+        updated_metrics = [
+            metric for metric in experiment.metrics if metric.get("kind") != "investigation_summary"
+        ]
+        updated_metrics.append({"kind": "investigation_summary", **summary_metric})
+        updated = experiment.model_copy(
+            update={
+                "metrics": updated_metrics,
+                "artifact_paths": {
+                    **experiment.artifact_paths,
+                    "investigations": str(artifact_dir / "investigations"),
+                },
+                "updated_at": utc_now(),
+            }
+        )
+        self.repository.save(updated)
+        append_history_artifact(
+            self.repository.store,
+            kind="ai_explanation",
+            payload=response.model_dump(mode="json"),
+            summary=f"{response.investigation_count} experiment investigation reports generated",
+            created_at=updated.updated_at,
+            run_id=experiment.id,
+            source="experiment_investigation_pipeline",
+            source_path=f"experiments/{experiment.id}/investigations",
+        )
+        return response
+
+    def list_investigations(self, experiment_id: str) -> list[InvestigationRecord] | None:
+        experiment = self.repository.get(experiment_id)
+        if experiment is None:
+            return None
+        return list_investigations(self.repository.experiment_dir(experiment.id))
 
     def delete(self, experiment_id: str) -> bool:
         return self.repository.delete(experiment_id)

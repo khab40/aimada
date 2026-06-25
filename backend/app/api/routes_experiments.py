@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 
 from app.experiments.artifact_normalizer import ArtifactNormalizationResponse
 from app.experiments.attack_manifest import AttackManifestResponse
+from app.experiments.investigation_pipeline import InvestigationRecord, InvestigationRunResponse
 from app.experiments.manager import ExperimentManager
 from app.experiments.models import (
     Experiment,
@@ -23,6 +24,7 @@ from app.experiments.models import (
 )
 from app.experiments.nebius_orchestrator import ExperimentJobRecord, NebiusExperimentOrchestrator
 from app.experiments.repository import ExperimentRepository
+from app.nebius.client import NebiusClient
 from app.schemas.arena import AttackTrackerState, BenchmarkResult, MarketRegime
 from app.storage.history import append_history_artifact, history_window
 from app.storage.local_store import LocalStore
@@ -361,6 +363,36 @@ def run_experiment_local_batch(experiment_id: str, request: Request) -> Experime
 def normalize_experiment_artifacts(experiment_id: str, request: Request) -> ArtifactNormalizationResponse:
     try:
         response = _experiment_manager(request).normalize_artifacts(experiment_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if response is None:
+        raise HTTPException(status_code=404, detail=f"unknown experiment: {experiment_id}")
+    return response
+
+
+@router.post("/{experiment_id}/run-investigations", response_model=InvestigationRunResponse)
+def run_experiment_investigations(
+    experiment_id: str,
+    request: Request,
+    top_k: int = 7,
+) -> InvestigationRunResponse:
+    try:
+        response = _experiment_manager(request).run_investigations(
+            experiment_id,
+            client=NebiusClient(),
+            top_k=top_k,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if response is None:
+        raise HTTPException(status_code=404, detail=f"unknown experiment: {experiment_id}")
+    return response
+
+
+@router.get("/{experiment_id}/investigations", response_model=list[InvestigationRecord])
+def list_experiment_investigations(experiment_id: str, request: Request) -> list[InvestigationRecord]:
+    try:
+        response = _experiment_manager(request).list_investigations(experiment_id)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     if response is None:

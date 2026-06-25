@@ -11,11 +11,13 @@ from app.api.routes_experiments import (
     generate_experiment_attack_manifest,
     get_experiment,
     launch_attack_experiment,
+    list_experiment_investigations,
     list_experiments,
     normalize_experiment_artifacts,
     reports_summary,
     router,
     run_benchmark_experiment,
+    run_experiment_investigations,
     run_experiment_local_batch,
     save_attack_experiment,
     list_experiment_jobs,
@@ -24,7 +26,10 @@ from app.api.routes_experiments import (
 )
 from app.api.routes_nebius import observatory
 from app.arena.engine import SimulationEngine
+from app.experiments.manager import ExperimentManager
 from app.experiments.models import ExperimentCreateRequest
+from app.experiments.repository import ExperimentRepository
+from app.nebius.client import InvestigationReportRequest, InvestigationReportResponse
 from app.storage.local_store import LocalStore
 
 
@@ -312,6 +317,51 @@ def test_normalize_artifacts_copies_fake_local_batch_outputs(tmp_path: Path) -> 
     assert refreshed.artifact_paths["artifact_index"] == str(tmp_path / "experiments" / experiment.id / "artifact_index.json")
 
 
+def test_run_investigations_uses_mocked_nebius_client_for_top_alerts(tmp_path: Path) -> None:
+    request = _request(tmp_path)
+    experiment = create_experiment(
+        ExperimentCreateRequest(
+            name="Investigate alerts",
+            attack_count=3,
+            batch_size=2,
+            scenarios=["normal_market", "spoofing"],
+            seed=61,
+        ),
+        request,
+    )
+    alerts_path = tmp_path / "experiments" / experiment.id / "alerts.jsonl"
+    alerts_path.parent.mkdir(parents=True, exist_ok=True)
+    alerts = [
+        {"alert_id": "low", "run_id": "r1", "tick": 1, "scenario": "normal_market", "detector": "none", "confidence": 0.1},
+        {"alert_id": "high", "run_id": "r2", "tick": 2, "scenario": "spoofing", "detector": "spoofing_like", "confidence": 0.93, "evidence": ["wall"]},
+        {"alert_id": "mid", "run_id": "r3", "tick": 3, "scenario": "spoofing", "detector": "layering_like", "confidence": 0.72},
+    ]
+    alerts_path.write_text("\n".join(json.dumps(row) for row in alerts) + "\n", encoding="utf-8")
+    client = _MockInvestigationClient()
+
+    response = ExperimentManager(ExperimentRepository(request.app.state.store)).run_investigations(
+        experiment.id,
+        client=client,
+        top_k=2,
+    )
+    listed = list_experiment_investigations(experiment.id, request)
+    refreshed = get_experiment(experiment.id, request)
+
+    assert response is not None
+    assert response.investigation_count == 2
+    assert response.investigation_mode == "mock"
+    assert len(client.requests) == 2
+    assert [request.alerts[0]["alert_id"] for request in client.requests] == ["high", "mid"]
+    assert (tmp_path / "experiments" / experiment.id / "investigations" / "high.json").exists()
+    assert (tmp_path / "experiments" / experiment.id / "investigations" / "high.md").exists()
+    assert listed[0].alert_id == "high"
+    investigation_metric = next(metric for metric in refreshed.metrics if metric.get("kind") == "investigation_summary")
+    assert investigation_metric["investigation_count"] == 2
+    assert investigation_metric["investigation_mode"] == "mock"
+    assert "endpoint_avg_latency_seconds" in investigation_metric
+    assert refreshed.artifact_paths["investigations"] == str(tmp_path / "experiments" / experiment.id / "investigations")
+
+
 def test_submit_nebius_without_real_config_persists_pending_job(tmp_path: Path) -> None:
     request = _request(tmp_path)
     experiment = create_experiment(
@@ -355,6 +405,8 @@ def test_managed_experiment_routes_are_registered_on_experiment_api() -> None:
     assert ("POST", "/api/experiments/{experiment_id}/generate-manifest") in routes
     assert ("POST", "/api/experiments/{experiment_id}/run-local-batch") in routes
     assert ("POST", "/api/experiments/{experiment_id}/normalize-artifacts") in routes
+    assert ("POST", "/api/experiments/{experiment_id}/run-investigations") in routes
+    assert ("GET", "/api/experiments/{experiment_id}/investigations") in routes
     assert ("POST", "/api/experiments/{experiment_id}/submit-nebius") in routes
     assert ("GET", "/api/experiments/{experiment_id}/jobs") in routes
     assert ("POST", "/api/experiments/{experiment_id}/refresh-jobs") in routes
@@ -376,3 +428,22 @@ def test_simulation_ticks_are_persisted_for_history_replay(tmp_path: Path) -> No
 
 def _read_jsonl(path: Path) -> list[dict[str, object]]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+class _MockInvestigationClient:
+    def __init__(self) -> None:
+        self.requests: list[InvestigationReportRequest] = []
+
+    def investigation_report(self, request: InvestigationReportRequest) -> InvestigationReportResponse:
+        self.requests.append(request)
+        scenario = str(request.scenario_trace.get("scenario") or "unknown")
+        return InvestigationReportResponse(
+            mode="mock",
+            endpoint="mock test client",
+            title=f"Investigation {scenario}",
+            summary="Mocked investigation report.",
+            timeline=["alert selected"],
+            detector_findings=["confidence reviewed"],
+            limitations=["test only"],
+            recommended_next_steps=["archive report"],
+        )

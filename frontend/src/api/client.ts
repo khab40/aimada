@@ -163,6 +163,28 @@ export type ArtifactNormalizationResponse = {
   missing: string[];
 };
 
+export type InvestigationRecord = {
+  alert_id: string;
+  experiment_id: string;
+  source_alert_path: string;
+  json_path: string;
+  markdown_path: string;
+  mode: string;
+  latency_seconds: number;
+  fallback_reason?: string | null;
+  request: Record<string, unknown>;
+  response: Record<string, unknown>;
+};
+
+export type InvestigationRunResponse = {
+  experiment_id: string;
+  selected_count: number;
+  investigation_count: number;
+  investigation_mode: string;
+  endpoint_avg_latency_seconds: number;
+  investigations: InvestigationRecord[];
+};
+
 export type ExperimentJobRecord = {
   job_id: string;
   experiment_id: string;
@@ -525,6 +547,29 @@ export async function normalizeManagedExperimentArtifacts(experimentId: string):
   );
   if (!response.ok) {
     throw new Error(`Normalize experiment artifacts failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function runManagedExperimentInvestigations(
+  experimentId: string,
+  topK = 7
+): Promise<InvestigationRunResponse> {
+  const params = new URLSearchParams({ top_k: String(topK) });
+  const response = await fetch(
+    `${API_BASE_URL}/api/experiments/${encodeURIComponent(experimentId)}/run-investigations?${params.toString()}`,
+    { method: "POST" }
+  );
+  if (!response.ok) {
+    throw new Error(`Run experiment investigations failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function listManagedExperimentInvestigations(experimentId: string): Promise<InvestigationRecord[]> {
+  const response = await fetch(`${API_BASE_URL}/api/experiments/${encodeURIComponent(experimentId)}/investigations`);
+  if (!response.ok) {
+    throw new Error(`List experiment investigations failed: ${response.status}`);
   }
   return response.json();
 }
