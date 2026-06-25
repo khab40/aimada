@@ -154,6 +154,17 @@ Outputs:
 
 Configuration starts from `serverless/jobs/nebius_job_config.yaml`.
 
+## Phase 4.5 Experiment Flow
+
+The managed experiment flow is available locally through FastAPI and the React UI:
+
+- `/nebius` Experiment Lab creates experiment manifests, generates attack manifests, runs local batches, aggregates outputs, and runs bounded mock/endpoint-backed investigations.
+- `/reports` lists experiments and shows the selected experiment summary, detector leaderboard, `benchmark_report.md`, investigation report files, `artifact_index.json`, canonical artifacts, and original `local-batch` files.
+- Local batch execution reuses `serverless/jobs/run_batch_experiments.py` and writes under `outputs/experiments/<experiment_id>/`.
+- `POST /api/experiments/{id}/submit-nebius` currently records a `real_nebius_pending` job record when real Nebius credentials/job execution are not configured.
+
+Real Nebius Serverless Job execution for Phase 4.5 is TODO until there is actual job submission code in `backend/app/experiments/nebius_orchestrator.py` plus archived Nebius job logs, metrics, and produced artifacts. Do not treat the local batch path or `real_nebius_pending` records as evidence of real cloud execution.
+
 ## Local Configuration
 
 Copy `.env.example` to `.env` and set:
@@ -269,6 +280,8 @@ Jobs:
 
 Before final review, replace placeholder evidence with real Nebius endpoint/job
 screenshots and archived logs/metrics.
+
+The current Phase 4.5 Reports evidence is synthetic educational benchmark output from the simulator. It is useful for reproducibility and demo review, but it is not real market surveillance and is not compliance evidence.
 
 ## Architecture Records
 

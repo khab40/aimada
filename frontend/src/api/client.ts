@@ -633,6 +633,14 @@ export function getManagedExperimentReportUrl(experimentId: string): string {
   return `${API_BASE_URL}/api/experiments/${encodeURIComponent(experimentId)}/report`;
 }
 
+export async function getManagedExperimentReport(experimentId: string): Promise<string> {
+  const response = await fetch(getManagedExperimentReportUrl(experimentId));
+  if (!response.ok) {
+    throw new Error(`Get experiment report failed: ${response.status}`);
+  }
+  return response.text();
+}
+
 export async function submitManagedExperimentNebius(experimentId: string): Promise<ExperimentJobRecord> {
   const response = await fetch(`${API_BASE_URL}/api/experiments/${encodeURIComponent(experimentId)}/submit-nebius`, {
     method: "POST"

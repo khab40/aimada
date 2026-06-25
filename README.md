@@ -21,11 +21,12 @@ Implemented:
 - Google authentication completion with verified Google identity storage, app-issued JWT sessions, and a collapsible professional auth widget.
 - Deterministic detector evidence model for synthetic spoofing-like, layering-like, quote-stuffing-like, and liquidity-shock patterns.
 - Nebius endpoint and job scaffolds with local typed fallbacks, Docker/config files, scripts, and UI control surfaces.
+- Phase 4.5 managed experiments with deterministic attack manifests, local smart-batch execution, artifact normalization, aggregation, bounded AI investigations, and Reports review of summaries, leaderboards, markdown reports, artifact indexes, and original local-batch files.
 - Coherent day/night/system UI theme behavior across widgets, charts, status chips, order-book levels, and canvas visualizations, plus compact vertical-navigation controls, paused-state-stable liquidity visualization, and documentation set for quick start, architecture, ARDs, runtime model, benchmark methodology, safety framing, deployment, and design ideas.
 
 Not yet complete:
 
-- Archived real Nebius endpoint and Serverless AI Job run with logs, metrics screenshots, and produced artifacts.
+- Archived real Nebius endpoint and Serverless AI Job run with logs, metrics screenshots, and produced artifacts. Phase 4.5 `submit-nebius` correctly records `real_nebius_pending` until real job execution is implemented and evidenced.
 - Committed sample benchmark report under `outputs/benchmark/`.
 - Final screenshot assets for the README screenshot table.
 - Dedicated Judge Mode timeline-window selector and formal benchmark artifact schema versioning.
@@ -151,6 +152,26 @@ curl -X POST http://localhost:8000/api/nebius/smart-batches \
 curl http://localhost:8000/api/nebius/observatory
 ```
 
+Managed experiment path:
+
+```bash
+curl -X POST http://localhost:8000/api/experiments \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"Local detector benchmark","attack_count":10,"batch_size":5,"scenarios":["normal_market","spoofing","layering","quote_stuffing","pump_and_cancel"],"seed":42,"nebius_mode":"mock"}'
+
+curl -X POST http://localhost:8000/api/experiments/EXP_ID/generate-manifest
+curl -X POST http://localhost:8000/api/experiments/EXP_ID/run-local-batch
+curl -X POST http://localhost:8000/api/experiments/EXP_ID/normalize-artifacts
+curl -X POST http://localhost:8000/api/experiments/EXP_ID/aggregate
+curl -X POST 'http://localhost:8000/api/experiments/EXP_ID/run-investigations?top_k=7'
+curl http://localhost:8000/api/experiments/EXP_ID/summary
+curl http://localhost:8000/api/experiments/EXP_ID/leaderboard
+curl http://localhost:8000/api/experiments/EXP_ID/report
+curl http://localhost:8000/api/experiments/EXP_ID/investigations
+```
+
+The local experiment path writes synthetic benchmark evidence under `outputs/experiments/<experiment_id>/`, including `attacks.jsonl`, original `local-batch/` files, normalized artifact links, `artifact_index.json`, `experiment_summary.json`, `leaderboard.json`, `benchmark_report.md`, and optional investigation reports. `/reports` previews these artifacts for review. This is simulator evidence for education and reproducibility, not real market surveillance or compliance output.
+
 ## Environment Configuration
 
 Nebius endpoint wiring is configured only through environment variables. Leave the URLs unset for local mock fallback mode:
@@ -266,6 +287,8 @@ Start with the guides above, then explore:
 | **Scenario** | A bounded abuse-like pattern (spoofing-like, layering-like, quote-stuffing-like) |
 | **Nebius Endpoint** | Serverless AI service called by the backend to generate explanations and scenario suggestions |
 | **Nebius Control Panel** | UI tab for smart endpoint scoring, parallel attack/detect batches, usage evidence, and benchmark charts |
+| **Experiment Lab** | `/nebius` workflow for managed Phase 4.5 experiments: create manifest, generate attacks, run local batch, aggregate, investigate, and optionally record pending Nebius submission |
+| **Reports Experiment Review** | `/reports` workflow for selected experiment summary, leaderboard, markdown report, investigation files, artifact index, and original local-batch artifacts |
 | **Benchmark** | Evaluation of detector quality against labeled synthetic scenarios |
 | **UI Shell Preferences** | Local browser preferences for collapsed auth controls and day/night/system theme behavior |
 

@@ -48,7 +48,7 @@ graph TD
 
 | Component | Responsibility |
 | --- | --- |
-| React / Vite UI | Presents the themed product shell, Google/auth widget, role/session controls, live order book, charts, agent activity, scenario controls, alerts, Nebius Control Panel operations, and Reports evidence. Arena live controls and state use WebSocket; Nebius, artifact, and report actions use backend REST APIs. |
+| React / Vite UI | Presents the themed product shell, Google/auth widget, role/session controls, live order book, charts, agent activity, scenario controls, alerts, Nebius Control Panel operations, Experiment Lab, and Reports evidence. Arena live controls and state use WebSocket; Nebius, experiment, artifact, and report actions use backend REST APIs. |
 | FastAPI demo backend | Owns the demo control plane. It starts and stops simulations, launches scenarios, broadcasts state to the UI, persists incidents, and calls Nebius AI endpoints for explanation and report generation. |
 | Local live simulation | Runs the authoritative exchange, scenario state, detector engine, local agent scheduling, single-writer book mutation, per-agent quote ownership, and baseline liquidity guard. |
 | Agent runner | Runs out-of-process normal, heavy, and LangGraph-compatible agents behind `/decide`; returns intents but never mutates the exchange. |
@@ -125,7 +125,7 @@ graph LR
 
 The batch path is intended for repeatable detector evaluation rather than live interaction. A serverless job runs many synthetic simulations, injects labeled abuse-like patterns, collects detector outputs, and compares them against the known scenario labels.
 
-Phase 4.5 adds an experiment manifest control plane before execution. The manifest records the requested attack count, batch size, scenarios, seed, Nebius mode, status, optional smart-batch link, artifact directory, artifact paths, and metrics. `POST /api/experiments/{id}/generate-manifest` writes deterministic `attacks.jsonl` rows from that manifest without running simulation. `POST /api/experiments/{id}/run-local-batch` reuses the same local smart-batch runner used by `/api/nebius/smart-batches`, writes outputs under `outputs/experiments/<id>/local-batch/`, records `jobs.jsonl`, normalizes root-level experiment artifacts, and updates the experiment status. `POST /api/experiments/{id}/normalize-artifacts` can re-run that copy/index step without deleting original local-batch files. `POST /api/experiments/{id}/run-investigations` consumes persisted alerts only, selects a bounded top-confidence set, calls the existing Nebius investigation-report client, persists JSON/Markdown reports, and updates experiment metrics; it is intentionally not a per-tick LLM loop. `POST /api/experiments/{id}/aggregate` reuses existing `detector_metrics.csv` values to produce `experiment_summary.json`, `leaderboard.json`, and `benchmark_report.md` without recalculating detector metrics incorrectly. `POST /api/experiments/{id}/submit-nebius` is a real orchestration boundary, but it records `real_nebius_pending` until Nebius job credentials plus an explicit SDK/CLI implementation are added in `backend/app/experiments/nebius_orchestrator.py`; it does not fake autoscaling or cloud completion. Nebius Control keeps owning its smart-batch UI/API while `/api/experiments` owns durable experiment intent, manifest lookup, and experiment-scoped local/Nebius submission.
+Phase 4.5 adds an experiment manifest control plane before execution. The manifest records the requested attack count, batch size, scenarios, seed, Nebius mode, status, optional smart-batch link, artifact directory, artifact paths, and metrics. `POST /api/experiments/{id}/generate-manifest` writes deterministic `attacks.jsonl` rows from that manifest without running simulation. `POST /api/experiments/{id}/run-local-batch` reuses the same local smart-batch runner used by `/api/nebius/smart-batches`, writes outputs under `outputs/experiments/<id>/local-batch/`, records `jobs.jsonl`, normalizes root-level experiment artifacts, and updates the experiment status. `POST /api/experiments/{id}/normalize-artifacts` can re-run that copy/index step without deleting original local-batch files. `POST /api/experiments/{id}/run-investigations` consumes persisted alerts only, selects a bounded top-confidence set, calls the existing Nebius investigation-report client, persists JSON/Markdown reports, and updates experiment metrics; it is intentionally not a per-tick LLM loop. `POST /api/experiments/{id}/aggregate` reuses existing `detector_metrics.csv` values to produce `experiment_summary.json`, `leaderboard.json`, and `benchmark_report.md` without recalculating detector metrics incorrectly. `/nebius` provides the operator flow for this lifecycle, while `/reports` provides the review flow: experiment list, selected summary, leaderboard, benchmark report preview, investigation files, `artifact_index.json`, and original `local-batch` artifacts. `POST /api/experiments/{id}/submit-nebius` is a real orchestration boundary, but it records `real_nebius_pending` until Nebius job credentials plus an explicit SDK/CLI implementation are added in `backend/app/experiments/nebius_orchestrator.py`; it does not fake autoscaling or cloud completion. Nebius Control keeps owning its smart-batch UI/API while `/api/experiments` owns durable experiment intent, manifest lookup, and experiment-scoped local/Nebius submission.
 
 ### Benchmark Outputs
 
@@ -147,6 +147,7 @@ Phase 4.5 adds an experiment manifest control plane before execution. The manife
 | `experiments/<experiment_id>/artifact_index.json` | Index mapping original local-batch artifact names to canonical experiment-root artifact names. |
 | `experiments/<experiment_id>/investigations/` | Per-alert AI investigation reports as JSON and Markdown, generated from persisted top-confidence batch alerts. |
 | `experiments/<experiment_id>/experiment_summary.json` / `leaderboard.json` | Aggregated experiment totals and scenario leaderboard sourced from detector metrics, labels, alerts, and investigations. |
+| `experiments/<experiment_id>/benchmark_report.md` | Human-readable synthetic educational benchmark report shown in Reports after aggregation. |
 | `snapshots.parquet` | Structured order book and market snapshots optimized for offline analysis. |
 | `incidents.json` | Detected incidents with metadata, timestamps, involved agents, scenario labels, and detector evidence. |
 | `reports.md` | Human-readable AI-generated explanations, incident summaries, and benchmark reports. |
@@ -178,9 +179,10 @@ graph TD
 - Agent runners may decide remotely, but they must return intents only; they must not mutate exchange state directly.
 - The backend should be the integration boundary for live transport, persistence, scenario orchestration, and AI calls.
 - `/api/experiments` owns durable experiment manifests and report visibility; `/api/nebius/smart-batches` continues to own Nebius Control smart-batch execution.
-- Real Nebius Serverless Job calls must be added only inside `backend/app/experiments/nebius_orchestrator.py`; until then Nebius experiment submission records `real_nebius_pending`.
+- Real Nebius Serverless Job calls must be added only inside `backend/app/experiments/nebius_orchestrator.py`; until then Nebius experiment submission records `real_nebius_pending`, and docs/UI must not claim real cloud execution.
 - Batch benchmark jobs should share simulation and detector code with the live path where practical, but should not depend on the interactive UI.
 - Persisted artifacts should be treated as replay and audit inputs, not only as transient logs.
+- Reports and generated investigation text are synthetic educational evidence for this simulator, not real surveillance, trading, or compliance outputs.
 
 ## Related Documentation
 
@@ -192,7 +194,7 @@ This architecture supports all workflows described in [Use Cases](USE_CASES.md):
 4. **Red-Team Scenario Generation** — Nebius Control Panel attack generator through backend Nebius adapters
 5. **Detector Tournament / Smart Batch Benchmark** — Batch / Benchmark Path with Nebius Jobs
 6. **Synthetic Dataset Generation** — Batch / Benchmark Path artifact outputs
-7. **Reports And Evidence Review** — Reports tab reads persisted benchmark, Nebius, explanation, screenshot, and promoted evidence artifacts
+7. **Reports And Evidence Review** — Reports tab reads persisted benchmark, managed experiment, Nebius, explanation, screenshot, and promoted evidence artifacts
 8. **Role-Based Demo Review And UI Shell Personalization** — Google-authenticated role/session state plus local day/night/system and auth-widget preferences
 
 Detailed architecture decisions are recorded in [Architecture Records (ARDs)](architecture/README.md):

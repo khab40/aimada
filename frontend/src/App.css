@@ -2464,6 +2464,106 @@ h3 {
   gap: 8px;
 }
 
+.experiment-reports-panel,
+.experiment-report-detail,
+.experiment-report-sections,
+.experiment-report-output-grid,
+.experiment-artifact-workbench-grid,
+.experiment-summary-list,
+.investigation-report-list {
+  display: grid;
+  gap: 12px;
+}
+
+.experiment-report-layout {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(260px, 0.75fr) minmax(0, 1.25fr);
+}
+
+.experiment-list-panel {
+  border: 1px solid rgba(34, 211, 238, 0.14);
+  border-radius: 6px;
+  display: grid;
+  gap: 8px;
+  max-height: 420px;
+  overflow: auto;
+  padding: 8px;
+}
+
+.experiment-list-panel button {
+  background: rgba(2, 6, 23, 0.38);
+  border: 1px solid rgba(43, 90, 120, 0.34);
+  border-radius: 6px;
+  color: var(--text-main);
+  display: grid;
+  gap: 5px;
+  padding: 10px;
+  text-align: left;
+}
+
+.experiment-list-panel button.selected {
+  background: rgba(34, 211, 238, 0.14);
+  border-color: rgba(34, 211, 238, 0.52);
+}
+
+.experiment-list-panel button span,
+.investigation-report-list article span {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.experiment-report-header {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.experiment-report-header h3 {
+  margin: 0;
+}
+
+.experiment-report-metrics {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.experiment-report-sections {
+  grid-template-columns: minmax(220px, 0.75fr) minmax(0, 1.25fr);
+}
+
+.experiment-report-output-grid,
+.experiment-artifact-workbench-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.markdown-report-preview {
+  background: rgba(2, 6, 23, 0.46);
+  border: 1px solid rgba(34, 211, 238, 0.12);
+  border-radius: 6px;
+  color: var(--text-main);
+  margin: 0;
+  max-height: 360px;
+  overflow: auto;
+  padding: 10px;
+  white-space: pre-wrap;
+}
+
+.investigation-report-list article {
+  border: 1px solid rgba(34, 211, 238, 0.12);
+  border-radius: 6px;
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+}
+
+.investigation-report-list a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
 .danger-button {
   border-color: rgba(244, 63, 94, 0.48);
   background: rgba(244, 63, 94, 0.14);
@@ -4634,6 +4734,10 @@ kbd,
   .attack-builder-grid,
   .about-grid,
   .reports-grid,
+  .experiment-report-layout,
+  .experiment-report-sections,
+  .experiment-report-output-grid,
+  .experiment-artifact-workbench-grid,
   .battlefield-grid,
   .research-link-grid,
   .decision-grid {
@@ -4761,6 +4865,10 @@ kbd,
   .attack-builder-grid,
   .about-grid,
   .reports-grid,
+  .experiment-report-layout,
+  .experiment-report-sections,
+  .experiment-report-output-grid,
+  .experiment-artifact-workbench-grid,
   .battlefield-grid,
   .battlefield-bottom,
   .research-link-grid,
@@ -4810,6 +4918,7 @@ kbd,
   .generated-scenario-list,
   .deployment-health-list,
   .surveillance-status-strip,
+  .experiment-report-metrics,
   .tournament-role-grid {
     grid-template-columns: 1fr;
   }

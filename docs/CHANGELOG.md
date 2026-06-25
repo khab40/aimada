@@ -16,8 +16,12 @@ Update this file with each significant commit before pushing.
 - Added experiment aggregation with `POST /api/experiments/{id}/aggregate`, `GET /summary`, `GET /leaderboard`, and `GET /report`, reusing existing `detector_metrics.csv` values for scenario precision/recall/F1.
 - Added a real Nebius orchestration boundary with `POST /api/experiments/{id}/submit-nebius`, `GET /api/experiments/{id}/jobs`, and `POST /api/experiments/{id}/refresh-jobs`; without real Nebius job configuration it records `real_nebius_pending` instead of faking cloud execution.
 - Added experiment job summaries to `/api/nebius/observatory`.
+- Upgraded `/nebius` with an Experiment Lab that creates experiments, generates manifests, runs local batches, submits pending Nebius jobs, aggregates, runs investigations, and shows status, jobs, artifacts, and leaderboard data through FastAPI only.
+- Integrated Phase 4.5 experiments into `/reports` with an experiment list, selected experiment summary, leaderboard, `benchmark_report.md` viewer, investigation report list, `artifact_index.json` links, and original `local-batch` artifact workbenches.
 - Reused smart-batch-compatible artifact path conventions and Reports history indexing without changing `/api/nebius/smart-batches`.
 - Added backend tests for managed experiment create, list, get, report visibility, delete behavior, deterministic attack manifests, attack counts, expected labels, a 3-run local batch, fake local-batch artifact normalization, mocked Nebius investigations, sample-CSV aggregation, and missing real Nebius config.
+- Verified a local 10-row mixed-scenario experiment end-to-end in mock mode through HTTP APIs, producing normalized experiment artifacts, original local-batch artifacts, aggregation outputs, and seven mock investigation reports.
+- Real Nebius Serverless Job execution remains TODO until actual Nebius job evidence, logs, and artifacts exist.
 
 ### Current - fix: sync arena tick widgets
 

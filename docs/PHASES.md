@@ -267,8 +267,12 @@ Deliverables:
 - `[done]` when real Nebius job execution is not configured, `submit-nebius` writes a `real_nebius_pending` job record instead of pretending cloud execution happened.
 - `[done]` `/api/nebius/observatory` includes experiment job summary counts when experiment jobs exist.
 - `[done]` Reports summary includes managed experiment manifests alongside older attack-builder experiments.
+- `[done]` `/nebius` Experiment Lab drives the managed experiment lifecycle through FastAPI: create, generate manifest, run local batch, optionally submit a pending Nebius job, aggregate, and run bounded investigations.
+- `[done]` `/reports` shows managed experiments with selected summary, scenario leaderboard, markdown benchmark report viewer, investigation reports, `artifact_index.json` links, and original `local-batch` artifacts.
 - `[done]` `/api/nebius/smart-batches` remains unchanged for Nebius Control Panel smart-batch execution.
 - `[done]` tests for create, list, get, report visibility, delete, deterministic attack manifests, attack counts, expected labels, a 3-run local batch, fake local-batch artifact normalization, mocked Nebius investigations, sample-CSV aggregation, and missing real Nebius config.
+- `[done]` local HTTP verification created a 10-row mixed-scenario experiment in mock mode and confirmed manifest rows, normalized artifacts, original local-batch files, summary, leaderboard, benchmark report, and investigation artifacts under `outputs/experiments/<experiment_id>/`.
+- `[todo]` real Nebius Serverless Job execution from `submit-nebius` with archived cloud job evidence; current behavior correctly records `real_nebius_pending`.
 
 Current behavior:
 
@@ -283,6 +287,7 @@ Current behavior:
 - `submit-nebius` ensures `attacks.jsonl` exists and records a `nebius_serverless_job` with `real_nebius_pending` unless real Nebius job submission is explicitly implemented in `nebius_orchestrator.py`.
 - `nebius_mode` supports `mock`, `local_parallel_batch`, and `real_nebius_pending`.
 - `smart_batch_id` is optional and is set to the local batch id after `run-local-batch` completes.
+- Reports distinguish requested manifest row count from labeled attack rows because mixed experiments can include `normal_market` rows with `expected_has_attack=false`.
 
 ## Phase 5: Polish And Submission Assets
 

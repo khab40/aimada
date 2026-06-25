@@ -1,5 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
-import { clearReportsData, getReportsSummary, type HistoryRecord, type ReportsSummary } from "@/api/client";
+import {
+  artifactDownloadUrl,
+  clearReportsData,
+  getManagedExperiment,
+  getManagedExperimentLeaderboard,
+  getManagedExperimentReport,
+  getManagedExperimentReportUrl,
+  getManagedExperimentSummary,
+  getReportsSummary,
+  listManagedExperimentInvestigations,
+  listManagedExperiments,
+  readArtifact,
+  type ExperimentLeaderboardRow,
+  type ExperimentSummary,
+  type HistoryRecord,
+  type InvestigationRecord,
+  type ManagedExperiment,
+  type ReportsSummary
+} from "@/api/client";
 import { ArtifactWorkbench, type ArtifactItem } from "@/components/ArtifactWorkbench";
 
 const previousRuns = [
@@ -28,6 +46,13 @@ const experimentArtifactKeys = new Set([
   "leaderboard"
 ]);
 
+type ArtifactIndexEntry = {
+  key: string;
+  source_path: string;
+  normalized_path: string;
+  exists: boolean;
+};
+
 export function ReportsPage() {
   const [summary, setSummary] = useState<ReportsSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -35,13 +60,26 @@ export function ReportsPage() {
   const [clearConfirmation, setClearConfirmation] = useState("");
   const [clearMessage, setClearMessage] = useState<string | null>(null);
   const [clearBusy, setClearBusy] = useState(false);
+  const [experiments, setExperiments] = useState<ManagedExperiment[]>([]);
+  const [selectedExperimentId, setSelectedExperimentId] = useState<string | null>(null);
+  const [selectedExperiment, setSelectedExperiment] = useState<ManagedExperiment | null>(null);
+  const [experimentSummary, setExperimentSummary] = useState<ExperimentSummary | null>(null);
+  const [experimentLeaderboard, setExperimentLeaderboard] = useState<ExperimentLeaderboardRow[]>([]);
+  const [experimentReport, setExperimentReport] = useState("");
+  const [experimentInvestigations, setExperimentInvestigations] = useState<InvestigationRecord[]>([]);
+  const [artifactIndexEntries, setArtifactIndexEntries] = useState<ArtifactIndexEntry[]>([]);
+  const [experimentError, setExperimentError] = useState<string | null>(null);
+  const [experimentLoading, setExperimentLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    loadReports()
-      .then((result) => {
+    Promise.all([loadReports(), listManagedExperiments()])
+      .then(([result, experimentRows]) => {
         if (!cancelled) {
           setSummary(result);
+          const sorted = sortExperiments(experimentRows);
+          setExperiments(sorted);
+          setSelectedExperimentId((current) => current ?? sorted[0]?.id ?? null);
         }
       })
       .catch((nextError: unknown) => {
@@ -54,9 +92,72 @@ export function ReportsPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!selectedExperimentId) {
+      setSelectedExperiment(null);
+      setExperimentSummary(null);
+      setExperimentLeaderboard([]);
+      setExperimentReport("");
+      setExperimentInvestigations([]);
+      setArtifactIndexEntries([]);
+      return;
+    }
+    let cancelled = false;
+    setExperimentLoading(true);
+    setExperimentError(null);
+    loadExperimentReports(selectedExperimentId)
+      .then((result) => {
+        if (!cancelled) {
+          setSelectedExperiment(result.experiment);
+          setExperimentSummary(result.summary);
+          setExperimentLeaderboard(result.leaderboard);
+          setExperimentReport(result.report);
+          setExperimentInvestigations(result.investigations);
+          setArtifactIndexEntries(result.artifactIndexEntries);
+        }
+      })
+      .catch((nextError: unknown) => {
+        if (!cancelled) {
+          setExperimentError(nextError instanceof Error ? nextError.message : "Could not load experiment reports.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setExperimentLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedExperimentId]);
+
   async function loadReports() {
     setError(null);
     return getReportsSummary();
+  }
+
+  async function loadExperimentReports(experimentId: string) {
+    const experiment = await getManagedExperiment(experimentId);
+    const [experimentSummaryResult, leaderboard, report, investigations] = await Promise.all([
+      getManagedExperimentSummary(experimentId).catch(() => null),
+      getManagedExperimentLeaderboard(experimentId).catch(() => []),
+      getManagedExperimentReport(experimentId).catch(() => ""),
+      listManagedExperimentInvestigations(experimentId).catch(() => [])
+    ]);
+    const artifactIndexPath = experiment.artifact_paths.artifact_index;
+    const artifactIndexEntriesResult = artifactIndexPath
+      ? await readArtifact(artifactIndexPath)
+        .then((artifact) => parseArtifactIndexEntries(artifact.content))
+        .catch(() => [])
+      : [];
+    return {
+      artifactIndexEntries: artifactIndexEntriesResult,
+      experiment,
+      investigations,
+      leaderboard,
+      report,
+      summary: experimentSummaryResult
+    };
   }
 
   async function clearEverything() {
@@ -219,6 +320,45 @@ export function ReportsPage() {
     }
     return Array.from(counts.entries()).sort(([left], [right]) => left.localeCompare(right));
   }, [summary]);
+  const artifactIndexArtifacts = useMemo<ArtifactItem[]>(() => {
+    if (!selectedExperiment) return [];
+    const artifactIndexPath = selectedExperiment.artifact_paths.artifact_index;
+    const items: ArtifactItem[] = artifactIndexPath
+      ? [{
+        description: "Normalized experiment artifact index",
+        label: "artifact_index.json",
+        path: artifactIndexPath
+      }]
+      : [];
+    for (const entry of artifactIndexEntries) {
+      if (entry.exists) {
+        items.push({
+          description: `normalized from ${entry.source_path}`,
+          label: `${entry.key.replaceAll("_", " ")} · normalized`,
+          path: entry.normalized_path
+        });
+      }
+    }
+    return dedupeArtifactItems(items);
+  }, [artifactIndexEntries, selectedExperiment]);
+  const localBatchArtifacts = useMemo<ArtifactItem[]>(() => {
+    if (!selectedExperiment) return [];
+    const fromExperiment = Object.entries(selectedExperiment.artifact_paths)
+      .filter(([key]) => key.startsWith("local_batch_"))
+      .map(([key, path]) => ({
+        description: "Original local-batch artifact",
+        label: key.replace("local_batch_", "").replaceAll("_", " "),
+        path
+      }));
+    const fromIndex = artifactIndexEntries
+      .filter((entry) => entry.exists)
+      .map((entry) => ({
+        description: `original source for ${entry.key}`,
+        label: `${entry.key.replaceAll("_", " ")} · original`,
+        path: entry.source_path
+      }));
+    return dedupeArtifactItems([...fromExperiment, ...fromIndex]);
+  }, [artifactIndexEntries, selectedExperiment]);
 
   return (
     <section className="reports-page">
@@ -237,6 +377,148 @@ export function ReportsPage() {
       {clearMessage ? <div className="empty-state">{clearMessage}</div> : null}
 
       <div className="reports-grid">
+        <section className="panel report-card wide experiment-reports-panel">
+          <div className="section-heading-row">
+            <div>
+              <h3>Phase 4.5 Experiments</h3>
+              <p className="empty-state">Synthetic educational benchmark reports generated by the local experiment manager.</p>
+            </div>
+            <span className="endpoint-badge">{experiments.length} experiments</span>
+          </div>
+          {experimentError ? <div className="empty-state warning">{experimentError}</div> : null}
+          <div className="experiment-report-layout">
+            <div className="experiment-list-panel" aria-label="Experiment list">
+              {experiments.length ? experiments.map((experiment) => (
+                <button
+                  className={experiment.id === selectedExperimentId ? "selected" : ""}
+                  key={experiment.id}
+                  onClick={() => setSelectedExperimentId(experiment.id)}
+                  type="button"
+                >
+                  <strong>{experiment.name}</strong>
+                  <span>{experiment.id} · {experiment.status.replaceAll("_", " ")} · {experiment.attack_count} attacks</span>
+                </button>
+              )) : <p className="empty-state">No managed experiments yet. Create one from the Nebius Experiment Lab.</p>}
+            </div>
+
+            <div className="experiment-report-detail">
+              <div className="experiment-report-header">
+                <div>
+                  <span className="eyebrow">Selected experiment</span>
+                  <h3>{selectedExperiment?.name ?? "No experiment selected"}</h3>
+                </div>
+                <span className={`report-status ${selectedExperiment?.status ?? "draft"}`}>
+                  {experimentLoading ? "loading" : selectedExperiment?.status.replaceAll("_", " ") ?? "none"}
+                </span>
+              </div>
+
+              <div className="experiment-report-metrics">
+                <Metric label="Attack Count" value={String(selectedExperiment?.attack_count ?? 0)} />
+                <Metric label="Labeled Attacks" value={String(experimentSummary?.total_attacks ?? 0)} />
+                <Metric label="Alerts" value={String(experimentSummary?.total_alerts ?? 0)} />
+                <Metric label="Investigations" value={String(experimentInvestigations.length || experimentSummary?.investigation_count || 0)} />
+                <Metric label="Failed Runs" value={String(experimentSummary?.failed_runs ?? 0)} />
+              </div>
+
+              <div className="experiment-report-sections">
+                <section className="nebius-result-block">
+                  <span>Selected experiment summary</span>
+                  {experimentSummary ? (
+                    <div className="experiment-summary-list">
+                      <p><strong>Scenarios:</strong> {experimentSummary.scenarios.map((scenario) => scenario.replaceAll("_", " ")).join(", ")}</p>
+                      <p><strong>Average detection latency:</strong> {experimentSummary.avg_detection_latency_ms == null ? "n/a" : `${experimentSummary.avg_detection_latency_ms.toFixed(0)} ms`}</p>
+                      <p><strong>Artifacts:</strong> {Object.keys(experimentSummary.artifact_paths).length} indexed paths</p>
+                    </div>
+                  ) : (
+                    <p>Aggregate the experiment to generate summary metrics.</p>
+                  )}
+                </section>
+
+                <section className="nebius-result-block">
+                  <span>Benchmark report viewer</span>
+                  {selectedExperiment && experimentReport ? (
+                    <>
+                      <div className="artifact-preview-title">
+                        <strong>benchmark_report.md</strong>
+                        <a href={getManagedExperimentReportUrl(selectedExperiment.id)} target="_blank" rel="noreferrer">Open raw</a>
+                      </div>
+                      <pre className="markdown-report-preview">{experimentReport}</pre>
+                    </>
+                  ) : (
+                    <p>Run aggregation to generate `benchmark_report.md`.</p>
+                  )}
+                </section>
+              </div>
+            </div>
+          </div>
+
+          <div className="experiment-report-output-grid">
+            <section className="nebius-result-block">
+              <span>Leaderboard</span>
+              {experimentLeaderboard.length ? (
+                <div className="report-table-wrap">
+                  <table className="benchmark-table">
+                    <thead>
+                      <tr>
+                        <th>Scenario</th>
+                        <th>Precision</th>
+                        <th>Recall</th>
+                        <th>F1</th>
+                        <th>Latency</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {experimentLeaderboard.map((row) => (
+                        <tr key={row.scenario}>
+                          <td>{row.scenario.replaceAll("_", " ")}</td>
+                          <td>{formatScore(row.precision)}</td>
+                          <td>{formatScore(row.recall)}</td>
+                          <td>{formatScore(row.f1)}</td>
+                          <td>{row.avg_detection_latency_ms == null ? "n/a" : `${row.avg_detection_latency_ms.toFixed(0)} ms`}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : <p>Aggregate the experiment to populate detector leaderboard rows.</p>}
+            </section>
+
+            <section className="nebius-result-block">
+              <span>Investigation reports</span>
+              {experimentInvestigations.length ? (
+                <div className="investigation-report-list">
+                  {experimentInvestigations.map((report) => (
+                    <article key={report.alert_id}>
+                      <strong>{report.alert_id}</strong>
+                      <span>{report.mode} · {report.latency_seconds.toFixed(2)}s</span>
+                      {report.fallback_reason ? <p>{report.fallback_reason}</p> : null}
+                      <div className="nebius-button-row">
+                        <a href={artifactDownloadUrl(report.markdown_path)} target="_blank" rel="noreferrer">Markdown</a>
+                        <a href={artifactDownloadUrl(report.json_path)} target="_blank" rel="noreferrer">JSON</a>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : <p>Run AI investigations to populate report files.</p>}
+            </section>
+          </div>
+
+          <div className="experiment-artifact-workbench-grid">
+            <ArtifactWorkbench
+              artifacts={artifactIndexArtifacts}
+              runIds={selectedExperiment ? [selectedExperiment.id] : []}
+              selectedRunId={selectedExperiment?.id ?? null}
+              title="Artifact Index"
+            />
+            <ArtifactWorkbench
+              artifacts={localBatchArtifacts}
+              runIds={selectedExperiment ? [selectedExperiment.id] : []}
+              selectedRunId={selectedExperiment?.id ?? null}
+              title="Local Batch Originals"
+            />
+          </div>
+        </section>
+
         <section className="panel report-card wide">
           <h3>Unified History Model</h3>
           <div className="surveillance-status-strip">
@@ -441,4 +723,44 @@ function formatSavedAt(value: string) {
     minute: "2-digit",
     month: "short"
   }).format(parsed);
+}
+
+function sortExperiments(experiments: ManagedExperiment[]) {
+  return [...experiments].sort((left, right) => Date.parse(right.updated_at) - Date.parse(left.updated_at));
+}
+
+function parseArtifactIndexEntries(content: string): ArtifactIndexEntry[] {
+  try {
+    const parsed = JSON.parse(content) as { artifacts?: unknown };
+    if (!Array.isArray(parsed.artifacts)) return [];
+    return parsed.artifacts.flatMap((entry) => {
+      if (!entry || typeof entry !== "object") return [];
+      const row = entry as Record<string, unknown>;
+      const key = String(row.key ?? "");
+      const sourcePath = String(row.source_path ?? "");
+      const normalizedPath = String(row.normalized_path ?? "");
+      if (!key || !sourcePath || !normalizedPath) return [];
+      return [{
+        exists: row.exists === true,
+        key,
+        normalized_path: normalizedPath,
+        source_path: sourcePath
+      }];
+    });
+  } catch {
+    return [];
+  }
+}
+
+function dedupeArtifactItems(items: ArtifactItem[]) {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    if (!item.path || seen.has(item.path)) return false;
+    seen.add(item.path);
+    return true;
+  });
+}
+
+function formatScore(value: number) {
+  return Number.isFinite(value) ? value.toFixed(3) : "n/a";
 }

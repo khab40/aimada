@@ -158,6 +158,8 @@ export function NebiusControlPanelPage() {
     void refreshControlPlane();
     void refreshExperimentLab();
     void generateNebiusScenarioGrid(initialScenarioConfig).then(setGeneratedScenarios);
+    // Initial control-plane hydration only; user-triggered refreshes keep this page current.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function refreshControlPlane() {
