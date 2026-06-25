@@ -5,6 +5,14 @@ Update this file with each significant commit before pushing.
 
 ## Unreleased
 
+### Current - fix: harden serverless Nebius endpoint fallback behavior
+
+- Added `/ready` to the existing serverless endpoint app and expanded `/health` with endpoint mode, active model mode, model name, and sanitized credential readiness metadata.
+- Added `model`, `model_mode`, and `latency_ms` metadata to endpoint responses where possible.
+- Hardened Nebius model JSON parsing and route-specific schema validation so malformed or wrong-shaped AI output falls back deterministically.
+- Preserved no-fail deterministic fallback behavior for mock mode, missing credentials, HTTP/model failures, and invalid model JSON without exposing API keys.
+- Added endpoint contract tests for mock mode, mocked AI responses, invalid model JSON fallback, and missing-key fallback.
+
 ### Current - fix: normalize Nebius endpoint environment names
 
 - Added `NEBIUS_BASE_URL` and `NEBIUS_MODEL` as canonical endpoint AI configuration names, defaulting `NEBIUS_BASE_URL` to `https://api.tokenfactory.nebius.com/v1/`.

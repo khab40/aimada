@@ -1,5 +1,7 @@
 import json
 import os
+from dataclasses import dataclass
+from time import perf_counter
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -46,6 +48,9 @@ class IncidentExplanationResponse(BaseModel):
     plain_english_summary: str
     evidence: list[str]
     recommended_action: str
+    model_mode: str = "deterministic_fallback"
+    model: str = DEFAULT_NEBIUS_MODEL
+    latency_ms: float = 0.0
     disclaimer: str = DISCLAIMER
 
 
@@ -60,6 +65,9 @@ class ScenarioGenerationResponse(BaseModel):
     description: str
     parameters: dict[str, Any]
     expected_detector_risk: float = Field(ge=0.0, le=1.0)
+    model_mode: str = "deterministic_fallback"
+    model: str = DEFAULT_NEBIUS_MODEL
+    latency_ms: float = 0.0
     safety_note: str = DISCLAIMER
 
 
@@ -88,6 +96,8 @@ class OrderBookAlertResponse(BaseModel):
     reasons: list[str]
     recommended_action: str
     model_mode: str
+    model: str = DEFAULT_NEBIUS_MODEL
+    latency_ms: float = 0.0
     disclaimer: str = DISCLAIMER
 
 
@@ -104,6 +114,9 @@ class InvestigationReportResponse(BaseModel):
     detector_findings: list[str]
     limitations: list[str]
     recommended_next_steps: list[str]
+    model_mode: str = "deterministic_fallback"
+    model: str = DEFAULT_NEBIUS_MODEL
+    latency_ms: float = 0.0
     disclaimer: str = DISCLAIMER
 
 
@@ -112,11 +125,26 @@ class ExplainPayload(BaseModel):
 
 
 @app.get("/health")
-def health() -> dict[str, str]:
+def health() -> dict[str, str | bool]:
     return {
         "status": "ok",
         "service": "ai-market-abuse-detection-arena-endpoint",
-        "model_mode": "ai_studio" if _model_enabled() else "deterministic_fallback",
+        "endpoint_mode": _endpoint_mode(),
+        "model_mode": _active_model_mode(),
+        "model": _nebius_model(),
+        "credentials_configured": _api_key_configured(),
+    }
+
+
+@app.get("/ready")
+def ready() -> dict[str, str | bool]:
+    return {
+        "status": "ready",
+        "service": "ai-market-abuse-detection-arena-endpoint",
+        "endpoint_mode": _endpoint_mode(),
+        "model_mode": _active_model_mode(),
+        "model": _nebius_model(),
+        "credentials_configured": _api_key_configured(),
     }
 
 
@@ -131,9 +159,19 @@ def orderbook_alert(request: OrderBookWindow) -> OrderBookAlertResponse:
         ),
         user_payload=request.model_dump(mode="json"),
     )
-    if model_response is None:
-        return fallback
-    return _merge_alert_response(fallback, model_response)
+    payload = _validated_model_payload(
+        model_response,
+        {
+            "suspicion_score": "number",
+            "detected_pattern": str,
+            "confidence": "number",
+            "reasons": list,
+            "recommended_action": str,
+        },
+    )
+    if payload is None:
+        return _with_model_metadata(fallback, _fallback_model_result(model_response))
+    return _merge_alert_response(fallback, payload, model_response)
 
 
 @app.post("/investigation-report", response_model=InvestigationReportResponse)
@@ -147,9 +185,20 @@ def investigation_report(request: InvestigationReportRequest) -> InvestigationRe
         ),
         user_payload=request.model_dump(mode="json"),
     )
-    if model_response is None:
-        return fallback
-    return _merge_report_response(fallback, model_response)
+    payload = _validated_model_payload(
+        model_response,
+        {
+            "title": str,
+            "summary": str,
+            "timeline": list,
+            "detector_findings": list,
+            "limitations": list,
+            "recommended_next_steps": list,
+        },
+    )
+    if payload is None:
+        return _with_model_metadata(fallback, _fallback_model_result(model_response))
+    return _merge_report_response(fallback, payload, model_response)
 
 
 @app.post("/explain-event", response_model=IncidentExplanationResponse)
@@ -159,9 +208,18 @@ def explain_event(request: IncidentExplanationRequest) -> IncidentExplanationRes
         system_prompt=INCIDENT_EXPLANATION_SYSTEM_PROMPT,
         user_payload=request.model_dump(mode="json"),
     )
-    if model_response is None:
-        return fallback
-    return _merge_explanation_response(request, fallback, model_response)
+    payload = _validated_model_payload(
+        model_response,
+        {
+            "risk_level": str,
+            "plain_english_summary": str,
+            "evidence": list,
+            "recommended_action": str,
+        },
+    )
+    if payload is None:
+        return _with_model_metadata(fallback, _fallback_model_result(model_response))
+    return _merge_explanation_response(request, fallback, payload, model_response)
 
 
 @app.post("/explain-simulation")
@@ -170,11 +228,20 @@ def explain_simulation(request: ExplainPayload) -> dict[str, Any]:
         system_prompt=INCIDENT_EXPLANATION_SYSTEM_PROMPT,
         user_payload={"task": "explain_simulation", **request.payload},
     )
-    if summary is not None:
-        return {"summary": summary, "disclaimer": DISCLAIMER}
+    if summary.payload is not None:
+        return {
+            "summary": summary.payload,
+            "model_mode": summary.model_mode,
+            "model": summary.model,
+            "latency_ms": summary.latency_ms,
+            "disclaimer": DISCLAIMER,
+        }
     return {
         "summary": "Synthetic simulation completed with deterministic detector outputs and bounded scenario labels.",
         "payload": request.payload,
+        "model_mode": summary.model_mode,
+        "model": summary.model,
+        "latency_ms": summary.latency_ms,
         "disclaimer": DISCLAIMER,
     }
 
@@ -186,11 +253,20 @@ def generate_incident_report(request: ExplainPayload) -> dict[str, Any]:
         system_prompt=INCIDENT_EXPLANATION_SYSTEM_PROMPT,
         user_payload={"task": "generate_report", **request.payload},
     )
-    if summary is not None:
-        return {"report": summary, "disclaimer": DISCLAIMER}
+    if summary.payload is not None:
+        return {
+            "report": summary.payload,
+            "model_mode": summary.model_mode,
+            "model": summary.model,
+            "latency_ms": summary.latency_ms,
+            "disclaimer": DISCLAIMER,
+        }
     return {
         "report": "Synthetic incident report generated from deterministic evidence. Review detector scores, replay window, and labels.",
         "payload": request.payload,
+        "model_mode": summary.model_mode,
+        "model": summary.model,
+        "latency_ms": summary.latency_ms,
         "disclaimer": DISCLAIMER,
     }
 
@@ -202,9 +278,19 @@ def generate_scenario(request: ScenarioGenerationRequest) -> ScenarioGenerationR
         system_prompt=SCENARIO_GENERATOR_SYSTEM_PROMPT,
         user_payload=request.model_dump(mode="json"),
     )
-    if model_response is None:
-        return fallback
-    return _merge_scenario_response(fallback, model_response)
+    payload = _validated_model_payload(
+        model_response,
+        {
+            "scenario_type": str,
+            "title": str,
+            "description": str,
+            "parameters": dict,
+            "expected_detector_risk": "number",
+        },
+    )
+    if payload is None:
+        return _with_model_metadata(fallback, _fallback_model_result(model_response))
+    return _merge_scenario_response(fallback, payload, model_response)
 
 
 @app.post("/generate-smart-scenario", response_model=ScenarioGenerationResponse)
@@ -212,19 +298,46 @@ def generate_smart_scenario(request: ScenarioGenerationRequest) -> ScenarioGener
     return generate_scenario(request)
 
 
+@dataclass(frozen=True)
+class ModelCallResult:
+    payload: dict[str, Any] | None
+    model_mode: str
+    model: str
+    latency_ms: float = 0.0
+    fallback_reason: str | None = None
+
+
+def _endpoint_mode() -> str:
+    return os.environ.get("NEBIUS_ENDPOINT_MODE", "mock").strip().lower() or "mock"
+
+
+def _api_key_configured() -> bool:
+    return bool(os.environ.get("NEBIUS_API_KEY"))
+
+
+def _active_model_mode() -> str:
+    return "ai_studio" if _model_enabled() else "deterministic_fallback"
+
+
 def _model_enabled() -> bool:
-    return bool(os.environ.get("NEBIUS_API_KEY")) and os.environ.get("NEBIUS_ENDPOINT_MODE", "mock") == "ai"
+    return _api_key_configured() and _endpoint_mode() == "ai"
 
 
-def _call_model_json(system_prompt: str, user_payload: dict[str, Any]) -> dict[str, Any] | None:
+def _call_model_json(system_prompt: str, user_payload: dict[str, Any]) -> ModelCallResult:
+    model = _nebius_model()
     if not _model_enabled():
-        return None
+        reason = "missing_api_key" if _endpoint_mode() == "ai" and not _api_key_configured() else "mock_mode"
+        return ModelCallResult(
+            payload=None,
+            model_mode="deterministic_fallback",
+            model=model,
+            fallback_reason=reason,
+        )
 
     api_key = os.environ["NEBIUS_API_KEY"]
     base_url = _nebius_base_url()
-    model = _nebius_model()
-    temperature = float(os.environ.get("NEBIUS_TEMPERATURE", "0.2"))
-    max_tokens = int(os.environ.get("NEBIUS_MAX_TOKENS", "800"))
+    temperature = _float_env("NEBIUS_TEMPERATURE", 0.2)
+    max_tokens = _int_env("NEBIUS_MAX_TOKENS", 800)
     url = f"{base_url.rstrip('/')}/chat/completions"
     body = {
         "model": model,
@@ -245,18 +358,114 @@ def _call_model_json(system_prompt: str, user_payload: dict[str, Any]) -> dict[s
         },
         method="POST",
     )
+    started = perf_counter()
     try:
-        with urlopen(request, timeout=float(os.environ.get("NEBIUS_REQUEST_TIMEOUT_SECONDS", "12"))) as response:
+        with urlopen(request, timeout=_float_env("NEBIUS_REQUEST_TIMEOUT_SECONDS", 12.0)) as response:
             decoded = json.loads(response.read().decode("utf-8"))
     except (HTTPError, URLError, TimeoutError, json.JSONDecodeError, ValueError):
-        return None
+        return ModelCallResult(
+            payload=None,
+            model_mode="deterministic_fallback",
+            model=model,
+            latency_ms=_elapsed_ms(started),
+            fallback_reason="model_call_failed",
+        )
 
+    parsed = _parse_chat_completion_json(decoded)
+    if parsed is None:
+        return ModelCallResult(
+            payload=None,
+            model_mode="deterministic_fallback",
+            model=model,
+            latency_ms=_elapsed_ms(started),
+            fallback_reason="invalid_model_json",
+        )
+    return ModelCallResult(
+        payload=parsed,
+        model_mode="ai_studio",
+        model=model,
+        latency_ms=_elapsed_ms(started),
+    )
+
+
+def _elapsed_ms(started: float) -> float:
+    return round((perf_counter() - started) * 1000, 2)
+
+
+def _float_env(name: str, default: float) -> float:
     try:
-        content = decoded["choices"][0]["message"]["content"]
-        parsed = json.loads(content)
-        return parsed if isinstance(parsed, dict) else None
-    except (KeyError, IndexError, TypeError, json.JSONDecodeError):
+        return float(os.environ.get(name, str(default)))
+    except (TypeError, ValueError):
+        return default
+
+
+def _int_env(name: str, default: int) -> int:
+    try:
+        return int(os.environ.get(name, str(default)))
+    except (TypeError, ValueError):
+        return default
+
+
+def _parse_chat_completion_json(decoded: Any) -> dict[str, Any] | None:
+    if not isinstance(decoded, dict):
         return None
+    choices = decoded.get("choices")
+    if not isinstance(choices, list) or not choices:
+        return None
+    first_choice = choices[0]
+    if not isinstance(first_choice, dict):
+        return None
+    message = first_choice.get("message")
+    if not isinstance(message, dict):
+        return None
+    content = message.get("content")
+    if not isinstance(content, str) or not content.strip():
+        return None
+    try:
+        parsed = json.loads(content)
+    except json.JSONDecodeError:
+        return None
+    return parsed if isinstance(parsed, dict) else None
+
+
+def _validated_model_payload(
+    result: ModelCallResult,
+    schema: dict[str, type | tuple[type, ...] | str],
+) -> dict[str, Any] | None:
+    if result.payload is None:
+        return None
+    for key, expected_type in schema.items():
+        if key not in result.payload or not _matches_expected_type(result.payload[key], expected_type):
+            return None
+    return result.payload
+
+
+def _matches_expected_type(value: Any, expected_type: type | tuple[type, ...] | str) -> bool:
+    if expected_type == "number":
+        return isinstance(value, (int, float)) and not isinstance(value, bool)
+    return isinstance(value, expected_type)
+
+
+def _with_model_metadata(response: BaseModel, result: ModelCallResult) -> Any:
+    return response.model_copy(
+        update={
+            "model_mode": result.model_mode,
+            "model": result.model,
+            "latency_ms": result.latency_ms,
+        }
+    )
+
+
+def _fallback_model_result(result: ModelCallResult) -> ModelCallResult:
+    if result.model_mode == "deterministic_fallback":
+        return result
+    return ModelCallResult(
+        payload=None,
+        model_mode="deterministic_fallback",
+        model=result.model,
+        latency_ms=result.latency_ms,
+        fallback_reason="invalid_model_json",
+    )
 
 
 def _nebius_base_url() -> str:
@@ -303,13 +512,14 @@ def _merge_explanation_response(
     request: IncidentExplanationRequest,
     fallback: IncidentExplanationResponse,
     response: dict[str, Any],
+    model_result: ModelCallResult,
 ) -> IncidentExplanationResponse:
     evidence = response.get("evidence", fallback.evidence)
     if isinstance(evidence, str):
         evidence = [evidence]
     if not isinstance(evidence, list):
         evidence = fallback.evidence
-    return IncidentExplanationResponse(
+    merged = IncidentExplanationResponse(
         incident_id=str(response.get("incident_id") or request.incident_id),
         risk_level=str(response.get("risk_level") or fallback.risk_level),
         plain_english_summary=str(response.get("plain_english_summary") or fallback.plain_english_summary),
@@ -317,6 +527,7 @@ def _merge_explanation_response(
         recommended_action=str(response.get("recommended_action") or fallback.recommended_action),
         disclaimer=str(response.get("disclaimer") or DISCLAIMER),
     )
+    return _with_model_metadata(merged, model_result)
 
 
 def _deterministic_orderbook_alert(request: OrderBookWindow) -> OrderBookAlertResponse:
@@ -375,6 +586,7 @@ def _deterministic_orderbook_alert(request: OrderBookWindow) -> OrderBookAlertRe
 def _merge_alert_response(
     fallback: OrderBookAlertResponse,
     response: dict[str, Any],
+    model_result: ModelCallResult,
 ) -> OrderBookAlertResponse:
     reasons = response.get("reasons", fallback.reasons)
     if isinstance(reasons, str):
@@ -383,15 +595,16 @@ def _merge_alert_response(
         reasons = fallback.reasons
     suspicion_score = _bounded_float(response.get("suspicion_score"), fallback.suspicion_score)
     confidence = _bounded_float(response.get("confidence"), suspicion_score)
-    return OrderBookAlertResponse(
+    merged = OrderBookAlertResponse(
         suspicion_score=suspicion_score,
         detected_pattern=str(response.get("detected_pattern") or fallback.detected_pattern),
         confidence=confidence,
         reasons=[str(item) for item in reasons],
         recommended_action=str(response.get("recommended_action") or fallback.recommended_action),
-        model_mode="ai_studio",
+        model_mode=model_result.model_mode,
         disclaimer=str(response.get("disclaimer") or DISCLAIMER),
     )
+    return _with_model_metadata(merged, model_result)
 
 
 def _deterministic_investigation_report(request: InvestigationReportRequest) -> InvestigationReportResponse:
@@ -429,8 +642,9 @@ def _deterministic_investigation_report(request: InvestigationReportRequest) -> 
 def _merge_report_response(
     fallback: InvestigationReportResponse,
     response: dict[str, Any],
+    model_result: ModelCallResult,
 ) -> InvestigationReportResponse:
-    return InvestigationReportResponse(
+    merged = InvestigationReportResponse(
         title=str(response.get("title") or fallback.title),
         summary=str(response.get("summary") or fallback.summary),
         timeline=_string_list(response.get("timeline"), fallback.timeline),
@@ -442,6 +656,7 @@ def _merge_report_response(
         ),
         disclaimer=str(response.get("disclaimer") or DISCLAIMER),
     )
+    return _with_model_metadata(merged, model_result)
 
 
 def _deterministic_scenario(request: ScenarioGenerationRequest) -> ScenarioGenerationResponse:
@@ -472,6 +687,7 @@ def _deterministic_scenario(request: ScenarioGenerationRequest) -> ScenarioGener
 def _merge_scenario_response(
     fallback: ScenarioGenerationResponse,
     response: dict[str, Any],
+    model_result: ModelCallResult,
 ) -> ScenarioGenerationResponse:
     parameters = response.get("parameters", fallback.parameters)
     if not isinstance(parameters, dict):
@@ -481,7 +697,7 @@ def _merge_scenario_response(
         risk_float = max(0.0, min(1.0, float(risk)))
     except (TypeError, ValueError):
         risk_float = fallback.expected_detector_risk
-    return ScenarioGenerationResponse(
+    merged = ScenarioGenerationResponse(
         scenario_type=_normalize_scenario_type(str(response.get("scenario_type") or fallback.scenario_type)),
         title=str(response.get("title") or fallback.title),
         description=str(response.get("description") or fallback.description),
@@ -489,6 +705,7 @@ def _merge_scenario_response(
         expected_detector_risk=risk_float,
         safety_note=str(response.get("safety_note") or DISCLAIMER),
     )
+    return _with_model_metadata(merged, model_result)
 
 
 def _normalize_scenario_type(value: str) -> str:
