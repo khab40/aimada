@@ -102,6 +102,17 @@ export NEBIUS_JOB_IMAGE=ghcr.io/<your-org>/ai-market-abuse-detection-arena-jobs:
 ./scripts/create-nebius-ai-job.sh
 ```
 
+After the endpoint, backend, and jobs image are available, run the deployment smoke workflow:
+
+```bash
+NEBIUS_ENDPOINT_BASE_URL=https://<endpoint-host> \
+BACKEND_BASE_URL=https://<backend-host> \
+JOBS_IMAGE=ghcr.io/<your-org>/ai-market-abuse-detection-arena-jobs:<tag> \
+./scripts/serverless-smoke.sh
+```
+
+The workflow writes `outputs/serverless-smoke/summary.json`. Real Nebius job submission is optional; if submit/artifact command templates are not configured, the summary marks those steps pending instead of failing the smoke.
+
 The shell scripts use the current deterministic CLI surfaces:
 
 - `nebius ai endpoint create`

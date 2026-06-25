@@ -107,6 +107,36 @@ Endpoint: docker run endpoint image, call GET /health.
 Jobs: docker run jobs image with run_batch_experiments.py --runs 3 --batch-size 2.
 ```
 
+## Deployment Smoke Workflow
+
+After the endpoint, backend, and jobs image are available, run the end-to-end
+deployment smoke workflow:
+
+```bash
+NEBIUS_ENDPOINT_BASE_URL=http://localhost:9000 \
+BACKEND_BASE_URL=http://localhost:8000 \
+JOBS_IMAGE=ghcr.io/khab40/ai-market-abuse-detection-arena-jobs:latest \
+./scripts/serverless-smoke.sh
+```
+
+For a deployed endpoint:
+
+```bash
+NEBIUS_ENDPOINT_BASE_URL=https://<endpoint-host> \
+BACKEND_BASE_URL=https://<backend-host> \
+NEBIUS_API_KEY=<optional-endpoint-token> \
+JOBS_IMAGE=ghcr.io/<your-org>/ai-market-abuse-detection-arena-jobs:<tag> \
+./scripts/serverless-smoke.sh
+```
+
+The script writes `outputs/serverless-smoke/summary.json` and stores raw
+responses in the same directory. It checks endpoint `/health`,
+`/orderbook-alert`, `/investigation-report`, runs the jobs image locally with
+three runs, creates a backend experiment with 10 attacks, runs the local batch,
+and optionally submits/collects Nebius job artifacts when command templates are
+configured. Real Nebius job submission is not required for the smoke to pass;
+when not configured, it is marked pending in the summary.
+
 Equivalent manual commands:
 
 ```bash

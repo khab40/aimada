@@ -5,6 +5,12 @@ Update this file with each significant commit before pushing.
 
 ## Unreleased
 
+### Current - chore: add deployment smoke workflow
+
+- Added `scripts/serverless-smoke.sh` to verify endpoint health, endpoint alert/report routes, jobs image 3-run execution, backend experiment creation, local batch execution, optional Nebius submit, optional artifact collection, and `outputs/serverless-smoke/summary.json`.
+- Kept real Nebius job submission optional; missing submit/artifact configuration is recorded as pending rather than failing the smoke.
+- Documented exact local and deployed smoke commands in `serverless/README.md`.
+
 ### Current - chore: improve serverless image build and smoke targets
 
 - Updated `scripts/build-serverless-images.sh` to use `IMAGE_NAMESPACE`, `ENDPOINT_IMAGE`, `JOBS_IMAGE`, `TAG`, `PUSH`, and `PLATFORM` options while keeping old owner/tag aliases compatible.
