@@ -1345,6 +1345,150 @@ h3 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.experiment-lab-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.experiment-lab-layout,
+.experiment-output-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(300px, 0.85fr) minmax(0, 1.15fr);
+}
+
+.experiment-output-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.experiment-form-card,
+.experiment-progress-card {
+  border: 1px solid rgba(34, 211, 238, 0.14);
+  border-radius: 6px;
+  background: rgba(2, 6, 23, 0.36);
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
+
+.experiment-form-card label,
+.experiment-number-grid label {
+  display: grid;
+  gap: 6px;
+}
+
+.experiment-form-card label span,
+.experiment-active-summary span {
+  color: var(--text-muted);
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.experiment-form-card input {
+  background: var(--surface-muted);
+  border: 1px solid rgba(43, 90, 120, 0.42);
+  border-radius: 6px;
+  color: var(--text-main);
+  min-height: 38px;
+  padding: 8px 10px;
+}
+
+.experiment-number-grid,
+.experiment-summary-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.experiment-summary-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.experiment-scenario-picker,
+.experiment-flow-actions,
+.experiment-artifact-list {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.scenario-pill,
+.experiment-flow-actions button {
+  background: var(--surface-muted);
+  border: 1px solid rgba(43, 90, 120, 0.42);
+  border-radius: 999px;
+  color: var(--text-main);
+  min-height: 34px;
+  padding: 7px 10px;
+}
+
+.scenario-pill.selected {
+  background: rgba(34, 211, 238, 0.16);
+  border-color: rgba(34, 211, 238, 0.5);
+  color: var(--heading-soft);
+}
+
+.experiment-active-summary {
+  display: grid;
+  gap: 5px;
+}
+
+.experiment-active-summary strong {
+  color: var(--heading-soft);
+}
+
+.experiment-active-summary p,
+.experiment-message,
+.experiment-pending-note {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.experiment-message {
+  color: var(--heading-soft);
+}
+
+.experiment-pending-note {
+  border-left: 3px solid rgba(245, 184, 65, 0.65);
+  padding-left: 10px;
+}
+
+.experiment-artifact-list {
+  align-items: flex-start;
+  flex-direction: column;
+}
+
+.experiment-artifact-list a {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+}
+
+.experiment-artifact-list a:hover {
+  text-decoration: underline;
+}
+
+.runtime-status.manifest_generated,
+.runtime-status.submitted,
+.runtime-status.running,
+.runtime-status.real_nebius_pending {
+  background: rgba(245, 184, 65, 0.12);
+  color: #d97706;
+}
+
+.runtime-status.completed {
+  background: rgba(16, 185, 129, 0.14);
+  color: #047857;
+}
+
+.runtime-status.failed {
+  background: rgba(244, 63, 94, 0.14);
+  color: #be123c;
+}
+
 .nebius-chart-panel {
   grid-column: span 2;
 }
@@ -4482,6 +4626,8 @@ kbd,
 
   .lab-grid,
   .nebius-control-grid,
+  .experiment-lab-layout,
+  .experiment-output-grid,
   .attack-scenario-page-grid,
   .blue-team-grid,
   .artifact-workbench-layout,
@@ -4528,6 +4674,7 @@ kbd,
   }
 
   .runtime-status-grid,
+  .experiment-summary-grid,
   .serverless-config-grid,
   .attack-generator-grid,
   .scenario-generator-grid,
@@ -4606,6 +4753,8 @@ kbd,
 
   .lab-grid,
   .nebius-control-grid,
+  .experiment-lab-layout,
+  .experiment-output-grid,
   .attack-scenario-page-grid,
   .blue-team-grid,
   .artifact-workbench-layout,
@@ -4809,6 +4958,8 @@ kbd,
   }
 
   .job-status-timeline,
+  .experiment-number-grid,
+  .experiment-summary-grid,
   .event-tape,
   .incident-replay-meta div {
     grid-template-columns: 1fr;

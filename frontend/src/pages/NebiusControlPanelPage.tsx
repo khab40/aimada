@@ -1,18 +1,36 @@
 import { useEffect, useState } from "react";
 import {
   attachNebiusScreenshot,
+  aggregateManagedExperiment,
+  artifactDownloadUrl,
   createInvestigationReport,
+  createManagedExperiment,
   createSmartScenario,
   exportNebiusDataset,
   generateNebiusScenarioGrid,
+  generateManagedExperimentManifest,
+  getManagedExperiment,
+  getManagedExperimentLeaderboard,
+  getManagedExperimentSummary,
+  getManagedExperimentReportUrl,
   generateNebiusTrainingData,
   getNebiusObservatory,
   getNebiusStatus,
   getReportsSummary,
+  listManagedExperimentJobs,
+  listManagedExperiments,
   runSmartBatches,
   runSmartDetection,
+  runManagedExperimentInvestigations,
+  runManagedExperimentLocalBatch,
   saveNebiusEvidenceBundle,
+  submitManagedExperimentNebius,
+  type ExperimentJobRecord,
+  type ExperimentLeaderboardRow,
+  type ExperimentSummary,
   type InvestigationReportResponse,
+  type ManagedExperiment,
+  type ManagedExperimentCreateRequest,
   type NebiusObservatory,
   type NebiusStatus,
   type OrderBookAlertResponse,
@@ -91,6 +109,31 @@ const fallbackUsageMetrics: NebiusUsageMetrics = {
 
 type AnalystOutput = AiExplanation | IncidentReport | StrategySuggestion | MarketSummary;
 
+type ExperimentFormState = Required<Pick<ManagedExperimentCreateRequest, "name" | "attack_count" | "batch_size" | "scenarios" | "seed">>;
+type ExperimentAction =
+  | "create-experiment"
+  | "generate-manifest"
+  | "run-local-batch"
+  | "submit-nebius"
+  | "aggregate"
+  | "run-investigations";
+
+const experimentScenarioOptions = [
+  "normal_market",
+  "spoofing",
+  "layering",
+  "quote_stuffing",
+  "pump_and_cancel"
+];
+
+const initialExperimentForm: ExperimentFormState = {
+  attack_count: 100,
+  batch_size: 20,
+  name: "AI-MADA detector benchmark",
+  scenarios: ["normal_market", "spoofing", "layering", "quote_stuffing", "pump_and_cancel"],
+  seed: 42
+};
+
 export function NebiusControlPanelPage() {
   const [analystOutput, setAnalystOutput] = useState<AnalystOutput | null>(null);
   const [artifacts, setArtifacts] = useState<ExperimentArtifact[]>([]);
@@ -103,9 +146,17 @@ export function NebiusControlPanelPage() {
   const [scenarioConfig, setScenarioConfig] = useState<ScenarioGridConfig>(initialScenarioConfig);
   const [services, setServices] = useState<ServiceHealth[]>([]);
   const [usageMetrics, setUsageMetrics] = useState<NebiusUsageMetrics>(fallbackUsageMetrics);
+  const [experiment, setExperiment] = useState<ManagedExperiment | null>(null);
+  const [experimentForm, setExperimentForm] = useState<ExperimentFormState>(initialExperimentForm);
+  const [experimentJobs, setExperimentJobs] = useState<ExperimentJobRecord[]>([]);
+  const [experimentLeaderboard, setExperimentLeaderboard] = useState<ExperimentLeaderboardRow[]>([]);
+  const [experimentSummary, setExperimentSummary] = useState<ExperimentSummary | null>(null);
+  const [experimentMessage, setExperimentMessage] = useState<string | null>(null);
+  const [experimentBusyAction, setExperimentBusyAction] = useState<ExperimentAction | null>(null);
 
   useEffect(() => {
     void refreshControlPlane();
+    void refreshExperimentLab();
     void generateNebiusScenarioGrid(initialScenarioConfig).then(setGeneratedScenarios);
   }, []);
 
@@ -124,6 +175,136 @@ export function NebiusControlPanelPage() {
     } catch (error) {
       setDeploymentMessage(error instanceof Error ? error.message : "Control plane refresh failed.");
     }
+  }
+
+  async function refreshExperimentLab(experimentId?: string) {
+    try {
+      const targetId = experimentId ?? experiment?.id;
+      if (!targetId) {
+        const experiments = await listManagedExperiments();
+        const latest = latestExperiment(experiments);
+        if (!latest) return;
+        setExperiment(latest);
+        await refreshExperimentDetails(latest.id);
+        return;
+      }
+      await refreshExperimentDetails(targetId);
+    } catch (error) {
+      setExperimentMessage(error instanceof Error ? error.message : "Experiment Lab refresh failed.");
+    }
+  }
+
+  async function refreshExperimentDetails(experimentId: string) {
+    const [latest, jobs] = await Promise.all([
+      getManagedExperiment(experimentId),
+      listManagedExperimentJobs(experimentId).catch(() => [])
+    ]);
+    setExperiment(latest);
+    setExperimentJobs(jobs);
+
+    const [summary, leaderboard] = await Promise.all([
+      getManagedExperimentSummary(experimentId).catch(() => null),
+      getManagedExperimentLeaderboard(experimentId).catch(() => [])
+    ]);
+    setExperimentSummary(summary);
+    setExperimentLeaderboard(leaderboard);
+  }
+
+  async function runExperimentAction(action: ExperimentAction, fn: () => Promise<void>) {
+    setExperimentBusyAction(action);
+    setExperimentMessage(null);
+    try {
+      await fn();
+      await refreshControlPlane();
+    } catch (error) {
+      setExperimentMessage(error instanceof Error ? error.message : "Experiment action failed.");
+    } finally {
+      setExperimentBusyAction(null);
+    }
+  }
+
+  function updateExperimentForm<K extends keyof ExperimentFormState>(key: K, value: ExperimentFormState[K]) {
+    setExperimentForm((current) => ({
+      ...current,
+      [key]: value
+    }));
+  }
+
+  function toggleExperimentScenario(scenario: string) {
+    setExperimentForm((current) => {
+      const next = current.scenarios.includes(scenario)
+        ? current.scenarios.filter((item) => item !== scenario)
+        : [...current.scenarios, scenario];
+      return {
+        ...current,
+        scenarios: next.length ? next : [scenario]
+      };
+    });
+  }
+
+  async function createExperimentFromForm() {
+    await runExperimentAction("create-experiment", async () => {
+      const created = await createManagedExperiment({
+        attack_count: Math.max(1, experimentForm.attack_count),
+        batch_size: Math.max(1, experimentForm.batch_size),
+        name: experimentForm.name.trim() || "AI-MADA experiment",
+        scenarios: experimentForm.scenarios,
+        seed: experimentForm.seed
+      });
+      setExperiment(created);
+      setExperimentJobs([]);
+      setExperimentLeaderboard([]);
+      setExperimentSummary(null);
+      setExperimentMessage(`Created experiment ${created.id}.`);
+      await refreshExperimentDetails(created.id);
+    });
+  }
+
+  async function generateExperimentManifest() {
+    if (!experiment) return;
+    await runExperimentAction("generate-manifest", async () => {
+      const manifest = await generateManagedExperimentManifest(experiment.id);
+      setExperimentMessage(`Generated ${manifest.attack_count} attack rows at ${manifest.path}.`);
+      await refreshExperimentDetails(experiment.id);
+    });
+  }
+
+  async function runExperimentLocalBatch() {
+    if (!experiment) return;
+    await runExperimentAction("run-local-batch", async () => {
+      const batch = await runManagedExperimentLocalBatch(experiment.id);
+      setExperimentMessage(`${batch.status === "completed" ? "Completed" : "Failed"} local batch in ${batch.elapsed_seconds.toFixed(1)}s.`);
+      await refreshExperimentDetails(experiment.id);
+    });
+  }
+
+  async function submitExperimentToNebius() {
+    if (!experiment) return;
+    await runExperimentAction("submit-nebius", async () => {
+      const job = await submitManagedExperimentNebius(experiment.id);
+      setExperimentMessage(job.status === "real_nebius_pending" ? "pending real Nebius execution" : job.message);
+      await refreshExperimentDetails(experiment.id);
+    });
+  }
+
+  async function aggregateExperimentResults() {
+    if (!experiment) return;
+    await runExperimentAction("aggregate", async () => {
+      const result = await aggregateManagedExperiment(experiment.id);
+      setExperimentSummary(result.summary);
+      setExperimentLeaderboard(result.leaderboard);
+      setExperimentMessage(`Aggregated ${result.summary.total_alerts} alerts into ${result.leaderboard.length} leaderboard rows.`);
+      await refreshExperimentDetails(experiment.id);
+    });
+  }
+
+  async function runExperimentInvestigations() {
+    if (!experiment) return;
+    await runExperimentAction("run-investigations", async () => {
+      const result = await runManagedExperimentInvestigations(experiment.id);
+      setExperimentMessage(`Ran ${result.investigation_count} AI investigations in ${result.investigation_mode} mode.`);
+      await refreshExperimentDetails(experiment.id);
+    });
   }
 
   async function runAiAction(action: string, fn: () => Promise<AnalystOutput>) {
@@ -221,6 +402,25 @@ export function NebiusControlPanelPage() {
         </div>
       </div>
 
+      <ExperimentLab
+        busyAction={experimentBusyAction}
+        experiment={experiment}
+        form={experimentForm}
+        jobs={experimentJobs}
+        leaderboard={experimentLeaderboard}
+        message={experimentMessage}
+        onAggregate={() => void aggregateExperimentResults()}
+        onCreate={() => void createExperimentFromForm()}
+        onGenerateManifest={() => void generateExperimentManifest()}
+        onRefresh={() => void refreshExperimentLab()}
+        onRunInvestigations={() => void runExperimentInvestigations()}
+        onRunLocalBatch={() => void runExperimentLocalBatch()}
+        onSubmitNebius={() => void submitExperimentToNebius()}
+        onToggleScenario={toggleExperimentScenario}
+        onUpdateForm={updateExperimentForm}
+        summary={experimentSummary}
+      />
+
       <RuntimeStatusCard status={runtimeStatus} />
 
       <div className="nebius-control-grid">
@@ -304,6 +504,306 @@ function runtimeFrom(status: NebiusStatus, observatory: NebiusObservatory): Nebi
     ticksProcessed: latest ? Number(latest.runs ?? 18420) * 240 : 18420,
     websocketStatus: "live"
   };
+}
+
+function ExperimentLab({
+  busyAction,
+  experiment,
+  form,
+  jobs,
+  leaderboard,
+  message,
+  onAggregate,
+  onCreate,
+  onGenerateManifest,
+  onRefresh,
+  onRunInvestigations,
+  onRunLocalBatch,
+  onSubmitNebius,
+  onToggleScenario,
+  onUpdateForm,
+  summary
+}: {
+  busyAction: ExperimentAction | null;
+  experiment: ManagedExperiment | null;
+  form: ExperimentFormState;
+  jobs: ExperimentJobRecord[];
+  leaderboard: ExperimentLeaderboardRow[];
+  message: string | null;
+  onAggregate: () => void;
+  onCreate: () => void;
+  onGenerateManifest: () => void;
+  onRefresh: () => void;
+  onRunInvestigations: () => void;
+  onRunLocalBatch: () => void;
+  onSubmitNebius: () => void;
+  onToggleScenario: (scenario: string) => void;
+  onUpdateForm: <K extends keyof ExperimentFormState>(key: K, value: ExperimentFormState[K]) => void;
+  summary: ExperimentSummary | null;
+}) {
+  const canRun = Boolean(experiment);
+  const artifacts = experiment ? experimentArtifactsFrom(experiment, summary) : [];
+  const pendingNebiusJob = jobs.find((job) => job.status === "real_nebius_pending");
+
+  return (
+    <section className="panel experiment-lab-panel">
+      <div className="nebius-card-heading">
+        <div>
+          <p className="eyebrow">Experiment Lab</p>
+          <h2>Experiment Lab</h2>
+        </div>
+        <div className="nebius-button-row">
+          <span className={`runtime-status ${experiment?.status ?? "missing"}`}>{experiment?.status.replaceAll("_", " ") ?? "no experiment"}</span>
+          <button className="secondary-button" onClick={onRefresh} type="button">Refresh</button>
+        </div>
+      </div>
+
+      <div className="experiment-lab-layout">
+        <div className="experiment-form-card">
+          <label>
+            <span>Name</span>
+            <input
+              onChange={(event) => onUpdateForm("name", event.target.value)}
+              value={form.name}
+            />
+          </label>
+          <div className="experiment-number-grid">
+            <label>
+              <span>Attack count</span>
+              <input
+                min={1}
+                onChange={(event) => onUpdateForm("attack_count", Number(event.target.value))}
+                type="number"
+                value={form.attack_count}
+              />
+            </label>
+            <label>
+              <span>Batch size</span>
+              <input
+                min={1}
+                onChange={(event) => onUpdateForm("batch_size", Number(event.target.value))}
+                type="number"
+                value={form.batch_size}
+              />
+            </label>
+            <label>
+              <span>Seed</span>
+              <input
+                onChange={(event) => onUpdateForm("seed", Number(event.target.value))}
+                type="number"
+                value={form.seed}
+              />
+            </label>
+          </div>
+          <div className="experiment-scenario-picker" aria-label="Experiment scenarios">
+            {experimentScenarioOptions.map((scenario) => (
+              <button
+                className={form.scenarios.includes(scenario) ? "scenario-pill selected" : "scenario-pill"}
+                key={scenario}
+                onClick={() => onToggleScenario(scenario)}
+                type="button"
+              >
+                {scenario.replaceAll("_", " ")}
+              </button>
+            ))}
+          </div>
+          <button
+            className="primary-button"
+            disabled={busyAction === "create-experiment"}
+            onClick={onCreate}
+            type="button"
+          >
+            {busyAction === "create-experiment" ? "Creating..." : "Create experiment"}
+          </button>
+        </div>
+
+        <div className="experiment-progress-card">
+          <div className="experiment-active-summary">
+            <span>Current experiment</span>
+            <strong>{experiment?.name ?? "Create or refresh an experiment"}</strong>
+            <p>{experiment ? `${experiment.id} · ${experiment.attack_count} attacks · batch ${experiment.batch_size}` : "The managed experiment flow runs through FastAPI and keeps Nebius calls behind the backend boundary."}</p>
+          </div>
+          <div className="experiment-flow-actions">
+            <button disabled={!canRun || busyAction === "generate-manifest"} onClick={onGenerateManifest} type="button">Generate manifest</button>
+            <button disabled={!canRun || busyAction === "run-local-batch"} onClick={onRunLocalBatch} type="button">Run local batch</button>
+            <button disabled={!canRun || busyAction === "submit-nebius"} onClick={onSubmitNebius} type="button">Submit to Nebius</button>
+            <button disabled={!canRun || busyAction === "aggregate"} onClick={onAggregate} type="button">Aggregate</button>
+            <button disabled={!canRun || busyAction === "run-investigations"} onClick={onRunInvestigations} type="button">Run AI investigations</button>
+          </div>
+          {message ? <p className="experiment-message">{message}</p> : null}
+          {pendingNebiusJob ? <p className="experiment-pending-note">pending real Nebius execution: {pendingNebiusJob.message}</p> : null}
+          <ExperimentProgressSummary experiment={experiment} summary={summary} jobs={jobs} />
+        </div>
+      </div>
+
+      <div className="experiment-output-grid">
+        <ExperimentJobsTable jobs={jobs} />
+        <ExperimentArtifactLinks artifacts={artifacts} experimentId={experiment?.id} />
+        <ExperimentLeaderboardTable leaderboard={leaderboard} />
+      </div>
+    </section>
+  );
+}
+
+function ExperimentProgressSummary({
+  experiment,
+  jobs,
+  summary
+}: {
+  experiment: ManagedExperiment | null;
+  jobs: ExperimentJobRecord[];
+  summary: ExperimentSummary | null;
+}) {
+  const completedJobs = jobs.filter((job) => job.status === "completed").length;
+  const failedJobs = jobs.filter((job) => job.status === "failed").length;
+  return (
+    <div className="experiment-summary-grid">
+      <MetricBlock label="Status" value={experiment?.status.replaceAll("_", " ") ?? "draft"} />
+      <MetricBlock label="Jobs" value={`${completedJobs}/${jobs.length} done`} />
+      <MetricBlock label="Alerts" value={summary ? String(summary.total_alerts) : "not aggregated"} />
+      <MetricBlock label="Failed runs" value={String(summary?.failed_runs ?? failedJobs)} />
+      <MetricBlock label="Investigations" value={String(summary?.investigation_count ?? metricValue(experiment, "investigation_count") ?? 0)} />
+    </div>
+  );
+}
+
+function MetricBlock({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="runtime-metric">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function ExperimentJobsTable({ jobs }: { jobs: ExperimentJobRecord[] }) {
+  return (
+    <div className="nebius-result-block experiment-jobs-block">
+      <span>Job records</span>
+      {jobs.length ? (
+        <div className="benchmark-table-panel">
+          <table className="benchmark-table compact-job-table">
+            <thead>
+              <tr>
+                <th>Job</th>
+                <th>Backend</th>
+                <th>Status</th>
+                <th>Attacks</th>
+              </tr>
+            </thead>
+            <tbody>
+              {jobs.map((job) => (
+                <tr key={job.job_id}>
+                  <td>{job.job_id}</td>
+                  <td>{job.backend.replaceAll("_", " ")}</td>
+                  <td>{job.status.replaceAll("_", " ")}</td>
+                  <td>{job.attack_count}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p>No jobs recorded yet.</p>
+      )}
+    </div>
+  );
+}
+
+function ExperimentArtifactLinks({
+  artifacts,
+  experimentId
+}: {
+  artifacts: Array<[string, string]>;
+  experimentId?: string;
+}) {
+  return (
+    <div className="nebius-result-block experiment-artifacts-block">
+      <span>Artifact links</span>
+      {artifacts.length ? (
+        <div className="experiment-artifact-list">
+          {artifacts.map(([label, path]) => (
+            <a href={artifactDownloadUrl(path)} key={`${label}-${path}`} target="_blank" rel="noreferrer">
+              {label.replaceAll("_", " ")}
+            </a>
+          ))}
+          {experimentId ? (
+            <a href={getManagedExperimentReportUrl(experimentId)} target="_blank" rel="noreferrer">
+              benchmark report
+            </a>
+          ) : null}
+        </div>
+      ) : (
+        <p>Artifacts appear after manifest generation, local batch execution, normalization, aggregation, or investigations.</p>
+      )}
+    </div>
+  );
+}
+
+function ExperimentLeaderboardTable({ leaderboard }: { leaderboard: ExperimentLeaderboardRow[] }) {
+  return (
+    <div className="nebius-result-block experiment-leaderboard-block">
+      <span>Detector leaderboard</span>
+      {leaderboard.length ? (
+        <div className="benchmark-table-panel">
+          <table className="benchmark-table compact-job-table">
+            <thead>
+              <tr>
+                <th>Scenario</th>
+                <th>Precision</th>
+                <th>Recall</th>
+                <th>F1</th>
+                <th>Latency</th>
+              </tr>
+            </thead>
+            <tbody>
+              {leaderboard.map((row) => (
+                <tr key={row.scenario}>
+                  <td>{row.scenario.replaceAll("_", " ")}</td>
+                  <td>{formatScore(row.precision)}</td>
+                  <td>{formatScore(row.recall)}</td>
+                  <td>{formatScore(row.f1)}</td>
+                  <td>{row.avg_detection_latency_ms == null ? "n/a" : `${row.avg_detection_latency_ms.toFixed(0)} ms`}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p>Aggregate the experiment to populate detector rankings.</p>
+      )}
+    </div>
+  );
+}
+
+function experimentArtifactsFrom(experiment: ManagedExperiment, summary: ExperimentSummary | null): Array<[string, string]> {
+  const entries = Object.entries({
+    ...experiment.artifact_paths,
+    ...(summary?.artifact_paths ?? {})
+  }).filter(([, path]) => typeof path === "string" && path.includes("."));
+  const seen = new Set<string>();
+  return entries.filter(([, path]) => {
+    if (seen.has(path)) return false;
+    seen.add(path);
+    return true;
+  });
+}
+
+function metricValue(experiment: ManagedExperiment | null, key: string): number | null {
+  if (!experiment) return null;
+  for (const row of experiment.metrics) {
+    const value = row[key];
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+  }
+  return null;
+}
+
+function formatScore(value: number) {
+  return Number.isFinite(value) ? value.toFixed(3) : "n/a";
+}
+
+function latestExperiment(experiments: ManagedExperiment[]) {
+  return [...experiments].sort((left, right) => Date.parse(right.updated_at) - Date.parse(left.updated_at))[0] ?? null;
 }
 
 function usageFrom(observatory: NebiusObservatory, reports: ReportsSummary): NebiusUsageMetrics {
