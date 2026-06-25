@@ -5,6 +5,13 @@ Update this file with each significant commit before pushing.
 
 ## Unreleased
 
+### Current - chore: improve serverless image build and smoke targets
+
+- Updated `scripts/build-serverless-images.sh` to use `IMAGE_NAMESPACE`, `ENDPOINT_IMAGE`, `JOBS_IMAGE`, `TAG`, `PUSH`, and `PLATFORM` options while keeping old owner/tag aliases compatible.
+- Added `SMOKE=true` mode with an endpoint `/health` container check and a jobs-container 3-run batch smoke.
+- Added `make serverless-build`, `make serverless-push`, and `make serverless-smoke` targets.
+- Updated serverless build documentation with exact build, push, and smoke commands.
+
 ### Current - feat: collect Nebius job artifacts into experiment layout
 
 - Added `POST /api/experiments/{id}/collect-nebius-artifacts` to collect existing Nebius job output files from mounted output or the configured artifacts command.

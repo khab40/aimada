@@ -1,7 +1,7 @@
-.PHONY: help backend-test backend-dev frontend-dev serverless-benchmark serverless-build docker-up docker-down
+.PHONY: help backend-test backend-dev frontend-dev serverless-benchmark serverless-build serverless-push serverless-smoke docker-up docker-down
 
 help:
-	@printf "%s\n" "Targets: backend-test backend-dev frontend-dev serverless-benchmark serverless-build docker-up docker-down"
+	@printf "%s\n" "Targets: backend-test backend-dev frontend-dev serverless-benchmark serverless-build serverless-push serverless-smoke docker-up docker-down"
 
 backend-test:
 	cd backend && uv run pytest
@@ -17,6 +17,12 @@ serverless-benchmark:
 
 serverless-build:
 	./scripts/build-serverless-images.sh
+
+serverless-push:
+	PUSH=true ./scripts/build-serverless-images.sh
+
+serverless-smoke:
+	SMOKE=true ./scripts/build-serverless-images.sh
 
 docker-up:
 	docker compose up --build

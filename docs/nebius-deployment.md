@@ -86,7 +86,8 @@ python scripts/call_endpoint.py --base-url http://localhost:9000 --route orderbo
 For a real Nebius submission, build and push images first:
 
 ```bash
-PUSH=true GHCR_OWNER=<your-org> IMAGE_TAG=<tag> ./scripts/build-serverless-images.sh
+SMOKE=true IMAGE_NAMESPACE=ghcr.io/<your-org> TAG=<tag> ./scripts/build-serverless-images.sh
+PUSH=true IMAGE_NAMESPACE=ghcr.io/<your-org> TAG=<tag> ./scripts/build-serverless-images.sh
 ```
 
 Then create the endpoint and job:

@@ -46,24 +46,65 @@ NEBIUS_SCENARIO_GENERATOR_URL=http://localhost:9000/generate-scenario
 
 ## Container Build
 
-Build from repository root with the GitHub Container Registry namespace
-`khab40`:
+Build from repository root with the default GitHub Container Registry namespace
+`ghcr.io/khab40` and tag `latest`:
 
 ```bash
 ./scripts/build-serverless-images.sh
 ```
 
-Push after local build succeeds:
+Equivalent Make target:
+
+```bash
+make serverless-build
+```
+
+Run endpoint health and jobs 3-run smoke checks against locally loaded images:
+
+```bash
+SMOKE=true ./scripts/build-serverless-images.sh
+make serverless-smoke
+```
+
+Push images after local build/smoke succeeds:
 
 ```bash
 PUSH=true ./scripts/build-serverless-images.sh
+make serverless-push
 ```
 
-The script builds:
+The script options are environment variables:
+
+```bash
+IMAGE_NAMESPACE=ghcr.io/khab40
+TAG=latest
+ENDPOINT_IMAGE=ghcr.io/khab40/ai-market-abuse-detection-arena-endpoint:latest
+JOBS_IMAGE=ghcr.io/khab40/ai-market-abuse-detection-arena-jobs:latest
+PUSH=false
+PLATFORM=linux/amd64
+SMOKE=false
+```
+
+For example:
+
+```bash
+IMAGE_NAMESPACE=ghcr.io/<your-org> TAG=<tag> ./scripts/build-serverless-images.sh
+PUSH=true IMAGE_NAMESPACE=ghcr.io/<your-org> TAG=<tag> ./scripts/build-serverless-images.sh
+SMOKE=true IMAGE_NAMESPACE=ghcr.io/<your-org> TAG=<tag> ./scripts/build-serverless-images.sh
+```
+
+By default, the script builds:
 
 ```text
 ghcr.io/khab40/ai-market-abuse-detection-arena-endpoint:latest
 ghcr.io/khab40/ai-market-abuse-detection-arena-jobs:latest
+```
+
+Smoke checks:
+
+```text
+Endpoint: docker run endpoint image, call GET /health.
+Jobs: docker run jobs image with run_batch_experiments.py --runs 3 --batch-size 2.
 ```
 
 Equivalent manual commands:
