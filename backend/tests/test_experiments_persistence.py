@@ -3,6 +3,8 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 
+import yaml
+
 from app.api.routes_experiments import (
     AttackExperimentRequest,
     BenchmarkRunRequest,
@@ -456,10 +458,19 @@ def test_submit_nebius_without_real_config_persists_pending_job(tmp_path: Path) 
     assert job.batch_end == 3
     assert "not configured" in job.message
     assert (tmp_path / "experiments" / experiment.id / "attacks.jsonl").exists()
+    rendered_config_path = tmp_path / "experiments" / experiment.id / "nebius_job_config.rendered.yaml"
+    assert rendered_config_path.exists()
+    rendered_config = yaml.safe_load(rendered_config_path.read_text(encoding="utf-8"))
+    assert "--runs 3" in rendered_config["args"]
+    assert "--batch-size 2" in rendered_config["args"]
+    assert "--scenarios normal_market,spoofing" in rendered_config["args"]
+    assert rendered_config["outputs"]["directory"] == f"/job/outputs/experiments/{experiment.id}/local-batch"
+    assert job.artifact_paths["nebius_job_config"] == str(rendered_config_path)
     assert jobs == [job]
     assert refreshed_jobs[0].status == "real_nebius_pending"
     assert refreshed_experiment.status == "submitted"
     assert refreshed_experiment.smart_batch_id == job.job_id
+    assert refreshed_experiment.artifact_paths["nebius_job_config"] == str(rendered_config_path)
     assert observatory_response.experiment_jobs is not None
     assert observatory_response.experiment_jobs["status_counts"]["real_nebius_pending"] == 1
 

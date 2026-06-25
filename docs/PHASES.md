@@ -213,6 +213,7 @@ Deliverables:
 - `[done]` `/orderbook-alert` and `/investigation-report` endpoint contracts for smart detection and report generation
 - `[done]` `serverless/jobs/run_batch_experiments.py` for parallel attack/detect batches
 - `[done]` `serverless/jobs/nebius_job_config.yaml`
+- `[done]` `serverless/jobs/render_job_config.py` for experiment-specific Nebius job config rendering
 - `[done]` `serverless/endpoint/endpoint_config.yaml`
 - `[done]` reproducibility scripts under `scripts/`
 - `[done]` `Nebius Control Panel` UI tab with observatory widgets, attack scenario generation, smart detection/report actions, serverless batch runs, and artifact workbench access to benchmark outputs

@@ -43,6 +43,10 @@ class Settings(BaseSettings):
         default="meta-llama/Meta-Llama-3.1-8B-Instruct",
         validation_alias=AliasChoices("NEBIUS_MODEL", "NEBIUS_AI_MODEL"),
     )
+    nebius_job_image: str = Field(
+        default="ghcr.io/your-org/ai-market-abuse-detection-arena-jobs:latest",
+        alias="NEBIUS_JOB_IMAGE",
+    )
     arena_output_dir: Path = Field(default=Path("../outputs"), alias="ARENA_OUTPUT_DIR")
     arena_sample_data_dir: Path = Field(default=Path("../data/sample"), alias="ARENA_SAMPLE_DATA_DIR")
     google_client_id: str | None = Field(default=None, alias="GOOGLE_CLIENT_ID")

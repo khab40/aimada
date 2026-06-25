@@ -152,7 +152,13 @@ Outputs:
 - `generated_report.md`
 - `manifest.json`
 
-Configuration starts from `serverless/jobs/nebius_job_config.yaml`.
+Configuration starts from `serverless/jobs/nebius_job_config.yaml`. For
+Phase 4.5 experiments, `serverless/jobs/render_job_config.py` renders
+experiment-specific configs to
+`outputs/experiments/<experiment_id>/nebius_job_config.rendered.yaml`, overriding
+`runs`, `batch_size`, `scenarios`, the job output directory, and the job image
+repository/tag while still using the existing `serverless/jobs/Dockerfile` and
+`serverless/jobs/run_batch_experiments.py`.
 
 ## Phase 4.5 Experiment Flow
 
@@ -161,7 +167,7 @@ The managed experiment flow is available locally through FastAPI and the React U
 - `/nebius` Experiment Lab creates experiment manifests, generates attack manifests, runs local batches, aggregates outputs, and runs bounded mock/endpoint-backed investigations.
 - `/reports` lists experiments and shows the selected experiment summary, detector leaderboard, `benchmark_report.md`, investigation report files, `artifact_index.json`, canonical artifacts, and original `local-batch` files.
 - Local batch execution reuses `serverless/jobs/run_batch_experiments.py` and writes under `outputs/experiments/<experiment_id>/`.
-- `POST /api/experiments/{id}/submit-nebius` currently records a `real_nebius_pending` job record when real Nebius credentials/job execution are not configured.
+- `POST /api/experiments/{id}/submit-nebius` renders `nebius_job_config.rendered.yaml` and currently records a `real_nebius_pending` job record when real Nebius credentials/job execution are not configured.
 
 Real Nebius Serverless Job execution for Phase 4.5 is TODO until there is actual job submission code in `backend/app/experiments/nebius_orchestrator.py` plus archived Nebius job logs, metrics, and produced artifacts. Do not treat the local batch path or `real_nebius_pending` records as evidence of real cloud execution.
 

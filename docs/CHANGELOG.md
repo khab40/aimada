@@ -5,6 +5,13 @@ Update this file with each significant commit before pushing.
 
 ## Unreleased
 
+### Current - feat: render experiment Nebius job configs
+
+- Added `serverless/jobs/render_job_config.py` to render experiment-specific Nebius Serverless Job configs from the existing `serverless/jobs/nebius_job_config.yaml` template.
+- Supported overrides for runs, batch size, scenarios, job output directory, and job image repository/tag without adding parallel Dockerfiles or job templates.
+- Updated experiment `submit-nebius` to persist `outputs/experiments/<id>/nebius_job_config.rendered.yaml` and include it in job and experiment artifact paths while keeping real cloud execution marked pending.
+- Added tests for direct config rendering and experiment submission artifact generation.
+
 ### Current - feat: wire backend to deployed serverless endpoint
 
 - Extended backend `NebiusClient` to derive `/orderbook-alert`, `/investigation-report`, `/explain-event`, and `/generate-scenario` from `NEBIUS_ENDPOINT_BASE_URL`.

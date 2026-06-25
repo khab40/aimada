@@ -106,3 +106,23 @@ Outputs:
 - `detector_metrics.csv`
 - `generated_report.md`
 - `manifest.json`
+
+## Experiment Job Config Rendering
+
+Use the existing `serverless/jobs/nebius_job_config.yaml` as the template for
+real Nebius Serverless Job submission. Experiment-specific parameters are
+rendered with:
+
+```bash
+python serverless/jobs/render_job_config.py \
+  --experiment-id EXP-001 \
+  --runs 100 \
+  --batch-size 10 \
+  --scenarios normal_market,spoofing \
+  --image ghcr.io/your-org/ai-market-abuse-detection-arena-jobs:latest
+```
+
+The rendered config is written to
+`outputs/experiments/<experiment_id>/nebius_job_config.rendered.yaml` and
+overrides the runner args, scenarios, output directory, and image
+repository/tag without creating a parallel Dockerfile or job template.

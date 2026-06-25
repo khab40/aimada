@@ -1,5 +1,6 @@
+import importlib.util
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Callable, Literal
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
@@ -12,6 +13,7 @@ from app.experiments.repository import ExperimentRepository
 
 JobBackend = Literal["local_parallel_batch", "nebius_serverless_job"]
 JobStatus = Literal["queued", "running", "completed", "failed", "real_nebius_pending"]
+RenderJobConfig = Callable[..., Path]
 
 
 class ExperimentJobRecord(BaseModel):
@@ -42,6 +44,7 @@ class NebiusExperimentOrchestrator:
         attacks_path = artifact_dir / "attacks.jsonl"
         if not attacks_path.exists():
             generate_attack_manifest(experiment, artifact_dir)
+        rendered_config_path = self._render_job_config(experiment, artifact_dir)
 
         now = utc_now()
         job = ExperimentJobRecord(
@@ -59,6 +62,7 @@ class NebiusExperimentOrchestrator:
                 "experiment": str(artifact_dir / "experiment.json"),
                 "attacks": str(attacks_path),
                 "jobs": str(artifact_dir / "jobs.jsonl"),
+                "nebius_job_config": str(rendered_config_path),
             },
         )
         self._append_job(job)
@@ -70,6 +74,7 @@ class NebiusExperimentOrchestrator:
                     **experiment.artifact_paths,
                     "attacks": str(attacks_path),
                     "jobs": str(artifact_dir / "jobs.jsonl"),
+                    "nebius_job_config": str(rendered_config_path),
                 },
                 "updated_at": now,
             }
@@ -111,6 +116,23 @@ class NebiusExperimentOrchestrator:
     def _has_nebius_credentials(self) -> bool:
         return bool(self.settings and self.settings.nebius_api_key and self.settings.nebius_tenant_id)
 
+    def _render_job_config(self, experiment: Experiment, artifact_dir: Path) -> Path:
+        render_job_config = _load_render_job_config()
+        image = (
+            self.settings.nebius_job_image
+            if self.settings is not None
+            else "ghcr.io/your-org/ai-market-abuse-detection-arena-jobs:latest"
+        )
+        return render_job_config(
+            experiment_id=experiment.id,
+            runs=experiment.attack_count,
+            batch_size=experiment.batch_size,
+            scenarios=experiment.scenarios,
+            image=image,
+            output_dir=f"/job/outputs/experiments/{experiment.id}/local-batch",
+            rendered_path=artifact_dir / "nebius_job_config.rendered.yaml",
+        )
+
     def _append_job(self, job: ExperimentJobRecord) -> None:
         self.repository.store.append_jsonl(
             self._relative_jobs_path(job.experiment_id),
@@ -136,6 +158,26 @@ class NebiusExperimentOrchestrator:
 
     def _relative_jobs_path(self, experiment_id: str) -> str:
         return f"experiments/{experiment_id}/jobs.jsonl"
+
+
+def _load_render_job_config() -> RenderJobConfig:
+    repo_root = _repo_root()
+    module_path = repo_root / "serverless" / "jobs" / "render_job_config.py"
+    spec = importlib.util.spec_from_file_location("aimada_render_job_config", module_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"could not load Nebius job config renderer from {module_path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.render_job_config
+
+
+def _repo_root() -> Path:
+    here = Path(__file__).resolve()
+    candidates = [here.parents[3], here.parents[2], Path.cwd()]
+    for candidate in candidates:
+        if (candidate / "serverless" / "jobs" / "nebius_job_config.yaml").exists():
+            return candidate
+    return here.parents[3]
 
 
 def summarize_experiment_jobs(output_dir: Path) -> dict[str, Any] | None:
