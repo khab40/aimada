@@ -98,7 +98,14 @@ export type BenchmarkRunResponse = {
   artifact_paths: Record<string, string>;
 };
 
-export type ManagedExperimentStatus = "draft" | "manifest_generated" | "submitted" | "running" | "completed" | "failed";
+export type ManagedExperimentStatus =
+  | "draft"
+  | "manifest_generated"
+  | "submitted"
+  | "running"
+  | "completed"
+  | "failed"
+  | "cloud_artifacts_pending";
 export type ManagedExperimentMode = "mock" | "local_parallel_batch" | "real_nebius_pending";
 
 export type ManagedExperimentCreateRequest = {
@@ -161,6 +168,12 @@ export type ArtifactNormalizationResponse = {
   artifact_paths: Record<string, string>;
   copied_count: number;
   missing: string[];
+};
+
+export type NebiusArtifactCollectionResponse = ArtifactNormalizationResponse & {
+  status: "collected" | "cloud_artifacts_pending";
+  source_dir?: string | null;
+  message: string;
 };
 
 export type InvestigationRecord = {
@@ -677,6 +690,19 @@ export async function refreshManagedExperimentJobs(experimentId: string): Promis
   });
   if (!response.ok) {
     throw new Error(`Refresh experiment jobs failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function collectManagedExperimentNebiusArtifacts(
+  experimentId: string
+): Promise<NebiusArtifactCollectionResponse> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/experiments/${encodeURIComponent(experimentId)}/collect-nebius-artifacts`,
+    { method: "POST" }
+  );
+  if (!response.ok) {
+    throw new Error(`Collect Nebius experiment artifacts failed: ${response.status}`);
   }
   return response.json();
 }

@@ -32,8 +32,20 @@ class ArtifactNormalizationResponse(BaseModel):
 
 
 def normalize_local_batch_artifacts(experiment_id: str, artifact_dir: Path) -> ArtifactNormalizationResponse:
-    local_batch_dir = artifact_dir / "local-batch"
-    if not local_batch_dir.exists() or not local_batch_dir.is_dir():
+    return normalize_batch_artifacts(
+        experiment_id=experiment_id,
+        artifact_dir=artifact_dir,
+        source_dir=artifact_dir / "local-batch",
+    )
+
+
+def normalize_batch_artifacts(
+    *,
+    experiment_id: str,
+    artifact_dir: Path,
+    source_dir: Path,
+) -> ArtifactNormalizationResponse:
+    if not source_dir.exists() or not source_dir.is_dir():
         raise ValueError(f"local batch artifacts not found for experiment: {experiment_id}")
 
     entries: list[ArtifactIndexEntry] = []
@@ -42,7 +54,7 @@ def normalize_local_batch_artifacts(experiment_id: str, artifact_dir: Path) -> A
     copied_count = 0
 
     for key, (source_name, target_name) in ARTIFACT_MAPPINGS.items():
-        source = local_batch_dir / source_name
+        source = source_dir / source_name
         target = artifact_dir / target_name
         exists = source.exists() and source.is_file()
         if exists:
@@ -64,7 +76,7 @@ def normalize_local_batch_artifacts(experiment_id: str, artifact_dir: Path) -> A
     artifact_index = artifact_dir / "artifact_index.json"
     index_payload = {
         "experiment_id": experiment_id,
-        "source_dir": str(local_batch_dir),
+        "source_dir": str(source_dir),
         "artifact_dir": str(artifact_dir),
         "artifacts": [entry.model_dump(mode="json") for entry in entries],
         "missing": missing,

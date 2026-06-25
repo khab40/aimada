@@ -5,6 +5,13 @@ Update this file with each significant commit before pushing.
 
 ## Unreleased
 
+### Current - feat: collect Nebius job artifacts into experiment layout
+
+- Added `POST /api/experiments/{id}/collect-nebius-artifacts` to collect existing Nebius job output files from mounted output or the configured artifacts command.
+- Reused the Phase 4.5 artifact normalizer to copy/index only the expected job outputs into `events.jsonl`, `trades.jsonl`, `labels.jsonl`, `alerts.jsonl`, `detector_metrics.csv`, `benchmark_report.md`, `batch_manifest.json`, and `artifact_index.json`.
+- Added `cloud_artifacts_pending` experiment status for cases where cloud artifacts are not yet available instead of inventing placeholder outputs.
+- Added tests with fake mounted Nebius output directories and pending collection behavior.
+
 ### Current - feat: add real Nebius job submit adapter
 
 - Added command-template based real Nebius Serverless Job submission in `backend/app/experiments/nebius_orchestrator.py` using the existing rendered experiment job config.

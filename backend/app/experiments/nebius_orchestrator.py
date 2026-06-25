@@ -10,6 +10,11 @@ from uuid import uuid4
 from pydantic import BaseModel, Field
 
 from app.config import Settings
+from app.experiments.artifact_normalizer import (
+    ARTIFACT_MAPPINGS,
+    ArtifactNormalizationResponse,
+    normalize_batch_artifacts,
+)
 from app.experiments.attack_manifest import generate_attack_manifest
 from app.experiments.models import Experiment, utc_now
 from app.experiments.repository import ExperimentRepository
@@ -32,6 +37,17 @@ class ExperimentJobRecord(BaseModel):
     updated_at: str
     message: str
     artifact_paths: dict[str, str] = Field(default_factory=dict)
+
+
+class NebiusArtifactCollectionResponse(BaseModel):
+    experiment_id: str
+    status: Literal["collected", "cloud_artifacts_pending"]
+    source_dir: str | None = None
+    artifact_dir: str
+    artifact_paths: dict[str, str] = Field(default_factory=dict)
+    copied_count: int = 0
+    missing: list[str] = Field(default_factory=list)
+    message: str
 
 
 class NebiusExperimentOrchestrator:
@@ -163,6 +179,69 @@ class NebiusExperimentOrchestrator:
                 refreshed.append(job)
         self._write_jobs(experiment_id, refreshed)
         return refreshed
+
+    def collect_artifacts(self, experiment_id: str) -> NebiusArtifactCollectionResponse | None:
+        experiment = self.repository.get(experiment_id)
+        if experiment is None:
+            return None
+        artifact_dir = self.repository.experiment_dir(experiment.id)
+        rendered_config_path = Path(
+            experiment.artifact_paths.get("nebius_job_config", artifact_dir / "nebius_job_config.rendered.yaml")
+        )
+        context = self._command_context(experiment=experiment, rendered_config_path=rendered_config_path)
+        source_dir = self._find_mounted_output_dir(experiment, context)
+        command_message = ""
+
+        if source_dir is None:
+            artifacts_template = self._setting("nebius_job_artifacts_command_template")
+            if artifacts_template:
+                try:
+                    result = self._run_template_command(artifacts_template, context)
+                    artifact_dir.mkdir(parents=True, exist_ok=True)
+                    collection_stdout_path = artifact_dir / "nebius_artifact_collection_stdout.txt"
+                    collection_stdout_path.write_text(_redact(result.stdout), encoding="utf-8")
+                    source_dir = self._find_mounted_output_dir(experiment, context, command_output=result.stdout)
+                    command_message = "Artifact collection command executed."
+                except RuntimeError as exc:
+                    command_message = f"Artifact collection command failed: {_redact(str(exc))}"
+
+        if source_dir is None:
+            return self._mark_artifacts_pending(
+                experiment,
+                artifact_dir=artifact_dir,
+                message=command_message or "Nebius job artifacts are not available in the mounted output path yet.",
+            )
+
+        normalized = normalize_batch_artifacts(
+            experiment_id=experiment.id,
+            artifact_dir=artifact_dir,
+            source_dir=source_dir,
+        )
+        collected = not normalized.missing
+        updated = experiment.model_copy(
+            update={
+                "status": "completed" if collected else "cloud_artifacts_pending",
+                "artifact_paths": {**experiment.artifact_paths, **normalized.artifact_paths},
+                "updated_at": utc_now(),
+            }
+        )
+        self.repository.save(updated)
+        if collected:
+            self._mark_latest_cloud_job_completed(experiment.id, normalized.artifact_paths)
+        return NebiusArtifactCollectionResponse(
+            experiment_id=experiment.id,
+            status="collected" if collected else "cloud_artifacts_pending",
+            source_dir=str(source_dir),
+            artifact_dir=str(artifact_dir),
+            artifact_paths=normalized.artifact_paths,
+            copied_count=normalized.copied_count,
+            missing=normalized.missing,
+            message=(
+                "Nebius job artifacts collected into the experiment artifact layout."
+                if collected
+                else "Nebius job artifact collection found partial output; missing expected files remain."
+            ),
+        )
 
     def _refresh_submitted_job(self, job: ExperimentJobRecord, *, now: str) -> ExperimentJobRecord:
         experiment = self.repository.get(job.experiment_id)
@@ -326,6 +405,81 @@ class NebiusExperimentOrchestrator:
         path.write_text(_redact(result.stdout), encoding="utf-8")
         return path
 
+    def _find_mounted_output_dir(
+        self,
+        experiment: Experiment,
+        context: dict[str, str],
+        command_output: str | None = None,
+    ) -> Path | None:
+        artifact_dir = self.repository.experiment_dir(experiment.id)
+        candidates: list[Path] = [
+            artifact_dir / "local-batch",
+            artifact_dir / "nebius-job-output",
+            artifact_dir / "cloud-batch",
+            self._local_path_for_job_output_dir(context["output_dir"]),
+        ]
+        if command_output:
+            parsed = _parse_artifact_output_path(command_output)
+            if parsed is not None:
+                candidates.insert(0, parsed)
+                candidates.insert(0, self._local_path_for_job_output_dir(str(parsed)))
+
+        seen: set[Path] = set()
+        for candidate in candidates:
+            resolved = candidate.expanduser().resolve()
+            if resolved in seen:
+                continue
+            seen.add(resolved)
+            if _has_expected_artifact_files(resolved):
+                return resolved
+        return None
+
+    def _local_path_for_job_output_dir(self, output_dir: str) -> Path:
+        prefix = "/job/outputs/"
+        if output_dir.startswith(prefix):
+            return self.repository.store.output_dir / output_dir[len(prefix):]
+        return Path(output_dir)
+
+    def _mark_artifacts_pending(
+        self,
+        experiment: Experiment,
+        *,
+        artifact_dir: Path,
+        message: str,
+    ) -> NebiusArtifactCollectionResponse:
+        updated = experiment.model_copy(update={"status": "cloud_artifacts_pending", "updated_at": utc_now()})
+        self.repository.save(updated)
+        return NebiusArtifactCollectionResponse(
+            experiment_id=experiment.id,
+            status="cloud_artifacts_pending",
+            artifact_dir=str(artifact_dir),
+            message=message,
+            missing=[source for source, _target in ARTIFACT_MAPPINGS.values()],
+        )
+
+    def _mark_latest_cloud_job_completed(self, experiment_id: str, artifact_paths: dict[str, str]) -> None:
+        jobs = self._read_jobs(experiment_id)
+        if not jobs:
+            return
+        updated_jobs: list[ExperimentJobRecord] = []
+        marked = False
+        for job in reversed(jobs):
+            if not marked and job.backend == "nebius_serverless_job" and job.status in {"queued", "running"}:
+                updated_jobs.append(
+                    job.model_copy(
+                        update={
+                            "status": "completed",
+                            "updated_at": utc_now(),
+                            "message": "Nebius job artifacts collected from mounted output.",
+                            "artifact_paths": {**job.artifact_paths, **artifact_paths},
+                        }
+                    )
+                )
+                marked = True
+            else:
+                updated_jobs.append(job)
+        self._write_jobs(experiment_id, list(reversed(updated_jobs)))
+
     def _append_job(self, job: ExperimentJobRecord) -> None:
         self.repository.store.append_jsonl(
             self._relative_jobs_path(job.experiment_id),
@@ -415,6 +569,29 @@ def _parse_job_status(output: str) -> JobStatus | None:
     if match:
         return _normalize_job_status(match.group(1))
     return _normalize_job_status(text)
+
+
+def _parse_artifact_output_path(output: str) -> Path | None:
+    text = output.strip()
+    if not text:
+        return None
+    parsed = _parse_json_object(text)
+    if parsed is not None:
+        for key in ("output_dir", "artifact_dir", "artifacts_dir", "path"):
+            value = parsed.get(key)
+            if isinstance(value, str) and value.strip():
+                return Path(value.strip())
+    first_line = text.splitlines()[0].strip()
+    if first_line:
+        return Path(first_line)
+    return None
+
+
+def _has_expected_artifact_files(path: Path) -> bool:
+    if not path.exists() or not path.is_dir():
+        return False
+    expected_names = [source for source, _target in ARTIFACT_MAPPINGS.values()]
+    return any((path / name).is_file() for name in expected_names)
 
 
 def _normalize_job_status(value: str) -> JobStatus | None:

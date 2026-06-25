@@ -9,6 +9,7 @@ from app.api.routes_experiments import (
     AttackExperimentRequest,
     BenchmarkRunRequest,
     aggregate_experiment_outputs,
+    collect_experiment_nebius_artifacts,
     create_experiment,
     delete_experiment,
     generate_experiment_attack_manifest,
@@ -323,6 +324,76 @@ def test_normalize_artifacts_copies_fake_local_batch_outputs(tmp_path: Path) -> 
     assert refreshed.artifact_paths["artifact_index"] == str(tmp_path / "experiments" / experiment.id / "artifact_index.json")
 
 
+def test_collect_nebius_artifacts_from_fake_mounted_output(tmp_path: Path) -> None:
+    request = _request(tmp_path)
+    experiment = create_experiment(
+        ExperimentCreateRequest(
+            name="Collect Nebius artifacts",
+            attack_count=3,
+            batch_size=2,
+            scenarios=["normal_market", "spoofing"],
+            seed=61,
+            nebius_mode="real_nebius_pending",
+        ),
+        request,
+    )
+    mounted_output_dir = tmp_path / "experiments" / experiment.id / "local-batch"
+    mounted_output_dir.mkdir(parents=True)
+    fake_files = {
+        "order_book_events.jsonl": '{"event":"cloud-book"}\n',
+        "trades.jsonl": '{"trade":"cloud-t1"}\n',
+        "attack_labels.jsonl": '{"label":"cloud-spoofing"}\n',
+        "blue_team_alerts.jsonl": '{"alert":"cloud-a1"}\n',
+        "detector_metrics.csv": "scenario,runs,alerts,precision,recall,f1,avg_detection_latency_ms\nspoofing,1,1,1,1,1,500\n",
+        "generated_report.md": "# Cloud Report\n",
+        "manifest.json": '{"runs":3}\n',
+    }
+    for name, content in fake_files.items():
+        (mounted_output_dir / name).write_text(content, encoding="utf-8")
+
+    response = collect_experiment_nebius_artifacts(experiment.id, request)
+    refreshed = get_experiment(experiment.id, request)
+    artifact_dir = tmp_path / "experiments" / experiment.id
+    artifact_index = json.loads((artifact_dir / "artifact_index.json").read_text(encoding="utf-8"))
+
+    assert response.status == "collected"
+    assert response.source_dir == str(mounted_output_dir.resolve())
+    assert response.copied_count == 7
+    assert response.missing == []
+    assert refreshed.status == "completed"
+    assert (artifact_dir / "events.jsonl").read_text(encoding="utf-8") == '{"event":"cloud-book"}\n'
+    assert (artifact_dir / "trades.jsonl").read_text(encoding="utf-8") == '{"trade":"cloud-t1"}\n'
+    assert (artifact_dir / "labels.jsonl").read_text(encoding="utf-8") == '{"label":"cloud-spoofing"}\n'
+    assert (artifact_dir / "alerts.jsonl").read_text(encoding="utf-8") == '{"alert":"cloud-a1"}\n'
+    assert (artifact_dir / "benchmark_report.md").read_text(encoding="utf-8") == "# Cloud Report\n"
+    assert (artifact_dir / "batch_manifest.json").read_text(encoding="utf-8") == '{"runs":3}\n'
+    assert artifact_index["source_dir"] == str(mounted_output_dir.resolve())
+    assert refreshed.artifact_paths["artifact_index"] == str(artifact_dir / "artifact_index.json")
+
+
+def test_collect_nebius_artifacts_marks_pending_when_unavailable(tmp_path: Path) -> None:
+    request = _request(tmp_path)
+    experiment = create_experiment(
+        ExperimentCreateRequest(
+            name="Pending cloud artifacts",
+            attack_count=3,
+            batch_size=2,
+            scenarios=["normal_market", "spoofing"],
+            seed=62,
+            nebius_mode="real_nebius_pending",
+        ),
+        request,
+    )
+
+    response = collect_experiment_nebius_artifacts(experiment.id, request)
+    refreshed = get_experiment(experiment.id, request)
+
+    assert response.status == "cloud_artifacts_pending"
+    assert response.copied_count == 0
+    assert "order_book_events.jsonl" in response.missing
+    assert refreshed.status == "cloud_artifacts_pending"
+
+
 def test_run_investigations_uses_mocked_nebius_client_for_top_alerts(tmp_path: Path) -> None:
     request = _request(tmp_path)
     experiment = create_experiment(
@@ -492,6 +563,7 @@ def test_managed_experiment_routes_are_registered_on_experiment_api() -> None:
     assert ("POST", "/api/experiments/{experiment_id}/submit-nebius") in routes
     assert ("GET", "/api/experiments/{experiment_id}/jobs") in routes
     assert ("POST", "/api/experiments/{experiment_id}/refresh-jobs") in routes
+    assert ("POST", "/api/experiments/{experiment_id}/collect-nebius-artifacts") in routes
     assert ("GET", "/api/experiments/{experiment_id}") in routes
     assert ("DELETE", "/api/experiments/{experiment_id}") in routes
 

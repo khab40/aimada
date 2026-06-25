@@ -4,7 +4,15 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 
-ExperimentStatus = Literal["draft", "manifest_generated", "submitted", "running", "completed", "failed"]
+ExperimentStatus = Literal[
+    "draft",
+    "manifest_generated",
+    "submitted",
+    "running",
+    "completed",
+    "failed",
+    "cloud_artifacts_pending",
+]
 NebiusMode = Literal["mock", "local_parallel_batch", "real_nebius_pending"]
 
 

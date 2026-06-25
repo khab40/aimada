@@ -23,7 +23,11 @@ from app.experiments.models import (
     ExperimentDeleteResponse,
     ExperimentLocalBatchRunResponse,
 )
-from app.experiments.nebius_orchestrator import ExperimentJobRecord, NebiusExperimentOrchestrator
+from app.experiments.nebius_orchestrator import (
+    ExperimentJobRecord,
+    NebiusArtifactCollectionResponse,
+    NebiusExperimentOrchestrator,
+)
 from app.experiments.repository import ExperimentRepository
 from app.nebius.client import NebiusClient
 from app.schemas.arena import AttackTrackerState, BenchmarkResult, MarketRegime
@@ -478,6 +482,20 @@ def refresh_experiment_jobs(experiment_id: str, request: Request) -> list[Experi
     if jobs is None:
         raise HTTPException(status_code=404, detail=f"unknown experiment: {experiment_id}")
     return jobs
+
+
+@router.post("/{experiment_id}/collect-nebius-artifacts", response_model=NebiusArtifactCollectionResponse)
+def collect_experiment_nebius_artifacts(
+    experiment_id: str,
+    request: Request,
+) -> NebiusArtifactCollectionResponse:
+    try:
+        response = _nebius_orchestrator(request).collect_artifacts(experiment_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if response is None:
+        raise HTTPException(status_code=404, detail=f"unknown experiment: {experiment_id}")
+    return response
 
 
 @router.get("/reports", response_model=ReportsSummary)
