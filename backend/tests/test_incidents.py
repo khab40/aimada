@@ -1,11 +1,12 @@
 import asyncio
 import json
 from typing import Any
+from urllib.error import URLError
 
 from app.api.routes_incidents import build_compact_replay_payload, persist_explanation_result
 from app.arena.engine import SimulationEngine
 from app.config import get_settings
-from app.nebius.client import NebiusClient
+from app.nebius.client import InvestigationReportRequest, NebiusClient, OrderBookAlertRequest
 from app.storage.local_store import LocalStore
 
 
@@ -195,19 +196,50 @@ def test_nebius_client_generates_mock_red_team_scenario_without_endpoint() -> No
     assert scenario.fallback_reason == "NEBIUS_SCENARIO_GENERATOR_URL is not configured"
 
 
-def test_nebius_client_status_reports_cli_shape() -> None:
-    status = NebiusClient().integration_status()
+def test_nebius_client_status_reports_cli_shape(monkeypatch: Any) -> None:
+    monkeypatch.setenv("NEBIUS_ENDPOINT_BASE_URL", "")
+    get_settings.cache_clear()
+
+    try:
+        status = NebiusClient().integration_status()
+    finally:
+        get_settings.cache_clear()
 
     assert isinstance(status.cli_installed, bool)
     assert isinstance(status.tenant_id_configured, bool)
     assert isinstance(status.incident_explainer_configured, bool)
+    assert isinstance(status.orderbook_alert_configured, bool)
+    assert isinstance(status.investigation_report_configured, bool)
 
 
 def test_nebius_endpoint_base_url_derives_backend_routes(monkeypatch: Any) -> None:
     monkeypatch.setenv("NEBIUS_ENDPOINT_BASE_URL", "https://nebius-endpoint.example")
     monkeypatch.setenv("NEBIUS_INCIDENT_EXPLAINER_URL", "")
     monkeypatch.setenv("NEBIUS_SCENARIO_GENERATOR_URL", "")
+    monkeypatch.setenv("NEBIUS_ORDERBOOK_ALERT_URL", "")
+    monkeypatch.setenv("NEBIUS_INVESTIGATION_REPORT_URL", "")
+    monkeypatch.setenv("NEBIUS_API_KEY", "test-token")
     get_settings.cache_clear()
+
+    captured: dict[str, Any] = {}
+
+    class FakeHealthResponse:
+        def __enter__(self) -> "FakeHealthResponse":
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+        def read(self) -> bytes:
+            return json.dumps({"status": "ok", "endpoint_mode": "ai"}).encode("utf-8")
+
+    def fake_urlopen(request: Any, timeout: float) -> FakeHealthResponse:
+        captured["url"] = request.full_url
+        captured["method"] = request.get_method()
+        captured["authorization"] = request.get_header("Authorization")
+        return FakeHealthResponse()
+
+    monkeypatch.setattr("app.nebius.client.urlopen", fake_urlopen)
 
     try:
         client = NebiusClient()
@@ -215,7 +247,158 @@ def test_nebius_endpoint_base_url_derives_backend_routes(monkeypatch: Any) -> No
 
         assert client.incident_explainer_url == "https://nebius-endpoint.example/explain-event"
         assert client.scenario_generator_url == "https://nebius-endpoint.example/generate-scenario"
+        assert client.orderbook_alert_url == "https://nebius-endpoint.example/orderbook-alert"
+        assert client.investigation_report_url == "https://nebius-endpoint.example/investigation-report"
         assert status.incident_explainer_configured is True
         assert status.scenario_generator_configured is True
+        assert status.orderbook_alert_configured is True
+        assert status.investigation_report_configured is True
+        assert status.endpoint_base_url_configured is True
+        assert status.endpoint_health == {"status": "ok", "endpoint_mode": "ai"}
+        assert captured["url"] == "https://nebius-endpoint.example/health"
+        assert captured["method"] == "GET"
+        assert captured["authorization"] == "Bearer test-token"
     finally:
         get_settings.cache_clear()
+
+
+def test_nebius_endpoint_explicit_urls_override_base_url(monkeypatch: Any) -> None:
+    monkeypatch.setenv("NEBIUS_ENDPOINT_BASE_URL", "https://base.example")
+    monkeypatch.setenv("NEBIUS_INCIDENT_EXPLAINER_URL", "https://override.example/explain")
+    monkeypatch.setenv("NEBIUS_SCENARIO_GENERATOR_URL", "https://override.example/scenario")
+    monkeypatch.setenv("NEBIUS_ORDERBOOK_ALERT_URL", "https://override.example/orderbook")
+    monkeypatch.setenv("NEBIUS_INVESTIGATION_REPORT_URL", "https://override.example/report")
+    get_settings.cache_clear()
+
+    try:
+        client = NebiusClient()
+
+        assert client.incident_explainer_url == "https://override.example/explain"
+        assert client.scenario_generator_url == "https://override.example/scenario"
+        assert client.orderbook_alert_url == "https://override.example/orderbook"
+        assert client.investigation_report_url == "https://override.example/report"
+    finally:
+        get_settings.cache_clear()
+
+
+def test_nebius_client_posts_orderbook_alert_to_deployed_endpoint(monkeypatch: Any) -> None:
+    captured: dict[str, Any] = {}
+
+    class FakeResponse:
+        def __enter__(self) -> "FakeResponse":
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+        def read(self) -> bytes:
+            return json.dumps(
+                {
+                    "suspicion_score": 0.82,
+                    "detected_pattern": "spoofing_like_wall",
+                    "confidence": 0.8,
+                    "reasons": ["synthetic wall"],
+                    "recommended_action": "review replay",
+                }
+            ).encode("utf-8")
+
+    def fake_urlopen(request: Any, timeout: float) -> FakeResponse:
+        captured["url"] = request.full_url
+        captured["method"] = request.get_method()
+        captured["authorization"] = request.get_header("Authorization")
+        captured["payload"] = json.loads(request.data.decode("utf-8"))
+        return FakeResponse()
+
+    monkeypatch.setattr("app.nebius.client.urlopen", fake_urlopen)
+
+    response = NebiusClient(
+        orderbook_alert_url="https://endpoint.example/orderbook-alert",
+        api_key="test-token",
+        timeout_seconds=1.25,
+    ).detect_orderbook_alert(
+        OrderBookAlertRequest(
+            bids=[{"price": 100.0, "quantity": 20.0}],
+            asks=[{"price": 101.0, "quantity": 2.0}],
+            features={"wall_size_ratio": 8.5},
+            scenario_hint="spoofing",
+            tick=42,
+        )
+    )
+
+    assert captured["url"] == "https://endpoint.example/orderbook-alert"
+    assert captured["method"] == "POST"
+    assert captured["authorization"] == "Bearer test-token"
+    assert captured["payload"]["tick"] == 42
+    assert response.mode == "nebius"
+    assert response.endpoint == "https://endpoint.example/orderbook-alert"
+    assert response.detected_pattern == "spoofing_like_wall"
+    assert response.reasons == ["synthetic wall"]
+
+
+def test_nebius_client_posts_investigation_report_to_deployed_endpoint(monkeypatch: Any) -> None:
+    captured: dict[str, Any] = {}
+
+    class FakeResponse:
+        def __enter__(self) -> "FakeResponse":
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+        def read(self) -> bytes:
+            return json.dumps(
+                {
+                    "title": "Endpoint report",
+                    "summary": "Endpoint summary",
+                    "timeline": ["alert created"],
+                    "detector_findings": ["high confidence"],
+                    "limitations": ["synthetic only"],
+                    "recommended_next_steps": ["review artifacts"],
+                }
+            ).encode("utf-8")
+
+    def fake_urlopen(request: Any, timeout: float) -> FakeResponse:
+        captured["url"] = request.full_url
+        captured["method"] = request.get_method()
+        captured["authorization"] = request.get_header("Authorization")
+        captured["payload"] = json.loads(request.data.decode("utf-8"))
+        return FakeResponse()
+
+    monkeypatch.setattr("app.nebius.client.urlopen", fake_urlopen)
+
+    response = NebiusClient(
+        investigation_report_url="https://endpoint.example/investigation-report",
+        api_key="test-token",
+    ).investigation_report(
+        InvestigationReportRequest(
+            scenario_trace={"scenario": "spoofing"},
+            alerts=[{"confidence": 0.92}],
+            metrics={"precision": 0.9},
+        )
+    )
+
+    assert captured["url"] == "https://endpoint.example/investigation-report"
+    assert captured["method"] == "POST"
+    assert captured["authorization"] == "Bearer test-token"
+    assert captured["payload"]["scenario_trace"]["scenario"] == "spoofing"
+    assert response.mode == "nebius"
+    assert response.endpoint == "https://endpoint.example/investigation-report"
+    assert response.title == "Endpoint report"
+
+
+def test_nebius_client_falls_back_when_deployed_endpoint_fails(monkeypatch: Any) -> None:
+    def fake_urlopen(request: Any, timeout: float) -> None:
+        raise URLError("down")
+
+    monkeypatch.setattr("app.nebius.client.urlopen", fake_urlopen)
+
+    response = NebiusClient(
+        orderbook_alert_url="https://endpoint.example/orderbook-alert",
+        timeout_seconds=0.01,
+    ).detect_orderbook_alert(
+        OrderBookAlertRequest(features={"wall_size_ratio": 8.5}, scenario_hint="spoofing")
+    )
+
+    assert response.mode == "mock"
+    assert response.fallback_reason is not None
+    assert "Nebius order-book alert fallback" in response.fallback_reason

@@ -109,8 +109,12 @@ class NebiusIntegrationStatus(BaseModel):
     tenant_id_configured: bool
     incident_explainer_configured: bool
     scenario_generator_configured: bool
+    orderbook_alert_configured: bool
+    investigation_report_configured: bool
     api_key_configured: bool
     endpoint_mode: str
+    endpoint_base_url_configured: bool
+    endpoint_health: dict[str, Any] | None = None
     base_url_configured: bool
     model_configured: bool
     cli_installed: bool
@@ -123,6 +127,8 @@ class NebiusClient:
         self,
         incident_explainer_url: str | None = None,
         scenario_generator_url: str | None = None,
+        orderbook_alert_url: str | None = None,
+        investigation_report_url: str | None = None,
         api_key: str | None = None,
         timeout_seconds: float = 5.0,
     ) -> None:
@@ -136,6 +142,16 @@ class NebiusClient:
             scenario_generator_url
             if scenario_generator_url is not None
             else settings.nebius_scenario_endpoint_url
+        )
+        self.orderbook_alert_url = (
+            orderbook_alert_url
+            if orderbook_alert_url is not None
+            else settings.nebius_orderbook_alert_endpoint_url
+        )
+        self.investigation_report_url = (
+            investigation_report_url
+            if investigation_report_url is not None
+            else settings.nebius_investigation_report_endpoint_url
         )
         self.api_key = api_key if api_key is not None else settings.nebius_api_key
         self.timeout_seconds = timeout_seconds
@@ -180,25 +196,29 @@ class NebiusClient:
             )
 
     def detect_orderbook_alert(self, request: OrderBookAlertRequest) -> OrderBookAlertResponse:
-        url = self._endpoint_url("/orderbook-alert")
-        if not url:
-            return self._mock_orderbook_alert(request, reason="NEBIUS_ENDPOINT_BASE_URL is not configured")
+        if not self.orderbook_alert_url:
+            return self._mock_orderbook_alert(
+                request,
+                reason="NEBIUS_ORDERBOOK_ALERT_URL or NEBIUS_ENDPOINT_BASE_URL is not configured",
+            )
         try:
-            response = self._post_json(url, request.model_dump(mode="json"))
-            return self._parse_orderbook_alert_response(response)
+            response = self._post_json(self.orderbook_alert_url, request.model_dump(mode="json"))
+            return self._parse_orderbook_alert_response(response, endpoint=self.orderbook_alert_url)
         except (HTTPError, URLError, TimeoutError, json.JSONDecodeError, ValueError) as exc:
             return self._mock_orderbook_alert(request, reason=f"Nebius order-book alert fallback: {exc}")
 
     def investigation_report(self, request: InvestigationReportRequest) -> InvestigationReportResponse:
-        url = self._endpoint_url("/investigation-report")
-        if not url:
+        if not self.investigation_report_url:
             return self._mock_investigation_report(
                 request,
-                reason="NEBIUS_ENDPOINT_BASE_URL is not configured",
+                reason="NEBIUS_INVESTIGATION_REPORT_URL or NEBIUS_ENDPOINT_BASE_URL is not configured",
             )
         try:
-            response = self._post_json(url, request.model_dump(mode="json"))
-            return self._parse_investigation_report_response(response)
+            response = self._post_json(self.investigation_report_url, request.model_dump(mode="json"))
+            return self._parse_investigation_report_response(
+                response,
+                endpoint=self.investigation_report_url,
+            )
         except (HTTPError, URLError, TimeoutError, json.JSONDecodeError, ValueError) as exc:
             return self._mock_investigation_report(
                 request,
@@ -226,14 +246,46 @@ class NebiusClient:
             tenant_id_configured=bool(settings.nebius_tenant_id),
             incident_explainer_configured=bool(settings.nebius_explain_endpoint_url),
             scenario_generator_configured=bool(settings.nebius_scenario_endpoint_url),
+            orderbook_alert_configured=bool(settings.nebius_orderbook_alert_endpoint_url),
+            investigation_report_configured=bool(settings.nebius_investigation_report_endpoint_url),
             api_key_configured=bool(settings.nebius_api_key),
             endpoint_mode=settings.nebius_endpoint_mode,
+            endpoint_base_url_configured=bool(settings.nebius_endpoint_base_url),
+            endpoint_health=self.endpoint_health(),
             base_url_configured=bool(settings.nebius_base_url),
             model_configured=bool(settings.nebius_model),
             cli_installed=bool(cli_path),
             cli_path=cli_path,
             cli_version=cli_version,
         )
+
+    def endpoint_health(self) -> dict[str, Any] | None:
+        settings = get_settings()
+        if not settings.nebius_endpoint_base_url:
+            return None
+        health_url = settings.nebius_endpoint_url("/health")
+        if not health_url:
+            return None
+        try:
+            return self._get_json(health_url)
+        except (HTTPError, URLError, TimeoutError, json.JSONDecodeError, ValueError) as exc:
+            return {
+                "status": "unreachable",
+                "url_configured": True,
+                "fallback_reason": f"endpoint health probe failed: {exc}",
+            }
+
+    def _get_json(self, url: str) -> dict[str, Any]:
+        headers: dict[str, str] = {}
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
+        request = Request(url, headers=headers, method="GET")
+        with urlopen(request, timeout=self.timeout_seconds) as response:
+            body = response.read().decode("utf-8")
+            decoded = json.loads(body)
+            if not isinstance(decoded, dict):
+                raise ValueError("Nebius endpoint returned a non-object JSON response")
+            return decoded
 
     def _post_json(self, url: str, payload: dict[str, Any]) -> dict[str, Any]:
         headers = {"Content-Type": "application/json"}
@@ -251,10 +303,6 @@ class NebiusClient:
             if not isinstance(decoded, dict):
                 raise ValueError("Nebius endpoint returned a non-object JSON response")
             return decoded
-
-    def _endpoint_url(self, path: str) -> str | None:
-        settings = get_settings()
-        return settings.nebius_endpoint_url(path)
 
     def _incident_payload(
         self,
@@ -339,7 +387,12 @@ class NebiusClient:
             raw_response=response,
         )
 
-    def _parse_orderbook_alert_response(self, response: dict[str, Any]) -> OrderBookAlertResponse:
+    def _parse_orderbook_alert_response(
+        self,
+        response: dict[str, Any],
+        *,
+        endpoint: str,
+    ) -> OrderBookAlertResponse:
         reasons = response.get("reasons", [])
         if isinstance(reasons, str):
             reasons = [reasons]
@@ -349,7 +402,7 @@ class NebiusClient:
         confidence = _bounded_float(response.get("confidence"), suspicion_score)
         return OrderBookAlertResponse(
             mode="nebius",
-            endpoint="Nebius Serverless AI Endpoint /orderbook-alert",
+            endpoint=endpoint,
             suspicion_score=suspicion_score,
             detected_pattern=str(response.get("detected_pattern") or "unknown"),
             confidence=confidence,
@@ -361,10 +414,12 @@ class NebiusClient:
     def _parse_investigation_report_response(
         self,
         response: dict[str, Any],
+        *,
+        endpoint: str,
     ) -> InvestigationReportResponse:
         return InvestigationReportResponse(
             mode="nebius",
-            endpoint="Nebius Serverless AI Endpoint /investigation-report",
+            endpoint=endpoint,
             title=str(response.get("title") or "Synthetic investigation report"),
             summary=str(response.get("summary") or "Nebius endpoint returned a report."),
             timeline=_string_list(response.get("timeline")),

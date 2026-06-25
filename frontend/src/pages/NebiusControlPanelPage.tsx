@@ -493,12 +493,16 @@ export function NebiusControlPanelPage() {
 
 function runtimeFrom(status: NebiusStatus, observatory: NebiusObservatory): NebiusRuntimeStatus {
   const latest = observatory.latest_batch;
+  const endpointConfigured = status.incident_explainer_configured
+    || status.scenario_generator_configured
+    || status.orderbook_alert_configured
+    || status.investigation_report_configured;
   return {
     activeSimulation: latest ? String(latest.scenarios ?? "Nebius batch") : "Spoofing Attack #042",
-    aiEndpointStatus: status.incident_explainer_configured || status.scenario_generator_configured ? "ready" : "ready",
+    aiEndpointStatus: endpointConfigured ? "ready" : "ready",
     cloudStatus: status.cli_installed || status.api_key_configured ? "online" : "degraded",
     eventsPerSecond: 1250,
-    mode: status.incident_explainer_configured || status.scenario_generator_configured ? "nebius-cloud" : "local",
+    mode: endpointConfigured ? "nebius-cloud" : "local",
     region: "eu-north1",
     runningAgents: 24,
     serverlessStatus: latest ? "idle" : "idle",

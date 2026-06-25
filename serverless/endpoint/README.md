@@ -94,8 +94,12 @@ curl -X POST http://localhost:9000/orderbook-alert \
 After deployment, set backend env:
 
 ```bash
+NEBIUS_ENDPOINT_BASE_URL=http://<endpoint>
+# Optional per-route overrides:
 NEBIUS_INCIDENT_EXPLAINER_URL=http://<endpoint>/explain-event
 NEBIUS_SCENARIO_GENERATOR_URL=http://<endpoint>/generate-scenario
+NEBIUS_ORDERBOOK_ALERT_URL=http://<endpoint>/orderbook-alert
+NEBIUS_INVESTIGATION_REPORT_URL=http://<endpoint>/investigation-report
 NEBIUS_API_KEY=<optional endpoint token>
 ```
 

@@ -26,6 +26,14 @@ class Settings(BaseSettings):
         default=None,
         alias="NEBIUS_SCENARIO_GENERATOR_URL",
     )
+    nebius_orderbook_alert_url: str | None = Field(
+        default=None,
+        alias="NEBIUS_ORDERBOOK_ALERT_URL",
+    )
+    nebius_investigation_report_url: str | None = Field(
+        default=None,
+        alias="NEBIUS_INVESTIGATION_REPORT_URL",
+    )
     nebius_endpoint_mode: str = Field(default="mock", alias="NEBIUS_ENDPOINT_MODE")
     nebius_base_url: str = Field(
         default="https://api.tokenfactory.nebius.com/v1/",
@@ -99,6 +107,14 @@ class Settings(BaseSettings):
     @property
     def nebius_scenario_endpoint_url(self) -> str | None:
         return self.nebius_scenario_generator_url or self.nebius_endpoint_url("/generate-scenario")
+
+    @property
+    def nebius_orderbook_alert_endpoint_url(self) -> str | None:
+        return self.nebius_orderbook_alert_url or self.nebius_endpoint_url("/orderbook-alert")
+
+    @property
+    def nebius_investigation_report_endpoint_url(self) -> str | None:
+        return self.nebius_investigation_report_url or self.nebius_endpoint_url("/investigation-report")
 
     def nebius_endpoint_url(self, path: str) -> str | None:
         if not self.nebius_endpoint_base_url:

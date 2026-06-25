@@ -216,9 +216,11 @@ Set these on the backend container or backend Docker Compose environment:
 | Variable | Required | Purpose |
 | --- | --- | --- |
 | `NEBIUS_TENANT_ID` | recommended | Tenant metadata shown by `/api/nebius/status`. |
-| `NEBIUS_ENDPOINT_BASE_URL` | yes for real endpoint | Base URL for the deployed endpoint. The backend derives `/explain-event` and `/generate-scenario`. |
+| `NEBIUS_ENDPOINT_BASE_URL` | yes for real endpoint | Base URL for the deployed endpoint. The backend derives `/explain-event`, `/generate-scenario`, `/orderbook-alert`, and `/investigation-report`. |
 | `NEBIUS_INCIDENT_EXPLAINER_URL` | no | Explicit full URL override for `/explain-event`. |
 | `NEBIUS_SCENARIO_GENERATOR_URL` | no | Explicit full URL override for `/generate-scenario`. |
+| `NEBIUS_ORDERBOOK_ALERT_URL` | no | Explicit full URL override for `/orderbook-alert`. |
+| `NEBIUS_INVESTIGATION_REPORT_URL` | no | Explicit full URL override for `/investigation-report`. |
 | `NEBIUS_API_KEY` | optional | Bearer token if the deployed endpoint requires auth. |
 | `ARENA_OUTPUT_DIR` | no | Local/output artifact path. |
 | `LOG_LEVEL` | no | Backend logging level. |
@@ -230,6 +232,8 @@ NEBIUS_TENANT_ID=tenant-e00ek8wmcr5jzwfa9k
 NEBIUS_ENDPOINT_BASE_URL=http://<nebius-endpoint>
 NEBIUS_API_KEY=<endpoint-auth-token-if-used>
 ```
+
+`/api/nebius/status` and `/api/nebius/observatory` report whether the base URL, order-book alert route, investigation-report route, endpoint mode, and endpoint `/health` probe are configured. If the endpoint is unavailable, backend calls fall back to mock responses instead of failing the demo path.
 
 ### Frontend
 

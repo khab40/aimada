@@ -372,8 +372,12 @@ export type NebiusStatus = {
   tenant_id_configured: boolean;
   incident_explainer_configured: boolean;
   scenario_generator_configured: boolean;
+  orderbook_alert_configured: boolean;
+  investigation_report_configured: boolean;
   api_key_configured: boolean;
   endpoint_mode?: string;
+  endpoint_base_url_configured?: boolean;
+  endpoint_health?: Record<string, unknown> | null;
   base_url_configured?: boolean;
   model_configured?: boolean;
   cli_installed: boolean;
@@ -466,6 +470,11 @@ export type NebiusObservatory = {
     job_artifacts: string[];
     evidence_status: "mock" | "local" | "nebius_needed";
   };
+  endpoint_base_url_configured: boolean;
+  orderbook_alert_configured: boolean;
+  investigation_report_configured: boolean;
+  endpoint_health?: Record<string, unknown> | null;
+  endpoint_mode: string;
   screenshots: { title: string; status: string; path: string }[];
   benchmark_artifacts: Record<string, string>;
   latest_batch?: Record<string, unknown> | null;

@@ -5,6 +5,14 @@ Update this file with each significant commit before pushing.
 
 ## Unreleased
 
+### Current - feat: wire backend to deployed serverless endpoint
+
+- Extended backend `NebiusClient` to derive `/orderbook-alert`, `/investigation-report`, `/explain-event`, and `/generate-scenario` from `NEBIUS_ENDPOINT_BASE_URL`.
+- Added explicit `NEBIUS_ORDERBOOK_ALERT_URL` and `NEBIUS_INVESTIGATION_REPORT_URL` route overrides alongside the existing incident and scenario overrides.
+- Kept Bearer-token forwarding with `NEBIUS_API_KEY`, timeout handling, and mock fallback behavior for unavailable deployed endpoints.
+- Added endpoint `/health` probing plus endpoint base/order-book/investigation/mode metadata to `/api/nebius/status` and `/api/nebius/observatory`.
+- Added mocked HTTP tests for route derivation, explicit overrides, Bearer auth, deployed order-book/investigation calls, and fallback on endpoint failure.
+
 ### Current - fix: harden serverless Nebius endpoint fallback behavior
 
 - Added `/ready` to the existing serverless endpoint app and expanded `/health` with endpoint mode, active model mode, model name, and sanitized credential readiness metadata.
