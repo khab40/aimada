@@ -12,6 +12,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 
+from app.experiments.artifact_normalizer import ArtifactNormalizationResponse
 from app.experiments.attack_manifest import AttackManifestResponse
 from app.experiments.manager import ExperimentManager
 from app.experiments.models import (
@@ -353,6 +354,17 @@ def run_experiment_local_batch(experiment_id: str, request: Request) -> Experime
         raise HTTPException(status_code=404, detail=f"unknown experiment: {experiment_id}")
     if response.status == "failed":
         raise HTTPException(status_code=502, detail=response.model_dump(mode="json"))
+    return response
+
+
+@router.post("/{experiment_id}/normalize-artifacts", response_model=ArtifactNormalizationResponse)
+def normalize_experiment_artifacts(experiment_id: str, request: Request) -> ArtifactNormalizationResponse:
+    try:
+        response = _experiment_manager(request).normalize_artifacts(experiment_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if response is None:
+        raise HTTPException(status_code=404, detail=f"unknown experiment: {experiment_id}")
     return response
 
 

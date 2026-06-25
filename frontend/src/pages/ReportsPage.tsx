@@ -15,6 +15,17 @@ const detections = [
   { type: "Liquidity shock", count: 8, confidence: 0.86, latency: "760 ms" }
 ];
 
+const experimentArtifactKeys = new Set([
+  "events",
+  "trades",
+  "labels",
+  "alerts",
+  "detector_metrics",
+  "benchmark_report",
+  "batch_manifest",
+  "artifact_index"
+]);
+
 export function ReportsPage() {
   const [summary, setSummary] = useState<ReportsSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -134,16 +145,29 @@ export function ReportsPage() {
     return summary?.explanations ?? [];
   }, [summary]);
   const benchmarkArtifacts = useMemo<ArtifactItem[]>(() => {
+    const experiments = summary?.experiments ?? [];
     const runs = summary?.benchmark_runs ?? [];
     const nebiusBatches = summary?.nebius_batches ?? [];
     const nebiusArtifacts = summary?.nebius_artifacts ?? [];
-    if (!runs.length && !nebiusBatches.length && !nebiusArtifacts.length) {
+    if (!experiments.length && !runs.length && !nebiusBatches.length && !nebiusArtifacts.length) {
       return [
         { description: "Detector tournament narrative", label: "benchmark_report.md", path: "outputs/benchmark/benchmark_report.md" },
         { description: "Precision, recall, F1, latency", label: "metrics.csv", path: "outputs/benchmark/metrics.csv" },
         { description: "Machine-readable benchmark output", label: "results.json", path: "outputs/benchmark/results.json" }
       ];
     }
+    const experimentItems = experiments.flatMap((experiment) => {
+      const paths = typeof experiment.artifact_paths === "object" && experiment.artifact_paths !== null
+        ? experiment.artifact_paths as Record<string, string>
+        : {};
+      return Object.entries(paths)
+        .filter(([label]) => experimentArtifactKeys.has(label))
+        .map(([label, path]) => ({
+          description: `${String(experiment.id ?? "experiment")} · ${path}`,
+          label: `${String(experiment.id ?? "experiment")} · ${label.replaceAll("_", " ")}`,
+          path
+        }));
+    });
     const benchmarkItems = runs.flatMap((run) => {
       const paths = typeof run.artifact_paths === "object" && run.artifact_paths !== null
         ? run.artifact_paths as Record<string, string>
@@ -169,7 +193,7 @@ export function ReportsPage() {
       label: String(artifact.path ?? "artifact").split("/").at(-1) ?? "artifact",
       path: String(artifact.path ?? "")
     })).filter((item) => item.path);
-    return [...explicitItems, ...batchItems, ...benchmarkItems];
+    return [...explicitItems, ...experimentItems, ...batchItems, ...benchmarkItems];
   }, [summary]);
   const explanationArtifacts = useMemo<ArtifactItem[]>(() => [
     {

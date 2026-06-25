@@ -12,6 +12,7 @@ from app.api.routes_experiments import (
     get_experiment,
     launch_attack_experiment,
     list_experiments,
+    normalize_experiment_artifacts,
     reports_summary,
     router,
     run_benchmark_experiment,
@@ -259,6 +260,58 @@ def test_experiment_run_local_batch_generates_attacks_and_persists_job(tmp_path:
     assert refreshed.metrics
 
 
+def test_normalize_artifacts_copies_fake_local_batch_outputs(tmp_path: Path) -> None:
+    request = _request(tmp_path)
+    experiment = create_experiment(
+        ExperimentCreateRequest(
+            name="Normalize fake batch",
+            attack_count=3,
+            batch_size=2,
+            scenarios=["normal_market", "spoofing"],
+            seed=51,
+        ),
+        request,
+    )
+    local_batch_dir = tmp_path / "experiments" / experiment.id / "local-batch"
+    local_batch_dir.mkdir(parents=True)
+    fake_files = {
+        "order_book_events.jsonl": '{"event":"book"}\n',
+        "trades.jsonl": '{"trade":"t1"}\n',
+        "attack_labels.jsonl": '{"label":"spoofing"}\n',
+        "blue_team_alerts.jsonl": '{"alert":"a1"}\n',
+        "detector_metrics.csv": "scenario,runs,alerts,precision,recall,f1,avg_detection_latency_ms\nspoofing,1,1,1,1,1,500\n",
+        "generated_report.md": "# Report\n",
+        "manifest.json": '{"runs":3}\n',
+    }
+    for name, content in fake_files.items():
+        (local_batch_dir / name).write_text(content, encoding="utf-8")
+
+    response = normalize_experiment_artifacts(experiment.id, request)
+    refreshed = get_experiment(experiment.id, request)
+    artifact_index = json.loads((tmp_path / "experiments" / experiment.id / "artifact_index.json").read_text(encoding="utf-8"))
+
+    assert response.copied_count == 7
+    assert response.missing == []
+    assert (local_batch_dir / "order_book_events.jsonl").exists()
+    assert (tmp_path / "experiments" / experiment.id / "events.jsonl").read_text(encoding="utf-8") == '{"event":"book"}\n'
+    assert (tmp_path / "experiments" / experiment.id / "labels.jsonl").read_text(encoding="utf-8") == '{"label":"spoofing"}\n'
+    assert (tmp_path / "experiments" / experiment.id / "alerts.jsonl").read_text(encoding="utf-8") == '{"alert":"a1"}\n'
+    assert (tmp_path / "experiments" / experiment.id / "benchmark_report.md").read_text(encoding="utf-8") == "# Report\n"
+    assert (tmp_path / "experiments" / experiment.id / "batch_manifest.json").read_text(encoding="utf-8") == '{"runs":3}\n'
+    assert artifact_index["experiment_id"] == experiment.id
+    assert {entry["key"] for entry in artifact_index["artifacts"]} == {
+        "events",
+        "trades",
+        "labels",
+        "alerts",
+        "detector_metrics",
+        "benchmark_report",
+        "batch_manifest",
+    }
+    assert refreshed.artifact_paths["events"] == str(tmp_path / "experiments" / experiment.id / "events.jsonl")
+    assert refreshed.artifact_paths["artifact_index"] == str(tmp_path / "experiments" / experiment.id / "artifact_index.json")
+
+
 def test_submit_nebius_without_real_config_persists_pending_job(tmp_path: Path) -> None:
     request = _request(tmp_path)
     experiment = create_experiment(
@@ -301,6 +354,7 @@ def test_managed_experiment_routes_are_registered_on_experiment_api() -> None:
     assert ("GET", "/api/experiments") in routes
     assert ("POST", "/api/experiments/{experiment_id}/generate-manifest") in routes
     assert ("POST", "/api/experiments/{experiment_id}/run-local-batch") in routes
+    assert ("POST", "/api/experiments/{experiment_id}/normalize-artifacts") in routes
     assert ("POST", "/api/experiments/{experiment_id}/submit-nebius") in routes
     assert ("GET", "/api/experiments/{experiment_id}/jobs") in routes
     assert ("POST", "/api/experiments/{experiment_id}/refresh-jobs") in routes

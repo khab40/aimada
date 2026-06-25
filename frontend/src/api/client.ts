@@ -155,6 +155,14 @@ export type ExperimentLocalBatchRunResponse = {
   error?: Record<string, unknown> | null;
 };
 
+export type ArtifactNormalizationResponse = {
+  experiment_id: string;
+  artifact_dir: string;
+  artifact_paths: Record<string, string>;
+  copied_count: number;
+  missing: string[];
+};
+
 export type ExperimentJobRecord = {
   job_id: string;
   experiment_id: string;
@@ -506,6 +514,17 @@ export async function runManagedExperimentLocalBatch(experimentId: string): Prom
   );
   if (!response.ok) {
     throw new Error(`Run experiment local batch failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function normalizeManagedExperimentArtifacts(experimentId: string): Promise<ArtifactNormalizationResponse> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/experiments/${encodeURIComponent(experimentId)}/normalize-artifacts`,
+    { method: "POST" }
+  );
+  if (!response.ok) {
+    throw new Error(`Normalize experiment artifacts failed: ${response.status}`);
   }
   return response.json();
 }

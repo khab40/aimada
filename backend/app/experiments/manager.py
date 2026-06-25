@@ -1,6 +1,7 @@
 from pathlib import Path
 from uuid import uuid4
 
+from app.experiments.artifact_normalizer import ArtifactNormalizationResponse, normalize_local_batch_artifacts
 from app.experiments.attack_manifest import AttackManifestResponse, generate_attack_manifest
 from app.experiments.models import Experiment, ExperimentCreateRequest, ExperimentLocalBatchRunResponse, utc_now
 from app.experiments.nebius_orchestrator import ExperimentJobRecord
@@ -146,6 +147,9 @@ class ExperimentManager:
             message=f"Local parallel batch {status}",
             artifact_paths=batch.artifact_paths,
         )
+        normalized = None
+        if status == "completed":
+            normalized = normalize_local_batch_artifacts(experiment.id, artifact_dir)
         self.repository.store.append_jsonl(
             f"experiments/{experiment.id}/jobs.jsonl",
             job.model_dump(mode="json"),
@@ -159,6 +163,7 @@ class ExperimentManager:
                     "attacks": str(attacks_path),
                     "jobs": str(artifact_dir / "jobs.jsonl"),
                     **{f"local_batch_{key}": value for key, value in batch.artifact_paths.items()},
+                    **(normalized.artifact_paths if normalized is not None else {}),
                 },
                 "metrics": batch.metrics,
                 "updated_at": updated_at,
@@ -177,6 +182,31 @@ class ExperimentManager:
         )
         return response
 
+    def normalize_artifacts(self, experiment_id: str) -> ArtifactNormalizationResponse | None:
+        experiment = self.repository.get(experiment_id)
+        if experiment is None:
+            return None
+        artifact_dir = self.repository.experiment_dir(experiment.id)
+        normalized = normalize_local_batch_artifacts(experiment.id, artifact_dir)
+        updated = experiment.model_copy(
+            update={
+                "artifact_paths": {**experiment.artifact_paths, **normalized.artifact_paths},
+                "updated_at": utc_now(),
+            }
+        )
+        self.repository.save(updated)
+        append_history_artifact(
+            self.repository.store,
+            kind="artifact",
+            payload=normalized.model_dump(mode="json"),
+            summary=f"Experiment artifacts normalized for {experiment.id}",
+            created_at=updated.updated_at,
+            run_id=experiment.id,
+            source="experiment_artifact_normalizer",
+            source_path=f"experiments/{experiment.id}/artifact_index.json",
+        )
+        return normalized
+
     def delete(self, experiment_id: str) -> bool:
         return self.repository.delete(experiment_id)
 
@@ -186,10 +216,8 @@ def _artifact_paths(artifact_dir: Path) -> dict[str, str]:
         "manifest": str(artifact_dir / "experiment.json"),
         "attacks": str(artifact_dir / "attacks.jsonl"),
         "order_book_event_logs": str(artifact_dir / "order_book_events.jsonl"),
-        "trades": str(artifact_dir / "trades.jsonl"),
         "attack_labels": str(artifact_dir / "attack_labels.jsonl"),
         "blue_team_alerts": str(artifact_dir / "blue_team_alerts.jsonl"),
-        "detector_metrics": str(artifact_dir / "detector_metrics.csv"),
         "generated_report": str(artifact_dir / "generated_report.md"),
     }
 
