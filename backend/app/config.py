@@ -47,6 +47,22 @@ class Settings(BaseSettings):
         default="ghcr.io/your-org/ai-market-abuse-detection-arena-jobs:latest",
         alias="NEBIUS_JOB_IMAGE",
     )
+    nebius_job_submit_command_template: str | None = Field(
+        default=None,
+        alias="NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE",
+    )
+    nebius_job_status_command_template: str | None = Field(
+        default=None,
+        alias="NEBIUS_JOB_STATUS_COMMAND_TEMPLATE",
+    )
+    nebius_job_logs_command_template: str | None = Field(
+        default=None,
+        alias="NEBIUS_JOB_LOGS_COMMAND_TEMPLATE",
+    )
+    nebius_job_artifacts_command_template: str | None = Field(
+        default=None,
+        alias="NEBIUS_JOB_ARTIFACTS_COMMAND_TEMPLATE",
+    )
     arena_output_dir: Path = Field(default=Path("../outputs"), alias="ARENA_OUTPUT_DIR")
     arena_sample_data_dir: Path = Field(default=Path("../data/sample"), alias="ARENA_SAMPLE_DATA_DIR")
     google_client_id: str | None = Field(default=None, alias="GOOGLE_CLIENT_ID")

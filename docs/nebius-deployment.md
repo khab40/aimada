@@ -167,9 +167,20 @@ The managed experiment flow is available locally through FastAPI and the React U
 - `/nebius` Experiment Lab creates experiment manifests, generates attack manifests, runs local batches, aggregates outputs, and runs bounded mock/endpoint-backed investigations.
 - `/reports` lists experiments and shows the selected experiment summary, detector leaderboard, `benchmark_report.md`, investigation report files, `artifact_index.json`, canonical artifacts, and original `local-batch` files.
 - Local batch execution reuses `serverless/jobs/run_batch_experiments.py` and writes under `outputs/experiments/<experiment_id>/`.
-- `POST /api/experiments/{id}/submit-nebius` renders `nebius_job_config.rendered.yaml` and currently records a `real_nebius_pending` job record when real Nebius credentials/job execution are not configured.
+- `POST /api/experiments/{id}/submit-nebius` renders `nebius_job_config.rendered.yaml`. If `NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE` is unset, it records `real_nebius_pending`; if the template is set, it executes the command, parses a job id, and records a queued Nebius job.
 
-Real Nebius Serverless Job execution for Phase 4.5 is TODO until there is actual job submission code in `backend/app/experiments/nebius_orchestrator.py` plus archived Nebius job logs, metrics, and produced artifacts. Do not treat the local batch path or `real_nebius_pending` records as evidence of real cloud execution.
+The command-template adapter lives only in `backend/app/experiments/nebius_orchestrator.py`. It supports these environment variables:
+
+| Variable | Purpose |
+| --- | --- |
+| `NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE` | Creates/submits the real Nebius job. Missing value keeps `real_nebius_pending`. |
+| `NEBIUS_JOB_STATUS_COMMAND_TEMPLATE` | Refreshes queued/running jobs. |
+| `NEBIUS_JOB_LOGS_COMMAND_TEMPLATE` | Optional logs collection command. |
+| `NEBIUS_JOB_ARTIFACTS_COMMAND_TEMPLATE` | Optional artifacts collection command. |
+
+Supported template variables are `{config_path}`, `{experiment_id}`, `{image}`, and `{output_dir}`. Command stdout/stderr is redacted before persistence. A job is not marked `completed` just because submission succeeded; refresh only marks it completed after status reports completion and artifact collection succeeds.
+
+Do not treat the local batch path, a queued submit record, or `real_nebius_pending` records as evidence of completed real cloud execution. Archive Nebius job logs, metrics, and produced artifacts before making cloud execution claims.
 
 ## Local Configuration
 

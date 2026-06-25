@@ -1,4 +1,8 @@
 import importlib.util
+import json
+import re
+import shlex
+import subprocess
 from pathlib import Path
 from typing import Any, Callable, Literal
 from uuid import uuid4
@@ -45,42 +49,99 @@ class NebiusExperimentOrchestrator:
         if not attacks_path.exists():
             generate_attack_manifest(experiment, artifact_dir)
         rendered_config_path = self._render_job_config(experiment, artifact_dir)
+        base_artifact_paths = {
+            "experiment": str(artifact_dir / "experiment.json"),
+            "attacks": str(attacks_path),
+            "jobs": str(artifact_dir / "jobs.jsonl"),
+            "nebius_job_config": str(rendered_config_path),
+        }
 
         now = utc_now()
-        job = ExperimentJobRecord(
-            job_id=f"NEB-PENDING-{uuid4().hex[:8].upper()}",
-            experiment_id=experiment.id,
-            backend="nebius_serverless_job",
-            status="real_nebius_pending",
-            batch_start=0,
-            batch_end=experiment.attack_count,
-            attack_count=experiment.attack_count,
-            created_at=now,
-            updated_at=now,
-            message=self._pending_message(),
-            artifact_paths={
-                "experiment": str(artifact_dir / "experiment.json"),
-                "attacks": str(attacks_path),
-                "jobs": str(artifact_dir / "jobs.jsonl"),
-                "nebius_job_config": str(rendered_config_path),
-            },
-        )
+        submit_template = self._setting("nebius_job_submit_command_template")
+        if submit_template:
+            job = self._submit_with_command(
+                experiment=experiment,
+                artifact_dir=artifact_dir,
+                rendered_config_path=rendered_config_path,
+                base_artifact_paths=base_artifact_paths,
+                submit_template=submit_template,
+                now=now,
+            )
+        else:
+            job = ExperimentJobRecord(
+                job_id=f"NEB-PENDING-{uuid4().hex[:8].upper()}",
+                experiment_id=experiment.id,
+                backend="nebius_serverless_job",
+                status="real_nebius_pending",
+                batch_start=0,
+                batch_end=experiment.attack_count,
+                attack_count=experiment.attack_count,
+                created_at=now,
+                updated_at=now,
+                message=self._pending_message(),
+                artifact_paths=base_artifact_paths,
+            )
         self._append_job(job)
         updated = experiment.model_copy(
             update={
-                "status": "submitted",
+                "status": "failed" if job.status == "failed" else "submitted",
                 "smart_batch_id": job.job_id,
                 "artifact_paths": {
                     **experiment.artifact_paths,
-                    "attacks": str(attacks_path),
-                    "jobs": str(artifact_dir / "jobs.jsonl"),
-                    "nebius_job_config": str(rendered_config_path),
+                    **base_artifact_paths,
+                    **job.artifact_paths,
                 },
                 "updated_at": now,
             }
         )
         self.repository.save(updated)
         return job
+
+    def _submit_with_command(
+        self,
+        *,
+        experiment: Experiment,
+        artifact_dir: Path,
+        rendered_config_path: Path,
+        base_artifact_paths: dict[str, str],
+        submit_template: str,
+        now: str,
+    ) -> ExperimentJobRecord:
+        context = self._command_context(experiment=experiment, rendered_config_path=rendered_config_path)
+        try:
+            result = self._run_template_command(submit_template, context)
+            job_id = _parse_job_id(result.stdout) or f"NEB-SUBMITTED-{uuid4().hex[:8].upper()}"
+            submit_stdout_path = artifact_dir / "nebius_submit_stdout.txt"
+            submit_stdout_path.write_text(_redact(result.stdout), encoding="utf-8")
+            return ExperimentJobRecord(
+                job_id=job_id,
+                experiment_id=experiment.id,
+                backend="nebius_serverless_job",
+                status="queued",
+                batch_start=0,
+                batch_end=experiment.attack_count,
+                attack_count=experiment.attack_count,
+                created_at=now,
+                updated_at=now,
+                message=f"Nebius submit command accepted job {job_id}. Waiting for status and artifacts confirmation.",
+                artifact_paths={**base_artifact_paths, "submit_stdout": str(submit_stdout_path)},
+            )
+        except RuntimeError as exc:
+            submit_error_path = artifact_dir / "nebius_submit_error.txt"
+            submit_error_path.write_text(_redact(str(exc)), encoding="utf-8")
+            return ExperimentJobRecord(
+                job_id=f"NEB-FAILED-{uuid4().hex[:8].upper()}",
+                experiment_id=experiment.id,
+                backend="nebius_serverless_job",
+                status="failed",
+                batch_start=0,
+                batch_end=experiment.attack_count,
+                attack_count=experiment.attack_count,
+                created_at=now,
+                updated_at=now,
+                message=f"Nebius submit command failed: {_redact(str(exc))}",
+                artifact_paths={**base_artifact_paths, "submit_error": str(submit_error_path)},
+            )
 
     def list_jobs(self, experiment_id: str) -> list[ExperimentJobRecord] | None:
         if self.repository.get(experiment_id) is None:
@@ -96,10 +157,85 @@ class NebiusExperimentOrchestrator:
         for job in jobs:
             if job.backend == "nebius_serverless_job" and job.status == "real_nebius_pending":
                 refreshed.append(job.model_copy(update={"updated_at": now, "message": self._pending_message()}))
+            elif job.backend == "nebius_serverless_job" and job.status in {"queued", "running"}:
+                refreshed.append(self._refresh_submitted_job(job, now=now))
             else:
                 refreshed.append(job)
         self._write_jobs(experiment_id, refreshed)
         return refreshed
+
+    def _refresh_submitted_job(self, job: ExperimentJobRecord, *, now: str) -> ExperimentJobRecord:
+        experiment = self.repository.get(job.experiment_id)
+        if experiment is None:
+            return job
+        artifact_dir = self.repository.experiment_dir(job.experiment_id)
+        config_path = Path(job.artifact_paths.get("nebius_job_config", artifact_dir / "nebius_job_config.rendered.yaml"))
+        context = self._command_context(experiment=experiment, rendered_config_path=config_path)
+        status_template = self._setting("nebius_job_status_command_template")
+        if not status_template:
+            return job.model_copy(
+                update={
+                    "updated_at": now,
+                    "message": "Nebius job submitted; status command is not configured.",
+                }
+            )
+
+        try:
+            status_result = self._run_template_command(status_template, context)
+            status = _parse_job_status(status_result.stdout) or job.status
+        except RuntimeError as exc:
+            return job.model_copy(
+                update={
+                    "updated_at": now,
+                    "message": f"Nebius status command failed: {_redact(str(exc))}",
+                }
+            )
+
+        artifact_paths = dict(job.artifact_paths)
+        logs_path = self._collect_optional_command(
+            "logs",
+            self._setting("nebius_job_logs_command_template"),
+            context,
+            artifact_dir,
+        )
+        if logs_path is not None:
+            artifact_paths["nebius_job_logs"] = str(logs_path)
+
+        artifacts_path = self._collect_optional_command(
+            "artifacts",
+            self._setting("nebius_job_artifacts_command_template"),
+            context,
+            artifact_dir,
+        )
+        if artifacts_path is not None:
+            artifact_paths["nebius_job_artifacts"] = str(artifacts_path)
+
+        if status == "completed" and artifacts_path is not None:
+            return job.model_copy(
+                update={
+                    "status": "completed",
+                    "updated_at": now,
+                    "message": "Nebius job completed and artifact collection command returned successfully.",
+                    "artifact_paths": artifact_paths,
+                }
+            )
+        if status == "completed":
+            return job.model_copy(
+                update={
+                    "status": "running",
+                    "updated_at": now,
+                    "message": "Nebius job reported completed, but artifact collection is not confirmed.",
+                    "artifact_paths": artifact_paths,
+                }
+            )
+        return job.model_copy(
+            update={
+                "status": status,
+                "updated_at": now,
+                "message": f"Nebius job status is {status}.",
+                "artifact_paths": artifact_paths,
+            }
+        )
 
     def _pending_message(self) -> str:
         if self._has_nebius_credentials():
@@ -118,11 +254,7 @@ class NebiusExperimentOrchestrator:
 
     def _render_job_config(self, experiment: Experiment, artifact_dir: Path) -> Path:
         render_job_config = _load_render_job_config()
-        image = (
-            self.settings.nebius_job_image
-            if self.settings is not None
-            else "ghcr.io/your-org/ai-market-abuse-detection-arena-jobs:latest"
-        )
+        image = self._job_image()
         return render_job_config(
             experiment_id=experiment.id,
             runs=experiment.attack_count,
@@ -132,6 +264,67 @@ class NebiusExperimentOrchestrator:
             output_dir=f"/job/outputs/experiments/{experiment.id}/local-batch",
             rendered_path=artifact_dir / "nebius_job_config.rendered.yaml",
         )
+
+    def _command_context(self, *, experiment: Experiment, rendered_config_path: Path) -> dict[str, str]:
+        return {
+            "config_path": str(rendered_config_path),
+            "experiment_id": experiment.id,
+            "image": self._job_image(),
+            "output_dir": f"/job/outputs/experiments/{experiment.id}/local-batch",
+        }
+
+    def _job_image(self) -> str:
+        return (
+            self.settings.nebius_job_image
+            if self.settings is not None
+            else "ghcr.io/your-org/ai-market-abuse-detection-arena-jobs:latest"
+        )
+
+    def _setting(self, name: str) -> str | None:
+        if self.settings is None:
+            return None
+        value = getattr(self.settings, name, None)
+        if isinstance(value, str) and value.strip():
+            return value
+        return None
+
+    def _run_template_command(self, template: str, context: dict[str, str]) -> subprocess.CompletedProcess[str]:
+        try:
+            command = template.format(**context)
+        except KeyError as exc:
+            raise RuntimeError(f"unknown command template variable: {exc}") from exc
+        argv = shlex.split(command)
+        if not argv:
+            raise RuntimeError("empty command template")
+        try:
+            completed = subprocess.run(
+                argv,
+                capture_output=True,
+                check=False,
+                text=True,
+                timeout=120.0,
+            )
+        except (OSError, subprocess.SubprocessError, TimeoutError) as exc:
+            raise RuntimeError(_redact(str(exc))) from exc
+        if completed.returncode != 0:
+            details = _redact((completed.stderr or completed.stdout or "").strip())
+            raise RuntimeError(f"command exited {completed.returncode}: {details}")
+        return completed
+
+    def _collect_optional_command(
+        self,
+        kind: str,
+        template: str | None,
+        context: dict[str, str],
+        artifact_dir: Path,
+    ) -> Path | None:
+        if not template:
+            return None
+        result = self._run_template_command(template, context)
+        suffix = "json" if _looks_like_json(result.stdout) else "txt"
+        path = artifact_dir / f"nebius_job_{kind}.{suffix}"
+        path.write_text(_redact(result.stdout), encoding="utf-8")
+        return path
 
     def _append_job(self, job: ExperimentJobRecord) -> None:
         self.repository.store.append_jsonl(
@@ -178,6 +371,98 @@ def _repo_root() -> Path:
         if (candidate / "serverless" / "jobs" / "nebius_job_config.yaml").exists():
             return candidate
     return here.parents[3]
+
+
+def _parse_job_id(output: str) -> str | None:
+    text = output.strip()
+    if not text:
+        return None
+    parsed = _parse_json_object(text)
+    if parsed is not None:
+        for key in ("job_id", "id", "jobId", "jobID"):
+            value = parsed.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+        metadata = parsed.get("metadata")
+        if isinstance(metadata, dict):
+            for key in ("job_id", "id", "jobId", "jobID"):
+                value = metadata.get(key)
+                if isinstance(value, str) and value.strip():
+                    return value.strip()
+    patterns = [
+        r"\bjob[_ -]?id\b\s*[:=]\s*([A-Za-z0-9_.:/-]+)",
+        r"\bid\b\s*[:=]\s*([A-Za-z0-9_.:/-]+)",
+        r"\b(job-[A-Za-z0-9_.-]+)\b",
+        r"\b(NEB-[A-Za-z0-9_.-]+)\b",
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, text, flags=re.IGNORECASE)
+        if match:
+            return match.group(1)
+    return None
+
+
+def _parse_job_status(output: str) -> JobStatus | None:
+    text = output.strip()
+    if not text:
+        return None
+    parsed = _parse_json_object(text)
+    if parsed is not None:
+        value = parsed.get("status") or parsed.get("state")
+        if isinstance(value, str):
+            return _normalize_job_status(value)
+    match = re.search(r"\b(?:status|state)\b\s*[:=]\s*([A-Za-z_-]+)", text, flags=re.IGNORECASE)
+    if match:
+        return _normalize_job_status(match.group(1))
+    return _normalize_job_status(text)
+
+
+def _normalize_job_status(value: str) -> JobStatus | None:
+    normalized = value.lower().replace("-", "_").replace(" ", "_")
+    if normalized in {"queued", "pending", "submitted"}:
+        return "queued"
+    if normalized in {"running", "in_progress", "started"}:
+        return "running"
+    if normalized in {"completed", "complete", "succeeded", "success", "done"}:
+        return "completed"
+    if normalized in {"failed", "failure", "error", "cancelled", "canceled"}:
+        return "failed"
+    if normalized == "real_nebius_pending":
+        return "real_nebius_pending"
+    return None
+
+
+def _parse_json_object(text: str) -> dict[str, Any] | None:
+    try:
+        decoded = json.loads(text)
+    except json.JSONDecodeError:
+        return None
+    return decoded if isinstance(decoded, dict) else None
+
+
+def _looks_like_json(text: str) -> bool:
+    try:
+        json.loads(text)
+    except json.JSONDecodeError:
+        return False
+    return True
+
+
+def _redact(value: str) -> str:
+    redacted = value
+    patterns = [
+        r"Bearer\s+[A-Za-z0-9._~+/=-]+",
+        r"(?i)(api[_-]?key|token|secret|authorization)(\s*[:=]\s*)([^\s\"']+)",
+    ]
+    for pattern in patterns:
+        redacted = re.sub(pattern, _redaction_replacement, redacted)
+    return redacted
+
+
+def _redaction_replacement(match: re.Match[str]) -> str:
+    if match.group(0).lower().startswith("bearer "):
+        return "Bearer [REDACTED]"
+    return f"{match.group(1)}{match.group(2)}[REDACTED]"
 
 
 def summarize_experiment_jobs(output_dir: Path) -> dict[str, Any] | None:

@@ -5,6 +5,14 @@ Update this file with each significant commit before pushing.
 
 ## Unreleased
 
+### Current - feat: add real Nebius job submit adapter
+
+- Added command-template based real Nebius Serverless Job submission in `backend/app/experiments/nebius_orchestrator.py` using the existing rendered experiment job config.
+- Supported `NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE`, `NEBIUS_JOB_STATUS_COMMAND_TEMPLATE`, `NEBIUS_JOB_LOGS_COMMAND_TEMPLATE`, and `NEBIUS_JOB_ARTIFACTS_COMMAND_TEMPLATE` with `{config_path}`, `{experiment_id}`, `{image}`, and `{output_dir}` placeholders.
+- Parsed submitted job ids from JSON or text stdout, persisted queued/failed job records to `jobs.jsonl`, and redacted command output before storing messages/artifacts.
+- Kept missing-template behavior as `real_nebius_pending` and prevented jobs from being marked completed until status plus artifact collection confirms completion.
+- Added tests for missing templates, mocked successful submit, failed submit redaction, job id parsing, and completion gating.
+
 ### Current - feat: render experiment Nebius job configs
 
 - Added `serverless/jobs/render_job_config.py` to render experiment-specific Nebius Serverless Job configs from the existing `serverless/jobs/nebius_job_config.yaml` template.
