@@ -17,7 +17,11 @@ from app.api.routes_experiments import (
     run_benchmark_experiment,
     run_experiment_local_batch,
     save_attack_experiment,
+    list_experiment_jobs,
+    refresh_experiment_jobs,
+    submit_experiment_nebius,
 )
+from app.api.routes_nebius import observatory
 from app.arena.engine import SimulationEngine
 from app.experiments.models import ExperimentCreateRequest
 from app.storage.local_store import LocalStore
@@ -242,8 +246,9 @@ def test_experiment_run_local_batch_generates_attacks_and_persists_job(tmp_path:
     assert response.scenarios == ["normal_market", "spoofing"]
     assert response.elapsed_seconds >= 0
     assert len(jobs) == 1
-    assert jobs[0]["id"] == response.id
-    assert jobs[0]["mode"] == "local_parallel_batch"
+    assert jobs[0]["job_id"] == response.id
+    assert jobs[0]["backend"] == "local_parallel_batch"
+    assert jobs[0]["status"] == "completed"
     assert len(attacks) == 3
     assert (output_dir / "manifest.json").exists()
     assert (output_dir / "detector_metrics.csv").exists()
@@ -254,6 +259,41 @@ def test_experiment_run_local_batch_generates_attacks_and_persists_job(tmp_path:
     assert refreshed.metrics
 
 
+def test_submit_nebius_without_real_config_persists_pending_job(tmp_path: Path) -> None:
+    request = _request(tmp_path)
+    experiment = create_experiment(
+        ExperimentCreateRequest(
+            name="Pending Nebius",
+            attack_count=3,
+            batch_size=2,
+            scenarios=["normal_market", "spoofing"],
+            seed=31,
+            nebius_mode="real_nebius_pending",
+        ),
+        request,
+    )
+
+    job = submit_experiment_nebius(experiment.id, request)
+    jobs = list_experiment_jobs(experiment.id, request)
+    refreshed_jobs = refresh_experiment_jobs(experiment.id, request)
+    refreshed_experiment = get_experiment(experiment.id, request)
+    observatory_response = observatory(request)
+
+    assert job.backend == "nebius_serverless_job"
+    assert job.status == "real_nebius_pending"
+    assert job.attack_count == 3
+    assert job.batch_start == 0
+    assert job.batch_end == 3
+    assert "not configured" in job.message
+    assert (tmp_path / "experiments" / experiment.id / "attacks.jsonl").exists()
+    assert jobs == [job]
+    assert refreshed_jobs[0].status == "real_nebius_pending"
+    assert refreshed_experiment.status == "submitted"
+    assert refreshed_experiment.smart_batch_id == job.job_id
+    assert observatory_response.experiment_jobs is not None
+    assert observatory_response.experiment_jobs["status_counts"]["real_nebius_pending"] == 1
+
+
 def test_managed_experiment_routes_are_registered_on_experiment_api() -> None:
     routes = {(method, route.path) for route in router.routes for method in route.methods}
 
@@ -261,6 +301,9 @@ def test_managed_experiment_routes_are_registered_on_experiment_api() -> None:
     assert ("GET", "/api/experiments") in routes
     assert ("POST", "/api/experiments/{experiment_id}/generate-manifest") in routes
     assert ("POST", "/api/experiments/{experiment_id}/run-local-batch") in routes
+    assert ("POST", "/api/experiments/{experiment_id}/submit-nebius") in routes
+    assert ("GET", "/api/experiments/{experiment_id}/jobs") in routes
+    assert ("POST", "/api/experiments/{experiment_id}/refresh-jobs") in routes
     assert ("GET", "/api/experiments/{experiment_id}") in routes
     assert ("DELETE", "/api/experiments/{experiment_id}") in routes
 

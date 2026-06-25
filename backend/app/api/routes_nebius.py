@@ -17,6 +17,7 @@ from app.nebius.client import (
     RedTeamScenarioRequest,
     RedTeamScenarioResponse,
 )
+from app.experiments.nebius_orchestrator import summarize_experiment_jobs
 from app.nebius.smart_batch_runner import read_metrics, run_local_smart_batch
 from app.storage.history import append_history_artifact
 
@@ -174,6 +175,7 @@ class NebiusObservatoryResponse(BaseModel):
     screenshots: list[dict[str, str]]
     benchmark_artifacts: dict[str, str]
     latest_batch: dict[str, Any] | None = None
+    experiment_jobs: dict[str, Any] | None = None
 
 
 @router.post("/smart-scenario", response_model=RedTeamScenarioResponse)
@@ -538,6 +540,7 @@ def observatory(request: Request) -> NebiusObservatoryResponse:
         ],
         benchmark_artifacts=artifact_paths,
         latest_batch=latest_batch,
+        experiment_jobs=summarize_experiment_jobs(store.output_dir),
     )
 
 

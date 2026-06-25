@@ -3,6 +3,7 @@ from uuid import uuid4
 
 from app.experiments.attack_manifest import AttackManifestResponse, generate_attack_manifest
 from app.experiments.models import Experiment, ExperimentCreateRequest, ExperimentLocalBatchRunResponse, utc_now
+from app.experiments.nebius_orchestrator import ExperimentJobRecord
 from app.experiments.repository import ExperimentRepository
 from app.nebius.smart_batch_runner import run_local_smart_batch
 from app.storage.history import append_history_artifact
@@ -110,6 +111,7 @@ class ExperimentManager:
             scenarios=experiment.scenarios,
         )
         status = "completed" if batch.returncode == 0 else "failed"
+        updated_at = utc_now()
         response = ExperimentLocalBatchRunResponse(
             id=local_batch_id,
             experiment_id=experiment.id,
@@ -131,9 +133,22 @@ class ExperimentManager:
                 "stdout": batch.stdout[-2000:],
             },
         )
+        job = ExperimentJobRecord(
+            job_id=local_batch_id,
+            experiment_id=experiment.id,
+            backend="local_parallel_batch",
+            status=status,
+            batch_start=0,
+            batch_end=experiment.attack_count,
+            attack_count=experiment.attack_count,
+            created_at=created_at,
+            updated_at=updated_at,
+            message=f"Local parallel batch {status}",
+            artifact_paths=batch.artifact_paths,
+        )
         self.repository.store.append_jsonl(
             f"experiments/{experiment.id}/jobs.jsonl",
-            response.model_dump(mode="json"),
+            job.model_dump(mode="json"),
         )
         updated = experiment.model_copy(
             update={
@@ -146,7 +161,7 @@ class ExperimentManager:
                     **{f"local_batch_{key}": value for key, value in batch.artifact_paths.items()},
                 },
                 "metrics": batch.metrics,
-                "updated_at": utc_now(),
+                "updated_at": updated_at,
             }
         )
         self.repository.save(updated)

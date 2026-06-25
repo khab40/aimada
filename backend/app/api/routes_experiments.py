@@ -20,6 +20,7 @@ from app.experiments.models import (
     ExperimentDeleteResponse,
     ExperimentLocalBatchRunResponse,
 )
+from app.experiments.nebius_orchestrator import ExperimentJobRecord, NebiusExperimentOrchestrator
 from app.experiments.repository import ExperimentRepository
 from app.schemas.arena import AttackTrackerState, BenchmarkResult, MarketRegime
 from app.storage.history import append_history_artifact, history_window
@@ -355,6 +356,39 @@ def run_experiment_local_batch(experiment_id: str, request: Request) -> Experime
     return response
 
 
+@router.post("/{experiment_id}/submit-nebius", response_model=ExperimentJobRecord)
+def submit_experiment_nebius(experiment_id: str, request: Request) -> ExperimentJobRecord:
+    try:
+        job = _nebius_orchestrator(request).submit(experiment_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if job is None:
+        raise HTTPException(status_code=404, detail=f"unknown experiment: {experiment_id}")
+    return job
+
+
+@router.get("/{experiment_id}/jobs", response_model=list[ExperimentJobRecord])
+def list_experiment_jobs(experiment_id: str, request: Request) -> list[ExperimentJobRecord]:
+    try:
+        jobs = _nebius_orchestrator(request).list_jobs(experiment_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if jobs is None:
+        raise HTTPException(status_code=404, detail=f"unknown experiment: {experiment_id}")
+    return jobs
+
+
+@router.post("/{experiment_id}/refresh-jobs", response_model=list[ExperimentJobRecord])
+def refresh_experiment_jobs(experiment_id: str, request: Request) -> list[ExperimentJobRecord]:
+    try:
+        jobs = _nebius_orchestrator(request).refresh(experiment_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if jobs is None:
+        raise HTTPException(status_code=404, detail=f"unknown experiment: {experiment_id}")
+    return jobs
+
+
 @router.get("/reports", response_model=ReportsSummary)
 def reports_summary(request: Request) -> ReportsSummary:
     store = _store(request)
@@ -609,6 +643,10 @@ def _store(request: Request) -> LocalStore:
 
 def _experiment_manager(request: Request) -> ExperimentManager:
     return ExperimentManager(ExperimentRepository(_store(request)))
+
+
+def _nebius_orchestrator(request: Request) -> NebiusExperimentOrchestrator:
+    return NebiusExperimentOrchestrator(ExperimentRepository(_store(request)), getattr(request.app.state, "settings", None))
 
 
 def _resolve_readable_artifact(request: Request, raw_path: str) -> Path:

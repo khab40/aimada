@@ -155,6 +155,20 @@ export type ExperimentLocalBatchRunResponse = {
   error?: Record<string, unknown> | null;
 };
 
+export type ExperimentJobRecord = {
+  job_id: string;
+  experiment_id: string;
+  backend: "local_parallel_batch" | "nebius_serverless_job";
+  status: "queued" | "running" | "completed" | "failed" | "real_nebius_pending";
+  batch_start: number;
+  batch_end: number;
+  attack_count: number;
+  created_at: string;
+  updated_at: string;
+  message: string;
+  artifact_paths: Record<string, string>;
+};
+
 export type ArtifactReadResponse = {
   path: string;
   name: string;
@@ -393,6 +407,7 @@ export type NebiusObservatory = {
   screenshots: { title: string; status: string; path: string }[];
   benchmark_artifacts: Record<string, string>;
   latest_batch?: Record<string, unknown> | null;
+  experiment_jobs?: Record<string, unknown> | null;
 };
 
 export async function generateRedTeamScenario(
@@ -491,6 +506,34 @@ export async function runManagedExperimentLocalBatch(experimentId: string): Prom
   );
   if (!response.ok) {
     throw new Error(`Run experiment local batch failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function submitManagedExperimentNebius(experimentId: string): Promise<ExperimentJobRecord> {
+  const response = await fetch(`${API_BASE_URL}/api/experiments/${encodeURIComponent(experimentId)}/submit-nebius`, {
+    method: "POST"
+  });
+  if (!response.ok) {
+    throw new Error(`Submit experiment to Nebius failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function listManagedExperimentJobs(experimentId: string): Promise<ExperimentJobRecord[]> {
+  const response = await fetch(`${API_BASE_URL}/api/experiments/${encodeURIComponent(experimentId)}/jobs`);
+  if (!response.ok) {
+    throw new Error(`List experiment jobs failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function refreshManagedExperimentJobs(experimentId: string): Promise<ExperimentJobRecord[]> {
+  const response = await fetch(`${API_BASE_URL}/api/experiments/${encodeURIComponent(experimentId)}/refresh-jobs`, {
+    method: "POST"
+  });
+  if (!response.ok) {
+    throw new Error(`Refresh experiment jobs failed: ${response.status}`);
   }
   return response.json();
 }

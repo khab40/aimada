@@ -257,12 +257,15 @@ Deliverables:
 - `[done]` `backend/app/experiments/repository.py` manifest persistence under `outputs/experiments/<experiment_id>/experiment.json`.
 - `[done]` `backend/app/experiments/manager.py` experiment creation, listing, lookup, deletion, deterministic attack manifest generation, local batch submission, smart-batch-compatible artifact paths, and report history indexing.
 - `[done]` `backend/app/experiments/attack_manifest.py` writes deterministic attack manifests to `outputs/experiments/<experiment_id>/attacks.jsonl` without running the simulator.
-- `[done]` REST routes on the existing experiment API: `POST /api/experiments`, `GET /api/experiments`, `GET /api/experiments/{id}`, `DELETE /api/experiments/{id}`, `POST /api/experiments/{id}/generate-manifest`, and `POST /api/experiments/{id}/run-local-batch`.
+- `[done]` `backend/app/experiments/nebius_orchestrator.py` is the only boundary for future real Nebius Serverless Job SDK/CLI calls.
+- `[done]` REST routes on the existing experiment API: `POST /api/experiments`, `GET /api/experiments`, `GET /api/experiments/{id}`, `DELETE /api/experiments/{id}`, `POST /api/experiments/{id}/generate-manifest`, `POST /api/experiments/{id}/run-local-batch`, `POST /api/experiments/{id}/submit-nebius`, `GET /api/experiments/{id}/jobs`, and `POST /api/experiments/{id}/refresh-jobs`.
 - `[done]` experiment local batches reuse the same `serverless/jobs/run_batch_experiments.py` execution path as `/api/nebius/smart-batches`.
 - `[done]` local batch outputs write to `outputs/experiments/<experiment_id>/local-batch/`, with one `local_parallel_batch` job record in `outputs/experiments/<experiment_id>/jobs.jsonl`.
+- `[done]` when real Nebius job execution is not configured, `submit-nebius` writes a `real_nebius_pending` job record instead of pretending cloud execution happened.
+- `[done]` `/api/nebius/observatory` includes experiment job summary counts when experiment jobs exist.
 - `[done]` Reports summary includes managed experiment manifests alongside older attack-builder experiments.
 - `[done]` `/api/nebius/smart-batches` remains unchanged for Nebius Control Panel smart-batch execution.
-- `[done]` tests for create, list, get, report visibility, delete, deterministic attack manifests, attack counts, expected labels, and a 3-run local batch.
+- `[done]` tests for create, list, get, report visibility, delete, deterministic attack manifests, attack counts, expected labels, a 3-run local batch, and missing real Nebius config.
 
 Current behavior:
 
@@ -270,6 +273,7 @@ Current behavior:
 - Attack manifests use the experiment's `attack_count`, `scenarios`, and `seed`, preserve the requested scenario mix, and support 10, 100, and 1000-row experiments.
 - Expected detector labels are generated for `normal_market`, `spoofing`, `layering`, `quote_stuffing`, and `pump_and_cancel`.
 - `run-local-batch` ensures `attacks.jsonl` exists, runs the local parallel batch with experiment `attack_count`, `batch_size`, and `scenarios`, then updates status to `completed` or `failed`.
+- `submit-nebius` ensures `attacks.jsonl` exists and records a `nebius_serverless_job` with `real_nebius_pending` unless real Nebius job submission is explicitly implemented in `nebius_orchestrator.py`.
 - `nebius_mode` supports `mock`, `local_parallel_batch`, and `real_nebius_pending`.
 - `smart_batch_id` is optional and is set to the local batch id after `run-local-batch` completes.
 
