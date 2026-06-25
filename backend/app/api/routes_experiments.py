@@ -12,6 +12,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 
+from app.experiments.aggregator import AggregationResult, ExperimentSummary, LeaderboardRow
 from app.experiments.artifact_normalizer import ArtifactNormalizationResponse
 from app.experiments.attack_manifest import AttackManifestResponse
 from app.experiments.investigation_pipeline import InvestigationRecord, InvestigationRunResponse
@@ -398,6 +399,52 @@ def list_experiment_investigations(experiment_id: str, request: Request) -> list
     if response is None:
         raise HTTPException(status_code=404, detail=f"unknown experiment: {experiment_id}")
     return response
+
+
+@router.post("/{experiment_id}/aggregate", response_model=AggregationResult)
+def aggregate_experiment_outputs(experiment_id: str, request: Request) -> AggregationResult:
+    try:
+        response = _experiment_manager(request).aggregate(experiment_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if response is None:
+        raise HTTPException(status_code=404, detail=f"unknown experiment: {experiment_id}")
+    return response
+
+
+@router.get("/{experiment_id}/summary", response_model=ExperimentSummary)
+def get_experiment_summary(experiment_id: str, request: Request) -> ExperimentSummary:
+    try:
+        response = _experiment_manager(request).summary(experiment_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if response is None:
+        raise HTTPException(status_code=404, detail=f"experiment summary not found: {experiment_id}")
+    return response
+
+
+@router.get("/{experiment_id}/leaderboard", response_model=list[LeaderboardRow])
+def get_experiment_leaderboard(experiment_id: str, request: Request) -> list[LeaderboardRow]:
+    try:
+        response = _experiment_manager(request).leaderboard(experiment_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if response is None:
+        raise HTTPException(status_code=404, detail=f"experiment leaderboard not found: {experiment_id}")
+    return response
+
+
+@router.get("/{experiment_id}/report", response_class=PlainTextResponse)
+def get_experiment_report(experiment_id: str, request: Request) -> PlainTextResponse:
+    try:
+        path = _experiment_manager(request).report_path(experiment_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if path is None:
+        raise HTTPException(status_code=404, detail=f"unknown experiment: {experiment_id}")
+    if not path.exists():
+        raise HTTPException(status_code=404, detail=f"experiment report not found: {experiment_id}")
+    return PlainTextResponse(path.read_text(encoding="utf-8"), media_type="text/markdown")
 
 
 @router.post("/{experiment_id}/submit-nebius", response_model=ExperimentJobRecord)

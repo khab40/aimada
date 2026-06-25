@@ -259,15 +259,16 @@ Deliverables:
 - `[done]` `backend/app/experiments/attack_manifest.py` writes deterministic attack manifests to `outputs/experiments/<experiment_id>/attacks.jsonl` without running the simulator.
 - `[done]` `backend/app/experiments/artifact_normalizer.py` copies local-batch outputs into canonical experiment-root artifact names and writes `artifact_index.json` without deleting originals.
 - `[done]` `backend/app/experiments/investigation_pipeline.py` runs bounded AI investigation reports over top persisted batch alerts only.
+- `[done]` `backend/app/experiments/aggregator.py` writes `experiment_summary.json`, `leaderboard.json`, and `benchmark_report.md` from normalized batch artifacts.
 - `[done]` `backend/app/experiments/nebius_orchestrator.py` is the only boundary for future real Nebius Serverless Job SDK/CLI calls.
-- `[done]` REST routes on the existing experiment API: `POST /api/experiments`, `GET /api/experiments`, `GET /api/experiments/{id}`, `DELETE /api/experiments/{id}`, `POST /api/experiments/{id}/generate-manifest`, `POST /api/experiments/{id}/run-local-batch`, `POST /api/experiments/{id}/normalize-artifacts`, `POST /api/experiments/{id}/run-investigations`, `GET /api/experiments/{id}/investigations`, `POST /api/experiments/{id}/submit-nebius`, `GET /api/experiments/{id}/jobs`, and `POST /api/experiments/{id}/refresh-jobs`.
+- `[done]` REST routes on the existing experiment API: `POST /api/experiments`, `GET /api/experiments`, `GET /api/experiments/{id}`, `DELETE /api/experiments/{id}`, `POST /api/experiments/{id}/generate-manifest`, `POST /api/experiments/{id}/run-local-batch`, `POST /api/experiments/{id}/normalize-artifacts`, `POST /api/experiments/{id}/run-investigations`, `GET /api/experiments/{id}/investigations`, `POST /api/experiments/{id}/aggregate`, `GET /api/experiments/{id}/summary`, `GET /api/experiments/{id}/leaderboard`, `GET /api/experiments/{id}/report`, `POST /api/experiments/{id}/submit-nebius`, `GET /api/experiments/{id}/jobs`, and `POST /api/experiments/{id}/refresh-jobs`.
 - `[done]` experiment local batches reuse the same `serverless/jobs/run_batch_experiments.py` execution path as `/api/nebius/smart-batches`.
 - `[done]` local batch outputs write to `outputs/experiments/<experiment_id>/local-batch/`, with one `local_parallel_batch` job record in `outputs/experiments/<experiment_id>/jobs.jsonl`.
 - `[done]` when real Nebius job execution is not configured, `submit-nebius` writes a `real_nebius_pending` job record instead of pretending cloud execution happened.
 - `[done]` `/api/nebius/observatory` includes experiment job summary counts when experiment jobs exist.
 - `[done]` Reports summary includes managed experiment manifests alongside older attack-builder experiments.
 - `[done]` `/api/nebius/smart-batches` remains unchanged for Nebius Control Panel smart-batch execution.
-- `[done]` tests for create, list, get, report visibility, delete, deterministic attack manifests, attack counts, expected labels, a 3-run local batch, fake local-batch artifact normalization, mocked Nebius investigations, and missing real Nebius config.
+- `[done]` tests for create, list, get, report visibility, delete, deterministic attack manifests, attack counts, expected labels, a 3-run local batch, fake local-batch artifact normalization, mocked Nebius investigations, sample-CSV aggregation, and missing real Nebius config.
 
 Current behavior:
 
@@ -278,6 +279,7 @@ Current behavior:
 - `normalize-artifacts` maps `order_book_events.jsonl`, `trades.jsonl`, `attack_labels.jsonl`, `blue_team_alerts.jsonl`, `detector_metrics.csv`, `generated_report.md`, and `manifest.json` into `events.jsonl`, `trades.jsonl`, `labels.jsonl`, `alerts.jsonl`, `detector_metrics.csv`, `benchmark_report.md`, `batch_manifest.json`, and `artifact_index.json`.
 - `run-investigations` reads `alerts.jsonl` or `local-batch/blue_team_alerts.jsonl`, selects the top alerts by confidence, calls the existing Nebius investigation-report client once per selected alert, and persists JSON/Markdown reports under `investigations/`.
 - The investigation path is batch-only and never calls an LLM for every simulation tick.
+- `aggregate` reads `detector_metrics.csv`, alerts, labels, and investigations, reuses CSV metrics as the source of truth, and writes `experiment_summary.json`, `leaderboard.json`, and `benchmark_report.md`.
 - `submit-nebius` ensures `attacks.jsonl` exists and records a `nebius_serverless_job` with `real_nebius_pending` unless real Nebius job submission is explicitly implemented in `nebius_orchestrator.py`.
 - `nebius_mode` supports `mock`, `local_parallel_batch`, and `real_nebius_pending`.
 - `smart_batch_id` is optional and is set to the local batch id after `run-local-batch` completes.

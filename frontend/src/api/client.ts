@@ -185,6 +185,35 @@ export type InvestigationRunResponse = {
   investigations: InvestigationRecord[];
 };
 
+export type ExperimentSummary = {
+  experiment_id: string;
+  total_attacks: number;
+  total_alerts: number;
+  scenarios: string[];
+  precision_by_scenario: Record<string, number>;
+  recall_by_scenario: Record<string, number>;
+  f1_by_scenario: Record<string, number>;
+  avg_detection_latency_ms?: number | null;
+  investigation_count: number;
+  failed_runs: number;
+  artifact_paths: Record<string, string>;
+};
+
+export type ExperimentLeaderboardRow = {
+  scenario: string;
+  precision: number;
+  recall: number;
+  f1: number;
+  avg_detection_latency_ms?: number | null;
+  alert_count: number;
+};
+
+export type ExperimentAggregationResult = {
+  summary: ExperimentSummary;
+  leaderboard: ExperimentLeaderboardRow[];
+  report_path: string;
+};
+
 export type ExperimentJobRecord = {
   job_id: string;
   experiment_id: string;
@@ -572,6 +601,36 @@ export async function listManagedExperimentInvestigations(experimentId: string):
     throw new Error(`List experiment investigations failed: ${response.status}`);
   }
   return response.json();
+}
+
+export async function aggregateManagedExperiment(experimentId: string): Promise<ExperimentAggregationResult> {
+  const response = await fetch(`${API_BASE_URL}/api/experiments/${encodeURIComponent(experimentId)}/aggregate`, {
+    method: "POST"
+  });
+  if (!response.ok) {
+    throw new Error(`Aggregate experiment failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function getManagedExperimentSummary(experimentId: string): Promise<ExperimentSummary> {
+  const response = await fetch(`${API_BASE_URL}/api/experiments/${encodeURIComponent(experimentId)}/summary`);
+  if (!response.ok) {
+    throw new Error(`Get experiment summary failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function getManagedExperimentLeaderboard(experimentId: string): Promise<ExperimentLeaderboardRow[]> {
+  const response = await fetch(`${API_BASE_URL}/api/experiments/${encodeURIComponent(experimentId)}/leaderboard`);
+  if (!response.ok) {
+    throw new Error(`Get experiment leaderboard failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export function getManagedExperimentReportUrl(experimentId: string): string {
+  return `${API_BASE_URL}/api/experiments/${encodeURIComponent(experimentId)}/report`;
 }
 
 export async function submitManagedExperimentNebius(experimentId: string): Promise<ExperimentJobRecord> {

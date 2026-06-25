@@ -6,10 +6,14 @@ from types import SimpleNamespace
 from app.api.routes_experiments import (
     AttackExperimentRequest,
     BenchmarkRunRequest,
+    aggregate_experiment_outputs,
     create_experiment,
     delete_experiment,
     generate_experiment_attack_manifest,
     get_experiment,
+    get_experiment_leaderboard,
+    get_experiment_report,
+    get_experiment_summary,
     launch_attack_experiment,
     list_experiment_investigations,
     list_experiments,
@@ -362,6 +366,69 @@ def test_run_investigations_uses_mocked_nebius_client_for_top_alerts(tmp_path: P
     assert refreshed.artifact_paths["investigations"] == str(tmp_path / "experiments" / experiment.id / "investigations")
 
 
+def test_aggregate_experiment_uses_sample_detector_metrics_csv(tmp_path: Path) -> None:
+    request = _request(tmp_path)
+    experiment = create_experiment(
+        ExperimentCreateRequest(
+            name="Aggregate sample metrics",
+            attack_count=4,
+            batch_size=2,
+            scenarios=["normal_market", "spoofing"],
+            seed=71,
+        ),
+        request,
+    )
+    artifact_dir = tmp_path / "experiments" / experiment.id
+    (artifact_dir / "detector_metrics.csv").write_text(
+        "\n".join(
+            [
+                "scenario,runs,alerts,precision,recall,f1,avg_detection_latency_ms",
+                "normal_market,2,0,1.0,0.0,0.0,",
+                "spoofing,2,2,0.75,0.5,0.6,450",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (artifact_dir / "alerts.jsonl").write_text(
+        '{"alert_id":"a1","scenario":"spoofing","confidence":0.9}\n{"alert_id":"a2","scenario":"spoofing","confidence":0.7}\n',
+        encoding="utf-8",
+    )
+    (artifact_dir / "labels.jsonl").write_text(
+        '{"run_id":"r1","scenario":"normal_market","has_attack":false}\n'
+        '{"run_id":"r2","scenario":"spoofing","has_attack":true}\n'
+        '{"run_id":"r3","scenario":"spoofing","has_attack":true}\n',
+        encoding="utf-8",
+    )
+    investigations_dir = artifact_dir / "investigations"
+    investigations_dir.mkdir()
+    (investigations_dir / "a1.json").write_text('{"alert_id":"a1"}\n', encoding="utf-8")
+
+    aggregate = aggregate_experiment_outputs(experiment.id, request)
+    summary = get_experiment_summary(experiment.id, request)
+    leaderboard = get_experiment_leaderboard(experiment.id, request)
+    report = get_experiment_report(experiment.id, request)
+    refreshed = get_experiment(experiment.id, request)
+
+    assert aggregate.summary.experiment_id == experiment.id
+    assert summary.total_attacks == 2
+    assert summary.total_alerts == 2
+    assert summary.investigation_count == 1
+    assert summary.failed_runs == 0
+    assert summary.precision_by_scenario["spoofing"] == 0.75
+    assert summary.recall_by_scenario["spoofing"] == 0.5
+    assert summary.f1_by_scenario["spoofing"] == 0.6
+    assert summary.avg_detection_latency_ms == 450
+    assert leaderboard[1].scenario == "spoofing"
+    assert leaderboard[1].alert_count == 2
+    assert "Experiment Benchmark Report" in report.body.decode("utf-8")
+    assert (artifact_dir / "experiment_summary.json").exists()
+    assert (artifact_dir / "leaderboard.json").exists()
+    assert (artifact_dir / "benchmark_report.md").exists()
+    assert refreshed.artifact_paths["experiment_summary"] == str(artifact_dir / "experiment_summary.json")
+    assert refreshed.artifact_paths["leaderboard"] == str(artifact_dir / "leaderboard.json")
+
+
 def test_submit_nebius_without_real_config_persists_pending_job(tmp_path: Path) -> None:
     request = _request(tmp_path)
     experiment = create_experiment(
@@ -407,6 +474,10 @@ def test_managed_experiment_routes_are_registered_on_experiment_api() -> None:
     assert ("POST", "/api/experiments/{experiment_id}/normalize-artifacts") in routes
     assert ("POST", "/api/experiments/{experiment_id}/run-investigations") in routes
     assert ("GET", "/api/experiments/{experiment_id}/investigations") in routes
+    assert ("POST", "/api/experiments/{experiment_id}/aggregate") in routes
+    assert ("GET", "/api/experiments/{experiment_id}/summary") in routes
+    assert ("GET", "/api/experiments/{experiment_id}/leaderboard") in routes
+    assert ("GET", "/api/experiments/{experiment_id}/report") in routes
     assert ("POST", "/api/experiments/{experiment_id}/submit-nebius") in routes
     assert ("GET", "/api/experiments/{experiment_id}/jobs") in routes
     assert ("POST", "/api/experiments/{experiment_id}/refresh-jobs") in routes

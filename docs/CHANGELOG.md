@@ -13,10 +13,11 @@ Update this file with each significant commit before pushing.
 - Added `POST /api/experiments/{id}/run-local-batch`, reusing the existing smart-batch runner to write `outputs/experiments/<experiment_id>/local-batch/` and `jobs.jsonl`.
 - Added `POST /api/experiments/{id}/normalize-artifacts` to copy local-batch outputs into canonical experiment-root artifacts and write `artifact_index.json` without deleting originals.
 - Added batch alert investigation with `POST /api/experiments/{id}/run-investigations` and `GET /api/experiments/{id}/investigations`, reusing the existing Nebius investigation-report client against top persisted alerts only.
+- Added experiment aggregation with `POST /api/experiments/{id}/aggregate`, `GET /summary`, `GET /leaderboard`, and `GET /report`, reusing existing `detector_metrics.csv` values for scenario precision/recall/F1.
 - Added a real Nebius orchestration boundary with `POST /api/experiments/{id}/submit-nebius`, `GET /api/experiments/{id}/jobs`, and `POST /api/experiments/{id}/refresh-jobs`; without real Nebius job configuration it records `real_nebius_pending` instead of faking cloud execution.
 - Added experiment job summaries to `/api/nebius/observatory`.
 - Reused smart-batch-compatible artifact path conventions and Reports history indexing without changing `/api/nebius/smart-batches`.
-- Added backend tests for managed experiment create, list, get, report visibility, delete behavior, deterministic attack manifests, attack counts, expected labels, a 3-run local batch, fake local-batch artifact normalization, mocked Nebius investigations, and missing real Nebius config.
+- Added backend tests for managed experiment create, list, get, report visibility, delete behavior, deterministic attack manifests, attack counts, expected labels, a 3-run local batch, fake local-batch artifact normalization, mocked Nebius investigations, sample-CSV aggregation, and missing real Nebius config.
 
 ### Current - fix: sync arena tick widgets
 

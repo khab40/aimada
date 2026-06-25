@@ -23,7 +23,9 @@ const experimentArtifactKeys = new Set([
   "detector_metrics",
   "benchmark_report",
   "batch_manifest",
-  "artifact_index"
+  "artifact_index",
+  "experiment_summary",
+  "leaderboard"
 ]);
 
 export function ReportsPage() {

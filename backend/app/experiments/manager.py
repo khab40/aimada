@@ -1,6 +1,7 @@
 from pathlib import Path
 from uuid import uuid4
 
+from app.experiments.aggregator import AggregationResult, ExperimentSummary, LeaderboardRow, aggregate_experiment, load_leaderboard, load_summary, report_path
 from app.experiments.artifact_normalizer import ArtifactNormalizationResponse, normalize_local_batch_artifacts
 from app.experiments.attack_manifest import AttackManifestResponse, generate_attack_manifest
 from app.experiments.investigation_pipeline import (
@@ -268,6 +269,49 @@ class ExperimentManager:
         if experiment is None:
             return None
         return list_investigations(self.repository.experiment_dir(experiment.id))
+
+    def aggregate(self, experiment_id: str) -> AggregationResult | None:
+        experiment = self.repository.get(experiment_id)
+        if experiment is None:
+            return None
+        artifact_dir = self.repository.experiment_dir(experiment.id)
+        result = aggregate_experiment(experiment.id, artifact_dir)
+        updated = experiment.model_copy(
+            update={
+                "artifact_paths": {**experiment.artifact_paths, **result.summary.artifact_paths},
+                "updated_at": utc_now(),
+            }
+        )
+        self.repository.save(updated)
+        append_history_artifact(
+            self.repository.store,
+            kind="artifact",
+            payload=result.model_dump(mode="json"),
+            summary=f"Experiment aggregate report generated for {experiment.id}",
+            created_at=updated.updated_at,
+            run_id=experiment.id,
+            source="experiment_aggregator",
+            source_path=f"experiments/{experiment.id}/experiment_summary.json",
+        )
+        return result
+
+    def summary(self, experiment_id: str) -> ExperimentSummary | None:
+        experiment = self.repository.get(experiment_id)
+        if experiment is None:
+            return None
+        return load_summary(self.repository.experiment_dir(experiment.id))
+
+    def leaderboard(self, experiment_id: str) -> list[LeaderboardRow] | None:
+        experiment = self.repository.get(experiment_id)
+        if experiment is None:
+            return None
+        return load_leaderboard(self.repository.experiment_dir(experiment.id))
+
+    def report_path(self, experiment_id: str) -> Path | None:
+        experiment = self.repository.get(experiment_id)
+        if experiment is None:
+            return None
+        return report_path(self.repository.experiment_dir(experiment.id))
 
     def delete(self, experiment_id: str) -> bool:
         return self.repository.delete(experiment_id)
