@@ -5,6 +5,11 @@ Update this file with each significant commit before pushing.
 
 ## Unreleased
 
+### Current - fix: restore backend Docker startup
+
+- Fixed a Python 3.11 import-time annotation crash in `ExperimentManager` where the `list()` method shadowed the builtin `list` for later `list[...]` return annotations.
+- Verified the rebuilt backend Docker image can import `app.main` successfully.
+
 ### Current - feat: add phase-4.5 experiment manager
 
 - Added a managed experiment manifest layer under `/api/experiments` with create/list/get/delete routes.
