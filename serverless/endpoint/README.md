@@ -17,16 +17,18 @@ It exposes the AI surfaces used by the backend:
 ## Modes
 
 - `NEBIUS_ENDPOINT_MODE=mock` returns deterministic structured responses.
-- `NEBIUS_ENDPOINT_MODE=ai` calls Nebius AI Studio through an OpenAI-compatible
+- `NEBIUS_ENDPOINT_MODE=ai` calls Nebius through an OpenAI-compatible
   chat completions request.
 
 Required for AI mode:
 
 ```bash
 NEBIUS_API_KEY=...
-NEBIUS_AI_STUDIO_BASE_URL=https://api.studio.nebius.com/v1
-NEBIUS_AI_MODEL=meta-llama/Meta-Llama-3.1-8B-Instruct
+NEBIUS_BASE_URL=https://api.tokenfactory.nebius.com/v1/
+NEBIUS_MODEL=meta-llama/Meta-Llama-3.1-8B-Instruct
 ```
+
+Existing deployments can keep using `NEBIUS_AI_STUDIO_BASE_URL` and `NEBIUS_AI_MODEL`; the endpoint treats them as backward-compatible aliases when the new names are unset.
 
 ## Local Run
 

@@ -13,6 +13,8 @@ DISCLAIMER = (
     "Educational synthetic simulation only. This does not detect real market manipulation, "
     "does not provide trading signals, and must not be used for compliance decisions."
 )
+DEFAULT_NEBIUS_BASE_URL = "https://api.tokenfactory.nebius.com/v1/"
+DEFAULT_NEBIUS_MODEL = "meta-llama/Meta-Llama-3.1-8B-Instruct"
 
 app = FastAPI(title="AI Market Abuse Detection Arena Serverless Endpoint")
 
@@ -219,8 +221,8 @@ def _call_model_json(system_prompt: str, user_payload: dict[str, Any]) -> dict[s
         return None
 
     api_key = os.environ["NEBIUS_API_KEY"]
-    base_url = os.environ.get("NEBIUS_AI_STUDIO_BASE_URL", "https://api.studio.nebius.com/v1")
-    model = os.environ.get("NEBIUS_AI_MODEL", "meta-llama/Meta-Llama-3.1-8B-Instruct")
+    base_url = _nebius_base_url()
+    model = _nebius_model()
     temperature = float(os.environ.get("NEBIUS_TEMPERATURE", "0.2"))
     max_tokens = int(os.environ.get("NEBIUS_MAX_TOKENS", "800"))
     url = f"{base_url.rstrip('/')}/chat/completions"
@@ -255,6 +257,22 @@ def _call_model_json(system_prompt: str, user_payload: dict[str, Any]) -> dict[s
         return parsed if isinstance(parsed, dict) else None
     except (KeyError, IndexError, TypeError, json.JSONDecodeError):
         return None
+
+
+def _nebius_base_url() -> str:
+    return (
+        os.environ.get("NEBIUS_BASE_URL")
+        or os.environ.get("NEBIUS_AI_STUDIO_BASE_URL")
+        or DEFAULT_NEBIUS_BASE_URL
+    )
+
+
+def _nebius_model() -> str:
+    return (
+        os.environ.get("NEBIUS_MODEL")
+        or os.environ.get("NEBIUS_AI_MODEL")
+        or DEFAULT_NEBIUS_MODEL
+    )
 
 
 def _deterministic_explanation(request: IncidentExplanationRequest) -> IncidentExplanationResponse:

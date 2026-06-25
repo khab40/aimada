@@ -12,8 +12,8 @@ image:
 
 env:
   NEBIUS_ENDPOINT_MODE: mock
-  NEBIUS_AI_STUDIO_BASE_URL: https://api.studio.nebius.com/v1
-  NEBIUS_AI_MODEL: meta-llama/Meta-Llama-3.1-8B-Instruct
+  NEBIUS_BASE_URL: https://api.tokenfactory.nebius.com/v1/
+  NEBIUS_MODEL: meta-llama/Meta-Llama-3.1-8B-Instruct
   NEBIUS_TEMPERATURE: "0.2"
   NEBIUS_MAX_TOKENS: "800"
   NEBIUS_REQUEST_TIMEOUT_SECONDS: "12"

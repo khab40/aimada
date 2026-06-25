@@ -9,6 +9,8 @@ DISK_SIZE="${NEBIUS_ENDPOINT_DISK_SIZE:-100Gi}"
 CONTAINER_PORT="${NEBIUS_ENDPOINT_PORT:-9000}"
 AUTH="${NEBIUS_ENDPOINT_AUTH:-token}"
 MODE="${NEBIUS_ENDPOINT_MODE:-mock}"
+BASE_URL="${NEBIUS_BASE_URL:-${NEBIUS_AI_STUDIO_BASE_URL:-https://api.tokenfactory.nebius.com/v1/}}"
+MODEL="${NEBIUS_MODEL:-${NEBIUS_AI_MODEL:-meta-llama/Meta-Llama-3.1-8B-Instruct}}"
 
 if [[ -z "${NEBIUS_SUBNET_ID:-}" ]]; then
   printf "%s\n" "NEBIUS_SUBNET_ID is required." >&2
@@ -27,8 +29,8 @@ args=(
   --public
   --auth "${AUTH}"
   --env "NEBIUS_ENDPOINT_MODE=${MODE}"
-  --env "NEBIUS_AI_STUDIO_BASE_URL=${NEBIUS_AI_STUDIO_BASE_URL:-https://api.studio.nebius.com/v1}"
-  --env "NEBIUS_AI_MODEL=${NEBIUS_AI_MODEL:-meta-llama/Meta-Llama-3.1-8B-Instruct}"
+  --env "NEBIUS_BASE_URL=${BASE_URL}"
+  --env "NEBIUS_MODEL=${MODEL}"
   --env "NEBIUS_TEMPERATURE=${NEBIUS_TEMPERATURE:-0.2}"
   --env "NEBIUS_MAX_TOKENS=${NEBIUS_MAX_TOKENS:-800}"
   --env "NEBIUS_REQUEST_TIMEOUT_SECONDS=${NEBIUS_REQUEST_TIMEOUT_SECONDS:-12}"
@@ -43,10 +45,12 @@ if [[ "${AUTH}" == "token" ]]; then
   if [[ -n "${NEBIUS_ENDPOINT_TOKEN_SECRET:-}" ]]; then
     args+=(--token-secret "${NEBIUS_ENDPOINT_TOKEN_SECRET}")
   else
-    AUTH_TOKEN="${NEBIUS_ENDPOINT_TOKEN:-$(openssl rand -hex 32)}"
-    args+=(--token "${AUTH_TOKEN}")
-    printf "%s\n" "Endpoint token: ${AUTH_TOKEN}"
-    printf "%s\n" "Save it as NEBIUS_API_KEY for backend/call_endpoint.py requests."
+    if [[ -z "${NEBIUS_ENDPOINT_TOKEN:-}" ]]; then
+      printf "%s\n" "NEBIUS_ENDPOINT_TOKEN or NEBIUS_ENDPOINT_TOKEN_SECRET is required when auth=token." >&2
+      exit 2
+    fi
+    args+=(--token "${NEBIUS_ENDPOINT_TOKEN}")
+    printf "%s\n" "Using NEBIUS_ENDPOINT_TOKEN from the environment. Token value is not printed."
   fi
 fi
 

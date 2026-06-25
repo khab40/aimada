@@ -373,6 +373,9 @@ export type NebiusStatus = {
   incident_explainer_configured: boolean;
   scenario_generator_configured: boolean;
   api_key_configured: boolean;
+  endpoint_mode?: string;
+  base_url_configured?: boolean;
+  model_configured?: boolean;
   cli_installed: boolean;
   cli_path?: string | null;
   cli_version?: string | null;

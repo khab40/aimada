@@ -1,6 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
-from pydantic import Field
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -25,6 +25,15 @@ class Settings(BaseSettings):
     nebius_scenario_generator_url: str | None = Field(
         default=None,
         alias="NEBIUS_SCENARIO_GENERATOR_URL",
+    )
+    nebius_endpoint_mode: str = Field(default="mock", alias="NEBIUS_ENDPOINT_MODE")
+    nebius_base_url: str = Field(
+        default="https://api.tokenfactory.nebius.com/v1/",
+        validation_alias=AliasChoices("NEBIUS_BASE_URL", "NEBIUS_AI_STUDIO_BASE_URL"),
+    )
+    nebius_model: str = Field(
+        default="meta-llama/Meta-Llama-3.1-8B-Instruct",
+        validation_alias=AliasChoices("NEBIUS_MODEL", "NEBIUS_AI_MODEL"),
     )
     arena_output_dir: Path = Field(default=Path("../outputs"), alias="ARENA_OUTPUT_DIR")
     arena_sample_data_dir: Path = Field(default=Path("../data/sample"), alias="ARENA_SAMPLE_DATA_DIR")

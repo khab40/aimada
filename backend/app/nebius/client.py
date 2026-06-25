@@ -110,6 +110,9 @@ class NebiusIntegrationStatus(BaseModel):
     incident_explainer_configured: bool
     scenario_generator_configured: bool
     api_key_configured: bool
+    endpoint_mode: str
+    base_url_configured: bool
+    model_configured: bool
     cli_installed: bool
     cli_path: str | None = None
     cli_version: str | None = None
@@ -224,6 +227,9 @@ class NebiusClient:
             incident_explainer_configured=bool(settings.nebius_explain_endpoint_url),
             scenario_generator_configured=bool(settings.nebius_scenario_endpoint_url),
             api_key_configured=bool(settings.nebius_api_key),
+            endpoint_mode=settings.nebius_endpoint_mode,
+            base_url_configured=bool(settings.nebius_base_url),
+            model_configured=bool(settings.nebius_model),
             cli_installed=bool(cli_path),
             cli_path=cli_path,
             cli_version=cli_version,

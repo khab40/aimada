@@ -5,6 +5,14 @@ Update this file with each significant commit before pushing.
 
 ## Unreleased
 
+### Current - fix: normalize Nebius endpoint environment names
+
+- Added `NEBIUS_BASE_URL` and `NEBIUS_MODEL` as canonical endpoint AI configuration names, defaulting `NEBIUS_BASE_URL` to `https://api.tokenfactory.nebius.com/v1/`.
+- Kept backward compatibility for `NEBIUS_AI_STUDIO_BASE_URL` and `NEBIUS_AI_MODEL` in backend settings and the serverless endpoint runtime.
+- Updated serverless env/config examples, Docker Compose, endpoint creation script, and Nebius deployment docs.
+- Stopped the Nebius endpoint creation script from printing generated auth tokens.
+- Added tests for new-name precedence, old-name fallback, and the tokenfactory default.
+
 ### Current - fix: restore backend Docker startup
 
 - Fixed a Python 3.11 import-time annotation crash in `ExperimentManager` where the `list()` method shadowed the builtin `list` for later `list[...]` return annotations.

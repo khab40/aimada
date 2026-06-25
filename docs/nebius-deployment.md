@@ -187,13 +187,15 @@ Set these on the deployed endpoint container:
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `NEBIUS_ENDPOINT_MODE` | yes | `mock` for deterministic fallback, `ai` to call Nebius AI Studio. |
+| `NEBIUS_ENDPOINT_MODE` | yes | `mock` for deterministic fallback, `ai` to call the Nebius OpenAI-compatible chat/completions API. |
 | `NEBIUS_API_KEY` | only for `ai` mode | Token used by the endpoint to call Nebius AI Studio. Store as a secret. |
-| `NEBIUS_AI_STUDIO_BASE_URL` | no | AI Studio API base URL. Defaults to `https://api.studio.nebius.com/v1`. |
-| `NEBIUS_AI_MODEL` | no | Model used for explanation/scenario JSON. |
+| `NEBIUS_BASE_URL` | no | Nebius OpenAI-compatible API base URL. Defaults to `https://api.tokenfactory.nebius.com/v1/`. |
+| `NEBIUS_MODEL` | no | Model used for explanation/scenario JSON. |
 | `NEBIUS_TEMPERATURE` | no | Model temperature. Use `0.2` for stable outputs. |
 | `NEBIUS_MAX_TOKENS` | no | Max completion size. Use a small value such as `800`. |
 | `NEBIUS_REQUEST_TIMEOUT_SECONDS` | no | Endpoint model-call timeout. |
+
+Backward-compatible aliases are still supported: `NEBIUS_AI_STUDIO_BASE_URL` is accepted when `NEBIUS_BASE_URL` is unset, and `NEBIUS_AI_MODEL` is accepted when `NEBIUS_MODEL` is unset. New deployments should use `NEBIUS_BASE_URL` and `NEBIUS_MODEL`.
 
 The endpoint exposes:
 
