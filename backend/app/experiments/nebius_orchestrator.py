@@ -50,6 +50,13 @@ class NebiusArtifactCollectionResponse(BaseModel):
     message: str
 
 
+class NebiusJobConfigRenderResponse(BaseModel):
+    experiment_id: str
+    path: str
+    image: str
+    output_dir: str
+
+
 class NebiusExperimentOrchestrator:
     def __init__(self, repository: ExperimentRepository, settings: Settings | None = None) -> None:
         self.repository = repository
@@ -163,6 +170,30 @@ class NebiusExperimentOrchestrator:
         if self.repository.get(experiment_id) is None:
             return None
         return self._read_jobs(experiment_id)
+
+    def render_job_config(self, experiment_id: str) -> NebiusJobConfigRenderResponse | None:
+        experiment = self.repository.get(experiment_id)
+        if experiment is None:
+            return None
+        artifact_dir = self.repository.experiment_dir(experiment.id)
+        rendered_config_path = self._render_job_config(experiment, artifact_dir)
+        context = self._command_context(experiment=experiment, rendered_config_path=rendered_config_path)
+        updated = experiment.model_copy(
+            update={
+                "artifact_paths": {
+                    **experiment.artifact_paths,
+                    "nebius_job_config": str(rendered_config_path),
+                },
+                "updated_at": utc_now(),
+            }
+        )
+        self.repository.save(updated)
+        return NebiusJobConfigRenderResponse(
+            experiment_id=experiment.id,
+            path=str(rendered_config_path),
+            image=context["image"],
+            output_dir=context["output_dir"],
+        )
 
     def refresh(self, experiment_id: str) -> list[ExperimentJobRecord] | None:
         if self.repository.get(experiment_id) is None:

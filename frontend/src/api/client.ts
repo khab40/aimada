@@ -176,6 +176,13 @@ export type NebiusArtifactCollectionResponse = ArtifactNormalizationResponse & {
   message: string;
 };
 
+export type NebiusJobConfigRenderResponse = {
+  experiment_id: string;
+  path: string;
+  image: string;
+  output_dir: string;
+};
+
 export type InvestigationRecord = {
   alert_id: string;
   experiment_id: string;
@@ -389,10 +396,14 @@ export type NebiusStatus = {
   investigation_report_configured: boolean;
   api_key_configured: boolean;
   endpoint_mode?: string;
+  endpoint_base_url?: string | null;
   endpoint_base_url_configured?: boolean;
   endpoint_health?: Record<string, unknown> | null;
   base_url_configured?: boolean;
   model_configured?: boolean;
+  model?: string;
+  job_image?: string;
+  job_submit_template_configured?: boolean;
   cli_installed: boolean;
   cli_path?: string | null;
   cli_version?: string | null;
@@ -672,6 +683,19 @@ export async function submitManagedExperimentNebius(experimentId: string): Promi
   });
   if (!response.ok) {
     throw new Error(`Submit experiment to Nebius failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function renderManagedExperimentNebiusJobConfig(
+  experimentId: string
+): Promise<NebiusJobConfigRenderResponse> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/experiments/${encodeURIComponent(experimentId)}/render-nebius-job-config`,
+    { method: "POST" }
+  );
+  if (!response.ok) {
+    throw new Error(`Render Nebius job config failed: ${response.status}`);
   }
   return response.json();
 }

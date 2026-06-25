@@ -177,8 +177,10 @@ repository/tag while still using the existing `serverless/jobs/Dockerfile` and
 The managed experiment flow is available locally through FastAPI and the React UI:
 
 - `/nebius` Experiment Lab creates experiment manifests, generates attack manifests, runs local batches, aggregates outputs, and runs bounded mock/endpoint-backed investigations.
+- `/nebius` Real Nebius Deployment shows endpoint base URL, endpoint health, endpoint mode, model, job image, rendered job config path, submit-template readiness, latest cloud job status, and artifact collection state. Its buttons call FastAPI to test endpoint health, smoke `orderbook-alert` and `investigation-report`, render job config, submit real Nebius jobs, refresh job status, and collect cloud artifacts.
 - `/reports` lists experiments and shows the selected experiment summary, detector leaderboard, `benchmark_report.md`, investigation report files, `artifact_index.json`, canonical artifacts, and original `local-batch` files.
 - Local batch execution reuses `serverless/jobs/run_batch_experiments.py` and writes under `outputs/experiments/<experiment_id>/`.
+- `POST /api/experiments/{id}/render-nebius-job-config` renders the existing job config for an experiment without submitting it.
 - `POST /api/experiments/{id}/submit-nebius` renders `nebius_job_config.rendered.yaml`. If `NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE` is unset, it records `real_nebius_pending`; if the template is set, it executes the command, parses a job id, and records a queued Nebius job.
 
 The command-template adapter lives only in `backend/app/experiments/nebius_orchestrator.py`. It supports these environment variables:

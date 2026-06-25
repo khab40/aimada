@@ -5,6 +5,14 @@ Update this file with each significant commit before pushing.
 
 ## Unreleased
 
+### Current - feat: add real Nebius deployment controls
+
+- Added a `/nebius` Real Nebius Deployment panel that shows endpoint base URL, endpoint health, endpoint mode, model, job image, rendered job config path, submit-template readiness, latest cloud job status, and cloud artifact collection status.
+- Added frontend actions for endpoint health, orderbook-alert, investigation-report, rendered job config, real Nebius submit, job refresh, and cloud artifact collection while preserving the existing Experiment Lab and smart-batch/local flow.
+- Exposed Nebius model, job image, endpoint base URL, and job submit-template readiness through `/api/nebius/status`.
+- Added `POST /api/experiments/{id}/render-nebius-job-config` so the UI can render the existing serverless job config without submitting a cloud job.
+- Kept missing real Nebius command templates visible as pending/not configured rather than showing fake real-cloud success.
+
 ### Current - chore: add deployment smoke workflow
 
 - Added `scripts/serverless-smoke.sh` to verify endpoint health, endpoint alert/report routes, jobs image 3-run execution, backend experiment creation, local batch execution, optional Nebius submit, optional artifact collection, and `outputs/serverless-smoke/summary.json`.

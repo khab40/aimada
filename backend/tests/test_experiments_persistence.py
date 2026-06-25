@@ -20,6 +20,7 @@ from app.api.routes_experiments import (
     launch_attack_experiment,
     list_experiment_investigations,
     list_experiments,
+    render_experiment_nebius_job_config,
     normalize_experiment_artifacts,
     reports_summary,
     router,
@@ -546,6 +547,30 @@ def test_submit_nebius_without_real_config_persists_pending_job(tmp_path: Path) 
     assert observatory_response.experiment_jobs["status_counts"]["real_nebius_pending"] == 1
 
 
+def test_render_nebius_job_config_without_submit(tmp_path: Path) -> None:
+    request = _request(tmp_path)
+    experiment = create_experiment(
+        ExperimentCreateRequest(
+            name="Render Nebius config",
+            attack_count=10,
+            batch_size=5,
+            scenarios=["normal_market", "spoofing"],
+            seed=73,
+            nebius_mode="real_nebius_pending",
+        ),
+        request,
+    )
+
+    response = render_experiment_nebius_job_config(experiment.id, request)
+    refreshed = get_experiment(experiment.id, request)
+
+    assert response.experiment_id == experiment.id
+    assert response.path == str(tmp_path / "experiments" / experiment.id / "nebius_job_config.rendered.yaml")
+    assert response.output_dir == f"/job/outputs/experiments/{experiment.id}/local-batch"
+    assert Path(response.path).exists()
+    assert refreshed.artifact_paths["nebius_job_config"] == response.path
+
+
 def test_managed_experiment_routes_are_registered_on_experiment_api() -> None:
     routes = {(method, route.path) for route in router.routes for method in route.methods}
 
@@ -561,6 +586,7 @@ def test_managed_experiment_routes_are_registered_on_experiment_api() -> None:
     assert ("GET", "/api/experiments/{experiment_id}/leaderboard") in routes
     assert ("GET", "/api/experiments/{experiment_id}/report") in routes
     assert ("POST", "/api/experiments/{experiment_id}/submit-nebius") in routes
+    assert ("POST", "/api/experiments/{experiment_id}/render-nebius-job-config") in routes
     assert ("GET", "/api/experiments/{experiment_id}/jobs") in routes
     assert ("POST", "/api/experiments/{experiment_id}/refresh-jobs") in routes
     assert ("POST", "/api/experiments/{experiment_id}/collect-nebius-artifacts") in routes

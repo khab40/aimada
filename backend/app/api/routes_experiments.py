@@ -27,6 +27,7 @@ from app.experiments.nebius_orchestrator import (
     ExperimentJobRecord,
     NebiusArtifactCollectionResponse,
     NebiusExperimentOrchestrator,
+    NebiusJobConfigRenderResponse,
 )
 from app.experiments.repository import ExperimentRepository
 from app.nebius.client import NebiusClient
@@ -460,6 +461,20 @@ def submit_experiment_nebius(experiment_id: str, request: Request) -> Experiment
     if job is None:
         raise HTTPException(status_code=404, detail=f"unknown experiment: {experiment_id}")
     return job
+
+
+@router.post("/{experiment_id}/render-nebius-job-config", response_model=NebiusJobConfigRenderResponse)
+def render_experiment_nebius_job_config(
+    experiment_id: str,
+    request: Request,
+) -> NebiusJobConfigRenderResponse:
+    try:
+        response = _nebius_orchestrator(request).render_job_config(experiment_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if response is None:
+        raise HTTPException(status_code=404, detail=f"unknown experiment: {experiment_id}")
+    return response
 
 
 @router.get("/{experiment_id}/jobs", response_model=list[ExperimentJobRecord])

@@ -113,10 +113,14 @@ class NebiusIntegrationStatus(BaseModel):
     investigation_report_configured: bool
     api_key_configured: bool
     endpoint_mode: str
+    endpoint_base_url: str | None = None
     endpoint_base_url_configured: bool
     endpoint_health: dict[str, Any] | None = None
     base_url_configured: bool
     model_configured: bool
+    model: str
+    job_image: str
+    job_submit_template_configured: bool
     cli_installed: bool
     cli_path: str | None = None
     cli_version: str | None = None
@@ -250,10 +254,14 @@ class NebiusClient:
             investigation_report_configured=bool(settings.nebius_investigation_report_endpoint_url),
             api_key_configured=bool(settings.nebius_api_key),
             endpoint_mode=settings.nebius_endpoint_mode,
+            endpoint_base_url=settings.nebius_endpoint_base_url,
             endpoint_base_url_configured=bool(settings.nebius_endpoint_base_url),
             endpoint_health=self.endpoint_health(),
             base_url_configured=bool(settings.nebius_base_url),
             model_configured=bool(settings.nebius_model),
+            model=settings.nebius_model,
+            job_image=settings.nebius_job_image,
+            job_submit_template_configured=bool(settings.nebius_job_submit_command_template),
             cli_installed=bool(cli_path),
             cli_path=cli_path,
             cli_version=cli_version,

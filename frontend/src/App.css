@@ -1361,6 +1361,10 @@ h3 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.real-nebius-summary-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .experiment-form-card,
 .experiment-progress-card {
   border: 1px solid rgba(34, 211, 238, 0.14);
@@ -4728,6 +4732,7 @@ kbd,
   .nebius-control-grid,
   .experiment-lab-layout,
   .experiment-output-grid,
+  .real-nebius-summary-grid,
   .attack-scenario-page-grid,
   .blue-team-grid,
   .artifact-workbench-layout,
@@ -4859,6 +4864,7 @@ kbd,
   .nebius-control-grid,
   .experiment-lab-layout,
   .experiment-output-grid,
+  .real-nebius-summary-grid,
   .attack-scenario-page-grid,
   .blue-team-grid,
   .artifact-workbench-layout,

@@ -19,6 +19,9 @@ import {
   getReportsSummary,
   listManagedExperimentJobs,
   listManagedExperiments,
+  collectManagedExperimentNebiusArtifacts,
+  refreshManagedExperimentJobs,
+  renderManagedExperimentNebiusJobConfig,
   runSmartBatches,
   runSmartDetection,
   runManagedExperimentInvestigations,
@@ -115,6 +118,12 @@ type ExperimentAction =
   | "generate-manifest"
   | "run-local-batch"
   | "submit-nebius"
+  | "refresh-job-status"
+  | "collect-cloud-artifacts"
+  | "render-job-config"
+  | "test-endpoint-health"
+  | "test-orderbook-alert"
+  | "test-investigation-report"
   | "aggregate"
   | "run-investigations";
 
@@ -153,6 +162,9 @@ export function NebiusControlPanelPage() {
   const [experimentSummary, setExperimentSummary] = useState<ExperimentSummary | null>(null);
   const [experimentMessage, setExperimentMessage] = useState<string | null>(null);
   const [experimentBusyAction, setExperimentBusyAction] = useState<ExperimentAction | null>(null);
+  const [nebiusStatus, setNebiusStatus] = useState<NebiusStatus | null>(null);
+  const [nebiusObservatory, setNebiusObservatory] = useState<NebiusObservatory | null>(null);
+  const [deploymentPanelMessage, setDeploymentPanelMessage] = useState<string | null>(null);
 
   useEffect(() => {
     void refreshControlPlane();
@@ -169,6 +181,8 @@ export function NebiusControlPanelPage() {
         getNebiusObservatory(),
         getReportsSummary()
       ]);
+      setNebiusStatus(status);
+      setNebiusObservatory(observatory);
       setRuntimeStatus(runtimeFrom(status, observatory));
       setUsageMetrics(usageFrom(observatory, reports));
       setServices(servicesFrom(observatory));
@@ -286,6 +300,57 @@ export function NebiusControlPanelPage() {
       const job = await submitManagedExperimentNebius(experiment.id);
       setExperimentMessage(job.status === "real_nebius_pending" ? "pending real Nebius execution" : job.message);
       await refreshExperimentDetails(experiment.id);
+    });
+  }
+
+  async function renderExperimentJobConfig() {
+    if (!experiment) return;
+    await runExperimentAction("render-job-config", async () => {
+      const rendered = await renderManagedExperimentNebiusJobConfig(experiment.id);
+      setDeploymentPanelMessage(`Rendered job config: ${rendered.path}`);
+      await refreshExperimentDetails(experiment.id);
+    });
+  }
+
+  async function refreshExperimentJobStatus() {
+    if (!experiment) return;
+    await runExperimentAction("refresh-job-status", async () => {
+      const refreshed = await refreshManagedExperimentJobs(experiment.id);
+      setExperimentJobs(refreshed);
+      const latest = latestExperimentJob(refreshed);
+      setDeploymentPanelMessage(latest ? `Latest cloud job status: ${latest.status.replaceAll("_", " ")}` : "No job records yet.");
+      await refreshExperimentDetails(experiment.id);
+    });
+  }
+
+  async function collectExperimentCloudArtifacts() {
+    if (!experiment) return;
+    await runExperimentAction("collect-cloud-artifacts", async () => {
+      const result = await collectManagedExperimentNebiusArtifacts(experiment.id);
+      setDeploymentPanelMessage(result.status === "collected" ? `Collected ${result.copied_count} cloud artifacts.` : result.message);
+      await refreshExperimentDetails(experiment.id);
+    });
+  }
+
+  async function testEndpointHealth() {
+    await runExperimentAction("test-endpoint-health", async () => {
+      const status = await getNebiusStatus();
+      setNebiusStatus(status);
+      setDeploymentPanelMessage(`Endpoint health: ${healthStatusLabel(status.endpoint_health)}.`);
+    });
+  }
+
+  async function testOrderbookAlert() {
+    await runExperimentAction("test-orderbook-alert", async () => {
+      const alert = await runSmartDetection();
+      setDeploymentPanelMessage(`Orderbook alert returned ${alert.mode}: ${alert.detected_pattern} (${(alert.confidence * 100).toFixed(0)}%).`);
+    });
+  }
+
+  async function testInvestigationReport() {
+    await runExperimentAction("test-investigation-report", async () => {
+      const report = await createInvestigationReport();
+      setDeploymentPanelMessage(`Investigation report returned ${report.mode}: ${report.title}.`);
     });
   }
 
@@ -421,6 +486,22 @@ export function NebiusControlPanelPage() {
         onToggleScenario={toggleExperimentScenario}
         onUpdateForm={updateExperimentForm}
         summary={experimentSummary}
+      />
+
+      <RealNebiusDeploymentPanel
+        busyAction={experimentBusyAction}
+        experiment={experiment}
+        jobs={experimentJobs}
+        message={deploymentPanelMessage}
+        observatory={nebiusObservatory}
+        onCollectArtifacts={() => void collectExperimentCloudArtifacts()}
+        onRefreshJobStatus={() => void refreshExperimentJobStatus()}
+        onRenderJobConfig={() => void renderExperimentJobConfig()}
+        onSubmitNebius={() => void submitExperimentToNebius()}
+        onTestEndpointHealth={() => void testEndpointHealth()}
+        onTestInvestigationReport={() => void testInvestigationReport()}
+        onTestOrderbookAlert={() => void testOrderbookAlert()}
+        status={nebiusStatus}
       />
 
       <RuntimeStatusCard status={runtimeStatus} />
@@ -651,6 +732,143 @@ function ExperimentLab({
   );
 }
 
+function RealNebiusDeploymentPanel({
+  busyAction,
+  experiment,
+  jobs,
+  message,
+  observatory,
+  onCollectArtifacts,
+  onRefreshJobStatus,
+  onRenderJobConfig,
+  onSubmitNebius,
+  onTestEndpointHealth,
+  onTestInvestigationReport,
+  onTestOrderbookAlert,
+  status
+}: {
+  busyAction: ExperimentAction | null;
+  experiment: ManagedExperiment | null;
+  jobs: ExperimentJobRecord[];
+  message: string | null;
+  observatory: NebiusObservatory | null;
+  onCollectArtifacts: () => void;
+  onRefreshJobStatus: () => void;
+  onRenderJobConfig: () => void;
+  onSubmitNebius: () => void;
+  onTestEndpointHealth: () => void;
+  onTestInvestigationReport: () => void;
+  onTestOrderbookAlert: () => void;
+  status: NebiusStatus | null;
+}) {
+  const cloudJob = latestExperimentJob(jobs.filter((job) => job.backend === "nebius_serverless_job"));
+  const endpointHealth = status?.endpoint_health ?? observatory?.endpoint_health ?? null;
+  const endpointMode = status?.endpoint_mode ?? observatory?.endpoint_mode ?? "mock";
+  const hasExperiment = Boolean(experiment);
+
+  return (
+    <section className="panel experiment-lab-panel real-nebius-deployment-panel">
+      <div className="nebius-card-heading">
+        <div>
+          <p className="eyebrow">Real Nebius Deployment</p>
+          <h2>Real Nebius Deployment</h2>
+        </div>
+        <span className={`runtime-status ${cloudJob?.status ?? "missing"}`}>
+          {cloudJob?.status.replaceAll("_", " ") ?? "no cloud job"}
+        </span>
+      </div>
+
+      <div className="experiment-summary-grid real-nebius-summary-grid">
+        <MetricBlock label="Endpoint base URL" value={status?.endpoint_base_url || "not configured"} />
+        <MetricBlock label="Endpoint health" value={healthStatusLabel(endpointHealth)} />
+        <MetricBlock label="Endpoint mode" value={endpointMode} />
+        <MetricBlock label="Model" value={status?.model || "not configured"} />
+        <MetricBlock label="Job image" value={status?.job_image || "not configured"} />
+        <MetricBlock
+          label="Rendered config"
+          value={experiment?.artifact_paths.nebius_job_config ?? "not rendered"}
+        />
+        <MetricBlock
+          label="Submit template"
+          value={status?.job_submit_template_configured ? "yes" : "no"}
+        />
+        <MetricBlock
+          label="Latest cloud job"
+          value={cloudJob ? `${cloudJob.status.replaceAll("_", " ")} · ${cloudJob.job_id}` : "no cloud job"}
+        />
+        <MetricBlock label="Artifact collection" value={artifactCollectionStatus(experiment)} />
+      </div>
+
+      <div className="nebius-button-row">
+        <button
+          className="secondary-button"
+          disabled={busyAction === "test-endpoint-health"}
+          onClick={onTestEndpointHealth}
+          type="button"
+        >
+          Test endpoint health
+        </button>
+        <button
+          className="secondary-button"
+          disabled={busyAction === "test-orderbook-alert"}
+          onClick={onTestOrderbookAlert}
+          type="button"
+        >
+          Test orderbook-alert
+        </button>
+        <button
+          className="secondary-button"
+          disabled={busyAction === "test-investigation-report"}
+          onClick={onTestInvestigationReport}
+          type="button"
+        >
+          Test investigation-report
+        </button>
+        <button
+          className="secondary-button"
+          disabled={!hasExperiment || busyAction === "render-job-config"}
+          onClick={onRenderJobConfig}
+          type="button"
+        >
+          Render job config
+        </button>
+        <button
+          className="secondary-button"
+          disabled={!hasExperiment || busyAction === "submit-nebius"}
+          onClick={onSubmitNebius}
+          type="button"
+        >
+          Submit real Nebius job
+        </button>
+        <button
+          className="secondary-button"
+          disabled={!hasExperiment || busyAction === "refresh-job-status"}
+          onClick={onRefreshJobStatus}
+          type="button"
+        >
+          Refresh job status
+        </button>
+        <button
+          className="secondary-button"
+          disabled={!hasExperiment || busyAction === "collect-cloud-artifacts"}
+          onClick={onCollectArtifacts}
+          type="button"
+        >
+          Collect cloud artifacts
+        </button>
+      </div>
+
+      {status?.job_submit_template_configured ? null : (
+        <p className="experiment-pending-note">
+          Real job submit template is not configured. Submitting records pending real Nebius execution instead of fake cloud success.
+        </p>
+      )}
+      {cloudJob?.message ? <p className="experiment-message">{cloudJob.message}</p> : null}
+      {message ? <p className="experiment-message">{message}</p> : null}
+    </section>
+  );
+}
+
 function ExperimentProgressSummary({
   experiment,
   jobs,
@@ -810,6 +1028,24 @@ function formatScore(value: number) {
 
 function latestExperiment(experiments: ManagedExperiment[]) {
   return [...experiments].sort((left, right) => Date.parse(right.updated_at) - Date.parse(left.updated_at))[0] ?? null;
+}
+
+function latestExperimentJob(jobs: ExperimentJobRecord[]) {
+  return [...jobs].sort((left, right) => Date.parse(right.updated_at) - Date.parse(left.updated_at))[0] ?? null;
+}
+
+function healthStatusLabel(health: Record<string, unknown> | null | undefined) {
+  if (!health) return "not checked";
+  const status = health.status;
+  if (typeof status === "string" && status.trim()) return status.replaceAll("_", " ");
+  return "available";
+}
+
+function artifactCollectionStatus(experiment: ManagedExperiment | null) {
+  if (!experiment) return "no experiment";
+  if (experiment.status === "cloud_artifacts_pending") return "cloud artifacts pending";
+  if (experiment.artifact_paths.artifact_index) return "collected";
+  return "not collected";
 }
 
 function usageFrom(observatory: NebiusObservatory, reports: ReportsSummary): NebiusUsageMetrics {
