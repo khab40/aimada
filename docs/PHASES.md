@@ -167,7 +167,7 @@ Deliverables:
 - `[done]` liquidity-shock detector
 - `[done]` aggregate detector score model
 - `[done]` incident card UI
-- `[done]` incident drawer evidence section
+- `[done]` Incident Details evidence section
 
 Core features:
 

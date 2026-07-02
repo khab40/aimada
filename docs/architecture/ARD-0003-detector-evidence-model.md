@@ -11,7 +11,7 @@ Status as of 2026-06-23: `[done]`
 Implemented:
 
 - Deterministic feature extraction and detector modules for spoofing-like, layering-like, quote-stuffing-like, and liquidity shock patterns.
-- Aggregate detector scores, incident cards, incident drawer evidence, persisted incident records, and backend explanation payloads grounded in structured evidence.
+- Aggregate detector scores, incident cards, Incident Details evidence, persisted incident records, and backend explanation payloads grounded in structured evidence.
 - Benchmark and report surfaces that reuse detector evidence rather than relying on generated prose as the detector.
 
 Follow-up:

@@ -2837,15 +2837,37 @@ h3 {
   gap: 8px;
 }
 
-.shortcut-strip {
+.shortcut-help {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  color: var(--text-muted);
-  font-size: 11px;
+  justify-content: flex-end;
+  position: relative;
 }
 
-.shortcut-strip span,
+.shortcut-help-button {
+  border-radius: 999px;
+  min-height: 28px;
+  min-width: 28px;
+  padding: 0;
+}
+
+.shortcut-popover {
+  border: 1px solid rgba(43, 90, 120, 0.42);
+  border-radius: 6px;
+  background: rgba(4, 10, 18, 0.95);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+  color: var(--text-muted);
+  display: grid;
+  gap: 6px;
+  font-size: 11px;
+  min-width: 170px;
+  padding: 8px;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 20;
+}
+
+.shortcut-popover span,
 .empty-state,
 .loading-banner,
 .incident-alert-banner {
@@ -2905,7 +2927,7 @@ kbd {
 
 .cockpit-status-bar {
   display: grid;
-  grid-template-columns: minmax(170px, 1.2fr) repeat(5, minmax(110px, 0.7fr)) auto;
+  grid-template-columns: minmax(170px, 1.2fr) repeat(4, minmax(110px, 0.7fr)) auto;
   gap: 6px;
   align-items: stretch;
   border: 1px solid var(--panel-border);
@@ -2928,6 +2950,26 @@ kbd {
 
 .cockpit-controls {
   justify-content: flex-end;
+}
+
+.cockpit-controls .arena-start-button {
+  border-color: rgba(var(--success-rgb), 0.48);
+  background: rgba(var(--success-rgb), 0.18);
+  color: var(--success-text);
+  font-weight: 800;
+}
+
+.cockpit-controls .arena-pause-button {
+  border-color: rgba(34, 211, 238, 0.24);
+  background: rgba(34, 211, 238, 0.08);
+  color: var(--heading-soft);
+}
+
+.cockpit-controls .arena-reset-button {
+  border-color: rgba(148, 163, 184, 0.22);
+  background: rgba(15, 23, 42, 0.38);
+  color: var(--text-muted);
+  margin-left: 8px;
 }
 
 .cockpit-pill {
@@ -2991,6 +3033,23 @@ kbd {
 .market-visualization-header {
   align-items: center;
   grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.market-microstructure-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.market-microstructure-strip .cockpit-pill {
+  min-width: 92px;
+}
+
+.market-secondary-view {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
 }
 
 .visualization-toggle {
@@ -3455,6 +3514,24 @@ kbd {
 
 .detector-meter-header strong {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.detector-meter-value {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+}
+
+.detector-meter-value em {
+  border: 1px solid rgba(251, 191, 36, 0.24);
+  border-radius: 999px;
+  background: rgba(251, 191, 36, 0.12);
+  color: #fde68a;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+  padding: 2px 6px;
+  text-transform: uppercase;
 }
 
 .detector-meter-track {
@@ -4268,7 +4345,7 @@ kbd {
 :root[data-theme="light"] .scenario-launcher,
 :root[data-theme="light"] .cockpit-status-bar,
 :root[data-theme="light"] .cockpit-pill,
-:root[data-theme="light"] .shortcut-strip span,
+:root[data-theme="light"] .shortcut-popover,
 :root[data-theme="light"] .empty-state,
 :root[data-theme="light"] .loading-banner,
 :root[data-theme="light"] .liquidity-heatmap,
@@ -4316,7 +4393,7 @@ kbd {
 .tournament-login-box,
 .surveillance-actions,
 .cockpit-left .attack-builder,
-.shortcut-strip span,
+.shortcut-popover,
 .empty-state,
 .loading-banner,
 .incident-alert-banner,
@@ -5084,7 +5161,7 @@ kbd,
   }
 
   .auth-panel,
-  .shortcut-strip,
+  .shortcut-help,
   .cockpit-controls,
   .attack-builder-actions,
   .incident-replay-controls {

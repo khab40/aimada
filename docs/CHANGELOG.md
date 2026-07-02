@@ -10,7 +10,7 @@ Update this file with each significant commit before pushing.
 - Reduced the top-level UI navigation to six destinations: Arena, Scenario Generator, Detection, Experiments, Nebius AI, and About.
 - Renamed Investigation/Blue Team surfaces to Detection and folded Reports into Detection outputs instead of treating Reports as an independent destination.
 - Reworked Arena into three primary sections: Scenario / Attack Configuration, Market, and Detection, with Standard and Battlefield visualization modes.
-- Consolidated related UI components: detector confidence panel, incident live/replay drawer, and agent timeline/feed surfaces.
+- Consolidated related UI components: detector confidence panel, incident live/replay details, and agent timeline/feed surfaces.
 - Reduced default analyst workload to a smaller set of primary widgets, with secondary evidence, timeline, reports, replay, and artifacts available through tabs/drawers.
 - Standardized visible AI vocabulary around AI Investigator, Nebius AI, LLM, Smart Detection, and Managed Experiment.
 - Refocused Nebius AI around model selection, inference, batch execution, GPU utilization, datasets, and Managed Experiments.
@@ -247,7 +247,7 @@ Update this file with each significant commit before pushing.
 ### `bb79d04` - feat: build arena cockpit and lab UI
 
 - Reworked the frontend into a routed React/Vite app with Arena, Lab, Reports, and About pages.
-- Added market cockpit widgets: order book ladder, liquidity heatmap, market timeline, detector confidence panel, attack tracker, evidence panel, agent event tape, and incident replay drawer.
+- Added market cockpit widgets: order book ladder, liquidity heatmap, market timeline, detector confidence panel, attack tracker, evidence panel, agent event tape, and Incident Details.
 - Added Nebius AI Investigator panel with mock/real backend integration through the API client.
 - Added Experiment Lab with attack builder, benchmark table, Recharts charting, and report summary UI.
 - Added Tailwind/PostCSS/ESLint config, React Router, Recharts, and frontend build/lint scripts.

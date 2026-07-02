@@ -11,22 +11,27 @@ type EvidenceRow = {
 
 export function EvidencePanel({ state }: { state: ArenaState }) {
   const rows = buildEvidenceRows(state);
+  const hasEvidence = rows.some((row) => row.status !== "pending");
 
   return (
     <section className="evidence-panel">
-      <h2>Evidence Panel</h2>
-      <div className="evidence-item-list">
-        {rows.map((row) => (
-          <article className={`evidence-item ${row.status}`} key={row.label}>
-            <div className="evidence-item-header">
-              <h3>{row.label}</h3>
-              <span>{row.status}</span>
-            </div>
-            <strong>{row.value}</strong>
-            <p>{row.explanation}</p>
-          </article>
-        ))}
-      </div>
+      <h2>Evidence</h2>
+      {hasEvidence ? (
+        <div className="evidence-item-list">
+          {rows.map((row) => (
+            <article className={`evidence-item ${row.status}`} key={row.label}>
+              <div className="evidence-item-header">
+                <h3>{row.label}</h3>
+                <span>{row.status}</span>
+              </div>
+              <strong>{row.value}</strong>
+              <p>{row.explanation}</p>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div className="empty-state">No evidence collected yet.</div>
+      )}
     </section>
   );
 }

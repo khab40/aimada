@@ -308,7 +308,7 @@ The GitHub banner uses `assets/img/ai-mada.jpg`. `assets/screenshots/` currently
 | View | Planned Path | Description |
 | --- | --- | --- |
 | Arena cockpit | `assets/screenshots/arena-cockpit.svg` | Live order-book, detector alerts, incident details |
-| Incident replay drawer | `assets/screenshots/incident-replay-drawer.svg` | Timeline replay, evidence metrics, AI explanation |
+| Incident Details | `assets/screenshots/incident-replay-drawer.svg` | Timeline replay, evidence metrics, AI Investigator explanation |
 | Managed Experiment / Nebius job | `assets/screenshots/experiment-lab.svg` | Batch job config, live metrics, results streaming |
 | Nebius logs and metrics | `assets/screenshots/nebius-logs-metrics.svg` | Log stream, CPU/memory/latency charts, worker health |
 

@@ -43,7 +43,7 @@ The main architecture is:
 
 ```mermaid
 graph TD
-    UI["React / Vite UI - Arena, incident drawer, benchmark screen"]
+    UI["React / Vite UI - Arena, Incident Details, benchmark screen"]
     Backend["FastAPI Backend - simulation control, scenarios, WebSocket, incidents, explanation client"]
     Simulation["Local Synthetic Simulation - order book, matching engine, agents, detectors"]
     Endpoint["Nebius Serverless AI Endpoint - explain event, explain simulation, generate report"]
@@ -131,7 +131,7 @@ Responsibilities:
 - provide Start, Pause, Reset, and scenario controls
 - provide scenario launch buttons
 - show agent activity and active agents
-- show incident cards and an incident drawer
+- show incident cards and Incident Details
 - show Nebius Control Panel operations for attack scenarios, smart detection, investigation reports, serverless jobs, artifacts, usage, and health
 - show Reports evidence for persisted jobs, explanations, screenshots, exports, and promoted evidence
 - provide role-aware Google auth/session controls that can collapse to a compact account widget

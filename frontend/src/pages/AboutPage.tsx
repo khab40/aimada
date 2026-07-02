@@ -131,7 +131,7 @@ export function AboutPage() {
             <li>Build and run the full local stack: <code>docker compose up --build</code>.</li>
             <li>Open the UI at <code>http://localhost:5173/arena</code>.</li>
             <li>Click <code>Start</code>, then launch a red-team scenario.</li>
-            <li>When an incident appears, open the replay drawer and run AI Investigator.</li>
+            <li>When an incident appears, open Incident Details and run AI Investigator.</li>
             <li>Use Attack Scenario Generator for concrete red-team plans that can be injected, expanded into grids, or submitted to Nebius batches.</li>
             <li>Use Detection for detector scores, suspicious agents, evidence, reports, replay windows, and AI Investigator review.</li>
             <li>Use Nebius AI for the full cloud workflow: scenario creation, cloud batch runs, detector scoring, explanations, and artifact storage.</li>

@@ -13,7 +13,7 @@ export function OrderBookLadder({ snapshot }: { snapshot: OrderBookSnapshot }) {
   return (
     <section className="order-book-ladder">
       <div className="ladder-header">
-        <h2>Order Book Ladder</h2>
+        <h2>Order Book</h2>
         <span>Best {formatPrice(snapshot.best_bid)} / {formatPrice(snapshot.best_ask)}</span>
       </div>
       {!hasLevels ? (

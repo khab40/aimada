@@ -79,7 +79,7 @@ curl -X POST http://localhost:8000/api/scenarios/spoofing-like
 - View detector confidence in the right panel
 
 ### Incident Investigation
-- Click on an incident badge to open the drawer
+- Click on an incident badge to open Incident Details
 - View detector evidence and timeline
 - If Nebius is configured: click **Run AI Investigator** to get an AI Investigator explanation
 

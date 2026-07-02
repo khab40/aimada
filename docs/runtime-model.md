@@ -134,9 +134,9 @@ Bottom scenario launcher:
 [Panic Selloff]
 ```
 
-### 2. Incident Drawer
+### 2. Incident Details
 
-The incident drawer opens when the user selects an incident card or when a new high-severity alert is raised.
+Incident Details opens when the user selects an incident card or when a new high-severity alert is raised.
 
 ```text
 Suspicious Event Detected
@@ -156,7 +156,7 @@ AI explanation:
 ...
 ```
 
-The drawer should show detector evidence first, then the generated explanation. AI text is supporting context, not the source of truth.
+Incident Details should show detector evidence first, then the generated explanation. AI text is supporting context, not the source of truth.
 
 ### 3. Benchmark Screen
 

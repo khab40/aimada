@@ -23,6 +23,7 @@ type HeatmapSnapshotFrame = {
 
 type ArenaVisualizationMode = "standard" | "battlefield";
 type DetectionSecondaryView = "evidence" | "timeline";
+type MarketSecondaryView = "heatmap" | "timeline";
 
 const scenarioLabels: Record<string, string> = Object.fromEntries(
   [
@@ -33,15 +34,22 @@ const scenarioLabels: Record<string, string> = Object.fromEntries(
   ]
 );
 
+function formatScenarioLabel(name?: string | null) {
+  return name ? scenarioLabels[name] ?? name : "None";
+}
+
 export function ArenaPage() {
-  const { launchScenario, mode, pause, reset, running, sourceStatus, start, state, symbol, tick } = useArenaSource();
+  const { launchScenario, mode, pause, reset, running, sourceStatus, start, state, tick } = useArenaSource();
   const [visualizationMode, setVisualizationMode] = useState<ArenaVisualizationMode>("battlefield");
   const [secondaryView, setSecondaryView] = useState<DetectionSecondaryView>("evidence");
+  const [marketSecondaryView, setMarketSecondaryView] = useState<MarketSecondaryView>("heatmap");
   const [heatmapSnapshots, setHeatmapSnapshots] = useState<HeatmapSnapshotFrame[]>(() => [toHeatmapSnapshotFrame(state)]);
   const [battlefieldFrames, setBattlefieldFrames] = useState<BattlefieldFrame[]>(() => [arenaStateToFrame(state)]);
   const [timeline, setTimeline] = useState<MarketTimelineFrame[]>(() => [toTimelineFrame(state)]);
   const lastRecordedTickRef = useRef(state.tick);
   const [pendingControl, setPendingControl] = useState<"pause" | "reset" | "start" | null>(null);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [incidentDetailsMode, setIncidentDetailsMode] = useState<"live" | "replay">("live");
   const incident = useMemo(() => createIncident(state), [state]);
   const [lastIncident, setLastIncident] = useState<Incident | null>(incident);
   const loading = mode === "websocket" && sourceStatus === "connecting";
@@ -114,27 +122,26 @@ export function ArenaPage() {
         }
       }
       if (key === "s") {
-        launchScenario("spoofing_like_wall");
-      }
-      if (key === "l") {
-        launchScenario("layering_like");
+        startArena();
       }
       if (key === "q") {
-        launchScenario("quote_stuffing");
+        pauseArena();
       }
       if (key === "r") {
         resetArena();
+      }
+      if (key === "l") {
+        setIncidentDetailsMode((value) => value === "live" ? "replay" : "live");
       }
     }
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [launchScenario, pauseArena, resetArena, running, startArena]);
+  }, [pauseArena, resetArena, running, startArena]);
 
   return (
     <section className={`cockpit-page ${incident ? "incident-active" : ""}`} aria-label="Market microstructure cockpit">
       <TopStatusBar
-        mid={state.mid}
         onPause={pauseArena}
         onReset={resetArena}
         onStart={startArena}
@@ -142,18 +149,30 @@ export function ArenaPage() {
         connected={connected}
         pendingControl={pendingControl}
         running={running}
-        spread={state.spread}
-        symbol={symbol}
+        selectedScenario={formatScenarioLabel(state.active_scenario?.scenario_name)}
         tick={tick}
         source={mode === "websocket" ? `backend websocket:${sourceStatus}` : `local mock:${sourceStatus}`}
       />
 
-      <div className="shortcut-strip" aria-label="Keyboard shortcuts">
-        <span><kbd>Space</kbd> pause/resume</span>
-        <span><kbd>S</kbd> spoofing-like</span>
-        <span><kbd>L</kbd> layering-like</span>
-        <span><kbd>Q</kbd> quote stuffing</span>
-        <span><kbd>R</kbd> reset</span>
+      <div className="shortcut-help">
+        <button
+          aria-expanded={shortcutsOpen}
+          aria-label="Keyboard shortcuts"
+          className="shortcut-help-button"
+          onClick={() => setShortcutsOpen((value) => !value)}
+          type="button"
+        >
+          ?
+        </button>
+        {shortcutsOpen ? (
+          <div className="shortcut-popover" role="dialog" aria-label="Keyboard shortcuts">
+            <span><kbd>Space</kbd> start/pause</span>
+            <span><kbd>S</kbd> start</span>
+            <span><kbd>Q</kbd> pause</span>
+            <span><kbd>R</kbd> reset</span>
+            <span><kbd>L</kbd> live/replay</span>
+          </div>
+        ) : null}
       </div>
 
       {loading ? (
@@ -189,6 +208,12 @@ export function ArenaPage() {
             <div>
               <span className="eyebrow">Visualization</span>
               <h2>Market</h2>
+              {visualizationMode === "battlefield" ? (
+                <div className="market-microstructure-strip" aria-label="Market microstructure metrics">
+                  <MetricPill label="Mid" value={formatNumber(state.mid)} />
+                  <MetricPill label="Spread" value={formatNumber(state.spread)} />
+                </div>
+              ) : null}
             </div>
             <fieldset className="visualization-toggle" aria-label="Market visualization">
               <label className={visualizationMode === "standard" ? "selected" : ""}>
@@ -214,8 +239,17 @@ export function ArenaPage() {
           {visualizationMode === "standard" ? (
             <>
               <OrderBookLadder snapshot={state.book} />
-              <LiquidityHeatmap maxFrames={WIDGET_TICK_WINDOW} snapshots={heatmapSnapshots} visibleLevels={20} />
-              <MarketTimeline frames={timeline} />
+              <section className="market-secondary-view">
+                <div className="widget-tab-row" role="tablist" aria-label="Secondary market views">
+                  <button className={marketSecondaryView === "heatmap" ? "active" : ""} onClick={() => setMarketSecondaryView("heatmap")} type="button">Heatmap</button>
+                  <button className={marketSecondaryView === "timeline" ? "active" : ""} onClick={() => setMarketSecondaryView("timeline")} type="button">Timeline</button>
+                </div>
+                {marketSecondaryView === "heatmap" ? (
+                  <LiquidityHeatmap maxFrames={WIDGET_TICK_WINDOW} snapshots={heatmapSnapshots} visibleLevels={20} />
+                ) : (
+                  <MarketTimeline frames={timeline} />
+                )}
+              </section>
             </>
           ) : (
             <OrderBookTerrain currentTick={tick} frames={battlefieldFrames.length ? battlefieldFrames : [arenaStateToFrame(state)]} />
@@ -228,18 +262,18 @@ export function ArenaPage() {
             <h2>Detection</h2>
           </header>
           <DetectorConfidence detectors={state.detectors} />
-          <IncidentDrawer incident={incident ?? lastIncident} currentTick={tick} incidentTick={(incident ?? lastIncident)?.tick ?? tick} mode={incident ? "live" : "replay"} />
           <section className="secondary-widget-drawer">
             <div className="widget-tab-row" role="tablist" aria-label="Secondary detection widgets">
-              <button className={secondaryView === "evidence" ? "active" : ""} onClick={() => setSecondaryView("evidence")} type="button">Evidence</button>
-              <button className={secondaryView === "timeline" ? "active" : ""} onClick={() => setSecondaryView("timeline")} type="button">Timeline</button>
+              <button className={secondaryView === "evidence" ? "active" : ""} onClick={() => setSecondaryView("evidence")} type="button">📄 Evidence</button>
+              <button className={secondaryView === "timeline" ? "active" : ""} onClick={() => setSecondaryView("timeline")} type="button">🕒 Timeline</button>
             </div>
             {secondaryView === "evidence" ? (
               <EvidencePanel state={state} />
             ) : (
-              <AgentTimeline events={state.events} layout="compact" />
+              <AgentTimeline events={state.events} layout="compact" title="Timeline" />
             )}
           </section>
+          <IncidentDrawer incident={incident ?? lastIncident} currentTick={tick} incidentTick={(incident ?? lastIncident)?.tick ?? tick} mode={incident ? incidentDetailsMode : "replay"} />
         </section>
       </div>
     </section>
@@ -256,45 +290,40 @@ function isEditableTarget(target: EventTarget | null) {
 function TopStatusBar({
   canReset,
   connected,
-  mid,
   onPause,
   onReset,
   onStart,
   pendingControl,
   running,
-  spread,
-  symbol,
+  selectedScenario,
   tick,
   source
 }: {
   canReset: boolean;
   connected: boolean;
-  mid: number | null;
   onPause: () => void;
   onReset: () => void;
   onStart: () => void;
   pendingControl: "pause" | "reset" | "start" | null;
   running: boolean;
-  spread: number | null;
+  selectedScenario: string;
   source: string;
-  symbol: string;
   tick: number;
 }) {
   return (
     <header className="cockpit-status-bar">
       <div>
-        <span className="eyebrow">Live mock arena</span>
-        <strong>{symbol}</strong>
+        <span className="eyebrow">Arena session</span>
+        <strong>Session</strong>
       </div>
-      <MetricPill label="Tick" value={String(tick)} />
-      <MetricPill label="Mid" value={formatNumber(mid)} />
-      <MetricPill label="Spread" value={formatNumber(spread)} />
       <MetricPill label="State" value={running ? "Running" : "Paused"} tone={running ? "good" : "warn"} />
+      <MetricPill label="Tick" value={String(tick)} />
+      <MetricPill label="Scenario" value={selectedScenario} />
       <MetricPill label="Source" value={source} />
       <div className="cockpit-controls">
-        <button type="button" disabled={!connected || running || pendingControl !== null} onClick={onStart}>{pendingControl === "start" ? "Starting..." : "Start"}</button>
-        <button type="button" disabled={!connected || !running || pendingControl !== null} onClick={onPause}>{pendingControl === "pause" ? "Pausing..." : "Pause"}</button>
-        <button type="button" disabled={!connected || !canReset || pendingControl !== null} onClick={onReset}>{pendingControl === "reset" ? "Resetting..." : "Reset"}</button>
+        <button className="arena-start-button" type="button" disabled={!connected || running || pendingControl !== null} onClick={onStart}>{pendingControl === "start" ? "Starting..." : "Start"}</button>
+        <button className="arena-pause-button" type="button" disabled={!connected || !running || pendingControl !== null} onClick={onPause}>{pendingControl === "pause" ? "Pausing..." : "Pause"}</button>
+        <button className="arena-reset-button" type="button" disabled={!connected || !canReset || pendingControl !== null} onClick={onReset}>{pendingControl === "reset" ? "Resetting..." : "Reset"}</button>
       </div>
     </header>
   );

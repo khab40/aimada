@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { NebiusAIInvestigatorPanel } from "@/components/NebiusAIInvestigatorPanel";
 import type { Incident } from "@/types/arena";
 
-type IncidentDrawerMode = "live" | "replay";
+type IncidentDetailsMode = "live" | "replay";
 
 type ReplayStep = {
   label: string;
@@ -27,7 +27,7 @@ export function IncidentDrawer({
   currentTick?: number;
   incident?: Incident | null;
   incidentTick?: number;
-  mode?: IncidentDrawerMode;
+  mode?: IncidentDetailsMode;
 }) {
   const [closedIncidentId, setClosedIncidentId] = useState<string | null>(null);
   const [stepIndex, setStepIndex] = useState(0);
@@ -41,10 +41,10 @@ export function IncidentDrawer({
     return (
       <aside className="incident-replay-drawer empty">
         <div className="section-heading-row">
-          <h2>Incidents</h2>
+          <h2>Incident Details</h2>
           <span>{currentTick === undefined ? "no tick" : `current T${currentTick}`}</span>
         </div>
-        <p>No active incident replay.</p>
+        <p>No incident detected yet. Run a scenario or wait for an alert.</p>
       </aside>
     );
   }
@@ -56,7 +56,7 @@ export function IncidentDrawer({
   return (
     <aside className="incident-replay-drawer">
       <div className="section-heading-row incident-widget-heading">
-        <h2>Incidents</h2>
+        <h2>Incident Details</h2>
         <span>{baseTick === undefined ? "tick n/a" : `${mode} T${baseTick}`}</span>
       </div>
 

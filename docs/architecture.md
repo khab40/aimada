@@ -57,7 +57,7 @@ graph TD
 
 | Component | Responsibility |
 | --- | --- |
-| React / Vite UI | Presents the themed product shell, Google/auth widget, role/session controls, Arena, Scenario Generator, Detection, Experiments, Nebius AI, About, Standard/Battlefield visualization modes, detector output, replay drawers, and AI Investigator reports. Arena live controls and state use WebSocket; Nebius AI, experiment, artifact, and report actions use backend REST APIs. |
+| React / Vite UI | Presents the themed product shell, Google/auth widget, role/session controls, Arena, Scenario Generator, Detection, Experiments, Nebius AI, About, Standard/Battlefield visualization modes, detector output, Incident Details, and AI Investigator reports. Arena live controls and state use WebSocket; Nebius AI, experiment, artifact, and report actions use backend REST APIs. |
 | FastAPI demo backend | Owns the demo control plane. It starts and stops simulations, launches scenarios, broadcasts state to the UI, persists incidents, and calls Nebius AI endpoints for explanation and report generation. |
 | Local live simulation | Runs the authoritative exchange, scenario state, detector engine, local agent scheduling, single-writer book mutation, per-agent quote ownership, and baseline liquidity guard. |
 | Agent Runners Workspace | Runs local, remote, heavy, and LangGraph-compatible agents behind the common intent protocol; returns intents but never mutates the exchange directly. |

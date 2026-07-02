@@ -32,7 +32,7 @@ export function AgentTimeline({
         <h2>{title}</h2>
         <span>Last {latestEvents.length} events</span>
       </div>
-      {!latestEvents.length ? <div className="empty-state">No agent events yet.</div> : null}
+      {!latestEvents.length ? <div className="empty-state">No timeline events yet.</div> : null}
       <ul className="event-tape">
         {latestEvents.map((event, index) => {
           const kind = getEventKind(event);

@@ -13,7 +13,7 @@ AI Market Abuse Detection Arena is a visual, synthetic, serverless learning aren
 ## Intended Submission Assets
 
 - Demo video showing live scenario launch, alert generation, and explanation flow.
-- Screenshots for the arena view, benchmark view, and incident drawer.
+- Screenshots for the arena view, benchmark view, and Incident Details.
 - Benchmark report generated from synthetic scenarios.
 - Architecture diagram and deployment notes.
 

@@ -23,15 +23,19 @@ export function DetectorConfidence({ detectors }: { detectors: DetectorScores })
       {!hasScores ? <div className="empty-state">Waiting for detector scores.</div> : null}
       <div className="detector-meter-list">
         {detectorMeters.map((meter) => {
-          const confidence = detectors.scores.find(meter.match)?.confidence ?? 0;
+          const score = detectors.scores.find(meter.match);
+          const confidence = score?.confidence ?? 0;
           const severity = getSeverity(confidence);
-          const highlighted = confidence > 0.75;
+          const highlighted = Boolean(score?.alert);
 
           return (
             <div className={`detector-meter ${severity} ${highlighted ? "highlighted" : ""}`} key={meter.label}>
               <div className="detector-meter-header">
                 <span>{meter.label}</span>
-                <strong>{confidence.toFixed(2)}</strong>
+                <div className="detector-meter-value">
+                  {highlighted ? <em>High confidence</em> : null}
+                  <strong>{confidence.toFixed(2)}</strong>
+                </div>
               </div>
               <div className="detector-meter-track" aria-label={`${meter.label} confidence ${confidence.toFixed(2)}`}>
                 <div style={{ width: `${Math.min(confidence, 1) * 100}%` }} />
