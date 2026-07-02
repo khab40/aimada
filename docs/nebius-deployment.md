@@ -39,11 +39,11 @@ Job responsibilities:
 Jobs should use small run counts during development to control time and credit
 usage. Large runs belong in final benchmark passes only.
 
-## Nebius Serverless AI Endpoints
+## Nebius AI Endpoints
 
 ```mermaid
 graph TD
-    Endpoints["Nebius Serverless AI Endpoints"]
+    Endpoints["Nebius AI Endpoints"]
     Judge["Real-time AI judge"]
     Explain["Explanation generation"]
     Narrator["Scenario narrator"]
@@ -67,9 +67,9 @@ optional API tokens, fallback behavior, and request shaping.
 
 | Product mode | Nebius surface | Purpose |
 | --- | --- | --- |
-| Live Arena Mode | Serverless AI Endpoint | Real-time judge, explanation generation, and scenario narration for selected incidents. |
-| Experiment Mode | Serverless AI Job | Batch simulations, synthetic dataset generation, feature extraction, detector evaluation, and experiment reports. |
-| Judge Mode | Serverless AI Endpoint | Explain a selected timeline segment and produce an investigation-style report. |
+| Live Arena Mode | Nebius AI endpoint | Smart Detection, AI Investigator explanation generation, and scenario narration for selected incidents. |
+| Experiment Mode | Managed Experiment job | Batch simulations, synthetic dataset generation, feature extraction, detector evaluation, and experiment reports. |
+| Judge Mode | Nebius AI endpoint | Explain a selected timeline segment and produce an AI Investigator report. |
 
 ## Reproducibility Commands
 
@@ -176,9 +176,9 @@ repository/tag while still using the existing `serverless/jobs/Dockerfile` and
 
 The managed experiment flow is available locally through FastAPI and the React UI:
 
-- `/nebius` Experiment Lab creates experiment manifests, generates attack manifests, runs local batches, aggregates outputs, and runs bounded mock/endpoint-backed investigations.
-- `/nebius` Real Nebius Deployment shows endpoint base URL, endpoint health, endpoint mode, model, job image, rendered job config path, submit-template readiness, latest cloud job status, and artifact collection state. Its buttons call FastAPI to test endpoint health, smoke `orderbook-alert` and `investigation-report`, render job config, submit real Nebius jobs, refresh job status, and collect cloud artifacts.
-- `/reports` lists experiments and shows the selected experiment summary, detector leaderboard, `benchmark_report.md`, investigation report files, `artifact_index.json`, canonical artifacts, and original `local-batch` files.
+- `/nebius` Managed Experiment Lab creates experiment manifests, generates attack manifests, runs local batches, aggregates outputs, and runs bounded mock/endpoint-backed AI Investigator reports.
+- `/nebius` Real Nebius Deployment shows endpoint base URL, endpoint health, endpoint mode, model, job image, rendered job config path, submit-template readiness, latest cloud job status, and artifact collection state. Its buttons call FastAPI to test endpoint health, smoke Smart Detection and AI Investigator report routes, render job config, submit real Nebius jobs, refresh job status, and collect cloud artifacts.
+- Detection outputs list experiments and show the selected experiment summary, detector leaderboard, `benchmark_report.md`, AI Investigator report files, `artifact_index.json`, canonical artifacts, and original `local-batch` files.
 - Local batch execution reuses `serverless/jobs/run_batch_experiments.py` and writes under `outputs/experiments/<experiment_id>/`.
 - `POST /api/experiments/{id}/render-nebius-job-config` renders the existing job config for an experiment without submitting it.
 - `POST /api/experiments/{id}/submit-nebius` renders `nebius_job_config.rendered.yaml`. If `NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE` is unset, it records `real_nebius_pending`; if the template is set, it executes the command, parses a job id, and records a queued Nebius job.
@@ -214,7 +214,7 @@ Keep secrets out of source control.
 
 Use the same key names, but place them in different deployment surfaces.
 
-### Nebius Serverless AI Endpoint
+### Nebius AI Endpoint
 
 Set these on the deployed endpoint container:
 
@@ -301,7 +301,7 @@ Keep run counts small for first deployment checks.
 
 ## Serverless Cost/Runtime Observatory
 
-The React `Nebius Control Panel` tab reads `/api/nebius/observatory` and displays
+The React `Nebius AI` page reads `/api/nebius/observatory` and displays
 submission evidence:
 
 ```text
@@ -320,7 +320,7 @@ Jobs:
 Before final review, replace placeholder evidence with real Nebius endpoint/job
 screenshots and archived logs/metrics.
 
-The current Phase 4.5 Reports evidence is synthetic educational benchmark output from the simulator. It is useful for reproducibility and demo review, but it is not real market surveillance and is not compliance evidence.
+The current Phase 4.5 Detection output evidence is synthetic educational benchmark output from the simulator. It is useful for reproducibility and demo review, but it is not real market surveillance and is not compliance evidence.
 
 ## Architecture Records
 

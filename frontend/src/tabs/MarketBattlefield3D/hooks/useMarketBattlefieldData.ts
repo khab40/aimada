@@ -63,7 +63,7 @@ export function useMarketBattlefieldData() {
   };
 }
 
-function arenaStateToFrame(state: ArenaState): BattlefieldFrame {
+export function arenaStateToFrame(state: ArenaState): BattlefieldFrame {
   const detectorConfidence = Math.max(0, ...state.detectors.scores.map((score) => score.confidence));
   const scenarioConfidence = state.active_scenario?.stages
     ?.map((stage) => stage.detector_confidence ?? 0)

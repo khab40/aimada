@@ -364,13 +364,13 @@ export function ReportsPage() {
     <section className="reports-page">
       <div className="panel lab-hero-panel">
         <div>
-          <p className="eyebrow">Evidence workspace</p>
-          <h2>Replay & Reports</h2>
-          <p>Reload saved experiment evidence, incident replay windows, AI-generated reports, Nebius artifacts, exports, and promoted challenge evidence.</p>
+          <p className="eyebrow">Detection output</p>
+          <h2>Evidence & Reports</h2>
+          <p>Review detection outputs: saved experiment evidence, incident replay windows, AI Investigator reports, Nebius artifacts, exports, and promoted challenge evidence.</p>
         </div>
         <div className="reports-hero-actions">
           <span className="endpoint-badge">{summary ? "persisted evidence" : "loading evidence"}</span>
-          <button className="danger-button" onClick={() => setClearDialogOpen(true)} type="button">Clean Replay & Reports Data</button>
+          <button className="danger-button" onClick={() => setClearDialogOpen(true)} type="button">Clean Detection Output Data</button>
         </div>
       </div>
       {error ? <div className="empty-state warning">{error}</div> : null}
@@ -398,7 +398,7 @@ export function ReportsPage() {
                   <strong>{experiment.name}</strong>
                   <span>{experiment.id} · {experiment.status.replaceAll("_", " ")} · {experiment.attack_count} attacks</span>
                 </button>
-              )) : <p className="empty-state">No managed experiments yet. Create one from the Nebius Experiment Lab.</p>}
+              )) : <p className="empty-state">No Managed Experiments yet. Create one from the Nebius AI Managed Experiment Lab.</p>}
             </div>
 
             <div className="experiment-report-detail">
@@ -416,7 +416,7 @@ export function ReportsPage() {
                 <Metric label="Attack Count" value={String(selectedExperiment?.attack_count ?? 0)} />
                 <Metric label="Labeled Attacks" value={String(experimentSummary?.total_attacks ?? 0)} />
                 <Metric label="Alerts" value={String(experimentSummary?.total_alerts ?? 0)} />
-                <Metric label="Investigations" value={String(experimentInvestigations.length || experimentSummary?.investigation_count || 0)} />
+                <Metric label="Detection Reports" value={String(experimentInvestigations.length || experimentSummary?.investigation_count || 0)} />
                 <Metric label="Failed Runs" value={String(experimentSummary?.failed_runs ?? 0)} />
               </div>
 
@@ -484,9 +484,9 @@ export function ReportsPage() {
             </section>
 
             <section className="nebius-result-block">
-              <span>Investigation reports</span>
+              <span>AI Investigator reports</span>
               {experimentInvestigations.length ? (
-                <div className="investigation-report-list">
+                <div className="detection-report-list">
                   {experimentInvestigations.map((report) => (
                     <article key={report.alert_id}>
                       <strong>{report.alert_id}</strong>
@@ -499,7 +499,7 @@ export function ReportsPage() {
                     </article>
                   ))}
                 </div>
-              ) : <p>Run AI investigations to populate report files.</p>}
+              ) : <p>Run AI Investigator reports to populate report files.</p>}
             </section>
           </div>
 
@@ -524,7 +524,7 @@ export function ReportsPage() {
           <div className="surveillance-status-strip">
             <Metric label="History Artifacts" value={String(summary?.history_artifacts.length ?? 0)} />
             <Metric label="Recent Ticks" value={String(summary?.history_ticks.length ?? 0)} />
-            <Metric label="AI Reports" value={String((summary?.explanations.length ?? 0) + (summary?.nebius_investigation_reports.length ?? 0))} />
+            <Metric label="AI Investigator Reports" value={String((summary?.explanations.length ?? 0) + (summary?.nebius_investigation_reports.length ?? 0))} />
             <Metric label="Detections" value={String((summary?.incidents.length ?? 0) + (summary?.nebius_detections.length ?? 0))} />
           </div>
           {historyCounts.length ? (
@@ -671,7 +671,7 @@ export function ReportsPage() {
           <section aria-labelledby="clear-reports-title" aria-modal="true" className="confirm-dialog" role="dialog">
             <div>
               <p className="eyebrow">Destructive action</p>
-              <h2 id="clear-reports-title">Clean all Replay & Reports data?</h2>
+              <h2 id="clear-reports-title">Clean all detection output data?</h2>
               <p>
                 This clears persisted report indexes, benchmark run history, Nebius batch records,
                 incidents, explanations, screenshot evidence, exports, and promoted evidence from the local output store.

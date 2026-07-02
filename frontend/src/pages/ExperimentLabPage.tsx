@@ -99,8 +99,8 @@ function RoleWorkspace({ role }: { role: ArenaRole }) {
         <h3>Detector Console</h3>
         <p>Watch detector state, run endpoint scoring, and generate incident explanations. Attack creation controls are hidden.</p>
         <div className="tournament-action-row">
-          <Link className="primary-link-button" to="/blue-team">Open Detection</Link>
-          <Link to="/reports">Review Alerts</Link>
+          <Link className="primary-link-button" to="/detection">Open Detection</Link>
+          <Link to="/detection">Review Alerts</Link>
         </div>
       </section>
     );
@@ -111,7 +111,7 @@ function RoleWorkspace({ role }: { role: ArenaRole }) {
         <h3>Judge Console</h3>
         <p>Review persisted evidence, compare runs, inspect replay windows, and prepare winner reports.</p>
         <div className="tournament-action-row">
-          <Link className="primary-link-button" to="/reports">Open Replay & Reports</Link>
+          <Link className="primary-link-button" to="/detection">Open Detection Outputs</Link>
           <Link to="/nebius">Inspect Artifacts</Link>
         </div>
       </section>
@@ -123,7 +123,7 @@ function RoleWorkspace({ role }: { role: ArenaRole }) {
       <p>Follow live arena state and replay history without attacker, detector, or judge controls.</p>
       <div className="tournament-action-row">
         <Link className="primary-link-button" to="/arena">Watch Arena</Link>
-        <Link to="/reports">Open Replay</Link>
+        <Link to="/detection">Open Detection</Link>
       </div>
     </section>
   );

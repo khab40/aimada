@@ -1,6 +1,4 @@
 import {
-  Area,
-  AreaChart,
   CartesianGrid,
   Line,
   LineChart,
@@ -23,7 +21,6 @@ export type MarketTimelineFrame = {
 };
 
 type ChartPoint = {
-  detectorConfidence: number;
   imbalance: number;
   mid: number;
   spreadBps: number;
@@ -54,17 +51,14 @@ const tooltipStyle = {
 };
 
 const axisTick = { fontSize: 11, fill: "var(--chart-axis)" };
-const smallAxisTick = { fontSize: 10, fill: "var(--chart-axis)" };
-
 export function MarketTimeline({ frames }: { frames: MarketTimelineFrame[] }) {
   const points = frames.map(toChartPoint);
   const markers = getMarkers(frames);
-  const confidenceMarkerPositions = getMarkerPositions(markers, points);
 
   return (
     <section className="market-timeline">
       <div className="section-heading-row">
-        <h2>Market Timeline</h2>
+        <h2>Market Movement</h2>
         <span>{points.length} frames</span>
       </div>
 
@@ -105,54 +99,12 @@ export function MarketTimeline({ frames }: { frames: MarketTimelineFrame[] }) {
           ))}
         </div>
       ) : null}
-
-      <div className="timeline-chart small confidence-chart" role="img" aria-label="Detector confidence timeline">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={points} margin={{ top: 8, right: 18, bottom: 0, left: -18 }}>
-            <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="3 3" />
-            <XAxis dataKey="tick" tick={smallAxisTick} />
-            <YAxis domain={[0, 1]} tick={smallAxisTick} />
-            <Tooltip contentStyle={tooltipStyle} />
-            {markers.map((marker) => (
-              <ReferenceLine
-                ifOverflow="extendDomain"
-                key={`detector-${marker.type}-${marker.tick}`}
-                stroke={markerColors[marker.type]}
-                strokeDasharray="4 4"
-                x={marker.tick}
-              />
-            ))}
-            <Area
-              type="monotone"
-              dataKey="detectorConfidence"
-              name="detector confidence"
-              stroke="rgb(var(--danger-rgb))"
-              fill="rgba(var(--danger-rgb), 0.24)"
-              isAnimationActive={false}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-        {confidenceMarkerPositions.length ? (
-          <div className="confidence-marker-layer" aria-hidden="true">
-            {confidenceMarkerPositions.map((marker) => (
-              <span
-                className={`confidence-marker-label ${marker.type}`}
-                key={`confidence-label-${marker.type}-${marker.tick}`}
-                style={{ left: `${marker.leftPercent}%` }}
-              >
-                {markerLabels[marker.type]}
-              </span>
-            ))}
-          </div>
-        ) : null}
-      </div>
     </section>
   );
 }
 
 function toChartPoint(frame: MarketTimelineFrame): ChartPoint {
   return {
-    detectorConfidence: Math.max(0, ...frame.detectorScores.scores.map((score) => score.confidence)),
     imbalance: frame.features.imbalance ?? 0,
     mid: frame.mid,
     spreadBps: frame.features.spread_bps ?? 0,
@@ -171,22 +123,4 @@ function getMarkers(frames: MarketTimelineFrame[]): TimelineMarker[] {
       return [{ tick: frame.tick, type }];
     })
   ));
-}
-
-function getMarkerPositions(markers: TimelineMarker[], points: ChartPoint[]) {
-  if (!markers.length || !points.length) {
-    return [];
-  }
-
-  const minTick = points[0]?.tick ?? 0;
-  const maxTick = points.at(-1)?.tick ?? minTick;
-  const tickRange = Math.max(1, maxTick - minTick);
-  return markers.map((marker) => ({
-    ...marker,
-    leftPercent: clamp(((marker.tick - minTick) / tickRange) * 100, 8, 92)
-  }));
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.max(min, Math.min(max, value));
 }

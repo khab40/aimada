@@ -1345,6 +1345,43 @@ h3 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.why-nebius-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.why-nebius-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.why-nebius-grid article {
+  border: 1px solid rgba(34, 211, 238, 0.14);
+  border-radius: 6px;
+  background: rgba(2, 6, 23, 0.42);
+  display: grid;
+  gap: 8px;
+  min-height: 150px;
+  padding: 14px;
+}
+
+.why-nebius-grid span {
+  color: var(--text-muted);
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.why-nebius-grid strong {
+  color: var(--heading);
+  font-size: 18px;
+}
+
+.why-nebius-grid p {
+  color: var(--text-muted);
+  margin: 0;
+}
+
 .experiment-lab-panel {
   display: grid;
   gap: 14px;
@@ -2303,23 +2340,24 @@ h3 {
   gap: 14px;
 }
 
-.cockpit-right .attack-builder {
+.cockpit-left .attack-builder {
   border: 1px solid rgba(43, 90, 120, 0.38);
   border-radius: 4px;
   background: rgba(4, 10, 18, 0.7);
   padding: 8px;
+  min-width: 0;
 }
 
-.cockpit-right .attack-builder-grid {
+.cockpit-left .attack-builder-grid {
   grid-template-columns: 1fr;
   gap: 8px;
 }
 
-.cockpit-right .attack-risk-panel {
+.cockpit-left .attack-risk-panel {
   padding: 8px;
 }
 
-.cockpit-right .attack-builder-actions button {
+.cockpit-left .attack-builder-actions button {
   flex: 1 1 100%;
 }
 
@@ -2400,6 +2438,41 @@ h3 {
   grid-template-columns: repeat(2, minmax(280px, 1fr));
 }
 
+.architecture-card {
+  grid-template-columns: 1fr;
+  justify-items: center;
+  overflow: hidden;
+}
+
+.architecture-diagram-image {
+  aspect-ratio: 20 / 9;
+  background: #07111b;
+  border: 1px solid rgba(34, 211, 238, 0.16);
+  border-radius: 8px;
+  display: block;
+  height: auto;
+  max-width: 1120px;
+  object-fit: contain;
+  width: 100%;
+}
+
+.benchmark-summary-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.benchmark-summary-grid span {
+  border: 1px solid rgba(251, 191, 36, 0.18);
+  border-radius: 999px;
+  background: rgba(251, 191, 36, 0.1);
+  color: #fef3c7;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 9px;
+  text-align: center;
+}
+
 .about-card ul,
 .about-card ol,
 .artifact-list {
@@ -2474,7 +2547,7 @@ h3 {
 .experiment-report-output-grid,
 .experiment-artifact-workbench-grid,
 .experiment-summary-list,
-.investigation-report-list {
+.detection-report-list {
   display: grid;
   gap: 12px;
 }
@@ -2512,7 +2585,7 @@ h3 {
 }
 
 .experiment-list-panel button span,
-.investigation-report-list article span {
+.detection-report-list article span {
   color: var(--text-muted);
   font-size: 12px;
 }
@@ -2555,7 +2628,7 @@ h3 {
   white-space: pre-wrap;
 }
 
-.investigation-report-list article {
+.detection-report-list article {
   border: 1px solid rgba(34, 211, 238, 0.12);
   border-radius: 6px;
   display: grid;
@@ -2563,7 +2636,7 @@ h3 {
   padding: 10px;
 }
 
-.investigation-report-list a {
+.detection-report-list a {
   color: var(--accent);
   text-decoration: none;
 }
@@ -2825,7 +2898,7 @@ kbd {
   animation: incident-pulse 1.35s ease-in-out infinite;
 }
 
-.cockpit-page.incident-active .cockpit-bottom-right {
+.cockpit-page.incident-active .cockpit-right {
   border-color: rgba(244, 63, 94, 0.58);
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.25), 0 0 28px rgba(244, 63, 94, 0.12);
 }
@@ -2887,55 +2960,104 @@ kbd {
 
 .cockpit-grid {
   display: grid;
-  grid-template-columns: minmax(290px, 0.82fr) minmax(620px, 1.9fr) minmax(360px, 1fr);
-  grid-template-rows: auto auto;
-  grid-template-areas:
-    "left center right"
-    "tape tape evidence";
+  grid-template-columns: minmax(280px, 0.9fr) minmax(0, 1.6fr) minmax(320px, 1fr);
+  align-items: start;
   gap: 8px;
   min-height: 0;
   overflow: visible;
 }
 
-.cockpit-left {
-  grid-area: left;
-  min-height: 0;
-  overflow: visible;
-}
-
-.cockpit-center {
-  grid-area: center;
-  display: grid;
-  grid-template-rows: 420px minmax(380px, auto);
-  gap: 8px;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.cockpit-right {
-  grid-area: right;
-  display: grid;
+.arena-column {
   align-content: start;
+  display: grid;
   gap: 8px;
   min-height: 0;
+  min-width: 0;
   overflow: visible;
 }
 
-.cockpit-bottom-left {
-  grid-area: tape;
-  min-height: 0;
-  overflow: visible;
-}
-
-.cockpit-bottom-right {
-  grid-area: evidence;
-  min-height: 0;
-  overflow: visible;
-}
-
-.cockpit-section {
+.arena-column-header {
+  border-bottom: 1px solid rgba(34, 211, 238, 0.14);
   display: grid;
-  gap: 10px;
+  gap: 2px;
+  padding-bottom: 8px;
+}
+
+.arena-column-header h2 {
+  font-size: 18px;
+  margin: 0;
+}
+
+.market-visualization-header {
+  align-items: center;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.visualization-toggle {
+  border: 0;
+  display: inline-flex;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+}
+
+.visualization-toggle label {
+  border: 1px solid rgba(34, 211, 238, 0.14);
+  border-radius: 999px;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 5px 10px;
+}
+
+.visualization-toggle label.selected {
+  border-color: rgba(34, 211, 238, 0.58);
+  background: rgba(34, 211, 238, 0.12);
+  color: var(--heading);
+}
+
+.visualization-toggle input {
+  margin: 0;
+}
+
+.secondary-widget-drawer {
+  border: 1px solid rgba(43, 90, 120, 0.36);
+  border-radius: 6px;
+  background: rgba(2, 6, 23, 0.28);
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px;
+}
+
+.widget-tab-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.widget-tab-row button {
+  border-radius: 999px;
+  min-height: 30px;
+  padding: 5px 10px;
+}
+
+.widget-tab-row button.active {
+  border-color: rgba(34, 211, 238, 0.58);
+  background: rgba(34, 211, 238, 0.12);
+  color: var(--heading);
+}
+
+.detection-page {
+  display: grid;
+  gap: 12px;
+}
+
+.detection-page-tabs {
+  padding: 10px;
 }
 
 .order-book-ladder,
@@ -2976,7 +3098,7 @@ kbd {
 .scenario-launcher-panel h2,
 .attack-tracker h2,
 .detector-confidence-panel h2,
-.agent-event-tape h2,
+.agent-timeline h2,
 .evidence-panel h2 {
   font-size: 13px;
   letter-spacing: 0.01em;
@@ -3056,59 +3178,9 @@ kbd {
 
 .market-timeline {
   display: grid;
-  grid-template-rows: auto minmax(150px, 1fr) minmax(88px, 0.42fr);
+  grid-template-rows: auto minmax(180px, 1fr) auto;
   gap: 8px;
   min-height: 0;
-}
-
-.timeline-chart.small {
-  min-height: 156px;
-}
-
-.confidence-chart {
-  overflow: hidden;
-  position: relative;
-}
-
-.confidence-marker-layer {
-  inset: 10px 18px auto 42px;
-  height: 20px;
-  pointer-events: none;
-  position: absolute;
-  z-index: 2;
-}
-
-.confidence-marker-label {
-  border: 1px solid rgba(var(--neutral-rgb), 0.24);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--chart-bg) 84%, transparent);
-  color: var(--neutral-text);
-  font-size: 9px;
-  font-weight: 800;
-  max-width: 118px;
-  overflow: hidden;
-  padding: 2px 6px;
-  position: absolute;
-  text-overflow: ellipsis;
-  text-transform: uppercase;
-  top: 0;
-  transform: translateX(-50%);
-  white-space: nowrap;
-}
-
-.confidence-marker-label.attack_started {
-  border-color: rgba(var(--warning-rgb), 0.42);
-  color: var(--warning-text);
-}
-
-.confidence-marker-label.detector_warning {
-  border-color: rgba(var(--danger-rgb), 0.38);
-  color: var(--danger-text);
-}
-
-.confidence-marker-label.incident_confirmed {
-  border-color: rgba(var(--success-rgb), 0.36);
-  color: var(--success-text);
 }
 
 .timeline-marker-strip {
@@ -3436,7 +3508,7 @@ kbd {
   color: #fda4af;
 }
 
-.agent-event-tape,
+.agent-timeline,
 .event-tape {
   display: grid;
   gap: 7px;
@@ -3452,6 +3524,10 @@ kbd {
   max-height: none;
   overflow: visible;
   padding: 0;
+}
+
+.agent-timeline.compact .event-tape {
+  grid-template-columns: 1fr;
 }
 
 .event-tape-item {
@@ -3902,6 +3978,10 @@ kbd {
   display: block;
 }
 
+.cockpit-center .battlefield-terrain-canvas {
+  min-height: 640px;
+}
+
 .battlefield-legend {
   display: flex;
   flex-wrap: wrap;
@@ -4235,7 +4315,7 @@ kbd {
 .auth-panel,
 .tournament-login-box,
 .surveillance-actions,
-.cockpit-right .attack-builder,
+.cockpit-left .attack-builder,
 .shortcut-strip span,
 .empty-state,
 .loading-banner,
@@ -4679,7 +4759,7 @@ kbd,
   }
 
   .cockpit-grid {
-    grid-template-columns: minmax(250px, 0.8fr) minmax(500px, 1.45fr) minmax(310px, 0.95fr);
+    grid-template-columns: minmax(250px, 0.8fr) minmax(0, 1.45fr) minmax(300px, 0.95fr);
     min-height: 0;
   }
 
@@ -4701,27 +4781,14 @@ kbd,
 
 @media (max-width: 1180px) {
   .cockpit-grid {
-    grid-template-columns: minmax(250px, 0.9fr) minmax(420px, 1.4fr);
-    grid-template-rows: auto;
-    grid-template-areas:
-      "left center"
-      "right center"
-      "tape tape"
-      "evidence evidence";
+    grid-template-columns: minmax(250px, 0.9fr) minmax(0, 1.4fr);
     height: auto;
     min-height: 0;
     overflow: visible;
   }
 
-  .cockpit-left,
-  .cockpit-right,
-  .cockpit-bottom-left,
-  .cockpit-bottom-right {
-    overflow: visible;
-  }
-
-  .cockpit-center {
-    grid-template-rows: 380px minmax(320px, auto);
+  .cockpit-right {
+    grid-column: 1 / -1;
   }
 
   .liquidity-heatmap {
@@ -4730,6 +4797,7 @@ kbd,
 
   .lab-grid,
   .nebius-control-grid,
+  .why-nebius-grid,
   .experiment-lab-layout,
   .experiment-output-grid,
   .real-nebius-summary-grid,
@@ -4812,12 +4880,6 @@ kbd,
   }
 
   .cockpit-grid {
-    grid-template-areas:
-      "left"
-      "center"
-      "right"
-      "tape"
-      "evidence";
     height: auto;
     min-height: 0;
   }
@@ -4862,6 +4924,7 @@ kbd,
 
   .lab-grid,
   .nebius-control-grid,
+  .why-nebius-grid,
   .experiment-lab-layout,
   .experiment-output-grid,
   .real-nebius-summary-grid,

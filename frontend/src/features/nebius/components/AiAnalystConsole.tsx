@@ -29,13 +29,13 @@ export function AiAnalystConsole({
     <section className="panel ai-analyst-console">
       <div className="nebius-card-heading">
         <div>
-          <p className="eyebrow">Nebius AI Endpoint</p>
-          <h2>Nebius AI Analyst Console</h2>
+          <p className="eyebrow">Nebius AI</p>
+          <h2>AI Investigator Console</h2>
         </div>
         <span className={`runtime-top-badge ${endpointStatus.toLowerCase()}`}>Endpoint: {endpointStatus}</span>
       </div>
       <p className="nebius-card-purpose">
-        Use Nebius AI Endpoints to explain suspicious market behavior, generate incident reports, suggest red-team strategies, and summarize market regimes.
+        Use Nebius AI to explain suspicious market behavior, generate AI Investigator reports, suggest red-team strategies, and summarize market regimes.
       </p>
       <div className="ai-console-meta">
         <Meta label="Model" value={modelName} />
@@ -44,7 +44,7 @@ export function AiAnalystConsole({
       </div>
       <div className="nebius-button-row">
         <button disabled={busyAction !== null} onClick={onExplain} type="button">Explain Current Alert</button>
-        <button disabled={busyAction !== null} onClick={onReport} type="button">Generate Incident Report</button>
+        <button disabled={busyAction !== null} onClick={onReport} type="button">Generate AI Investigator Report</button>
         <button disabled={busyAction !== null} onClick={onStrategy} type="button">Suggest Red-Team Strategy</button>
         <button disabled={busyAction !== null} onClick={onSummary} type="button">Summarize Market Regime</button>
       </div>

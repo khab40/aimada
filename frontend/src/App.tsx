@@ -6,13 +6,12 @@ import { useAuth } from "@/auth/useAuth";
 import type { ArenaRole } from "@/api/client";
 import { ArenaPage } from "@/pages/ArenaPage";
 import { AttackScenarioGeneratorPage } from "@/pages/AttackScenarioGeneratorPage";
-import { BlueTeamSurveillancePage } from "@/pages/BlueTeamSurveillancePage";
+import { DetectionPage } from "@/pages/DetectionPage";
 import { ExperimentLabPage } from "@/pages/ExperimentLabPage";
 import { NebiusControlPanelPage } from "@/pages/NebiusControlPanelPage";
-import { ReportsPage } from "@/pages/ReportsPage";
 
 const disclaimer =
-  "This project is an educational simulation. It does not detect real market manipulation, does not provide trading signals, and should not be used for compliance decisions. The scenarios are synthetic “abuse-like” patterns designed to demonstrate order-book anomaly detection and AI-generated explanations.";
+  "This project is an educational simulation. It does not detect real market manipulation, does not provide trading signals, and should not be used for compliance decisions. The scenarios are synthetic “abuse-like” patterns designed to demonstrate order-book anomaly detection and AI Investigator explanations.";
 
 type ThemePreference = "system" | "light" | "dark";
 type ResolvedTheme = "light" | "dark";
@@ -99,10 +98,11 @@ export function App() {
             <Route path="/" element={<Navigate to="/arena" replace />} />
             <Route path="/arena" element={<ArenaPage />} />
             <Route path="/attack-scenarios" element={canAccessPath(role, "/attack-scenarios") ? <AttackScenarioGeneratorPage /> : <Navigate to="/arena" replace />} />
-            <Route path="/blue-team" element={canAccessPath(role, "/blue-team") ? <BlueTeamSurveillancePage /> : <Navigate to="/arena" replace />} />
+            <Route path="/detection" element={canAccessPath(role, "/detection") ? <DetectionPage /> : <Navigate to="/arena" replace />} />
+            <Route path="/blue-team" element={<Navigate to="/detection" replace />} />
             <Route path="/lab" element={canAccessPath(role, "/lab") ? <ExperimentLabPage /> : <Navigate to="/arena" replace />} />
             <Route path="/nebius" element={<NebiusControlPanelPage />} />
-            <Route path="/reports" element={<ReportsPage />} />
+            <Route path="/reports" element={<Navigate to="/detection" replace />} />
             <Route path="/about" element={<AboutPage />} />
           </Routes>
           <ArenaSplashOverlay />
@@ -229,12 +229,11 @@ const allRoles: ArenaRole[] = ["observer", "attacker", "defender", "judge"];
 const observerAndJudge: ArenaRole[] = ["observer", "judge"];
 
 const sidebarItems: SidebarItem[] = [
-  { icon: "arena", label: "Market Arena", shortLabel: "MA", to: "/arena", visibleFor: allRoles },
-  { icon: "attack", label: "Attackers", shortLabel: "AT", team: "red", to: "/attack-scenarios", visibleFor: ["observer", "attacker", "judge"] },
-  { icon: "detection", label: "Detection", shortLabel: "DT", team: "blue", to: "/blue-team", visibleFor: ["observer", "defender", "judge"] },
-  { icon: "tournament", label: "Tournament", shortLabel: "TN", to: "/lab", visibleFor: observerAndJudge },
-  { icon: "reports", label: "Replay & Reports", shortLabel: "RR", to: "/reports", visibleFor: allRoles },
-  { icon: "cloud", label: "Nebius Control", shortLabel: "NC", to: "/nebius", visibleFor: allRoles },
+  { icon: "arena", label: "Arena", shortLabel: "AR", to: "/arena", visibleFor: allRoles },
+  { icon: "attack", label: "Scenario Generator", shortLabel: "SG", team: "red", to: "/attack-scenarios", visibleFor: ["observer", "attacker", "judge"] },
+  { icon: "detection", label: "Detection", shortLabel: "DT", team: "blue", to: "/detection", visibleFor: allRoles },
+  { icon: "tournament", label: "Experiments", shortLabel: "EX", to: "/lab", visibleFor: observerAndJudge },
+  { icon: "cloud", label: "Nebius AI", shortLabel: "AI", to: "/nebius", visibleFor: allRoles },
   { icon: "about", label: "About", shortLabel: "AB", to: "/about", visibleFor: allRoles }
 ];
 

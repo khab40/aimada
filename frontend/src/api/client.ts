@@ -997,14 +997,14 @@ export async function createInvestigationReport(): Promise<InvestigationReportRe
       scenario_trace: {
         active_window: "last 60 seconds",
         id: "Spoofing Attack #042",
-        source: "Nebius Control Panel"
+        source: "Nebius AI"
       }
     }),
     headers: { "Content-Type": "application/json" },
     method: "POST"
   });
   if (!response.ok) {
-    throw new Error(`Investigation report failed: ${response.status}`);
+    throw new Error(`Detection report failed: ${response.status}`);
   }
   return response.json();
 }

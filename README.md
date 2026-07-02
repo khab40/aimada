@@ -2,13 +2,13 @@
 
 ![AI Market Abuse Detection Arena GitHub banner](assets/img/ai-mada.jpg)
 
-A research and performance engineering workspace for synthetic order-book market abuse detection, live visualization, benchmark runs, and AI-generated incident explanations.
+A research and performance engineering workspace for synthetic order-book market abuse detection, live visualization, benchmark runs, and AI Investigator explanations.
 
 **🚀 Quick Start**: Get running in 5 minutes — see [Quick Start](#quick-start) section below, or read [docs/QUICKSTART.md](docs/QUICKSTART.md) for detailed walkthrough.
 
 ## ⚠️ Disclaimer
 
-This project is an educational simulation. It does not detect real market manipulation, does not provide trading signals, and should not be used for compliance decisions. The scenarios are synthetic "abuse-like" patterns designed to demonstrate order-book anomaly detection and AI-generated explanations. See [docs/safety-and-disclaimers.md](docs/safety-and-disclaimers.md) for details.
+This project is an educational simulation. It does not detect real market manipulation, does not provide trading signals, and should not be used for compliance decisions. The scenarios are synthetic "abuse-like" patterns designed to demonstrate order-book anomaly detection and AI Investigator explanations. See [docs/safety-and-disclaimers.md](docs/safety-and-disclaimers.md) for details.
 
 ## Current Implementation Status
 
@@ -21,14 +21,19 @@ Implemented:
 - Google authentication completion with verified Google identity storage, app-issued JWT sessions, and a collapsible professional auth widget.
 - Deterministic detector evidence model for synthetic spoofing-like, layering-like, quote-stuffing-like, and liquidity-shock patterns.
 - Nebius endpoint and job scaffolds with local typed fallbacks, Docker/config files, scripts, and UI control surfaces.
-- Phase 4.5 managed experiments with deterministic attack manifests, local smart-batch execution, artifact normalization, aggregation, bounded AI investigations, and Reports review of summaries, leaderboards, markdown reports, artifact indexes, and original local-batch files.
+- Phase 4.5 Managed Experiments with deterministic attack manifests, local smart-batch execution, artifact normalization, aggregation, bounded AI Investigator reports, and Detection review of summaries, leaderboards, markdown reports, artifact indexes, and original local-batch files.
+- Product UI consolidation around six top-level destinations: Arena, Scenario Generator, Detection, Experiments, Nebius AI, and About.
+- Arena split into Scenario / Attack Configuration, Market, and Detection sections, with Standard and Battlefield market visualization modes.
+- Detection owns live detector output, incident replay, evidence, AI Investigator reports, and report artifacts; Reports is no longer a primary navigation destination.
+- Nebius AI page focuses on why Nebius matters: model selection, inference, batch execution, GPU utilization, datasets, and Managed Experiments.
+- About includes a four-area architecture diagram covering Front, Back, Nebius Serverless Cloud, and Agent Runners Workspace.
 - Coherent day/night/system UI theme behavior across widgets, charts, status chips, order-book levels, and canvas visualizations, plus compact vertical-navigation controls, paused-state-stable liquidity visualization, and documentation set for quick start, architecture, ARDs, runtime model, benchmark methodology, safety framing, deployment, and design ideas.
 
 Not yet complete:
 
 - Archived real Nebius endpoint and Serverless AI Job run with logs, metrics screenshots, and produced artifacts. Phase 4.5 `submit-nebius` correctly records `real_nebius_pending` until real job execution is implemented and evidenced.
 - Committed sample benchmark report under `outputs/benchmark/`.
-- Final screenshot assets for the README screenshot table.
+- Final screenshot assets for the README screenshot table beyond the About architecture diagram.
 - Dedicated Judge Mode timeline-window selector and formal benchmark artifact schema versioning.
 
 ## Repository Structure
@@ -170,7 +175,7 @@ curl http://localhost:8000/api/experiments/EXP_ID/report
 curl http://localhost:8000/api/experiments/EXP_ID/investigations
 ```
 
-The local experiment path writes synthetic benchmark evidence under `outputs/experiments/<experiment_id>/`, including `attacks.jsonl`, original `local-batch/` files, normalized artifact links, `artifact_index.json`, `experiment_summary.json`, `leaderboard.json`, `benchmark_report.md`, and optional investigation reports. `/reports` previews these artifacts for review. This is simulator evidence for education and reproducibility, not real market surveillance or compliance output.
+The local experiment path writes synthetic benchmark evidence under `outputs/experiments/<experiment_id>/`, including `attacks.jsonl`, original `local-batch/` files, normalized artifact links, `artifact_index.json`, `experiment_summary.json`, `leaderboard.json`, `benchmark_report.md`, and optional AI Investigator reports. Detection previews these artifacts for review. This is simulator evidence for education and reproducibility, not real market surveillance or compliance output.
 
 ## Environment Configuration
 
@@ -280,15 +285,17 @@ Start with the guides above, then explore:
 | Concept | Description |
 |---------|-------------|
 | **Interactive Path** | Live React UI where operators control a synthetic exchange, inject scenarios, and review detector alerts in real time |
-| **Batch Path** | Nebius serverless jobs that run many simulations and compute detector metrics (precision, recall, F1) |
-| **Arena** | The live order-book visualization showing normal trading agents and abuse-like scenario behavior |
+| **Batch Path** | Managed Experiment jobs that run many simulations and compute detector metrics (precision, recall, F1) |
+| **Arena** | The live order-book visualization showing normal trading agents, abuse-like scenario behavior, and Standard/Battlefield market visualization modes |
+| **Agent Runners Workspace** | Local Docker or remote runner area where normal agents, attacker agents, detector workers, replay writers, and dataset writers execute |
 | **Detector** | Deterministic algorithm that analyzes order-book microstructure and produces confidence scores |
+| **Smart Detection** | Nebius-backed or fallback order-book scoring path used for endpoint-style detector checks |
 | **Incident** | A time window flagged by the detector with supporting evidence |
 | **Scenario** | A bounded abuse-like pattern (spoofing-like, layering-like, quote-stuffing-like) |
-| **Nebius Endpoint** | Serverless AI service called by the backend to generate explanations and scenario suggestions |
-| **Nebius Control Panel** | UI tab for smart endpoint scoring, parallel attack/detect batches, usage evidence, and benchmark charts |
-| **Experiment Lab** | `/nebius` workflow for managed Phase 4.5 experiments: create manifest, generate attacks, run local batch, aggregate, investigate, and optionally record pending Nebius submission |
-| **Reports Experiment Review** | `/reports` workflow for selected experiment summary, leaderboard, markdown report, investigation files, artifact index, and original local-batch artifacts |
+| **AI Investigator** | Nebius AI or deterministic fallback workflow that explains incidents and generates narrative reports from persisted evidence |
+| **Nebius AI** | UI destination for model selection, inference, batch execution, GPU utilization, datasets, and Managed Experiment operations |
+| **Managed Experiment** | Durable experiment workflow: create manifest, generate attacks, run local batch, aggregate, investigate, and optionally record pending Nebius submission |
+| **Detection Outputs** | Detection workflow for selected experiment summary, leaderboard, markdown report, AI Investigator files, artifact index, and original local-batch artifacts |
 | **Benchmark** | Evaluation of detector quality against labeled synthetic scenarios |
 | **UI Shell Preferences** | Local browser preferences for collapsed auth controls and day/night/system theme behavior |
 
@@ -302,7 +309,7 @@ The GitHub banner uses `assets/img/ai-mada.jpg`. `assets/screenshots/` currently
 | --- | --- | --- |
 | Arena cockpit | `assets/screenshots/arena-cockpit.svg` | Live order-book, detector alerts, incident details |
 | Incident replay drawer | `assets/screenshots/incident-replay-drawer.svg` | Timeline replay, evidence metrics, AI explanation |
-| Experiment Lab / Nebius job | `assets/screenshots/experiment-lab.svg` | Batch job config, live metrics, results streaming |
+| Managed Experiment / Nebius job | `assets/screenshots/experiment-lab.svg` | Batch job config, live metrics, results streaming |
 | Nebius logs and metrics | `assets/screenshots/nebius-logs-metrics.svg` | Log stream, CPU/memory/latency charts, worker health |
 
 ## For Maintainers & Contributors

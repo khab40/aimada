@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="720" viewBox="0 0 1600 720">
+  <rect width="1600" height="720" fill="#07111b"/>
+  <rect x="28" y="28" width="1544" height="664" rx="28" fill="#0a121d" stroke="#23445f" stroke-width="2"/>
+
+  <text x="70" y="82" fill="#f8fafc" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="700">AI Market Abuse Detection Arena Architecture</text>
+  <text x="70" y="120" fill="#a7c7d8" font-family="Inter, Arial, sans-serif" font-size="19">Four execution areas: browser front end, FastAPI back end, agent runner workspace, and Nebius Serverless Cloud.</text>
+
+  <g font-family="Inter, Arial, sans-serif">
+    <rect x="70" y="165" width="325" height="405" rx="20" fill="#0e1b2a" stroke="#38bdf8" stroke-width="3"/>
+    <text x="98" y="214" fill="#67e8f9" font-size="18" font-weight="700">FRONT</text>
+    <text x="98" y="255" fill="#f8fafc" font-size="30" font-weight="700">React UI</text>
+    <text x="98" y="292" fill="#cfefff" font-size="18">Arena</text>
+    <text x="98" y="322" fill="#cfefff" font-size="18">Scenario Generator</text>
+    <text x="98" y="352" fill="#cfefff" font-size="18">Detection</text>
+    <text x="98" y="382" fill="#cfefff" font-size="18">Experiments</text>
+    <text x="98" y="412" fill="#cfefff" font-size="18">About</text>
+    <rect x="98" y="456" width="270" height="66" rx="12" fill="#12263a" stroke="#1d4d68"/>
+    <text x="120" y="484" fill="#bae6fd" font-size="17" font-weight="700">No Nebius secrets</text>
+    <text x="120" y="510" fill="#9ecfe6" font-size="15">Consumes REST + WebSocket streams</text>
+
+    <rect x="455" y="165" width="325" height="405" rx="20" fill="#0f1f2d" stroke="#22d3ee" stroke-width="3"/>
+    <text x="483" y="214" fill="#67e8f9" font-size="18" font-weight="700">BACK</text>
+    <text x="483" y="255" fill="#f8fafc" font-size="30" font-weight="700">FastAPI Backend</text>
+    <text x="483" y="292" fill="#cfefff" font-size="18">REST control plane</text>
+    <text x="483" y="322" fill="#cfefff" font-size="18">WebSocket broadcaster</text>
+    <text x="483" y="352" fill="#cfefff" font-size="18">Smart Detection adapter</text>
+    <text x="483" y="382" fill="#cfefff" font-size="18">AI Investigator adapter</text>
+    <text x="483" y="412" fill="#cfefff" font-size="18">Artifacts and reports</text>
+    <rect x="483" y="456" width="270" height="66" rx="12" fill="#12263a" stroke="#1d4d68"/>
+    <text x="505" y="484" fill="#bae6fd" font-size="17" font-weight="700">Orchestrates work</text>
+    <text x="505" y="510" fill="#9ecfe6" font-size="15">Routes jobs to runners or Nebius</text>
+
+    <rect x="840" y="165" width="325" height="405" rx="20" fill="#151a25" stroke="#fbbf24" stroke-width="3"/>
+    <text x="868" y="214" fill="#fde68a" font-size="18" font-weight="700">AGENT RUNNERS WORKSPACE</text>
+    <text x="868" y="255" fill="#f8fafc" font-size="30" font-weight="700">Market Agents</text>
+    <text x="868" y="292" fill="#fde68a" font-size="18">Normal liquidity agents</text>
+    <text x="868" y="322" fill="#fde68a" font-size="18">Red-team attacker agents</text>
+    <text x="868" y="352" fill="#fde68a" font-size="18">Exchange/order book loop</text>
+    <text x="868" y="382" fill="#fde68a" font-size="18">Detector workers</text>
+    <text x="868" y="412" fill="#fde68a" font-size="18">Replay + dataset writers</text>
+    <rect x="868" y="456" width="270" height="66" rx="12" fill="#28210f" stroke="#7a5b12"/>
+    <text x="890" y="484" fill="#fde68a" font-size="17" font-weight="700">Agents run here</text>
+    <text x="890" y="510" fill="#e8c86b" font-size="15">Local Docker or job workspace</text>
+
+    <rect x="1225" y="165" width="305" height="405" rx="20" fill="#0c2118" stroke="#22c55e" stroke-width="3"/>
+    <text x="1253" y="214" fill="#86efac" font-size="18" font-weight="700">NEBIUS SERVERLESS CLOUD</text>
+    <text x="1253" y="255" fill="#f8fafc" font-size="30" font-weight="700">Nebius AI</text>
+    <text x="1253" y="292" fill="#bbf7d0" font-size="18">LLM model selection</text>
+    <text x="1253" y="322" fill="#bbf7d0" font-size="18">Inference endpoints</text>
+    <text x="1253" y="352" fill="#bbf7d0" font-size="18">Managed Experiment jobs</text>
+    <text x="1253" y="382" fill="#bbf7d0" font-size="18">GPU utilization</text>
+    <text x="1253" y="412" fill="#bbf7d0" font-size="18">Datasets and artifacts</text>
+    <rect x="1253" y="456" width="248" height="66" rx="12" fill="#0f2b1e" stroke="#1d6d3f"/>
+    <text x="1275" y="484" fill="#bbf7d0" font-size="17" font-weight="700">Scales heavy work</text>
+    <text x="1275" y="510" fill="#92d9aa" font-size="15">Inference + batch execution</text>
+
+    <path d="M405 335 H445" stroke="#67e8f9" stroke-width="5" stroke-linecap="round"/>
+    <path d="M435 321 L457 335 L435 349 Z" fill="#67e8f9"/>
+    <text x="409" y="313" fill="#9eefff" font-size="14" font-weight="700">REST / WS</text>
+
+    <path d="M790 335 H830" stroke="#facc15" stroke-width="5" stroke-linecap="round"/>
+    <path d="M820 321 L842 335 L820 349 Z" fill="#facc15"/>
+    <text x="783" y="313" fill="#fde68a" font-size="14" font-weight="700">run configs</text>
+
+    <path d="M830 385 H790" stroke="#facc15" stroke-width="5" stroke-linecap="round"/>
+    <path d="M800 371 L778 385 L800 399 Z" fill="#facc15"/>
+    <text x="785" y="418" fill="#fde68a" font-size="14" font-weight="700">ticks, alerts, evidence</text>
+
+    <path d="M1175 335 H1215" stroke="#86efac" stroke-width="5" stroke-linecap="round"/>
+    <path d="M1205 321 L1227 335 L1205 349 Z" fill="#86efac"/>
+    <text x="1168" y="313" fill="#bbf7d0" font-size="14" font-weight="700">LLM + jobs</text>
+
+    <path d="M1215 385 H1175" stroke="#86efac" stroke-width="5" stroke-linecap="round"/>
+    <path d="M1185 371 L1163 385 L1185 399 Z" fill="#86efac"/>
+    <text x="1165" y="418" fill="#bbf7d0" font-size="14" font-weight="700">reports, models, artifacts</text>
+  </g>
+
+  <rect x="70" y="612" width="1460" height="48" rx="14" fill="#0f172a" stroke="#1b344d" stroke-width="2"/>
+  <text x="98" y="642" fill="#d8edf7" font-family="Inter, Arial, sans-serif" font-size="18">Pipeline: Scenario Generator -> FastAPI -> Agent Runners Workspace -> Smart Detection -> evidence -> AI Investigator / Nebius AI -> Managed Experiment reports.</text>
+</svg>

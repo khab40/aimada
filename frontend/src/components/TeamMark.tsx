@@ -4,7 +4,7 @@ type TeamMarkProps = {
 };
 
 export function TeamMark({ label, team }: TeamMarkProps) {
-  const ariaLabel = label ?? (team === "red" ? "Red Team" : "Blue Team");
+  const ariaLabel = label ?? (team === "red" ? "Red Team" : "Detection");
 
   return (
     <span className={`team-mark ${team}`} aria-label={ariaLabel} role="img">

@@ -10,19 +10,19 @@ type ServerlessRunnerCardProps = {
 
 const scenarioFamilies = ["Normal Market", "Spoofing Attack", "Layering Attack", "Quote Stuffing", "Mixed Abuse Scenario"];
 const attackTypes = ["Spoofing", "Layering", "Quote Stuffing", "Mixed"];
-const detectors = ["Rule-based", "Isolation Forest placeholder", "LLM-assisted placeholder"];
+const detectors = ["Rule-based", "Isolation Forest placeholder", "AI Investigator placeholder"];
 
 export function ServerlessRunnerCard({ busy, config, jobs, onChange, onSubmit }: ServerlessRunnerCardProps) {
   return (
     <section className="panel serverless-runner-card">
       <div className="nebius-card-heading">
         <div>
-          <p className="eyebrow">Nebius Serverless Jobs</p>
-          <h2>Serverless Batch Experiment Runner</h2>
+          <p className="eyebrow">Managed Experiment</p>
+          <h2>Managed Experiment Runner</h2>
         </div>
-        <button disabled={busy} onClick={onSubmit} type="button">Run on Nebius Serverless</button>
+        <button disabled={busy} onClick={onSubmit} type="button">Run Managed Experiment</button>
       </div>
-      <p className="nebius-card-purpose">Run many simulation scenarios in parallel using Nebius Serverless Jobs.</p>
+      <p className="nebius-card-purpose">Run many simulation scenarios in parallel using Nebius Managed Experiment jobs.</p>
       <div className="serverless-config-grid">
         <Select label="Scenario family" value={config.scenarioFamily} options={scenarioFamilies} onChange={(scenarioFamily) => onChange({ ...config, scenarioFamily })} />
         <NumberInput label="Number of runs" value={config.numberOfRuns} onChange={(numberOfRuns) => onChange({ ...config, numberOfRuns })} />

@@ -10,8 +10,8 @@ export function UsageCostMonitor({ metrics }: { metrics: NebiusUsageMetrics }) {
         </div>
       </div>
       <div className="usage-monitor-grid">
-        <UsageMetric label="AI Tokens" value={metrics.tokensUsed.toLocaleString()} detail={`${metrics.aiEndpointCallsToday} endpoint calls today`} />
-        <UsageMetric label="Serverless Runs" value={String(metrics.serverlessJobsRun)} detail={`${metrics.simulationEventsGenerated.toLocaleString()} events generated`} />
+        <UsageMetric label="LLM Tokens" value={metrics.tokensUsed.toLocaleString()} detail={`${metrics.aiEndpointCallsToday} Nebius AI calls today`} />
+        <UsageMetric label="Managed Experiment Runs" value={String(metrics.serverlessJobsRun)} detail={`${metrics.simulationEventsGenerated.toLocaleString()} events generated`} />
         <UsageMetric label="Storage" value={`${metrics.replayStorageMb} MB`} detail="Replay and artifact storage" />
         <UsageMetric label="Total Cost" value={`$${metrics.estimatedCostUsd.toFixed(2)}`} detail={`${metrics.averageLlmLatencySec.toFixed(1)}s avg LLM latency`} />
       </div>

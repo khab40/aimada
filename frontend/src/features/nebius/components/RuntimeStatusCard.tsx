@@ -5,8 +5,8 @@ export function RuntimeStatusCard({ status }: { status: NebiusRuntimeStatus }) {
     <section className="panel nebius-runtime-card">
       <div className="runtime-badge-strip">
         <StatusBadge label="Nebius Cloud" value={status.cloudStatus} />
-        <StatusBadge label="AI Endpoint" value={status.aiEndpointStatus} />
-        <StatusBadge label="Serverless" value={status.serverlessStatus} />
+        <StatusBadge label="Nebius AI" value={status.aiEndpointStatus} />
+        <StatusBadge label="Managed Experiment Jobs" value={status.serverlessStatus} />
         <StatusBadge label="Storage" value={status.storageStatus} />
       </div>
       <div className="nebius-card-heading">

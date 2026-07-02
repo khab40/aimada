@@ -40,7 +40,7 @@ export function AboutPage() {
         <p>
           AI Market Abuse Detection Arena is a React visual cockpit plus FastAPI simulator that creates a synthetic
           limit-order-book market. Normal agents provide baseline activity, red-team scenarios inject bounded
-          abuse-like patterns, deterministic detectors score the market state, and Nebius Serverless components
+          abuse-like patterns, deterministic detectors score the market state, and Nebius AI plus experiment jobs
           explain incidents or run offline experiments.
         </p>
       </div>
@@ -82,8 +82,8 @@ export function AboutPage() {
             <li>Live visual order book and market microstructure cockpit.</li>
             <li>Synthetic spoofing-like, layering-like, quote-stuffing, and liquidity-shock scenarios.</li>
             <li>Deterministic detector scores and evidence extraction.</li>
-            <li>AI-generated explanations grounded in compact replay evidence.</li>
-            <li>Serverless benchmark and dataset jobs for serious evaluation artifacts.</li>
+            <li>AI Investigator explanations grounded in compact replay evidence.</li>
+            <li>Experiment benchmark and dataset jobs for serious evaluation artifacts.</li>
           </ul>
         </section>
 
@@ -92,9 +92,9 @@ export function AboutPage() {
           <ul>
             <li><strong>Market state:</strong> the order book is the feature stream, similar to a time-series sensor feed.</li>
             <li><strong>Red-team scenario:</strong> a controlled synthetic perturbation with known labels and expected signals.</li>
-            <li><strong>Blue-team detector:</strong> a scoring function over recent book windows, event rates, imbalance, cancels, and price impact.</li>
+            <li><strong>Detection logic:</strong> a scoring function over recent book windows, event rates, imbalance, cancels, and price impact.</li>
             <li><strong>Incident evidence:</strong> the replay window, detector scores, labels, and agent events used to justify an alert.</li>
-            <li><strong>AI explanation:</strong> narrative summarization of evidence; the deterministic detector remains the source of the decision.</li>
+            <li><strong>AI Investigator:</strong> narrative summarization of evidence; the deterministic detector remains the source of the decision.</li>
             <li><strong>Batch benchmark:</strong> repeated scenario runs used to compare precision, recall, F1, latency, and artifact quality.</li>
           </ul>
         </section>
@@ -102,15 +102,15 @@ export function AboutPage() {
         <section className="panel about-card">
           <h3>How Nebius Is Used</h3>
           <p>
-            Nebius is split into online AI endpoints and offline jobs. The browser never receives Nebius secrets; it
+            Nebius is split into Nebius AI inference and offline jobs. The browser never receives Nebius secrets; it
             calls the FastAPI backend, and the backend calls Nebius.
           </p>
           <ul>
-            <li><strong>Serverless AI Endpoint:</strong> scores order-book windows at <code>/orderbook-alert</code>.</li>
-            <li><strong>Serverless AI Endpoint:</strong> generates investigation reports at <code>/investigation-report</code>.</li>
-            <li><strong>Serverless AI Endpoint:</strong> drafts bounded red-team scenarios through the backend adapter.</li>
-            <li><strong>Serverless AI Jobs:</strong> run smart attack/detect batches and detector tournaments.</li>
-            <li><strong>Serverless AI Jobs:</strong> generate labeled synthetic event and snapshot datasets.</li>
+            <li><strong>Nebius AI:</strong> scores order-book windows at <code>/orderbook-alert</code>.</li>
+            <li><strong>AI Investigator:</strong> generates reports through the backend report adapter.</li>
+            <li><strong>Scenario Generator:</strong> drafts bounded red-team scenarios through the backend adapter.</li>
+            <li><strong>Experiment jobs:</strong> run attack and detection batches plus detector tournaments.</li>
+            <li><strong>Experiment jobs:</strong> generate labeled synthetic event and snapshot datasets.</li>
           </ul>
         </section>
 
@@ -120,7 +120,7 @@ export function AboutPage() {
             <li>Show the market first; explanations should be grounded in visible state.</li>
             <li>Keep red-team scenarios synthetic, bounded, and explicitly labeled.</li>
             <li>Separate live demo latency from batch benchmark workloads.</li>
-            <li>Use deterministic detectors for evidence and AI only for explanation and narration.</li>
+            <li>Use deterministic detectors for evidence and AI Investigator only for explanation and narration.</li>
             <li>Preserve the disclaimer: no real manipulation detection, no trading signals, no compliance use.</li>
           </ul>
         </section>
@@ -131,11 +131,10 @@ export function AboutPage() {
             <li>Build and run the full local stack: <code>docker compose up --build</code>.</li>
             <li>Open the UI at <code>http://localhost:5173/arena</code>.</li>
             <li>Click <code>Start</code>, then launch a red-team scenario.</li>
-            <li>When an incident appears, open the replay drawer and run Nebius AI Investigator.</li>
+            <li>When an incident appears, open the replay drawer and run AI Investigator.</li>
             <li>Use Attack Scenario Generator for concrete red-team plans that can be injected, expanded into grids, or submitted to Nebius batches.</li>
-            <li>Use Blue Team Surveillance for detector scores, suspicious agents, evidence, and AI-assisted investigation.</li>
-            <li>Use Nebius Control Panel for the full cloud workflow: scenario creation, cloud batch runs, detector scoring, explanations, and artifact storage.</li>
-            <li>Use Replay & Reports to reload persisted jobs, explanations, artifacts, exports, replay windows, and promoted evidence.</li>
+            <li>Use Detection for detector scores, suspicious agents, evidence, reports, replay windows, and AI Investigator review.</li>
+            <li>Use Nebius AI for the full cloud workflow: scenario creation, cloud batch runs, detector scoring, explanations, and artifact storage.</li>
           </ol>
           <p>
             In mock endpoint mode, Docker Compose runs the local serverless endpoint and the backend calls
@@ -144,10 +143,50 @@ export function AboutPage() {
         </section>
       </div>
 
+      <section className="panel about-card architecture-card">
+        <div className="section-heading-row">
+          <h3>Architecture Diagram</h3>
+          <span className="endpoint-badge">front / back / runners / Nebius</span>
+        </div>
+        <img
+          alt="Architecture diagram showing Front, Back, Agent Runners Workspace, and Nebius Serverless Cloud areas"
+          className="architecture-diagram-image"
+          src="/img/about_architecture_diagram.jpg"
+        />
+      </section>
+
+      <div className="about-grid">
+        <section className="panel about-card">
+          <h3>Pipeline</h3>
+          <ol>
+            <li>Generate or select a bounded synthetic attack scenario.</li>
+            <li>Run the market simulation and emit order-book events, trades, snapshots, labels, and detector outputs.</li>
+            <li>Score alerts with deterministic detectors over recent book windows.</li>
+            <li>Persist replay evidence and compact alert context.</li>
+            <li>Use Nebius AI for AI Investigator reports and Nebius jobs for batch experiments.</li>
+            <li>Aggregate precision, recall, F1, latency, artifacts, and benchmark report output.</li>
+          </ol>
+        </section>
+
+        <section className="panel about-card benchmark-summary-card">
+          <h3>Benchmark Summary</h3>
+          <p>The benchmark path evaluates detector behavior against labeled synthetic scenarios rather than live intuition.</p>
+          <div className="benchmark-summary-grid">
+            <span>Precision</span>
+            <span>Recall</span>
+            <span>F1</span>
+            <span>Latency</span>
+            <span>False positives</span>
+            <span>False negatives</span>
+          </div>
+          <p>Each run keeps raw events, labels, detector outputs, aggregate metrics, per-scenario observations, and report-ready charts.</p>
+        </section>
+      </div>
+
       <section className="panel research-panel">
         <div className="section-heading-row">
-          <h3>Research Inspiration</h3>
-          <span className="endpoint-badge">articles used for project direction</span>
+          <h3>Research Papers</h3>
+          <span className="endpoint-badge">market simulation and LOB realism</span>
         </div>
         <div className="research-link-grid">
           {researchLinks.map((item) => (

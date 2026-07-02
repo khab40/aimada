@@ -35,7 +35,7 @@ export function DeploymentHealthCard({
       </div>
       <div className="nebius-button-row">
         <button onClick={onPingAi} type="button">Ping Nebius AI</button>
-        <button onClick={onTestServerless} type="button">Test Serverless Job</button>
+        <button onClick={onTestServerless} type="button">Test Managed Experiment Job</button>
         <button onClick={onTestStorage} type="button">Test Storage Write</button>
         <button onClick={onRestartSimulation} type="button">Restart Simulation Engine</button>
       </div>

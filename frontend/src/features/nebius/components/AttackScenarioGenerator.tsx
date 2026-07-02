@@ -46,7 +46,7 @@ export function AttackScenarioGenerator({
         </div>
       </div>
       <p className="nebius-card-purpose">
-        Create concrete red-team attack plans that can be injected into the live simulator or submitted to Nebius Serverless Jobs.
+        Create concrete red-team attack plans that can be injected into the live simulator or submitted to Nebius Managed Experiment jobs.
       </p>
 
       <div className="attack-generator-grid">

@@ -115,7 +115,7 @@ export function AttackScenarioGeneratorPage() {
       scenarioFamily: scenario.name,
       sourceAttackScenarioId: scenario.id
     }));
-    setMessage(`${scenario.id} persisted and ready for live injection or Nebius Serverless batches.`);
+    setMessage(`${scenario.id} persisted and ready for live injection or Nebius Managed Experiment batches.`);
     await refresh();
   }
 
@@ -156,7 +156,7 @@ export function AttackScenarioGeneratorPage() {
   async function submitBatch(runs = batchConfig.numberOfRuns) {
     const response = await runSmartBatches(runs, batchConfig.agentsPerRun, scenariosFor(batchConfig));
     setJobs((current) => [jobFromBatch(response), ...current.filter((job) => job.id !== response.id)]);
-    setMessage(`${response.id} completed on ${response.deployment_target}. Artifacts are available in Replay & Reports.`);
+    setMessage(`${response.id} completed on ${response.deployment_target}. Artifacts are available in Detection.`);
     await refresh();
   }
 
@@ -167,7 +167,7 @@ export function AttackScenarioGeneratorPage() {
         <div>
           <p className="eyebrow">Red-team planning workspace</p>
           <h2>Attack Scenario Generator</h2>
-          <p>Create concrete attack plans, persist them, inject them into Arena, expand them into experiment grids, or run them as Nebius Serverless batches.</p>
+          <p>Create concrete attack plans, persist them, inject them into Arena, expand them into experiment grids, or run them as Nebius Managed Experiment batches.</p>
         </div>
         <div className="team-hero-badges">
           <span className="team-badge red">Red Team</span>
@@ -189,7 +189,7 @@ export function AttackScenarioGeneratorPage() {
           onSelectScenario={selectAttackScenario}
           scenario={attackScenario}
           storedScenarios={storedScenarios}
-          statusMessage={busy ? "Working with backend Nebius adapter..." : null}
+          statusMessage={busy ? "Working with backend Nebius AI adapter..." : null}
           variants={attackVariants}
         />
 

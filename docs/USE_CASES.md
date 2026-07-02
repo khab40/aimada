@@ -1,6 +1,6 @@
 # Use Cases
 
-AI Market Abuse Detection Arena is an educational synthetic market simulation for demonstrating order-book anomaly detection, red-team scenario injection, deterministic detector evaluation, and AI-assisted explanations.
+AI Market Abuse Detection Arena is an educational synthetic market simulation for demonstrating order-book anomaly detection, red-team scenario injection, deterministic detector evaluation, and AI Investigator explanations.
 
 This document describes business-style use cases. It does not describe real market surveillance, trading signals, or compliance decisioning.
 
@@ -16,7 +16,7 @@ We provide:
 
 - a live visual arena where synthetic normal and abuse-like agents act in real time
 - deterministic detectors that convert order-book behavior into confidence scores and evidence
-- AI-assisted explanations that make detector evidence understandable to a reviewer
+- AI Investigator explanations that make detector evidence understandable to a reviewer
 - batch benchmarks that measure detector precision, recall, F1, and latency
 - synthetic labeled datasets for repeatable experiments
 - Google-authenticated demo personas with app-issued JWT sessions for role-aware review
@@ -34,8 +34,8 @@ Nebius is used for two distinct serverless surfaces:
 ```mermaid
 graph TD
     Backend["FastAPI Backend"]
-    Endpoint["Nebius Serverless AI Endpoint"]
-    Jobs["Nebius Serverless AI Jobs"]
+    Endpoint["Nebius AI / LLM Inference"]
+    Jobs["Nebius Serverless Cloud - Managed Experiment Jobs"]
     Explain["Incident explanation - /explain-event"]
     Scenario["Scenario generation - /generate-scenario"]
     Judge["Judge Mode report - timeline explanation"]
@@ -53,15 +53,15 @@ graph TD
     Dataset --> Artifacts
 ```
 
-Nebius Serverless AI Endpoint:
+Nebius AI / LLM inference:
 
 - receives compact evidence from the backend
-- generates incident explanations for the Arena UI
-- generates bounded red-team scenario drafts for the Nebius Control Panel Attack Scenario Generator
+- generates AI Investigator explanations for the Arena UI
+- generates bounded red-team scenario drafts for Scenario Generator
 - supports Judge Mode timeline explanations
 - runs in deterministic mock mode for first wiring and AI mode after deployment
 
-Nebius Serverless AI Jobs:
+Nebius Serverless Cloud - Managed Experiment jobs:
 
 - run detector tournament benchmarks outside the interactive UI
 - generate labeled synthetic datasets
@@ -79,8 +79,8 @@ graph LR
     Backend["FastAPI Simulator Backend"]
     Simulation["Synthetic Exchange + Agents"]
     Detectors["Deterministic Detector Engine"]
-    NebiusEndpoint["Nebius Serverless AI Endpoint"]
-    NebiusJobs["Nebius Serverless AI Jobs"]
+    NebiusEndpoint["Nebius AI / LLM Inference"]
+    NebiusJobs["Nebius Serverless Cloud - Managed Experiment Jobs"]
     Artifacts["Reports, Metrics, Dataset Artifacts"]
 
     Operator -->|"sign in, choose role, theme shell"| UI
@@ -106,10 +106,10 @@ graph LR
 | --- | --- | --- |
 | Live Arena Mode | Demo Operator | Show a changing synthetic order book with normal and red-team activity. |
 | Manual Scenario Launch | Demo Operator | Inject a bounded abuse-like pattern and observe visible market effects. |
-| Incident Investigation | Demo Operator / Reviewer | Use Nebius Serverless AI Endpoint to turn detector evidence into a clear explanation. |
-| Red-Team Scenario Generation | Demo Operator | Use Nebius Serverless AI Endpoint to generate a launchable synthetic scenario configuration. |
-| Detector Tournament Benchmark | Research / Benchmark User | Use Nebius Serverless AI Jobs to compare detector precision, recall, F1, and latency. |
-| Synthetic Dataset Generation | Research / Benchmark User | Use Nebius Serverless AI Jobs to produce labeled synthetic event/snapshot/incident artifacts. |
+| Incident Investigation | Demo Operator / Reviewer | Use AI Investigator to turn detector evidence into a clear explanation. |
+| Red-Team Scenario Generation | Demo Operator | Use Scenario Generator to create a launchable synthetic scenario configuration. |
+| Detector Tournament Benchmark | Research / Benchmark User | Use Managed Experiment jobs to compare detector precision, recall, F1, and latency. |
+| Synthetic Dataset Generation | Research / Benchmark User | Use Managed Experiment jobs to produce labeled synthetic event/snapshot/incident artifacts. |
 | Challenge Submission Evidence | Technical Reviewer | Review architecture, metrics, screenshots, and safety framing. |
 | Role-Based Demo Review | Demo Operator / Reviewer | Sign in with Google, keep app JWT sessions separate from Google tokens, and use role/session context during demos. |
 | UI Shell Personalization | Demo Operator / Reviewer | Hide the auth panel, use compact navigation, and switch day/night/system display without changing backend state. |
@@ -147,7 +147,7 @@ Business value:
 Nebius role:
 
 - No direct Nebius call is needed for the baseline live loop.
-- The live arena creates the state and incidents later sent to Nebius Serverless AI Endpoints.
+- The live arena creates the state and incidents later sent to Nebius AI / LLM inference.
 
 ## Role-Based Demo Review
 
@@ -173,7 +173,7 @@ graph TD
 Business value:
 
 - Gives demos a familiar sign-in and account surface without exposing Google tokens as long-lived app sessions.
-- Supports Observer, Judge, Red Team, Blue Team, and Operator personas in a way reviewers can understand.
+- Supports Observer, Judge, Red Team, Detection, and Operator personas in a way reviewers can understand.
 - Keeps identity verification in the backend and session presentation in the UI shell.
 
 Nebius role:
@@ -243,8 +243,8 @@ Business value:
 
 Nebius role:
 
-- Manually launched scenarios can be generated or narrated by the Nebius Serverless AI Endpoint.
-- Scenario labels become inputs for Nebius Serverless AI Job benchmark runs.
+- Manually launched scenarios can be generated or narrated by Nebius AI.
+- Scenario labels become inputs for Managed Experiment benchmark runs.
 
 ## Incident Investigation
 
@@ -290,7 +290,7 @@ constraints.
 ```mermaid
 graph TD
     Operator["Demo Operator"]
-    Control["Nebius Control Panel - Attack Scenario Generator"]
+    Control["Scenario Generator"]
     Backend["POST /api/nebius/attack-scenario"]
     NebiusClient["NebiusClient"]
     Endpoint["Nebius scenario endpoint or typed fallback adapter"]
@@ -423,9 +423,9 @@ Business value:
 - Connects charts, order-book state, events, and detector signals.
 - Produces an investigation-style report while preserving educational framing.
 
-Nebius role:
+Nebius AI role:
 
-- Uses the same Nebius Serverless AI Endpoint family as incident explanation.
+- Uses the same Nebius AI / LLM inference family as AI Investigator.
 - Sends bounded timeline context rather than full raw event logs.
 - Returns a structured investigation report for reviewer-facing analysis.
 

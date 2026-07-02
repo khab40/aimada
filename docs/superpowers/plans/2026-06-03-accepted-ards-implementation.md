@@ -10,6 +10,12 @@
 
 ---
 
+## 2026-07-02 UI And Documentation Consolidation Note
+
+The accepted-core ARD implementation is now complemented by a product navigation and documentation pass. The live UI has six top-level destinations: Arena, Scenario Generator, Detection, Experiments, Nebius AI, and About. Reports are treated as Detection outputs. The About architecture diagram now uses four execution areas: Front, Back, Agent Runners Workspace, and Nebius Serverless Cloud.
+
+This note does not reopen the original ARD-0001 through ARD-0006 implementation checklist; it records the current product framing that later plans should preserve.
+
 ## ARD Scope
 
 Approved for implementation:

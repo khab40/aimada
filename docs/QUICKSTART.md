@@ -81,11 +81,11 @@ curl -X POST http://localhost:8000/api/scenarios/spoofing-like
 ### Incident Investigation
 - Click on an incident badge to open the drawer
 - View detector evidence and timeline
-- If Nebius is configured: click **Explain** to get AI-generated explanation
+- If Nebius is configured: click **Run AI Investigator** to get an AI Investigator explanation
 
 ### Advanced Features
 - WebSocket connection: `ws://localhost:8000/ws/arena`
-- Nebius Control Panel: open `/nebius` in the frontend
+- Nebius AI: open `/nebius` in the frontend
 - Batch benchmark and smart attack/detect jobs: See [Nebius Deployment](nebius-deployment.md)
 - Red-team scenario generation: See [Use Cases](USE_CASES.md)
 
@@ -166,7 +166,7 @@ curl http://localhost:8000/api/incidents
 curl http://localhost:8000/api/incidents/INC-000001
 curl -X POST http://localhost:8000/api/incidents/INC-000001/explain
 
-# AI-assisted red-team (local mock by default)
+# Nebius AI red-team generation (local mock by default)
 curl -X POST http://localhost:8000/api/red-team/generate-scenario \
   -H 'Content-Type: application/json' \
   -d '{"scenario_family":"quote_stuffing","market_regime":"volatile","goal":"hard_to_detect"}'

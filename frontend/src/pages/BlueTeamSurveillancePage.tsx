@@ -7,13 +7,15 @@ import {
   type OrderBookAlertResponse,
   type ReportsSummary
 } from "@/api/client";
-import { AgentEventTape } from "@/components/AgentEventTape";
-import { DetectorConfidencePanel } from "@/components/DetectorConfidencePanel";
+import { AgentTimeline } from "@/components/AgentTimeline";
+import { DetectorConfidence } from "@/components/DetectorConfidence";
 import { EvidencePanel } from "@/components/EvidencePanel";
-import { IncidentReplayDrawer } from "@/components/IncidentReplayDrawer";
+import { IncidentDrawer } from "@/components/IncidentDrawer";
 import { TeamMark } from "@/components/TeamMark";
 import { useArenaSource } from "@/hooks/useArenaSource";
 import type { AgentEvent, ArenaState, DetectorScore, EvidenceItem, Incident } from "@/types/arena";
+
+type DetectionSecondaryView = "endpoint" | "report" | "events";
 
 export function BlueTeamSurveillancePage() {
   const { mode, pause, running, sourceStatus, start, state, tick } = useArenaSource();
@@ -22,6 +24,7 @@ export function BlueTeamSurveillancePage() {
   const [reportsSummary, setReportsSummary] = useState<ReportsSummary | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [secondaryView, setSecondaryView] = useState<DetectionSecondaryView>("endpoint");
   const activeIncident = useMemo(() => createIncident(state), [state]);
   const suspiciousAgents = useMemo(() => buildSuspiciousAgents(state), [state]);
 
@@ -53,12 +56,12 @@ export function BlueTeamSurveillancePage() {
       <div className="panel lab-hero-panel team-hero blue">
         <TeamMark team="blue" />
         <div>
-          <p className="eyebrow">Blue-team workspace</p>
-          <h2>Blue Team Surveillance</h2>
-          <p>Monitor live detector scores, suspicious agents, incident evidence, and Nebius AI endpoint analysis from one surveillance desk.</p>
+          <p className="eyebrow">Detection workspace</p>
+          <h2>Detection</h2>
+          <p>Monitor live detector scores, suspicious agents, incident evidence, and AI Investigator analysis from one workspace.</p>
         </div>
         <div className="team-hero-badges">
-          <span className="team-badge blue">Blue Team</span>
+          <span className="team-badge blue">Detection</span>
           <span className="endpoint-badge">source {mode}:{sourceStatus}</span>
         </div>
       </div>
@@ -70,7 +73,7 @@ export function BlueTeamSurveillancePage() {
         <Metric label="Running" value={running ? "yes" : "no"} tone={running ? "good" : "warn"} />
         <Metric label="Active Alerts" value={String(state.detectors.alerts.length)} tone={state.detectors.alerts.length ? "warn" : "good"} />
         <Metric label="Stored Incidents" value={String(persistedIncidentCount)} />
-        <Metric label="AI Explanations" value={String(persistedExplanationCount)} />
+        <Metric label="AI Investigator Outputs" value={String(persistedExplanationCount)} />
       </div>
 
       <div className="nebius-button-row surveillance-actions">
@@ -81,11 +84,11 @@ export function BlueTeamSurveillancePage() {
           onClick={() => void runAction("endpoint detection", async () => {
             const response = await runSmartDetection();
             setEndpointAlert(response);
-            setMessage(`Nebius endpoint scored ${response.detected_pattern} at ${(response.suspicion_score * 100).toFixed(0)}%.`);
+            setMessage(`Smart Detection scored ${response.detected_pattern} at ${(response.suspicion_score * 100).toFixed(0)}%.`);
           })}
           type="button"
         >
-          Run Nebius Detection
+          Run Smart Detection
         </button>
         <button
           disabled={busy !== null}
@@ -96,13 +99,13 @@ export function BlueTeamSurveillancePage() {
           })}
           type="button"
         >
-          Generate AI Report
+          Generate AI Investigator Report
         </button>
       </div>
 
       <div className="blue-team-grid">
         <section className="panel surveillance-card">
-          <DetectorConfidencePanel detectors={state.detectors} />
+          <DetectorConfidence detectors={state.detectors} />
         </section>
 
         <section className="panel surveillance-card">
@@ -120,54 +123,72 @@ export function BlueTeamSurveillancePage() {
           </div>
         </section>
 
-        <section className="panel surveillance-card">
-          <h3>Nebius Endpoint Score</h3>
-          {endpointAlert ? (
-            <div className="endpoint-result">
-              <div className="endpoint-score">
-                <span>Suspicion</span>
-                <strong>{endpointAlert.suspicion_score.toFixed(2)}</strong>
-              </div>
-              <p><strong>Pattern:</strong> {endpointAlert.detected_pattern}</p>
-              <ul>
-                {endpointAlert.reasons.map((reason) => <li key={reason}>{reason}</li>)}
-              </ul>
-              <p>{endpointAlert.recommended_action}</p>
-            </div>
-          ) : (
-            <p className="empty-state">Run Nebius Detection to call the backend order-book alert adapter.</p>
-          )}
-        </section>
-
         <section className="panel surveillance-card wide">
           <EvidencePanel state={state} />
         </section>
 
         <section className="panel surveillance-card wide">
-          <IncidentReplayDrawer activeIncident={activeIncident} currentTick={state.tick} incidentTick={activeIncident?.tick ?? state.tick} live={Boolean(activeIncident)} />
+          <IncidentDrawer incident={activeIncident} currentTick={state.tick} incidentTick={activeIncident?.tick ?? state.tick} mode={activeIncident ? "live" : "replay"} />
         </section>
 
-        <section className="panel surveillance-card">
-          <h3>AI Incident Report</h3>
-          {report ? (
-            <div className="ai-report-summary">
-              <span className="endpoint-badge">{report.mode}</span>
-              <h4>{report.title}</h4>
-              <p>{report.summary}</p>
-              <ul>
-                {report.detector_findings.map((finding) => <li key={finding}>{finding}</li>)}
-              </ul>
-            </div>
+        <section className="panel surveillance-card wide secondary-widget-drawer">
+          <div className="widget-tab-row" role="tablist" aria-label="Secondary detection widgets">
+            <button className={secondaryView === "endpoint" ? "active" : ""} onClick={() => setSecondaryView("endpoint")} type="button">Smart Detection</button>
+            <button className={secondaryView === "report" ? "active" : ""} onClick={() => setSecondaryView("report")} type="button">Report</button>
+            <button className={secondaryView === "events" ? "active" : ""} onClick={() => setSecondaryView("events")} type="button">Events</button>
+          </div>
+          {secondaryView === "endpoint" ? (
+            <EndpointScore endpointAlert={endpointAlert} />
+          ) : secondaryView === "report" ? (
+            <AiReportSummary report={report} />
           ) : (
-            <p className="empty-state">Generate an AI report to persist incident narrative evidence.</p>
+            <AgentTimeline events={state.events} layout="compact" limit={12} title="Recent Evidence Events" />
           )}
         </section>
-
-        <section className="panel surveillance-card">
-          <h3>Recent Evidence Events</h3>
-          <AgentEventTape events={state.events.slice(-12)} />
-        </section>
       </div>
+    </section>
+  );
+}
+
+function EndpointScore({ endpointAlert }: { endpointAlert: OrderBookAlertResponse | null }) {
+  return (
+    <section className="surveillance-card-tab">
+      <h3>Smart Detection Score</h3>
+      {endpointAlert ? (
+        <div className="endpoint-result">
+          <div className="endpoint-score">
+            <span>Suspicion</span>
+            <strong>{endpointAlert.suspicion_score.toFixed(2)}</strong>
+          </div>
+          <p><strong>Pattern:</strong> {endpointAlert.detected_pattern}</p>
+          <ul>
+            {endpointAlert.reasons.map((reason) => <li key={reason}>{reason}</li>)}
+          </ul>
+          <p>{endpointAlert.recommended_action}</p>
+        </div>
+      ) : (
+        <p className="empty-state">Run Smart Detection to call the backend order-book alert adapter.</p>
+      )}
+    </section>
+  );
+}
+
+function AiReportSummary({ report }: { report: InvestigationReportResponse | null }) {
+  return (
+    <section className="surveillance-card-tab">
+      <h3>AI Investigator Report</h3>
+      {report ? (
+        <div className="ai-report-summary">
+          <span className="endpoint-badge">{report.mode}</span>
+          <h4>{report.title}</h4>
+          <p>{report.summary}</p>
+          <ul>
+            {report.detector_findings.map((finding) => <li key={finding}>{finding}</li>)}
+          </ul>
+        </div>
+      ) : (
+        <p className="empty-state">Generate an AI Investigator report to persist incident narrative evidence.</p>
+      )}
     </section>
   );
 }
@@ -197,7 +218,7 @@ function createIncident(state: ArenaState): Incident | null {
     confidence: alert.confidence,
     evidence: evidenceFrom(state, alert),
     explanation: `${scenario.scenario_name} raised ${alert.name} with confidence ${alert.confidence.toFixed(2)} in the live arena stream.`,
-    id: `MOCK-${state.tick}`,
+    id: `MOCK-${scenario.scenario_id}-${alert.name}`,
     scenario_family: scenario.scenario_family,
     scenario_id: scenario.scenario_id,
     severity: alert.severity === "critical" ? "Critical" : alert.severity === "high" ? "High" : "Medium",

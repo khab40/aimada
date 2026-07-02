@@ -8,9 +8,9 @@ AI Market Abuse Detection Arena will be built as:
 - normal and abuse-like agents
 - deterministic detectors
 - Nebius Serverless AI Job benchmark
-- Nebius Serverless AI Endpoint explanations
+- Nebius AI / LLM explanations
 
-This project is an educational simulation. The scenarios are synthetic abuse-like patterns for demonstrating order-book anomaly detection and AI-generated explanations.
+This project is an educational simulation. The scenarios are synthetic abuse-like patterns for demonstrating order-book anomaly detection and AI Investigator explanations.
 
 ## Status Legend
 
@@ -191,12 +191,12 @@ Exit criteria:
 
 Status: `[partial]`
 
-Goal: integrate Nebius serverless components for offline benchmark runs and AI-generated explanations.
+Goal: integrate Nebius serverless components for offline benchmark runs and AI Investigator explanations.
 
 Scope:
 
 - Serverless AI Job for benchmark
-- Serverless AI Endpoint for explanation
+- Nebius AI endpoint for AI Investigator explanations
 - deployment docs
 - screenshots of Nebius logs and metrics
 
@@ -216,7 +216,7 @@ Deliverables:
 - `[done]` `serverless/jobs/render_job_config.py` for experiment-specific Nebius job config rendering
 - `[done]` `serverless/endpoint/endpoint_config.yaml`
 - `[done]` reproducibility scripts under `scripts/`
-- `[done]` `Nebius Control Panel` UI tab with observatory widgets, attack scenario generation, smart detection/report actions, serverless batch runs, and artifact workbench access to benchmark outputs
+- `[done]` `Nebius AI` UI destination with model selection, inference, batch execution, GPU utilization, datasets, Managed Experiment operations, and artifact access to benchmark outputs
 - `[done]` `docs/nebius-deployment.md`
 - `[todo]` screenshots under `assets/screenshots/` are still missing except for `.gitkeep`; real Nebius logs/metrics screenshots are still needed.
 
@@ -271,10 +271,10 @@ Deliverables:
 - `[done]` `collect-nebius-artifacts` collects the existing Nebius job output file format from mounted output or `NEBIUS_JOB_ARTIFACTS_COMMAND_TEMPLATE` into the canonical experiment artifact layout without fabricating missing files.
 - `[done]` `/api/nebius/observatory` includes experiment job summary counts when experiment jobs exist.
 - `[done]` Reports summary includes managed experiment manifests alongside older attack-builder experiments.
-- `[done]` `/nebius` Experiment Lab drives the managed experiment lifecycle through FastAPI: create, generate manifest, run local batch, optionally submit a pending Nebius job, aggregate, and run bounded investigations.
+- `[done]` `/nebius` Managed Experiment Lab drives the managed experiment lifecycle through FastAPI: create, generate manifest, run local batch, optionally submit a pending Nebius job, aggregate, and run bounded AI Investigator reports.
 - `[done]` `/nebius` Real Nebius Deployment panel exposes endpoint health checks, route smoke calls, rendered job config, submit-template readiness, latest cloud job status, and cloud artifact collection state without treating pending jobs as successful real-cloud runs.
-- `[done]` `/reports` shows managed experiments with selected summary, scenario leaderboard, markdown benchmark report viewer, investigation reports, `artifact_index.json` links, and original `local-batch` artifacts.
-- `[done]` `/api/nebius/smart-batches` remains unchanged for Nebius Control Panel smart-batch execution.
+- `[done]` Detection shows managed experiments with selected summary, scenario leaderboard, markdown benchmark report viewer, AI Investigator reports, `artifact_index.json` links, and original `local-batch` artifacts.
+- `[done]` `/api/nebius/smart-batches` remains unchanged for Nebius AI smart-batch execution.
 - `[done]` tests for create, list, get, report visibility, delete, deterministic attack manifests, attack counts, expected labels, a 3-run local batch, fake local-batch artifact normalization, mocked Nebius investigations, sample-CSV aggregation, and missing real Nebius config.
 - `[done]` local HTTP verification created a 10-row mixed-scenario experiment in mock mode and confirmed manifest rows, normalized artifacts, original local-batch files, summary, leaderboard, benchmark report, and investigation artifacts under `outputs/experiments/<experiment_id>/`.
 - `[todo]` archived real Nebius job evidence, logs, metrics, and produced artifacts from an actual configured command-template run.
@@ -324,6 +324,9 @@ Deliverables:
 - `[todo]` committed sample benchmark report under `outputs/benchmark/`
 - `[done]` final disclaimer and safety language in README/docs/UI
 - `[done]` professional UI shell controls: collapsible Google/auth widget, compact sidebar toggle, day/night/system theme selector, and paused-state-stable Liquidity Map
+- `[done]` six-entry navigation: Arena, Scenario Generator, Detection, Experiments, Nebius AI, and About
+- `[done]` Arena three-section layout: Scenario / Attack Configuration, Market, and Detection
+- `[done]` About architecture diagram as JPG showing Front, Back, Agent Runners Workspace, and Nebius Serverless Cloud
 
 Exit criteria:
 

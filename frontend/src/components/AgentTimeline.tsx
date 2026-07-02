@@ -1,6 +1,7 @@
 import type { AgentEvent } from "@/types/arena";
 
 type AgentEventKind = "normal" | "market_maker" | "red_team" | "detector" | "nebius";
+type AgentTimelineLayout = "compact" | "full";
 
 const eventLabels: Record<AgentEventKind, string> = {
   detector: "detector",
@@ -10,15 +11,25 @@ const eventLabels: Record<AgentEventKind, string> = {
   red_team: "red team"
 };
 
-export function AgentEventTape({ events }: { events: AgentEvent[] }) {
+export function AgentTimeline({
+  events,
+  layout = "full",
+  limit = layout === "compact" ? 12 : 20,
+  title = "Agent Timeline"
+}: {
+  events: AgentEvent[];
+  layout?: AgentTimelineLayout;
+  limit?: number;
+  title?: string;
+}) {
   const latestEvents = [...events].sort((left, right) => (
     Number(right.timestamp ?? 0) - Number(left.timestamp ?? 0)
-  )).slice(0, 20);
+  )).slice(0, limit);
 
   return (
-    <section className="agent-event-tape">
+    <section className={`agent-timeline ${layout}`}>
       <div className="section-heading-row">
-        <h2>Agent Event Tape</h2>
+        <h2>{title}</h2>
         <span>Last {latestEvents.length} events</span>
       </div>
       {!latestEvents.length ? <div className="empty-state">No agent events yet.</div> : null}
@@ -32,7 +43,7 @@ export function AgentEventTape({ events }: { events: AgentEvent[] }) {
                 <time>{formatTimestamp(event.timestamp)}</time>
               </div>
               <strong>{event.agent_id ?? event.aggressor_agent_id ?? "exchange"}</strong>
-              <small>{formatEvent(event)}</small>
+              {layout === "full" ? <small>{formatEvent(event)}</small> : null}
             </li>
           );
         })}

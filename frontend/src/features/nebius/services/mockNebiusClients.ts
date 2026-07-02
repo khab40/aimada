@@ -28,7 +28,7 @@ const now = () => new Date().toISOString();
 export class MockNebiusAiClient implements NebiusAiClient {
   async explainCurrentAlert(input: AlertExplanationInput): Promise<AiExplanation> {
     return {
-      title: "AI Surveillance Analyst",
+      title: "AI Investigator",
       suspicion: "High",
       findings: [
         `Agent ${input.agentId} placed a large sell wall near the best ask.`,
@@ -286,8 +286,8 @@ export class MockDeploymentHealthClient implements NebiusDeploymentHealthClient 
     { name: "Backend API", status: "healthy", lastCheckedAt: now() },
     { name: "Simulation Engine", status: "running", lastCheckedAt: now() },
     { name: "WebSocket Stream", status: "connected", lastCheckedAt: now() },
-    { name: "AI Endpoint Proxy", status: "ready", lastCheckedAt: now() },
-    { name: "Serverless Runner", status: "ready", lastCheckedAt: now() },
+    { name: "Nebius AI Proxy", status: "ready", lastCheckedAt: now() },
+    { name: "Managed Experiment Runner", status: "ready", lastCheckedAt: now() },
     { name: "Object Storage", status: "connected", lastCheckedAt: now() }
   ];
 
@@ -296,11 +296,11 @@ export class MockDeploymentHealthClient implements NebiusDeploymentHealthClient 
   }
 
   async pingAi(): Promise<ServiceHealth> {
-    return this.update("AI Endpoint Proxy", "ready");
+    return this.update("Nebius AI Proxy", "ready");
   }
 
   async testServerlessJob(): Promise<ServiceHealth> {
-    return this.update("Serverless Runner", "running");
+    return this.update("Managed Experiment Runner", "running");
   }
 
   async testStorageWrite(): Promise<ServiceHealth> {

@@ -9,13 +9,13 @@ The system combines a React visual arena, a FastAPI exchange simulator, syntheti
 - A live synthetic order book with changing bids, asks, spread, mid-price, depth, and imbalance.
 - Abuse-like scenarios such as spoofing-like walls, layering-like patterns, quote-stuffing bursts, and liquidity evaporation.
 - Deterministic detectors that produce confidence scores and structured evidence.
-- Incident review with replay context and plain-English AI explanations.
+- Incident review with replay context and plain-English AI Investigator explanations.
 - Batch benchmark runs that compare detector precision, recall, F1, and detection latency.
 
 ## How Nebius Is Used
 
-- **Nebius Serverless AI Endpoint** explains synthetic incidents, generates investigation summaries, and drafts bounded red-team scenario ideas.
-- **Nebius Serverless AI Jobs** run offline detector tournaments, synthetic dataset generation, feature extraction, evaluation runs, and benchmark reports.
+- **Nebius AI** explains synthetic incidents, generates AI Investigator summaries, and drafts bounded red-team scenario ideas.
+- **Managed Experiment jobs** run offline detector tournaments, synthetic dataset generation, feature extraction, evaluation runs, and benchmark reports.
 
 The browser never calls Nebius directly. The FastAPI backend owns endpoint URLs, tokens, request shaping, and fallback behavior.
 
@@ -25,8 +25,8 @@ Market surveillance concepts are difficult to evaluate because real order-book d
 
 ## Important Limitation
 
-This project is an educational simulation. It does not detect real market manipulation, does not provide trading signals, and should not be used for compliance decisions. The scenarios are synthetic abuse-like patterns designed to demonstrate order-book anomaly detection and AI-generated explanations.
+This project is an educational simulation. It does not detect real market manipulation, does not provide trading signals, and should not be used for compliance decisions. The scenarios are synthetic abuse-like patterns designed to demonstrate order-book anomaly detection and AI Investigator explanations.
 
 ## Next Step
 
-A practical pilot would connect the arena to sanitized historical replay data, validate detector definitions with domain experts, run Nebius benchmark jobs across controlled scenarios, and define governance rules for AI-generated explanations.
+A practical pilot would connect the arena to sanitized historical replay data, validate detector definitions with domain experts, run Managed Experiment jobs across controlled scenarios, and define governance rules for AI Investigator explanations.

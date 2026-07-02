@@ -33,7 +33,7 @@ export function NebiusAIInvestigatorPanel({ incident }: { incident?: Incident | 
   return (
     <section className={`nebius-investigator-panel ${state}`}>
       <div className="section-heading-row">
-        <h3>Nebius AI Investigator</h3>
+        <h3>AI Investigator</h3>
         <span className={`endpoint-badge investigator-status ${state}`}>{state}</span>
       </div>
 
@@ -41,9 +41,9 @@ export function NebiusAIInvestigatorPanel({ incident }: { incident?: Incident | 
 
       {state === "idle" && (
         <div className="investigator-state">
-          <p>Ready to send the incident evidence package to FastAPI, then Nebius Serverless AI Endpoint when configured.</p>
+          <p>Ready to send the incident evidence package through FastAPI to Nebius AI when configured.</p>
           <button type="button" disabled={!incident} onClick={() => void analyzeIncident()}>
-            Analyze with Nebius
+            Run AI Investigator
           </button>
         </div>
       )}
@@ -78,7 +78,7 @@ export function NebiusAIInvestigatorPanel({ incident }: { incident?: Incident | 
 
       {state === "error" && (
         <div className="investigator-state error">
-          <p>Incident analysis failed. Retry the backend Nebius call.</p>
+          <p>Incident analysis failed. Retry the backend Nebius AI call.</p>
           <button type="button" onClick={() => void analyzeIncident()}>Retry Analysis</button>
         </div>
       )}

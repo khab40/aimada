@@ -4,16 +4,16 @@
 
 ## 1. Project summary
 
-**AI Market Abuse Detection Arena: Red Team vs Blue Team** is a cloud-native AI laboratory for simulating, detecting, explaining, and replaying financial market-abuse scenarios. The project combines a lightweight limit-order-book simulator, red-team manipulation agents, blue-team surveillance agents, AI-generated explanations, and serverless batch experiments.
+**AI Market Abuse Detection Arena** is a cloud-native AI laboratory for simulating, detecting, explaining, and replaying financial market-abuse scenarios. The project combines a lightweight limit-order-book simulator, red-team manipulation agents, Detection workflows, AI Investigator explanations, and Managed Experiment jobs.
 
 The core demo story is simple:
 
 1. A synthetic market runs in real time.
 2. A red-team agent injects a manipulation attack, for example spoofing or layering.
 3. The limit order book reacts: visible liquidity changes, imbalance appears, and price moves.
-4. A blue-team detector raises an alert.
-5. Nebius AI generates an analyst-style explanation and incident report.
-6. Nebius Serverless runs many variants of the attack scenario in parallel.
+4. Smart Detection raises an alert.
+5. AI Investigator generates an analyst-style explanation and incident report.
+6. Managed Experiment jobs run many variants of the attack scenario in parallel.
 7. Results, metrics, alerts, and replay artifacts are stored for review and benchmarking.
 
 The project should not be positioned as a production-grade exchange simulator. It should be positioned as a **research-inspired synthetic market-abuse testing platform**.
@@ -34,7 +34,7 @@ This makes the project a good fit for serverless execution:
 
 A strong Nebius story is:
 
-> Run one market simulation live in the UI. Run 100–1000 attack/detection variants on Nebius Serverless. Use Nebius AI Endpoints to explain alerts. Store replayable evidence as artifacts.
+> Run one market simulation live in the UI. Run 100-1000 attack/detection variants as Managed Experiments on Nebius Serverless Cloud. Use Nebius AI to explain alerts. Store replayable evidence as artifacts.
 
 This is better than using serverless as a decorative backend call. In this project, serverless is the **experiment execution engine**.
 
@@ -76,7 +76,7 @@ Nebius Serverless makes this scalable. The system becomes a market-surveillance 
 
 ### 3.3 Explainable alerts
 
-The blue-team detector should produce evidence, while Nebius AI should explain that evidence in natural language. The LLM should not be the core detector. It should be the analyst assistant.
+Smart Detection should produce evidence, while AI Investigator should explain that evidence in natural language. The LLM should not be the core detector. It should be the analyst assistant.
 
 Example explanation:
 
@@ -102,24 +102,25 @@ This creates a serious audit and evaluation story. A user can replay the suspici
 
 ## 4. Recommended UI and product flow
 
-The project should be shown as a red-team/blue-team arena.
+The project should be shown as a synthetic market arena with a focused Detection workflow.
 
 ### Core UI tabs
 
-- **Live Market Arena** — live limit order book, price chart, agents, trades, and alerts.
-- **Attack Scenario Generator** — creates concrete attack plans, for example thin-liquidity sell-side spoofing.
-- **Blue Team Surveillance** — shows detection scores, suspicious agents, and evidence.
-- **Nebius Control Panel** — shows cloud runtime, AI endpoint console, serverless batch runner, artifacts, usage, and health.
-- **Replay & Reports** — reloads saved experiment evidence and AI-generated incident reports.
+- **Arena** — live limit order book, market visualization, agents, trades, and alerts.
+- **Scenario Generator** — creates concrete attack plans, for example thin-liquidity sell-side spoofing.
+- **Detection** — shows detection scores, suspicious agents, evidence, replay, and AI Investigator reports.
+- **Experiments** — keeps experiment-oriented workflows discoverable.
+- **Nebius AI** — shows model selection, inference, batch execution, GPU utilization, datasets, and Managed Experiments.
+- **About** — explains architecture, pipeline, research papers, and benchmark summary.
 
-### Nebius Control Panel
+### Nebius AI
 
-The Nebius Control Panel should communicate the cloud-native story clearly. It should include:
+The Nebius AI page should communicate the cloud-native story clearly. It should include:
 
 1. Cloud Runtime Status
-2. Nebius AI Analyst Console
+2. Nebius AI inference
 3. Attack Scenario Generator integration
-4. Serverless Batch Experiment Runner
+4. Managed Experiment runner
 5. Scenario Batch Generator
 6. Experiment Artifacts / Replay Storage
 7. Usage & Cost Monitor
@@ -178,11 +179,11 @@ Mitigation: include normal baseline scenarios, false-positive measurement, steal
 
 LLMs should not be used as the primary market-abuse detector. That would be hard to defend.
 
-Mitigation: use deterministic or statistical evidence extraction first. Then use Nebius AI Endpoints for explanation, report generation, attack-plan generation, and analyst assistance.
+Mitigation: use deterministic or statistical evidence extraction first. Then use Nebius AI for AI Investigator reports, attack-plan generation, and analyst assistance.
 
 ### 6.4 Risk: mocked Nebius integration weakens the challenge fit
 
-If the Nebius Control Panel is mostly mock data, the project may feel superficial.
+If Nebius AI is mostly mock data, the project may feel superficial.
 
 Mitigation: implement at least one real end-to-end Nebius path:
 
@@ -217,9 +218,9 @@ For the Build Challenge, the most credible MVP is:
 
 1. **Spoofing attack generator** — creates a structured attack plan.
 2. **LOB simulator** — runs a simplified market with honest agents and one red-team spoofer.
-3. **Blue-team detector** — calculates spoofing risk score using large-order, fast-cancel, imbalance-flip, and price-impact signals.
-4. **Nebius AI explanation** — converts detector evidence into an analyst-style report.
-5. **Nebius Serverless batch runner** — runs many attack variants in parallel and aggregates metrics.
+3. **Smart Detection** — calculates spoofing risk score using large-order, fast-cancel, imbalance-flip, and price-impact signals.
+4. **AI Investigator** — converts detector evidence into an analyst-style report.
+5. **Managed Experiment runner** — runs many attack variants in parallel and aggregates metrics.
 6. **Replayable artifacts** — stores orders, trades, alerts, metrics, and incident report.
 7. **Mission-control UI** — shows live attack, detection, Nebius batch jobs, and evidence bundle.
 

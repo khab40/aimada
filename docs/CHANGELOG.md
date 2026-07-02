@@ -5,10 +5,21 @@ Update this file with each significant commit before pushing.
 
 ## Unreleased
 
+### Current - feat: consolidate product navigation and detection workflow
+
+- Reduced the top-level UI navigation to six destinations: Arena, Scenario Generator, Detection, Experiments, Nebius AI, and About.
+- Renamed Investigation/Blue Team surfaces to Detection and folded Reports into Detection outputs instead of treating Reports as an independent destination.
+- Reworked Arena into three primary sections: Scenario / Attack Configuration, Market, and Detection, with Standard and Battlefield visualization modes.
+- Consolidated related UI components: detector confidence panel, incident live/replay drawer, and agent timeline/feed surfaces.
+- Reduced default analyst workload to a smaller set of primary widgets, with secondary evidence, timeline, reports, replay, and artifacts available through tabs/drawers.
+- Standardized visible AI vocabulary around AI Investigator, Nebius AI, LLM, Smart Detection, and Managed Experiment.
+- Refocused Nebius AI around model selection, inference, batch execution, GPU utilization, datasets, and Managed Experiments.
+- Expanded About with architecture, pipeline, research papers, benchmark summary, and a JPG architecture diagram showing Front, Back, Agent Runners Workspace, and Nebius Serverless Cloud.
+
 ### Current - feat: add real Nebius deployment controls
 
 - Added a `/nebius` Real Nebius Deployment panel that shows endpoint base URL, endpoint health, endpoint mode, model, job image, rendered job config path, submit-template readiness, latest cloud job status, and cloud artifact collection status.
-- Added frontend actions for endpoint health, orderbook-alert, investigation-report, rendered job config, real Nebius submit, job refresh, and cloud artifact collection while preserving the existing Experiment Lab and smart-batch/local flow.
+- Added frontend actions for endpoint health, Smart Detection, AI Investigator report, rendered job config, real Nebius submit, job refresh, and cloud artifact collection while preserving the existing Managed Experiment and smart-batch/local flow.
 - Exposed Nebius model, job image, endpoint base URL, and job submit-template readiness through `/api/nebius/status`.
 - Added `POST /api/experiments/{id}/render-nebius-job-config` so the UI can render the existing serverless job config without submitting a cloud job.
 - Kept missing real Nebius command templates visible as pending/not configured rather than showing fake real-cloud success.
@@ -88,8 +99,8 @@ Update this file with each significant commit before pushing.
 - Added experiment aggregation with `POST /api/experiments/{id}/aggregate`, `GET /summary`, `GET /leaderboard`, and `GET /report`, reusing existing `detector_metrics.csv` values for scenario precision/recall/F1.
 - Added a real Nebius orchestration boundary with `POST /api/experiments/{id}/submit-nebius`, `GET /api/experiments/{id}/jobs`, and `POST /api/experiments/{id}/refresh-jobs`; without real Nebius job configuration it records `real_nebius_pending` instead of faking cloud execution.
 - Added experiment job summaries to `/api/nebius/observatory`.
-- Upgraded `/nebius` with an Experiment Lab that creates experiments, generates manifests, runs local batches, submits pending Nebius jobs, aggregates, runs investigations, and shows status, jobs, artifacts, and leaderboard data through FastAPI only.
-- Integrated Phase 4.5 experiments into `/reports` with an experiment list, selected experiment summary, leaderboard, `benchmark_report.md` viewer, investigation report list, `artifact_index.json` links, and original `local-batch` artifact workbenches.
+- Upgraded `/nebius` with a Managed Experiment Lab that creates experiments, generates manifests, runs local batches, submits pending Nebius jobs, aggregates, runs AI Investigator reports, and shows status, jobs, artifacts, and leaderboard data through FastAPI only.
+- Integrated Phase 4.5 experiment outputs into Detection with an experiment list, selected experiment summary, leaderboard, `benchmark_report.md` viewer, AI Investigator report list, `artifact_index.json` links, and original `local-batch` artifact workbenches.
 - Reused smart-batch-compatible artifact path conventions and Reports history indexing without changing `/api/nebius/smart-batches`.
 - Added backend tests for managed experiment create, list, get, report visibility, delete behavior, deterministic attack manifests, attack counts, expected labels, a 3-run local batch, fake local-batch artifact normalization, mocked Nebius investigations, sample-CSV aggregation, and missing real Nebius config.
 - Verified a local 10-row mixed-scenario experiment end-to-end in mock mode through HTTP APIs, producing normalized experiment artifacts, original local-batch artifacts, aggregation outputs, and seven mock investigation reports.
@@ -156,9 +167,9 @@ Update this file with each significant commit before pushing.
 
 ### Current - fix: align cloud lab UI, replay reports, and education flow
 
-- Split the high-level UI into clearer newcomer workflows: Market Arena, Red Team Attack Scenario Generator, Blue Team Surveillance, Nebius Control Panel, Replay & Reports, and About.
-- Moved concrete attack-plan creation out of Nebius Control Panel so the red-team tab owns attack scenario generation, variants, injection, Nebius batch submission, and scenario templates.
-- Added blue-team surveillance views for live detector scores, suspicious agents, evidence, incident replay, Nebius detection, and AI incident reports.
+- Split the high-level UI into clearer newcomer workflows: Arena, Scenario Generator, Detection, Experiments, Nebius AI, and About.
+- Moved concrete attack-plan creation out of Nebius AI so the Scenario Generator owns attack scenario generation, variants, injection, Nebius batch submission, and scenario templates.
+- Added Detection views for live detector scores, suspicious agents, evidence, incident replay, Smart Detection, and AI Investigator reports.
 - Added replay/report cleanup with a typed confirmation dialog and backend clear endpoint for local persisted evidence.
 - Added backend-backed artifact workbench actions for preview, keyboard navigation, export to Markdown/PDF, benchmark comparison, incident replay, screenshot attachment, and evidence promotion.
 - Added red/blue geometric team marks and route-level branding without cartoon imagery.
