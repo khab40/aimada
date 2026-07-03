@@ -2,10 +2,9 @@ import type { NebiusUsageMetrics } from "@/features/nebius/types";
 
 export function UsageCostMonitor({ metrics }: { metrics: NebiusUsageMetrics }) {
   return (
-    <section className="panel usage-cost-card">
+    <section className="usage-cost-card">
       <div className="nebius-card-heading">
         <div>
-          <p className="eyebrow">Usage & Cost Monitor</p>
           <h2>Usage & Cost Monitor</h2>
         </div>
       </div>

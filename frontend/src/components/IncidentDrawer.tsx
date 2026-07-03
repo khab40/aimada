@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { NebiusAIInvestigatorPanel } from "@/components/NebiusAIInvestigatorPanel";
+import type { ProductDemoConfig } from "@/demoModes";
 import type { Incident } from "@/types/arena";
 
 type IncidentDetailsMode = "live" | "replay";
@@ -8,6 +9,13 @@ type ReplayStep = {
   label: string;
   tickOffset: number;
   summary: string;
+};
+
+const incidentTypeLabels: Record<string, string> = {
+  layering_like: "Layering-like Pattern",
+  liquidity_evaporation: "Liquidity Evaporation",
+  quote_stuffing: "Quote Stuffing Burst",
+  spoofing_like_wall: "Spoofing-like Wall"
 };
 
 const replaySteps: ReplayStep[] = [
@@ -20,11 +28,13 @@ const replaySteps: ReplayStep[] = [
 
 export function IncidentDrawer({
   currentTick,
+  demoConfig,
   incident,
   incidentTick,
   mode = "live"
 }: {
   currentTick?: number;
+  demoConfig?: ProductDemoConfig | null;
   incident?: Incident | null;
   incidentTick?: number;
   mode?: IncidentDetailsMode;
@@ -69,7 +79,7 @@ export function IncidentDrawer({
 
       <dl className="incident-replay-meta">
         <div><dt>Confidence</dt><dd>{incident.confidence.toFixed(2)}</dd></div>
-        <div><dt>Type</dt><dd>{incident.type}</dd></div>
+        <div><dt>Type</dt><dd>{formatIncidentType(incident.type)}</dd></div>
         <div><dt>Agent</dt><dd>{incident.agent}</dd></div>
         <div><dt>Tick</dt><dd>{baseTick === undefined ? "n/a" : `T${baseTick}`}</dd></div>
       </dl>
@@ -110,7 +120,7 @@ export function IncidentDrawer({
         <button type="button" onClick={() => setClosedIncidentId(incident.id)}>Close</button>
       </div>
 
-      <NebiusAIInvestigatorPanel incident={incident} />
+      <NebiusAIInvestigatorPanel demoConfig={demoConfig} incident={incident} />
     </aside>
   );
 }
@@ -120,4 +130,8 @@ function formatReplayTick(baseTick: number | undefined, offset: number) {
     return offset === 0 ? "T+0" : offset > 0 ? `T+${offset}` : `T${offset}`;
   }
   return `T${Math.max(0, baseTick + offset)}`;
+}
+
+function formatIncidentType(type: string) {
+  return incidentTypeLabels[type] ?? type.replace(/_/g, " ");
 }

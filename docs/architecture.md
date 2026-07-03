@@ -4,14 +4,14 @@ AI Market Abuse Detection Arena is organized around four execution areas and two
 
 The four execution areas are:
 
-- **Front**: React/Vite browser UI for Arena, Scenario Generator, Detection, Experiments, Nebius AI, and About.
+- **Front**: React/Vite browser UI for Arena, Demo, Scenario Generator, Detection, Experiments, Nebius AI, and About.
 - **Back**: FastAPI backend for REST, WebSocket streaming, orchestration, persistence, Smart Detection, and AI Investigator adapters.
 - **Agent Runners Workspace**: local Docker or remote worker space where market agents, attacker agents, detector workers, replay writers, and dataset writers execute.
 - **Nebius Serverless Cloud**: Nebius AI model selection, LLM inference, Managed Experiment jobs, GPU utilization, datasets, and artifacts.
 
 The two execution paths are:
 
-- an interactive demo path for live simulation, visualization, incident review, Smart Detection, and AI Investigator explanations
+- an interactive demo path for orchestrating deterministic demo modes, live simulation, visualization, incident review, Smart Detection, and AI Investigator explanations
 - a batch benchmark path for running many synthetic simulations and measuring detector quality through Managed Experiments
 
 The design keeps the browser UI, demo orchestration backend, agent runner workspace, Nebius Serverless Cloud, and persisted event artifacts separate so each part can evolve independently.
@@ -20,7 +20,8 @@ The design keeps the browser UI, demo orchestration backend, agent runner worksp
 
 ```mermaid
 graph TD
-    UI["Front - React / Vite UI - Arena, Scenario Generator, Detection, Experiments, Nebius AI, About"]
+    Demo["Front - Demo Orchestrator - real, two-model, streaming"]
+    UI["Front - React / Vite UI - Demo, Arena, Scenario Generator, Detection, Experiments, Nebius AI, About"]
     API["Back - FastAPI Backend - REST control-plane APIs"]
     WS["WebSocket Manager - live arena controls and arena_state stream"]
     Runtime["Live Arena Runtime - 250-500 ms simulation ticks"]
@@ -33,6 +34,7 @@ graph TD
     Explain["Nebius Serverless Cloud - Nebius AI, LLM inference, Managed Experiment jobs"]
     Artifacts["Local Artifacts - events, snapshots, incidents, reports"]
 
+    Demo -->|selects demo mode| UI
     UI -->|WebSocket live commands| WS
     UI -->|REST Nebius/artifact/report APIs| API
     WS --> API
@@ -57,7 +59,7 @@ graph TD
 
 | Component | Responsibility |
 | --- | --- |
-| React / Vite UI | Presents the themed product shell, Google/auth widget, role/session controls, Arena, Scenario Generator, Detection, Experiments, Nebius AI, About, Standard/Battlefield visualization modes, detector output, Incident Details, and AI Investigator reports. Arena live controls and state use WebSocket; Nebius AI, experiment, artifact, and report actions use backend REST APIs. |
+| React / Vite UI | Presents the themed product shell, Google/auth widget, role/session controls, Demo, Arena, Scenario Generator, Detection, Experiments, Nebius AI, About, Standard/Battlefield visualization modes, detector output, Incident Details, and AI Investigator reports. Arena live controls and state use WebSocket; Nebius AI, experiment, artifact, and report actions use backend REST APIs. |
 | FastAPI demo backend | Owns the demo control plane. It starts and stops simulations, launches scenarios, broadcasts state to the UI, persists incidents, and calls Nebius AI endpoints for explanation and report generation. |
 | Local live simulation | Runs the authoritative exchange, scenario state, detector engine, local agent scheduling, single-writer book mutation, per-agent quote ownership, and baseline liquidity guard. |
 | Agent Runners Workspace | Runs local, remote, heavy, and LangGraph-compatible agents behind the common intent protocol; returns intents but never mutates the exchange directly. |
@@ -67,7 +69,7 @@ graph TD
 
 ### Runtime Flow
 
-1. The user starts or controls a scenario from the React / Vite UI.
+1. The user starts from Demo or controls a scenario directly from the React / Vite UI.
 2. The UI sends a WebSocket command to `/ws/arena`.
 3. The backend starts or updates the local simulation and returns complete `arena_state` messages over the same stream.
 4. Each tick, the backend sends read-only snapshots to local and remote agents and collects bounded `AgentIntent` responses.
@@ -76,7 +78,7 @@ graph TD
 7. The simulation emits order events, snapshots, agent actions, detector signals, and incidents.
 8. The backend persists events and snapshots, then broadcasts live updates to connected UI clients over WebSocket.
 9. When Smart Detection, AI Investigator, or report generation is requested, the backend calls Nebius AI or deterministic fallback adapters and stores the generated result.
-10. The UI renders the latest market state, detector alerts, incident details, and AI Investigator explanations. Local shell preferences such as collapsed auth controls and day/night/system theme mode remain browser-side presentation state.
+10. The UI renders the latest market state, detector alerts, incident details, AI Investigator explanations, and AI cost/latency metrics. Local shell preferences such as collapsed auth controls and day/night/system theme mode remain browser-side presentation state.
 
 ### Live Tick Sequence
 

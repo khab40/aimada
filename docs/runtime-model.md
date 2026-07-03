@@ -104,27 +104,29 @@ The Arena screen is the live operator view.
 Top bar:
 
 ```text
-[Start] [Pause] [Reset] [Auto Arena: ON/OFF] [Market Regime: Calm/Volatile/Thin]
+[Running/Paused] [Tick] [Selected Scenario] [Connection/Source] [Start] [Pause] [Reset]
 ```
 
-Left panel:
+Left section - Scenario / Attack Configuration:
 
-- live order book ladder
+- selected scenario and attack configuration
+- Start / Pause / Reset controls
+- attack builder and scenario launch controls
 
-Center panel:
+Center section - Market:
 
-- mid-price chart
-- spread chart
-- order-book imbalance gauge
-- detector confidence timeline
+- Standard or Battlefield visualization mode
+- order book ladder
+- mid-price, spread, depth, and microstructure metrics
+- switchable Heatmap and Timeline secondary views
 
-Right panel:
+Right section - Detection:
 
-- agent activity feed
-- active agents
-- incident cards
+- detector confidence
+- Evidence / Timeline tabs
+- Incident Details with AI Investigator and AI cost/latency metrics
 
-Bottom scenario launcher:
+Scenario launcher examples:
 
 ```text
 [Spoofing-like Wall]
@@ -158,9 +160,9 @@ AI explanation:
 
 Incident Details should show detector evidence first, then the generated explanation. AI text is supporting context, not the source of truth.
 
-### 3. Benchmark Screen
+### 3. Detection / Experiments Benchmark Review
 
-The benchmark screen summarizes offline detector quality by scenario family.
+Detection and Experiments summarize offline detector quality by scenario family, replay evidence, generated reports, and Managed Experiment artifacts.
 
 | Scenario | Precision | Recall | F1 |
 | --- | ---: | ---: | ---: |

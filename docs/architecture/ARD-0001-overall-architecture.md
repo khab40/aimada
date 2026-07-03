@@ -6,17 +6,18 @@ Date: 2026-05-31
 
 ## Implementation Status
 
-Status as of 2026-06-24: `[partial]`
+Status as of 2026-07-03: `[partial]`
 
 Implemented:
 
-- React/Vite routed UI for Arena, red-team scenario generation, blue-team surveillance, Nebius control operations, reports, and About pages.
+- React/Vite routed UI for Arena, Demo, Scenario Generator, Detection, Experiments, Nebius AI, and About pages.
+- Legacy `/blue-team`, `/investigation`, and `/reports` routes redirect to Detection.
 - FastAPI backend with simulation lifecycle APIs, WebSocket live state, scenario launch, incident persistence, benchmark/report APIs, and Nebius endpoint client fallback behavior.
 - Synthetic exchange, matching engine, normal agents, scenario agents, deterministic detectors, evidence objects, and local artifact storage.
 - In-process and remote agent runners with HTTP `MarketSnapshot` / `AgentIntent` protocol, heavy-agent worker pools, and LangGraph-compatible generic remote agents.
 - Baseline liquidity invariant with additive per-agent quote ownership and quote-size guardrails.
 - Google-authenticated user persistence with app-issued JWT sessions.
-- UI shell with AI-MADA banner asset, compact navigation control, collapsible auth widget, persisted day/night/system theme, and paused-state-stable Liquidity Map behavior.
+- UI shell with AI-MADA banner asset, compact navigation control, collapsible auth widget, persisted day/night/system theme, `/demo` orchestration, and paused-state-stable Liquidity Map behavior.
 - Serverless endpoint/job scaffolds, Dockerfiles, configs, scripts, and local mock/cloud-adapter paths.
 
 Not yet complete:
@@ -31,6 +32,7 @@ AI Market Abuse Detection Arena is an educational simulation for demonstrating s
 The project needs to support two complementary workflows:
 
 - a live visual arena where users can start a synthetic exchange, launch abuse-like scenarios, inspect detector confidence, and read generated incident explanations
+- a deterministic 3-minute Demo page that launches Arena in Real Nebius AI Run, Two-Model Pipeline, or Streaming Explanation mode
 - an offline benchmark path where many labeled synthetic simulations are run to measure deterministic detector behavior
 
 The implementation should be easy to run locally, clear enough for reviewers to inspect, and structured so Nebius serverless components can be demonstrated without coupling the UI directly to AI services.
@@ -39,26 +41,29 @@ The implementation should be easy to run locally, clear enough for reviewers to 
 
 Build the system as a React visual arena backed by a FastAPI simulator, with a local synthetic exchange/order book, normal and abuse-like agents, deterministic detectors, and separate Nebius serverless components for benchmarks and explanations.
 
-The main architecture is:
+The main architecture has four execution areas:
 
 ```mermaid
 graph TD
-    UI["React / Vite UI - Arena, Incident Details, benchmark screen"]
-    Backend["FastAPI Backend - simulation control, scenarios, WebSocket, incidents, explanation client"]
-    Simulation["Local Synthetic Simulation - order book, matching engine, agents, detectors"]
-    Endpoint["Nebius Serverless AI Endpoint - explain event, explain simulation, generate report"]
-    Artifacts["Event, snapshot, incident, and report artifacts"]
+    Front["Front - React / Vite UI - Arena, Demo, Scenario Generator, Detection, Experiments, Nebius AI, About"]
+    Back["Back - FastAPI backend - REST, WebSocket, orchestration, persistence"]
+    Runners["Agent Runners Workspace - local Docker and remote workers"]
+    Nebius["Nebius Serverless Cloud - model selection, inference, batch jobs, GPU runtime, datasets, artifacts"]
+    Store["Artifacts - events, snapshots, incidents, reports, benchmark outputs"]
 
-    UI -->|REST and WebSocket| Backend
-    Backend --> Simulation
-    Backend --> Endpoint
-    Simulation --> Artifacts
-    Backend --> Artifacts
+    Front -->|REST and WebSocket| Back
+    Back -->|snapshot and run config| Runners
+    Runners -->|agent intents and detector outputs| Back
+    Back -->|LLM calls and managed jobs| Nebius
+    Nebius -->|explanations, metrics, artifacts| Back
+    Back --> Store
 ```
 
 ```mermaid
 graph TD
-    UI["React / Vite UI - Arena, Nebius Control Panel, Reports"]
+    Demo["Demo Page - real, two-model, streaming"]
+    Arena["Arena - scenario config, market visualization, detection"]
+    Detection["Detection - incident summary, evidence, replay, report"]
     Backend["FastAPI Backend - control plane"]
     Runtime["Live Arena Runtime - simulation clock"]
     Exchange["Synthetic Exchange - order book + matching engine"]
@@ -66,12 +71,13 @@ graph TD
     Runner["agent-runner - heavy + LangGraph agents"]
     Detectors["Deterministic Detectors - microstructure features"]
     Incidents["Incident Store - evidence + confidence"]
-    Endpoint["Nebius Serverless AI Endpoint - alert scoring, explanations, reports"]
+    Endpoint["Nebius Serverless Cloud - Nebius AI inference + Managed Experiment jobs"]
     Store["Local Artifacts - events, snapshots, incidents, reports"]
 
-    UI -->|WebSocket live commands| Backend
-    Backend -->|WebSocket arena_state| UI
-    UI -->|REST Nebius/artifact/report APIs| Backend
+    Demo -->|/arena?demo=mode| Arena
+    Arena -->|WebSocket live commands| Backend
+    Backend -->|WebSocket arena_state| Arena
+    Detection -->|REST artifact/report APIs| Backend
     Backend --> Runtime
     Runtime --> Agents
     Agents -->|remote snapshot / intents| Runner
@@ -83,6 +89,7 @@ graph TD
     Endpoint --> Backend
     Runtime --> Store
     Incidents --> Store
+    Store --> Detection
 ```
 
 The batch path runs separately:
@@ -122,18 +129,19 @@ graph LR
 
 ### UI Layer
 
-The UI is a React visual arena under `frontend/`. It presents the live simulation and does not own simulation logic.
+The UI is a React product shell under `frontend/`. It presents Demo, Arena, Detection, Scenario Generator, Experiments, Nebius AI, and About without owning simulation logic.
 
 Responsibilities:
 
 - show the live order book ladder
 - show mid-price, spread, imbalance, and detector confidence views
 - provide Start, Pause, Reset, and scenario controls
+- provide `/demo` cards that launch deterministic Arena modes
 - provide scenario launch buttons
 - show agent activity and active agents
 - show incident cards and Incident Details
-- show Nebius Control Panel operations for attack scenarios, smart detection, investigation reports, serverless jobs, artifacts, usage, and health
-- show Reports evidence for persisted jobs, explanations, screenshots, exports, and promoted evidence
+- show Nebius AI operations for model selection, inference, batch execution, GPU utilization, datasets, experiments, artifacts, and cost context
+- show Detection evidence for persisted jobs, explanations, screenshots, exports, and promoted report artifacts
 - provide role-aware Google auth/session controls that can collapse to a compact account widget
 - provide persisted day/night/system theme behavior across the shell
 - keep paused visualizations stable by updating timeline-style widgets only when the arena tick advances
@@ -143,13 +151,15 @@ The UI communicates with the backend through WebSocket for live Arena commands a
 
 ```mermaid
 graph LR
+    Demo["Demo cards"]
     Controls["Start / Pause / Reset"]
     Ladder["Order Book Ladder"]
-    Charts["Price, Spread, Imbalance"]
-    Feed["Agent Feed"]
-    IncidentsUI["Incident Cards / Drawer"]
+    Charts["Price, Spread, Imbalance, AI Cost"]
+    Feed["Timeline"]
+    IncidentsUI["Incident Details"]
     BackendState["arena_state payload"]
 
+    Demo -->|mode query params| Controls
     BackendState --> Ladder
     BackendState --> Charts
     BackendState --> Feed

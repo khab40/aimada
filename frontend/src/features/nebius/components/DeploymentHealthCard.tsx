@@ -21,7 +21,6 @@ export function DeploymentHealthCard({
     <section className="panel deployment-health-card">
       <div className="nebius-card-heading">
         <div>
-          <p className="eyebrow">Deployment Health</p>
           <h2>Deployment Health</h2>
         </div>
       </div>

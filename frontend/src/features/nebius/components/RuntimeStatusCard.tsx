@@ -1,47 +1,93 @@
-import type { NebiusRuntimeStatus } from "@/features/nebius/types";
+import type { NebiusRuntimeStatus, NebiusUsageMetrics } from "@/features/nebius/types";
 
-export function RuntimeStatusCard({ status }: { status: NebiusRuntimeStatus }) {
+export function RuntimeStatusCard({ status, usage }: { status: NebiusRuntimeStatus; usage: NebiusUsageMetrics }) {
+  const cards = [
+    {
+      cost: `$${usage.estimatedCostUsd.toFixed(2)}`,
+      gpu: status.mode === "nebius-cloud" ? "available" : "not attached",
+      lastExecution: status.activeSimulation,
+      latency: "regional",
+      status: status.cloudStatus,
+      title: "Nebius Cloud"
+    },
+    {
+      cost: `$${(usage.aiEndpointCallsToday * 0.002).toFixed(2)}`,
+      gpu: "model endpoint",
+      lastExecution: `${usage.aiEndpointCallsToday} calls`,
+      latency: `${usage.averageLlmLatencySec.toFixed(2)}s`,
+      status: status.aiEndpointStatus,
+      title: "Nebius AI"
+    },
+    {
+      cost: `$${(usage.serverlessJobsRun * 0.21).toFixed(2)}`,
+      gpu: status.serverlessStatus === "running" ? "active" : "ready",
+      lastExecution: `${status.ticksProcessed.toLocaleString()} steps`,
+      latency: `${status.eventsPerSecond.toLocaleString()}/sec`,
+      status: status.serverlessStatus,
+      title: "Managed Experiment Jobs"
+    },
+    {
+      cost: "included",
+      gpu: "not required",
+      lastExecution: `${usage.replayStorageMb.toFixed(0)} MB stored`,
+      latency: status.websocketStatus === "live" ? "connected" : "offline",
+      status: status.storageStatus,
+      title: "Artifacts"
+    }
+  ];
+
   return (
     <section className="panel nebius-runtime-card">
-      <div className="runtime-badge-strip">
-        <StatusBadge label="Nebius Cloud" value={status.cloudStatus} />
-        <StatusBadge label="Nebius AI" value={status.aiEndpointStatus} />
-        <StatusBadge label="Managed Experiment Jobs" value={status.serverlessStatus} />
-        <StatusBadge label="Storage" value={status.storageStatus} />
-      </div>
       <div className="nebius-card-heading">
         <div>
-          <p className="eyebrow">Cloud Runtime Status</p>
           <h2>Nebius Runtime</h2>
         </div>
-        <strong>{status.cloudStatus === "online" ? "Connected" : status.cloudStatus}</strong>
       </div>
       <div className="runtime-status-grid">
-        <Metric label="Region" value={status.region} />
-        <Metric label="Mode" value={status.mode === "nebius-cloud" ? "Nebius Cloud" : "Local"} />
-        <Metric label="Active simulation" value={status.activeSimulation} />
-        <Metric label="Running agents" value={status.runningAgents.toLocaleString()} />
-        <Metric label="Ticks processed" value={status.ticksProcessed.toLocaleString()} />
-        <Metric label="Events/sec" value={status.eventsPerSecond.toLocaleString()} />
-        <Metric label="WebSocket stream" value={status.websocketStatus === "live" ? "Live" : "Disconnected"} />
+        {cards.map((card) => (
+          <RuntimeCard key={card.title} {...card} />
+        ))}
       </div>
     </section>
   );
 }
 
-function StatusBadge({ label, value }: { label: string; value: string }) {
+function RuntimeCard({
+  cost,
+  gpu,
+  lastExecution,
+  latency,
+  status,
+  title
+}: {
+  cost: string;
+  gpu: string;
+  lastExecution: string;
+  latency: string;
+  status: string;
+  title: string;
+}) {
   return (
-    <span className={`runtime-top-badge ${value}`}>
-      {label}: {value.replace("-", " ").toUpperCase()}
-    </span>
+    <article className={`runtime-standard-card ${status}`}>
+      <div className="runtime-standard-card-header">
+        <strong>{title}</strong>
+      </div>
+      <dl>
+        <Metric label="Status" value={status.replace("-", " ")} />
+        <Metric label="Latency" value={latency} />
+        <Metric label="GPU" value={gpu} />
+        <Metric label="Cost" value={cost} />
+        <Metric label="Last execution" value={lastExecution} />
+      </dl>
+    </article>
   );
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="runtime-metric">
-      <span>{label}</span>
-      <strong>{value}</strong>
+    <div>
+      <dt>{label}</dt>
+      <dd>{value}</dd>
     </div>
   );
 }

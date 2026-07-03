@@ -2,25 +2,25 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMockArena, type MockScenarioType } from "@/hooks/useMockArena";
 import type { ArenaState, ArenaWebSocketMessage } from "@/types/arena";
 
-export type ArenaMode = "mock" | "websocket";
+export type ArenaMode = "demo" | "mock" | "websocket";
 export type ArenaScenarioType = MockScenarioType;
-export type ArenaSourceStatus = "mock" | "connecting" | "connected" | "disconnected" | "error";
+export type ArenaSourceStatus = "demo" | "mock" | "connecting" | "connected" | "disconnected" | "error";
 
 const DEFAULT_WS_URL = "ws://localhost:8000/ws/arena";
 const DEFAULT_API_BASE_URL = "http://localhost:8000";
 
-export function useArenaSource() {
-  const mockArena = useMockArena();
-  const mode = getArenaMode();
+export function useArenaSource({ demo = false, demoScenario, symbol }: { demo?: boolean; demoScenario?: ArenaScenarioType; symbol?: string } = {}) {
+  const mode = demo ? "demo" : getArenaMode();
+  const mockArena = useMockArena({ demo: mode === "demo", initialScenario: demoScenario, symbol });
   const wsUrl = import.meta.env.VITE_ARENA_WS_URL ?? DEFAULT_WS_URL;
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? DEFAULT_API_BASE_URL;
   const socketRef = useRef<WebSocket | null>(null);
-  const [sourceStatus, setSourceStatus] = useState<ArenaSourceStatus>(mode === "mock" ? "mock" : "connecting");
+  const [sourceStatus, setSourceStatus] = useState<ArenaSourceStatus>(mode === "websocket" ? "connecting" : mode);
   const [websocketState, setWebsocketState] = useState<ArenaState>(() => mockArena.state);
 
   useEffect(() => {
     if (mode !== "websocket") {
-      setSourceStatus("mock");
+      setSourceStatus(mode);
       return undefined;
     }
 
@@ -71,11 +71,19 @@ export function useArenaSource() {
       mockArena.start();
       return;
     }
+    if (mode === "demo") {
+      mockArena.start();
+      return;
+    }
     sendWebSocketCommand({ action: "start", type: "arena_control" });
   }, [mockArena, mode, sendWebSocketCommand]);
 
   const pause = useCallback(() => {
     if (mode === "mock") {
+      mockArena.pause();
+      return;
+    }
+    if (mode === "demo") {
       mockArena.pause();
       return;
     }
@@ -87,6 +95,10 @@ export function useArenaSource() {
       mockArena.reset();
       return;
     }
+    if (mode === "demo") {
+      mockArena.reset();
+      return;
+    }
     sendWebSocketCommand({ action: "reset", type: "arena_control" });
   }, [mockArena, mode, sendWebSocketCommand]);
 
@@ -95,10 +107,14 @@ export function useArenaSource() {
       mockArena.launchScenario(scenario);
       return;
     }
+    if (mode === "demo") {
+      mockArena.launchScenario(scenario);
+      return;
+    }
     sendWebSocketCommand({ scenario: scenarioToBackendName(scenario), type: "launch_scenario" });
   }, [mockArena, mode, sendWebSocketCommand]);
 
-  const state = mode === "mock" ? mockArena.state : websocketState;
+  const state = mode === "websocket" ? websocketState : mockArena.state;
 
   return useMemo(
     () => ({
@@ -120,6 +136,9 @@ export function useArenaSource() {
 }
 
 function getArenaMode(): ArenaMode {
+  if (import.meta.env.VITE_ARENA_MODE === "demo") {
+    return "demo";
+  }
   return import.meta.env.VITE_ARENA_MODE === "mock" ? "mock" : "websocket";
 }
 

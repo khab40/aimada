@@ -1,19 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
-  attachNebiusScreenshot,
   aggregateManagedExperiment,
   artifactDownloadUrl,
-  createInvestigationReport,
   createManagedExperiment,
-  createSmartScenario,
-  exportNebiusDataset,
-  generateNebiusScenarioGrid,
   generateManagedExperimentManifest,
   getManagedExperiment,
   getManagedExperimentLeaderboard,
   getManagedExperimentSummary,
   getManagedExperimentReportUrl,
-  generateNebiusTrainingData,
   getNebiusObservatory,
   getNebiusStatus,
   getReportsSummary,
@@ -22,64 +16,26 @@ import {
   collectManagedExperimentNebiusArtifacts,
   refreshManagedExperimentJobs,
   renderManagedExperimentNebiusJobConfig,
-  runSmartBatches,
-  runSmartDetection,
   runManagedExperimentInvestigations,
   runManagedExperimentLocalBatch,
-  saveNebiusEvidenceBundle,
   submitManagedExperimentNebius,
   type ExperimentJobRecord,
   type ExperimentLeaderboardRow,
   type ExperimentSummary,
-  type InvestigationReportResponse,
   type ManagedExperiment,
   type ManagedExperimentCreateRequest,
   type NebiusObservatory,
   type NebiusStatus,
-  type OrderBookAlertResponse,
-  type ReportsSummary,
-  type SmartBatchRunResponse,
-  type SmartScenarioResponse
+  type ReportsSummary
 } from "@/api/client";
 import { RuntimeStatusCard } from "@/features/nebius/components/RuntimeStatusCard";
 import { UsageCostMonitor } from "@/features/nebius/components/UsageCostMonitor";
 import type {
-  AiExplanation,
   ExperimentArtifact,
-  ExperimentBatchConfig,
-  GeneratedScenario,
-  IncidentReport,
-  MarketSummary,
   NebiusRuntimeStatus,
   NebiusUsageMetrics,
-  ScenarioGridConfig,
-  ServerlessExperimentJob,
-  ServiceHealth,
-  StrategySuggestion
+  ServerlessExperimentJob
 } from "@/features/nebius/types";
-
-const initialBatchConfig: ExperimentBatchConfig = {
-  agentsPerRun: 50,
-  attackType: "Spoofing",
-  detector: "Rule-based",
-  numberOfRuns: 100,
-  outputs: {
-    generateIncidentReport: true,
-    storeAlerts: true,
-    storeMetrics: true,
-    storeReplay: true
-  },
-  scenarioFamily: "Spoofing Attack"
-};
-
-const initialScenarioConfig: ScenarioGridConfig = {
-  attackIntensity: "Aggressive",
-  detectionThreshold: 0.72,
-  latencyModel: "Random",
-  liquidity: "Thin",
-  marketVolatility: "High",
-  numberOfAgents: 50
-};
 
 const fallbackRuntimeStatus: NebiusRuntimeStatus = {
   activeSimulation: "Spoofing Attack #042",
@@ -105,8 +61,6 @@ const fallbackUsageMetrics: NebiusUsageMetrics = {
   tokensUsed: 1842
 };
 
-type AnalystOutput = AiExplanation | IncidentReport | StrategySuggestion | MarketSummary;
-
 type ExperimentFormState = Required<Pick<ManagedExperimentCreateRequest, "name" | "attack_count" | "batch_size" | "scenarios" | "seed">>;
 type ExperimentAction =
   | "create-experiment"
@@ -117,8 +71,6 @@ type ExperimentAction =
   | "collect-cloud-artifacts"
   | "render-job-config"
   | "test-endpoint-health"
-  | "test-orderbook-alert"
-  | "test-investigation-report"
   | "aggregate"
   | "run-investigations";
 
@@ -139,16 +91,9 @@ const initialExperimentForm: ExperimentFormState = {
 };
 
 export function NebiusControlPanelPage() {
-  const [analystOutput, setAnalystOutput] = useState<AnalystOutput | null>(null);
   const [artifacts, setArtifacts] = useState<ExperimentArtifact[]>([]);
-  const [batchConfig, setBatchConfig] = useState<ExperimentBatchConfig>(initialBatchConfig);
-  const [busyAction, setBusyAction] = useState<string | null>(null);
-  const [deploymentMessage, setDeploymentMessage] = useState<string | null>(null);
-  const [generatedScenarios, setGeneratedScenarios] = useState<GeneratedScenario[]>([]);
   const [jobs, setJobs] = useState<ServerlessExperimentJob[]>([]);
   const [runtimeStatus, setRuntimeStatus] = useState<NebiusRuntimeStatus>(fallbackRuntimeStatus);
-  const [scenarioConfig, setScenarioConfig] = useState<ScenarioGridConfig>(initialScenarioConfig);
-  const [services, setServices] = useState<ServiceHealth[]>([]);
   const [usageMetrics, setUsageMetrics] = useState<NebiusUsageMetrics>(fallbackUsageMetrics);
   const [experiment, setExperiment] = useState<ManagedExperiment | null>(null);
   const [experimentForm, setExperimentForm] = useState<ExperimentFormState>(initialExperimentForm);
@@ -164,7 +109,6 @@ export function NebiusControlPanelPage() {
   useEffect(() => {
     void refreshControlPlane();
     void refreshExperimentLab();
-    void generateNebiusScenarioGrid(initialScenarioConfig).then(setGeneratedScenarios);
     // Initial control-plane hydration only; user-triggered refreshes keep this page current.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -180,11 +124,10 @@ export function NebiusControlPanelPage() {
       setNebiusObservatory(observatory);
       setRuntimeStatus(runtimeFrom(status, observatory));
       setUsageMetrics(usageFrom(observatory, reports));
-      setServices(servicesFrom(observatory));
       setJobs(jobsFrom(reports, observatory));
       setArtifacts(artifactsFrom(reports, observatory));
     } catch (error) {
-      setDeploymentMessage(error instanceof Error ? error.message : "Control plane refresh failed.");
+      setDeploymentPanelMessage(error instanceof Error ? error.message : "Control plane refresh failed.");
     }
   }
 
@@ -335,20 +278,6 @@ export function NebiusControlPanelPage() {
     });
   }
 
-  async function testOrderbookAlert() {
-    await runExperimentAction("test-orderbook-alert", async () => {
-      const alert = await runSmartDetection();
-      setDeploymentPanelMessage(`Smart Detection returned ${alert.mode}: ${alert.detected_pattern} (${(alert.confidence * 100).toFixed(0)}%).`);
-    });
-  }
-
-  async function testInvestigationReport() {
-    await runExperimentAction("test-investigation-report", async () => {
-      const report = await createInvestigationReport();
-      setDeploymentPanelMessage(`AI Investigator report returned ${report.mode}: ${report.title}.`);
-    });
-  }
-
   async function aggregateExperimentResults() {
     if (!experiment) return;
     await runExperimentAction("aggregate", async () => {
@@ -369,223 +298,138 @@ export function NebiusControlPanelPage() {
     });
   }
 
-  async function runAiAction(action: string, fn: () => Promise<AnalystOutput>) {
-    setBusyAction(action);
-    try {
-      const response = await fn();
-      setAnalystOutput(response);
-      const tokens = "tokensUsed" in response ? response.tokensUsed : 0;
-      const latency = "latencySec" in response ? response.latencySec : usageMetrics.averageLlmLatencySec;
-      setUsageMetrics((current) => ({
-        ...current,
-        aiEndpointCallsToday: current.aiEndpointCallsToday + 1,
-        averageLlmLatencySec: latency,
-        estimatedCostUsd: Number((current.estimatedCostUsd + tokens * 0.000002).toFixed(2)),
-        tokensUsed: current.tokensUsed + tokens
-      }));
-      await refreshControlPlane();
-    } finally {
-      setBusyAction(null);
-    }
-  }
-
-  async function submitBatch(config = batchConfig) {
-    setBusyAction("serverless");
-    try {
-      const response = await runSmartBatches(config.numberOfRuns, config.agentsPerRun, scenariosFor(config));
-      const job = jobFromBatch(response);
-      setJobs((current) => [job, ...current.filter((row) => row.id !== job.id)]);
-      setDeploymentMessage(`${response.id} completed through ${response.deployment_target}. Image: ${response.job_image}`);
-      setArtifacts((current) => [...artifactsFromBatch(response), ...current]);
-      setUsageMetrics((current) => ({
-        ...current,
-        estimatedCostUsd: Number((current.estimatedCostUsd + (job.estimatedCostUsd ?? 0)).toFixed(2)),
-        serverlessJobsRun: current.serverlessJobsRun + 1,
-        simulationEventsGenerated: current.simulationEventsGenerated + config.numberOfRuns * config.agentsPerRun * 240
-      }));
-      await refreshControlPlane();
-    } finally {
-      setBusyAction(null);
-    }
-  }
-
-  async function generateScenarios() {
-    setGeneratedScenarios(await generateNebiusScenarioGrid(scenarioConfig));
-    setDeploymentMessage("Generated a Nebius scenario grid. Use the Red Team tab when the grid should be based on a concrete attack plan.");
-  }
-
-  async function runSelectedScenarios() {
-    await submitBatch({
-      ...batchConfig,
-      numberOfRuns: 64,
-      scenarioFamily: "Mixed Abuse Scenario"
-    });
-  }
-
-  async function saveReplay() {
-    const artifact = await saveNebiusEvidenceBundle();
-    setArtifacts((current) => [artifact, ...current]);
-    setDeploymentMessage(`Saved evidence bundle: ${artifact.path}`);
-    await refreshControlPlane();
-  }
-
-  async function exportDataset() {
-    const artifact = await exportNebiusDataset();
-    setArtifacts((current) => [artifact, ...current]);
-    setDeploymentMessage(`Exported dataset: ${artifact.path}`);
-    await refreshControlPlane();
-  }
-
-  async function generateTrainingData() {
-    const artifact = await generateNebiusTrainingData();
-    setArtifacts((current) => [artifact, ...current]);
-    setDeploymentMessage(`Training data generation queued: ${artifact.path}`);
-    await refreshControlPlane();
-  }
-
-  async function updateService(label: string, action: () => Promise<string>) {
-    setBusyAction(label);
-    try {
-      const message = await action();
-      setDeploymentMessage(message);
-      await refreshControlPlane();
-    } finally {
-      setBusyAction(null);
-    }
-  }
-
   return (
     <section className="nebius-control-page">
       <div className="panel nebius-hero-panel">
         <div>
-          <p className="eyebrow">Nebius AI</p>
           <h1>Why Nebius?</h1>
-          <p>Nebius turns the arena from a single browser simulation into a scalable AI workload: model-backed inference, parallel batch execution, GPU-backed experiments, and reusable datasets.</p>
+          <p>Nebius turns detector analysis into scalable AI infrastructure: model-backed inference, parallel batch execution, GPU-ready runtimes, durable artifacts, and cost visibility.</p>
         </div>
       </div>
 
-      <WhyNebiusPanel
-        experiment={experiment}
-        jobs={experimentJobs}
-        observatory={nebiusObservatory}
-        status={nebiusStatus}
-        summary={experimentSummary}
-        usage={usageMetrics}
-      />
+      <section className="nebius-infra-workflow">
+        <InfrastructureSection
+          title="Models"
+          description="Select and validate the hosted Nebius AI model used by backend inference adapters."
+        >
+          <InfrastructureMetricGrid>
+            <MetricBlock label="Configured model" value={nebiusStatus?.model || "not configured"} />
+            <MetricBlock label="Endpoint mode" value={nebiusStatus?.endpoint_mode ?? nebiusObservatory?.endpoint_mode ?? "mock"} />
+            <MetricBlock label="Endpoint base URL" value={nebiusStatus?.endpoint_base_url || "not configured"} />
+            <MetricBlock label="API key" value={nebiusStatus?.api_key_configured ? "configured" : "not configured"} />
+          </InfrastructureMetricGrid>
+          <div className="nebius-button-row">
+            <button className="secondary-button" disabled={experimentBusyAction === "test-endpoint-health"} onClick={() => void testEndpointHealth()} type="button">Test endpoint health</button>
+          </div>
+        </InfrastructureSection>
 
-      <RuntimeStatusCard status={runtimeStatus} />
+        <InfrastructureSection
+          title="Inference"
+          description="Use Nebius for model-backed incident analysis and report generation behind the backend boundary."
+        >
+          <InfrastructureMetricGrid>
+            <MetricBlock label="Inference calls" value={String(usageMetrics.aiEndpointCallsToday)} />
+            <MetricBlock label="Average latency" value={`${usageMetrics.averageLlmLatencySec.toFixed(2)}s`} />
+            <MetricBlock label="Incident explainer" value={nebiusStatus?.incident_explainer_configured ? "configured" : "not configured"} />
+            <MetricBlock label="Report adapter" value={nebiusStatus?.investigation_report_configured ? "configured" : "not configured"} />
+          </InfrastructureMetricGrid>
+          <div className="nebius-button-row">
+            <button className="secondary-button" disabled={!experiment || experimentBusyAction === "run-investigations"} onClick={() => void runExperimentInvestigations()} type="button">Run AI Investigator reports</button>
+          </div>
+          {experimentMessage ? <p className="experiment-message">{experimentMessage}</p> : null}
+        </InfrastructureSection>
 
-      <RealNebiusDeploymentPanel
-        busyAction={experimentBusyAction}
-        experiment={experiment}
-        jobs={experimentJobs}
-        message={deploymentPanelMessage}
-        observatory={nebiusObservatory}
-        onCollectArtifacts={() => void collectExperimentCloudArtifacts()}
-        onRefreshJobStatus={() => void refreshExperimentJobStatus()}
-        onRenderJobConfig={() => void renderExperimentJobConfig()}
-        onSubmitNebius={() => void submitExperimentToNebius()}
-        onTestEndpointHealth={() => void testEndpointHealth()}
-        onTestInvestigationReport={() => void testInvestigationReport()}
-        onTestOrderbookAlert={() => void testOrderbookAlert()}
-        status={nebiusStatus}
-      />
+        <InfrastructureSection
+          title="Batch Jobs"
+          description="Run managed experiment batches without tying compute to the browser session."
+        >
+          <ExperimentLab
+            busyAction={experimentBusyAction}
+            experiment={experiment}
+            form={experimentForm}
+            jobs={experimentJobs}
+            leaderboard={experimentLeaderboard}
+            message={experimentMessage}
+            onAggregate={() => void aggregateExperimentResults()}
+            onCreate={() => void createExperimentFromForm()}
+            onGenerateManifest={() => void generateExperimentManifest()}
+            onRefresh={() => void refreshExperimentLab()}
+            onRunInvestigations={() => void runExperimentInvestigations()}
+            onRunLocalBatch={() => void runExperimentLocalBatch()}
+            onSubmitNebius={() => void submitExperimentToNebius()}
+            onToggleScenario={toggleExperimentScenario}
+            onUpdateForm={updateExperimentForm}
+            summary={experimentSummary}
+          />
+        </InfrastructureSection>
 
-      <ExperimentLab
-        busyAction={experimentBusyAction}
-        experiment={experiment}
-        form={experimentForm}
-        jobs={experimentJobs}
-        leaderboard={experimentLeaderboard}
-        message={experimentMessage}
-        onAggregate={() => void aggregateExperimentResults()}
-        onCreate={() => void createExperimentFromForm()}
-        onGenerateManifest={() => void generateExperimentManifest()}
-        onRefresh={() => void refreshExperimentLab()}
-        onRunInvestigations={() => void runExperimentInvestigations()}
-        onRunLocalBatch={() => void runExperimentLocalBatch()}
-        onSubmitNebius={() => void submitExperimentToNebius()}
-        onToggleScenario={toggleExperimentScenario}
-        onUpdateForm={updateExperimentForm}
-        summary={experimentSummary}
-      />
+        <InfrastructureSection
+          title="GPU Runtime"
+          description="Prepare serverless job configs and track GPU-oriented job execution on Nebius."
+        >
+          <RuntimeStatusCard status={runtimeStatus} usage={usageMetrics} />
+          <RealNebiusDeploymentPanel
+            busyAction={experimentBusyAction}
+            experiment={experiment}
+            jobs={experimentJobs}
+            message={deploymentPanelMessage}
+            observatory={nebiusObservatory}
+            onCollectArtifacts={() => void collectExperimentCloudArtifacts()}
+            onRefreshJobStatus={() => void refreshExperimentJobStatus()}
+            onRenderJobConfig={() => void renderExperimentJobConfig()}
+            onSubmitNebius={() => void submitExperimentToNebius()}
+            status={nebiusStatus}
+          />
+        </InfrastructureSection>
 
-      <UsageCostMonitor metrics={usageMetrics} />
+        <InfrastructureSection
+          title="Artifacts"
+          description="Collect reports, normalized batches, manifests, and datasets produced by Nebius workloads."
+        >
+          <ExperimentArtifactLinks artifacts={experiment ? experimentArtifactsFrom(experiment, experimentSummary) : []} experimentId={experiment?.id} />
+          <InfrastructureMetricGrid>
+            <MetricBlock label="Collected artifacts" value={String(artifacts.length)} />
+            <MetricBlock label="Replay storage" value={`${usageMetrics.replayStorageMb.toFixed(0)} MB`} />
+            <MetricBlock label="Artifact collection" value={artifactCollectionStatus(experiment)} />
+          </InfrastructureMetricGrid>
+        </InfrastructureSection>
+
+        <InfrastructureSection
+          title="Costs"
+          description="Track endpoint calls, serverless jobs, token usage, and estimated infrastructure spend."
+        >
+          <UsageCostMonitor metrics={usageMetrics} />
+        </InfrastructureSection>
+      </section>
+
     </section>
   );
 }
 
-function WhyNebiusPanel({
-  experiment,
-  jobs,
-  observatory,
-  status,
-  summary,
-  usage
+function InfrastructureSection({
+  children,
+  description,
+  title
 }: {
-  experiment: ManagedExperiment | null;
-  jobs: ExperimentJobRecord[];
-  observatory: NebiusObservatory | null;
-  status: NebiusStatus | null;
-  summary: ExperimentSummary | null;
-  usage: NebiusUsageMetrics;
+  children: ReactNode;
+  description: string;
+  title: string;
 }) {
-  const latestCloudJob = latestExperimentJob(jobs.filter((job) => job.backend === "nebius_serverless_job"));
-  const datasetCount = observatory?.usage.job_output_files ?? 0;
-  const endpointConfigured = Boolean(status?.orderbook_alert_configured || status?.incident_explainer_configured || status?.investigation_report_configured);
-
-  const reasons = [
-    {
-      label: "Model selection",
-      value: status?.model || "not configured",
-      detail: endpointConfigured ? "Backend routes inference to configured Nebius AI models." : "Configure Nebius AI settings to compare hosted models."
-    },
-    {
-      label: "Inference",
-      value: `${usage.aiEndpointCallsToday} calls`,
-      detail: `${usage.averageLlmLatencySec.toFixed(2)}s average LLM latency for Smart Detection and AI Investigator reports.`
-    },
-    {
-      label: "Batch execution",
-      value: latestCloudJob?.status.replaceAll("_", " ") ?? "pending",
-      detail: latestCloudJob ? latestCloudJob.message : "Managed Experiment jobs run many scenario variants without tying work to the browser."
-    },
-    {
-      label: "GPU utilization",
-      value: status?.job_image ? "job image ready" : "not configured",
-      detail: "Nebius jobs are the place to attach GPU-backed workers for detector tournaments and synthetic data generation."
-    },
-    {
-      label: "Datasets",
-      value: `${datasetCount} exports`,
-      detail: `${usage.replayStorageMb.toFixed(0)} MB replay and evidence storage available for training or regression datasets.`
-    },
-    {
-      label: "Experiments",
-      value: experiment?.status.replaceAll("_", " ") ?? "no experiment",
-      detail: summary ? `${summary.total_attacks} attacks, ${summary.total_alerts} alerts, ${summary.investigation_count} detection reports.` : "Create an experiment to produce comparable detector metrics and artifacts."
-    }
-  ];
-
   return (
-    <section className="panel why-nebius-panel">
+    <section className="panel nebius-infra-section">
       <div className="nebius-card-heading">
         <div>
-          <p className="eyebrow">Strategic role</p>
-          <h2>What Nebius contributes</h2>
+          <h2>{title}</h2>
+          <p className="nebius-card-purpose">{description}</p>
         </div>
       </div>
-      <div className="why-nebius-grid">
-        {reasons.map((reason) => (
-          <article key={reason.label}>
-            <span>{reason.label}</span>
-            <strong>{reason.value}</strong>
-            <p>{reason.detail}</p>
-          </article>
-        ))}
-      </div>
+      {children}
     </section>
   );
+}
+
+function InfrastructureMetricGrid({ children }: { children: ReactNode }) {
+  return <div className="nebius-infra-metric-grid">{children}</div>;
 }
 
 function runtimeFrom(status: NebiusStatus, observatory: NebiusObservatory): NebiusRuntimeStatus {
@@ -649,10 +493,9 @@ function ExperimentLab({
   const pendingNebiusJob = jobs.find((job) => job.status === "real_nebius_pending");
 
   return (
-    <section className="panel experiment-lab-panel">
+    <section className="experiment-lab-panel">
       <div className="nebius-card-heading">
         <div>
-          <p className="eyebrow">Managed Experiment</p>
           <h2>Managed Experiment Lab</h2>
         </div>
         <div className="nebius-button-row">
@@ -672,7 +515,7 @@ function ExperimentLab({
           </label>
           <div className="experiment-number-grid">
             <label>
-              <span>Attack count</span>
+              <span>Workload count</span>
               <input
                 min={1}
                 onChange={(event) => onUpdateForm("attack_count", Number(event.target.value))}
@@ -724,7 +567,7 @@ function ExperimentLab({
           <div className="experiment-active-summary">
             <span>Current Managed Experiment</span>
             <strong>{experiment?.name ?? "Create or refresh a Managed Experiment"}</strong>
-            <p>{experiment ? `${experiment.id} · ${experiment.attack_count} attacks · batch ${experiment.batch_size}` : "The Managed Experiment flow runs through FastAPI and keeps Nebius AI calls behind the backend boundary."}</p>
+            <p>{experiment ? `${experiment.id} · ${experiment.attack_count} workloads · batch ${experiment.batch_size}` : "The Managed Experiment flow runs through FastAPI and keeps Nebius AI calls behind the backend boundary."}</p>
           </div>
           <div className="experiment-flow-actions">
             <button disabled={!canRun || busyAction === "generate-manifest"} onClick={onGenerateManifest} type="button">Generate manifest</button>
@@ -758,9 +601,6 @@ function RealNebiusDeploymentPanel({
   onRefreshJobStatus,
   onRenderJobConfig,
   onSubmitNebius,
-  onTestEndpointHealth,
-  onTestInvestigationReport,
-  onTestOrderbookAlert,
   status
 }: {
   busyAction: ExperimentAction | null;
@@ -772,9 +612,6 @@ function RealNebiusDeploymentPanel({
   onRefreshJobStatus: () => void;
   onRenderJobConfig: () => void;
   onSubmitNebius: () => void;
-  onTestEndpointHealth: () => void;
-  onTestInvestigationReport: () => void;
-  onTestOrderbookAlert: () => void;
   status: NebiusStatus | null;
 }) {
   const cloudJob = latestExperimentJob(jobs.filter((job) => job.backend === "nebius_serverless_job"));
@@ -783,10 +620,9 @@ function RealNebiusDeploymentPanel({
   const hasExperiment = Boolean(experiment);
 
   return (
-    <section className="panel experiment-lab-panel real-nebius-deployment-panel">
+    <section className="experiment-lab-panel real-nebius-deployment-panel">
       <div className="nebius-card-heading">
         <div>
-          <p className="eyebrow">Real Nebius Deployment</p>
           <h2>Real Nebius Deployment</h2>
         </div>
         <span className={`runtime-status ${cloudJob?.status ?? "missing"}`}>
@@ -816,30 +652,6 @@ function RealNebiusDeploymentPanel({
       </div>
 
       <div className="nebius-button-row">
-        <button
-          className="secondary-button"
-          disabled={busyAction === "test-endpoint-health"}
-          onClick={onTestEndpointHealth}
-          type="button"
-        >
-          Test endpoint health
-        </button>
-        <button
-          className="secondary-button"
-          disabled={busyAction === "test-orderbook-alert"}
-          onClick={onTestOrderbookAlert}
-          type="button"
-        >
-          Test Smart Detection
-        </button>
-        <button
-          className="secondary-button"
-          disabled={busyAction === "test-investigation-report"}
-          onClick={onTestInvestigationReport}
-          type="button"
-        >
-          Test detection report
-        </button>
         <button
           className="secondary-button"
           disabled={!hasExperiment || busyAction === "render-job-config"}
@@ -1078,18 +890,6 @@ function usageFrom(observatory: NebiusObservatory, reports: ReportsSummary): Neb
   };
 }
 
-function servicesFrom(observatory: NebiusObservatory): ServiceHealth[] {
-  return [
-    { lastCheckedAt: new Date().toISOString(), name: "Frontend", status: "healthy" },
-    { lastCheckedAt: new Date().toISOString(), name: "Backend API", status: "healthy" },
-    ...observatory.runtime_health.map((service) => ({
-      lastCheckedAt: service.checked_at,
-      name: service.name,
-      status: normalizeServiceStatus(service.status)
-    }))
-  ];
-}
-
 function jobsFrom(reports: ReportsSummary, observatory: NebiusObservatory): ServerlessExperimentJob[] {
   const batches = [...(reports.nebius_batches ?? [])];
   if (observatory.latest_batch && !batches.some((batch) => batch.id === observatory.latest_batch?.id)) {
@@ -1111,10 +911,6 @@ function artifactsFrom(reports: ReportsSummary, observatory: NebiusObservatory):
     type: "report" as const
   }));
   return dedupeArtifacts([...artifacts, ...latestArtifacts, ...screenshots]);
-}
-
-function artifactsFromBatch(batch: SmartBatchRunResponse): ExperimentArtifact[] {
-  return artifactsFromPaths(batch.artifact_paths);
 }
 
 function artifactsFromPaths(paths: Record<string, string>): ExperimentArtifact[] {
@@ -1155,10 +951,6 @@ function artifactTypeFor(value: string): ExperimentArtifact["type"] {
   return "report";
 }
 
-function jobFromBatch(batch: SmartBatchRunResponse): ServerlessExperimentJob {
-  return jobFromRecord(batch as unknown as Record<string, unknown>);
-}
-
 function jobFromRecord(batch: Record<string, unknown>): ServerlessExperimentJob {
   const metrics = Array.isArray(batch.metrics) ? batch.metrics as Record<string, unknown>[] : [];
   const alerts = metrics.reduce((total, row) => total + Number(row.alerts ?? 0), 0);
@@ -1173,65 +965,5 @@ function jobFromRecord(batch: Record<string, unknown>): ServerlessExperimentJob 
     runs,
     scenario: Array.isArray(batch.scenarios) ? batch.scenarios.join(", ") : String(batch.scenario ?? "Nebius batch"),
     status: batch.status === "completed" ? "done" : batch.status === "failed" ? "failed" : "running"
-  };
-}
-
-function scenariosFor(config: ExperimentBatchConfig) {
-  const scenario = config.scenarioFamily.toLowerCase();
-  if (scenario.includes("normal")) return ["normal_market"];
-  if (scenario.includes("layer")) return ["layering"];
-  if (scenario.includes("quote")) return ["quote_stuffing"];
-  if (scenario.includes("mixed")) return ["normal_market", "spoofing", "layering", "quote_stuffing", "pump_and_cancel"];
-  return ["spoofing"];
-}
-
-function normalizeServiceStatus(status: string): ServiceHealth["status"] {
-  if (["healthy", "configured", "available", "mounted"].includes(status)) return "healthy";
-  if (["ready", "recent_run"].includes(status)) return "ready";
-  if (["connected"].includes(status)) return "connected";
-  if (["running"].includes(status)) return "running";
-  if (["mock_fallback", "not_configured", "not_detected"].includes(status)) return "degraded";
-  return "error";
-}
-
-function aiExplanationFrom(alert: OrderBookAlertResponse): AiExplanation {
-  return {
-    createdAt: new Date().toISOString(),
-    findings: alert.reasons,
-    latencySec: alert.mode === "nebius" ? 1.2 : 0.2,
-    recommendedAction: alert.recommended_action,
-    suspicion: alert.suspicion_score > 0.75 ? "High" : alert.suspicion_score > 0.45 ? "Medium" : "Low",
-    title: `AI Investigator: ${alert.detected_pattern}`,
-    tokensUsed: 520
-  };
-}
-
-function incidentReportFrom(report: InvestigationReportResponse): IncidentReport {
-  return {
-    latencySec: report.mode === "nebius" ? 1.8 : 0.3,
-    sections: [report.summary, ...report.timeline, ...report.detector_findings, ...report.recommended_next_steps],
-    severity: "High",
-    title: report.title,
-    tokensUsed: 900
-  };
-}
-
-function strategyFrom(scenario: SmartScenarioResponse): StrategySuggestion {
-  return {
-    bullets: [scenario.description, `Parameters: ${JSON.stringify(scenario.parameters)}`, scenario.safety_note],
-    latencySec: scenario.mode === "nebius" ? 1.1 : 0.2,
-    safetyNote: scenario.fallback_reason ?? "Synthetic simulator-only guidance.",
-    title: scenario.title,
-    tokensUsed: 640
-  };
-}
-
-function marketSummaryFrom(observatory: NebiusObservatory): MarketSummary {
-  return {
-    latencySec: observatory.usage.endpoint_avg_latency_seconds,
-    regime: "Control-plane runtime summary",
-    summary: `${observatory.adapter.name} is running in ${observatory.adapter.mode} mode with ${observatory.usage.job_simulations} job simulations recorded.`,
-    tokensUsed: 320,
-    watchItems: observatory.capabilities.map((capability) => `${capability.surface}: ${capability.status}`)
   };
 }

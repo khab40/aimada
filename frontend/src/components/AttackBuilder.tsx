@@ -76,7 +76,6 @@ export function AttackBuilder({ onLaunchScenario }: { onLaunchScenario?: (type: 
     <section className="attack-builder">
       <div className="section-heading-row">
         <div>
-          <p className="eyebrow">Red-team scenario design</p>
           <h2>Attack Builder</h2>
         </div>
         <span className={`risk-chip ${risk.label.toLowerCase()}`}>{risk.label} risk</span>

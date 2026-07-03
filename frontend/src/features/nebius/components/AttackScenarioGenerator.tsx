@@ -41,13 +41,9 @@ export function AttackScenarioGenerator({
     <section className="panel attack-scenario-generator-card">
       <div className="nebius-card-heading">
         <div>
-          <p className="eyebrow">Red-Team Attack Plan</p>
           <h2>Attack Scenario Generator</h2>
         </div>
       </div>
-      <p className="nebius-card-purpose">
-        Create concrete red-team attack plans that can be injected into the live simulator or submitted to Nebius Managed Experiment jobs.
-      </p>
 
       <div className="attack-generator-grid">
         <Select label="Attack type" value={input.attackType} options={attackTypes} onChange={(attackType) => onChange({ ...input, attackType: attackType as AttackScenarioInput["attackType"] })} />

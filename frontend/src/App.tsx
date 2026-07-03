@@ -6,6 +6,7 @@ import { useAuth } from "@/auth/useAuth";
 import type { ArenaRole } from "@/api/client";
 import { ArenaPage } from "@/pages/ArenaPage";
 import { AttackScenarioGeneratorPage } from "@/pages/AttackScenarioGeneratorPage";
+import { DemoPage } from "@/pages/DemoPage";
 import { DetectionPage } from "@/pages/DetectionPage";
 import { ExperimentLabPage } from "@/pages/ExperimentLabPage";
 import { NebiusControlPanelPage } from "@/pages/NebiusControlPanelPage";
@@ -96,6 +97,7 @@ export function App() {
 
           <Routes>
             <Route path="/" element={<Navigate to="/arena" replace />} />
+            <Route path="/demo" element={<DemoPage />} />
             <Route path="/arena" element={<ArenaPage />} />
             <Route path="/attack-scenarios" element={canAccessPath(role, "/attack-scenarios") ? <AttackScenarioGeneratorPage /> : <Navigate to="/arena" replace />} />
             <Route path="/detection" element={canAccessPath(role, "/detection") ? <DetectionPage /> : <Navigate to="/arena" replace />} />
@@ -134,9 +136,10 @@ function ArenaSplashOverlay() {
   useEffect(() => {
     const sessionId = session?.session_id ?? null;
     const hidden = window.localStorage.getItem(SPLASH_HIDE_KEY) === "true";
+    const demoLaunch = new URLSearchParams(location.search).has("demo");
     setDontShowAgain(hidden);
-    setVisible(Boolean(sessionId && location.pathname === "/arena" && !hidden && dismissedSessionId !== sessionId));
-  }, [dismissedSessionId, location.pathname, session?.session_id]);
+    setVisible(Boolean(sessionId && location.pathname === "/arena" && !demoLaunch && !hidden && dismissedSessionId !== sessionId));
+  }, [dismissedSessionId, location.pathname, location.search, session?.session_id]);
 
   if (!visible || !session) {
     return null;
@@ -154,7 +157,6 @@ function ArenaSplashOverlay() {
     <div className="arena-splash-backdrop" role="presentation">
       <section aria-labelledby="arena-splash-title" aria-modal="true" className="arena-splash-panel" role="dialog">
         <div className="arena-splash-copy">
-          <p className="eyebrow">Arena overview</p>
           <h2 id="arena-splash-title">AI Market Abuse Detection Arena</h2>
           <p>
             Synthetic market state, red-team scenarios, detector evidence, replay history, and reports in one shared arena.
@@ -214,7 +216,7 @@ function SidebarLink({
   );
 }
 
-type AppIconName = "arena" | "attack" | "detection" | "tournament" | "reports" | "cloud" | "about";
+type AppIconName = "arena" | "attack" | "demo" | "detection" | "tournament" | "reports" | "cloud" | "about";
 
 type SidebarItem = {
   icon: AppIconName;
@@ -230,6 +232,7 @@ const observerAndJudge: ArenaRole[] = ["observer", "judge"];
 
 const sidebarItems: SidebarItem[] = [
   { icon: "arena", label: "Arena", shortLabel: "AR", to: "/arena", visibleFor: allRoles },
+  { icon: "demo", label: "Demo", shortLabel: "DM", to: "/demo", visibleFor: allRoles },
   { icon: "attack", label: "Scenario Generator", shortLabel: "SG", team: "red", to: "/attack-scenarios", visibleFor: ["observer", "attacker", "judge"] },
   { icon: "detection", label: "Detection", shortLabel: "DT", team: "blue", to: "/detection", visibleFor: allRoles },
   { icon: "tournament", label: "Experiments", shortLabel: "EX", to: "/lab", visibleFor: observerAndJudge },
@@ -248,6 +251,7 @@ function AppIcon({ name }: { name: AppIconName }) {
     arena: ["M4 17h16", "M6 14l3-4 3 2 4-6 2 3", "M5 5v14h14"],
     attack: ["M4 12h10", "M10 6l6 6-6 6", "M16 4h4v4", "M16 20h4v-4"],
     cloud: ["M7 18h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.4 8.4 4.5 4.5 0 0 0 7 18Z"],
+    demo: ["M4 5h16v12H4z", "M9 21h6", "M12 17v4", "M10 9l5 3-5 3z"],
     detection: ["M12 3v3", "M12 18v3", "M3 12h3", "M18 12h3", "M7.8 7.8l2.1 2.1", "M14.1 14.1l2.1 2.1", "M16.2 7.8l-2.1 2.1", "M9.9 14.1l-2.1 2.1", "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"],
     reports: ["M6 3h9l3 3v15H6z", "M15 3v4h4", "M9 13h6", "M9 17h6", "M9 9h2"],
     tournament: ["M8 4h8v3a4 4 0 0 1-8 0z", "M6 5H4v2a4 4 0 0 0 4 4", "M18 5h2v2a4 4 0 0 1-4 4", "M12 11v5", "M9 20h6", "M10 16h4"]

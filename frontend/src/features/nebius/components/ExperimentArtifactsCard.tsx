@@ -24,11 +24,9 @@ export function ExperimentArtifactsCard({
     <section className="panel experiment-artifacts-card">
       <div className="nebius-card-heading">
         <div>
-          <p className="eyebrow">Replay Storage</p>
           <h2>Experiment Artifacts</h2>
         </div>
       </div>
-      <p className="nebius-card-purpose">Store and reload simulation evidence: replay files, metrics, alerts, incident reports, and generated LOB datasets.</p>
       <div className="nebius-button-row">
         <button onClick={onSaveReplay} type="button">Save Current Replay</button>
         <button onClick={onLoadPrevious} type="button">Load Previous Experiment</button>

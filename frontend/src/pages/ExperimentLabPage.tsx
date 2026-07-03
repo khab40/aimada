@@ -33,12 +33,7 @@ export function ExperimentLabPage() {
     <section className="experiment-lab-page tournament-page">
       <div className="panel lab-hero-panel tournament-hero">
         <div>
-          <p className="eyebrow">Tournament entry</p>
           <h2>Select Role, Login, Join Arena</h2>
-          <p>
-            Choose a tournament role before Google login. Anonymous arena mode still works elsewhere; tournament persistence,
-            scoring, replay, and later multi-user participation are tied to the logged-in persona.
-          </p>
         </div>
         <div className="tournament-login-box">
           <span className="endpoint-badge">{session ? "logged in" : "login required"}</span>
@@ -73,7 +68,6 @@ export function ExperimentLabPage() {
       {session ? <RoleWorkspace role={role} /> : (
         <section className="panel tournament-locked-panel">
           <h3>{selectedRole.label} controls locked</h3>
-          <p>Login with Google to persist the selected role, restore history, and show tournament controls for that persona.</p>
         </section>
       )}
     </section>
@@ -85,7 +79,6 @@ function RoleWorkspace({ role }: { role: ArenaRole }) {
     return (
       <section className="panel tournament-workspace red">
         <h3>Attacker Console</h3>
-        <p>Prepare and launch red-team scenarios. Detector-only and judging actions are hidden for this role.</p>
         <div className="tournament-action-row">
           <Link className="primary-link-button" to="/attack-scenarios">Create Attack Scenario</Link>
           <Link to="/arena">Open Arena</Link>
@@ -97,7 +90,6 @@ function RoleWorkspace({ role }: { role: ArenaRole }) {
     return (
       <section className="panel tournament-workspace blue">
         <h3>Detector Console</h3>
-        <p>Watch detector state, run endpoint scoring, and generate incident explanations. Attack creation controls are hidden.</p>
         <div className="tournament-action-row">
           <Link className="primary-link-button" to="/detection">Open Detection</Link>
           <Link to="/detection">Review Alerts</Link>
@@ -109,7 +101,6 @@ function RoleWorkspace({ role }: { role: ArenaRole }) {
     return (
       <section className="panel tournament-workspace judge">
         <h3>Judge Console</h3>
-        <p>Review persisted evidence, compare runs, inspect replay windows, and prepare winner reports.</p>
         <div className="tournament-action-row">
           <Link className="primary-link-button" to="/detection">Open Detection Outputs</Link>
           <Link to="/nebius">Inspect Artifacts</Link>
@@ -120,7 +111,6 @@ function RoleWorkspace({ role }: { role: ArenaRole }) {
   return (
     <section className="panel tournament-workspace">
       <h3>Observer Console</h3>
-      <p>Follow live arena state and replay history without attacker, detector, or judge controls.</p>
       <div className="tournament-action-row">
         <Link className="primary-link-button" to="/arena">Watch Arena</Link>
         <Link to="/detection">Open Detection</Link>

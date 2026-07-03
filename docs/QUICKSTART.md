@@ -40,6 +40,7 @@ docker compose up --build
 Open your browser:
 
 - **Frontend (Arena)**: http://localhost:5173
+- **Product Demo**: http://localhost:5173/demo
 - **Backend API**: http://localhost:8000
 - **API Docs**: http://localhost:8000/docs
 
@@ -78,10 +79,15 @@ curl -X POST http://localhost:8000/api/scenarios/spoofing-like
 - Click **Inject Scenario** to trigger abuse-like behavior
 - View detector confidence in the right panel
 
+### 3-Minute Product Demo
+- Open `/demo`
+- Choose **Real Nebius AI Run**, **Two-Model Pipeline**, or **Streaming Explanation**
+- The selected card launches Arena with deterministic demo settings and AI cost/latency reporting
+
 ### Incident Investigation
 - Click on an incident badge to open Incident Details
 - View detector evidence and timeline
-- If Nebius is configured: click **Run AI Investigator** to get an AI Investigator explanation
+- Click **Run AI Investigator** to get a Nebius AI explanation or a clearly labeled simulated fallback
 
 ### Advanced Features
 - WebSocket connection: `ws://localhost:8000/ws/arena`

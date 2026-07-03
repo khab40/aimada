@@ -5,9 +5,16 @@ Update this file with each significant commit before pushing.
 
 ## Unreleased
 
+### Current - feat: add product demo orchestration
+
+- Added `/demo` as a top-level product demo page with Real Nebius AI Run, Two-Model Pipeline, and Streaming Explanation cards.
+- Wired demo cards to deterministic Arena modes through `/arena?demo=real`, `/arena?demo=two-model`, and `/arena?demo=streaming`.
+- Added selected demo-mode context, simulated fallback labeling, and AI cost/latency metrics to Arena AI Investigator output.
+- Updated README, Quick Start, architecture overview, ARD index, ARD-0001, and phase docs for seven-destination navigation and four-area diagrams.
+
 ### Current - feat: consolidate product navigation and detection workflow
 
-- Reduced the top-level UI navigation to six destinations: Arena, Scenario Generator, Detection, Experiments, Nebius AI, and About.
+- Reduced the core workflow navigation to Arena, Scenario Generator, Detection, Experiments, Nebius AI, and About before adding the dedicated Demo destination.
 - Renamed Investigation/Blue Team surfaces to Detection and folded Reports into Detection outputs instead of treating Reports as an independent destination.
 - Reworked Arena into three primary sections: Scenario / Attack Configuration, Market, and Detection, with Standard and Battlefield visualization modes.
 - Consolidated related UI components: detector confidence panel, incident live/replay details, and agent timeline/feed surfaces.

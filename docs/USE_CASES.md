@@ -104,6 +104,7 @@ graph LR
 
 | Use case | Primary actor | Business outcome |
 | --- | --- | --- |
+| Product Demo | Demo Operator | Launch deterministic Real Nebius AI Run, Two-Model Pipeline, or Streaming Explanation paths for a 3-minute presentation. |
 | Live Arena Mode | Demo Operator | Show a changing synthetic order book with normal and red-team activity. |
 | Manual Scenario Launch | Demo Operator | Inject a bounded abuse-like pattern and observe visible market effects. |
 | Incident Investigation | Demo Operator / Reviewer | Use AI Investigator to turn detector evidence into a clear explanation. |

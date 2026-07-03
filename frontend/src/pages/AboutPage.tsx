@@ -35,7 +35,6 @@ export function AboutPage() {
   return (
     <section className="about-page">
       <div className="panel about-hero-panel">
-        <p className="eyebrow">What this project does</p>
         <h2>Visual synthetic market arena for detection, explanation, and benchmarks</h2>
         <p>
           AI Market Abuse Detection Arena is a React visual cockpit plus FastAPI simulator that creates a synthetic
@@ -109,8 +108,7 @@ export function AboutPage() {
             <li><strong>Nebius AI:</strong> scores order-book windows at <code>/orderbook-alert</code>.</li>
             <li><strong>AI Investigator:</strong> generates reports through the backend report adapter.</li>
             <li><strong>Scenario Generator:</strong> drafts bounded red-team scenarios through the backend adapter.</li>
-            <li><strong>Experiment jobs:</strong> run attack and detection batches plus detector tournaments.</li>
-            <li><strong>Experiment jobs:</strong> generate labeled synthetic event and snapshot datasets.</li>
+            <li><strong>Experiment jobs:</strong> run batches and generate labeled event/snapshot datasets.</li>
           </ul>
         </section>
 
@@ -146,7 +144,6 @@ export function AboutPage() {
       <section className="panel about-card architecture-card">
         <div className="section-heading-row">
           <h3>Architecture Diagram</h3>
-          <span className="endpoint-badge">front / back / runners / Nebius</span>
         </div>
         <img
           alt="Architecture diagram showing Front, Back, Agent Runners Workspace, and Nebius Serverless Cloud areas"
@@ -186,7 +183,6 @@ export function AboutPage() {
       <section className="panel research-panel">
         <div className="section-heading-row">
           <h3>Research Papers</h3>
-          <span className="endpoint-badge">market simulation and LOB realism</span>
         </div>
         <div className="research-link-grid">
           {researchLinks.map((item) => (

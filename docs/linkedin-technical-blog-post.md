@@ -26,7 +26,7 @@ Implementation-wise, the repo is organized into five main areas:
 
 `backend/` contains the FastAPI app, simulation engine, exchange model, detectors, incident storage, Nebius client, and report generation.
 
-`frontend/` contains the React arena, control panel, blue-team surveillance view, red-team scenario generator, reports page, and reusable visualization components.
+`frontend/` contains the React arena, Demo page, Detection workflow, Scenario Generator, Nebius AI page, and reusable visualization components.
 
 `serverless/` contains the Nebius endpoint app, job runners, Dockerfiles, and example configs for endpoint and batch execution.
 

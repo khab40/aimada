@@ -18,7 +18,7 @@ import type { AgentEvent, ArenaState, DetectorScore, EvidenceItem, Incident } fr
 type DetectionSecondaryView = "endpoint" | "report" | "events";
 
 export function BlueTeamSurveillancePage() {
-  const { mode, pause, running, sourceStatus, start, state, tick } = useArenaSource();
+  const { mode, pause, running, sourceStatus, start, state } = useArenaSource();
   const [endpointAlert, setEndpointAlert] = useState<OrderBookAlertResponse | null>(null);
   const [report, setReport] = useState<InvestigationReportResponse | null>(null);
   const [reportsSummary, setReportsSummary] = useState<ReportsSummary | null>(null);
@@ -56,21 +56,14 @@ export function BlueTeamSurveillancePage() {
       <div className="panel lab-hero-panel team-hero blue">
         <TeamMark team="blue" />
         <div>
-          <p className="eyebrow">Detection workspace</p>
           <h2>Detection</h2>
-          <p>Monitor live detector scores, suspicious agents, incident evidence, and AI Investigator analysis from one workspace.</p>
-        </div>
-        <div className="team-hero-badges">
-          <span className="team-badge blue">Detection</span>
-          <span className="endpoint-badge">source {mode}:{sourceStatus}</span>
         </div>
       </div>
 
       {message ? <div className="empty-state warning">{message}</div> : null}
 
       <div className="surveillance-status-strip">
-        <Metric label="Tick" value={tick.toLocaleString()} />
-        <Metric label="Running" value={running ? "yes" : "no"} tone={running ? "good" : "warn"} />
+        <Metric label="Source" value={`${mode}:${sourceStatus}`} tone={sourceStatus === "connected" ? "good" : "warn"} />
         <Metric label="Active Alerts" value={String(state.detectors.alerts.length)} tone={state.detectors.alerts.length ? "warn" : "good"} />
         <Metric label="Stored Incidents" value={String(persistedIncidentCount)} />
         <Metric label="AI Investigator Outputs" value={String(persistedExplanationCount)} />

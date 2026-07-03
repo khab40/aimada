@@ -24,14 +24,8 @@ export function MarketBattlefield3DPage() {
     <section className="battlefield-page">
       <div className="panel battlefield-hero">
         <div>
-          <p className="eyebrow">3D market heatmap concept</p>
           <h2>Market Abuse Battlefield</h2>
-          <p>
-            A live terrain view of the same exchange ticker used by Arena: price across the valley,
-            simulation time into the screen, liquidity as height, and anomaly risk as heat.
-          </p>
         </div>
-        <span className="endpoint-badge">LOB terrain prototype</span>
       </div>
 
       <div className="battlefield-grid">

@@ -6,6 +6,8 @@ import type {
   ArenaState,
   AttackTrackerState,
   DetectorScore,
+  EvidenceItem,
+  Incident,
   MarketFeatures,
   OrderBookSnapshot,
   PriceLevel
@@ -24,10 +26,11 @@ type ScenarioSpec = {
   label: string;
 };
 
-const SYMBOL = "BTCUSDT";
+const DEFAULT_SYMBOL = "BTCUSDT";
 const TICK_MS = 500;
 const BASE_MID = 68_000;
 const BASE_SPREAD = 4;
+const demoScenarioOrder: MockScenarioType[] = ["spoofing_like_wall", "layering_like", "quote_stuffing", "liquidity_evaporation"];
 
 const scenarioSpecs: Record<MockScenarioType, ScenarioSpec> = {
   spoofing_like_wall: {
@@ -56,8 +59,20 @@ const scenarioSpecs: Record<MockScenarioType, ScenarioSpec> = {
   }
 };
 
-export function useMockArena() {
-  const [state, setState] = useState<ArenaState>(() => createInitialState());
+export function useMockArena({
+  demo = false,
+  initialScenario = "spoofing_like_wall",
+  symbol = DEFAULT_SYMBOL
+}: {
+  demo?: boolean;
+  initialScenario?: MockScenarioType;
+  symbol?: string;
+} = {}) {
+  const [state, setState] = useState<ArenaState>(() => createInitialState(demo, initialScenario, symbol));
+
+  useEffect(() => {
+    setState(createInitialState(demo, initialScenario, symbol));
+  }, [demo, initialScenario, symbol]);
 
   useEffect(() => {
     if (!state.running) {
@@ -65,7 +80,7 @@ export function useMockArena() {
     }
 
     const handle = window.setInterval(() => {
-      setState((current) => advanceState(current));
+      setState((current) => advanceState(current, { demo, symbol }));
     }, TICK_MS);
 
     return () => window.clearInterval(handle);
@@ -80,29 +95,20 @@ export function useMockArena() {
   }, []);
 
   const reset = useCallback(() => {
-    setState(createInitialState());
-  }, []);
+    setState(createInitialState(demo, initialScenario, symbol));
+  }, [demo, initialScenario, symbol]);
 
   const launchScenario = useCallback((type: MockScenarioType) => {
     setState((current) => {
       const spec = scenarioSpecs[type];
-      const activeScenario: AttackTrackerState = {
-        agent_id: spec.agentId,
-        current_stage: "armed",
-        scenario_family: spec.family,
-        scenario_id: `${type}-${current.tick}`,
-        scenario_name: type,
-        start_tick: current.tick,
-        stages: createAttackStages(current.tick, Date.now(), "armed", 0.18),
-        status: "armed"
-      };
+      const activeScenario = createActiveScenario(type, current.tick, 0.18);
       const event: AgentEvent = {
         agent_id: spec.agentId,
         kind: "red_team",
         scenario_family: spec.family,
         scenario_id: activeScenario.scenario_id,
         scenario_name: type,
-        symbol: SYMBOL,
+        symbol,
         timestamp: Date.now(),
         type: "scenario_started"
       };
@@ -124,59 +130,96 @@ export function useMockArena() {
       running: state.running,
       start,
       state,
-      symbol: SYMBOL,
+      symbol,
       tick: state.tick
     }),
     [launchScenario, pause, reset, start, state]
   );
 }
 
-function createInitialState(): ArenaState {
+function createInitialState(demo = false, initialScenario: MockScenarioType = "spoofing_like_wall", symbol = DEFAULT_SYMBOL): ArenaState {
   const book = createBook(BASE_MID, BASE_SPREAD);
+  const activeScenario = demo ? createActiveScenario(initialScenario, 0, 0.62) : null;
+  const features = createFeatures(book, activeScenario?.scenario_name as MockScenarioType | undefined, 0, demo);
+  const detectors = createDetectorScores(activeScenario?.scenario_name as MockScenarioType | undefined, 0, demo);
   return {
     active_agents: ["MarketMakerAgent", "NoiseTraderAgent", "LiquidityTakerAgent"],
-    active_scenario: null,
+    active_scenario: activeScenario,
     best_ask: book.best_ask,
     best_bid: book.best_bid,
     book,
-    detectors: createDetectorScores(),
+    detectors,
     events: [
       {
         agent_id: "MarketMakerAgent",
         price: book.best_bid ?? BASE_MID,
         quantity: 2.4,
         side: "buy",
-        symbol: SYMBOL,
+        symbol,
         timestamp: Date.now(),
         type: "limit_order"
       }
     ],
-    features: createFeatures(book),
+    features,
     mid: book.mid,
-    running: false,
+    running: demo,
     spread: book.spread,
     tick: 0
   };
 }
 
-function advanceState(current: ArenaState): ArenaState {
+function advanceState(current: ArenaState, { demo = false, symbol = DEFAULT_SYMBOL }: { demo?: boolean; symbol?: string } = {}): ArenaState {
   const nextTick = current.tick + 1;
-  const scenarioName = current.active_scenario?.scenario_name as MockScenarioType | undefined;
+  const currentScenario = current.active_scenario ?? (demo ? createActiveScenario(nextDemoScenario(undefined, nextTick), current.tick, 0.58) : null);
+  const scenarioName = currentScenario?.scenario_name as MockScenarioType | undefined;
   const spec = scenarioName ? scenarioSpecs[scenarioName] : undefined;
-  const elapsedTicks = current.active_scenario ? nextTick - current.active_scenario.start_tick : 0;
-  const scenarioStillActive = Boolean(spec && elapsedTicks <= spec.durationTicks);
+  const elapsedTicks = currentScenario ? nextTick - currentScenario.start_tick : 0;
+  const durationTicks = demo && currentScenario ? demoIncidentIntervalTicks(currentScenario.start_tick) : spec?.durationTicks;
+  const scenarioStillActive = Boolean(spec && durationTicks !== undefined && elapsedTicks <= durationTicks);
 
   let book = perturbBook(current.book, nextTick);
   if (scenarioStillActive && scenarioName) {
     book = applyScenarioBookEffect(book, scenarioName);
   }
 
-  const features = createFeatures(book, scenarioStillActive ? scenarioName : undefined);
-  const detectors = createDetectorScores(scenarioStillActive ? scenarioName : undefined);
-  const events = buildEvents(current, nextTick, scenarioStillActive, scenarioName);
-  const activeScenario = scenarioStillActive && current.active_scenario
-    ? updateAttackTracker(current.active_scenario, nextTick, detectors.scores)
+  const features = createFeatures(book, scenarioStillActive ? scenarioName : undefined, nextTick, demo);
+  const detectors = createDetectorScores(scenarioStillActive ? scenarioName : undefined, nextTick, demo);
+  const events = buildEvents({ ...current, active_scenario: currentScenario }, nextTick, scenarioStillActive, scenarioName, symbol);
+  let activeScenario = scenarioStillActive && currentScenario
+    ? updateAttackTracker(currentScenario, nextTick, detectors.scores)
     : null;
+  let incidents = current.incidents ?? [];
+  let nextEvents = events;
+
+  if (demo && currentScenario && scenarioName && durationTicks !== undefined && elapsedTicks >= durationTicks) {
+    const incident = createDemoIncident(currentScenario, nextTick, detectors.scores, features);
+    const nextScenarioName = nextDemoScenario(scenarioName, nextTick);
+    activeScenario = createActiveScenario(nextScenarioName, nextTick, 0.56);
+    incidents = [...incidents, incident].slice(-6);
+    nextEvents = [
+      {
+        agent_id: "DetectorEngine",
+        kind: "detector",
+        scenario_family: currentScenario.scenario_family,
+        scenario_id: currentScenario.scenario_id,
+        scenario_name: scenarioName,
+        symbol,
+        timestamp: Date.now(),
+        type: "demo_incident_confirmed"
+      },
+      {
+        agent_id: activeScenario.agent_id,
+        kind: "red_team",
+        scenario_family: activeScenario.scenario_family,
+        scenario_id: activeScenario.scenario_id,
+        scenario_name: nextScenarioName,
+        symbol,
+        timestamp: Date.now(),
+        type: "demo_scenario_started"
+      },
+      ...events
+    ].slice(0, 40);
+  }
 
   return {
     ...current,
@@ -185,11 +228,26 @@ function advanceState(current: ArenaState): ArenaState {
     best_bid: book.best_bid,
     book,
     detectors,
-    events,
+    events: nextEvents,
     features,
+    incidents,
     mid: book.mid,
     spread: book.spread,
     tick: nextTick
+  };
+}
+
+function createActiveScenario(type: MockScenarioType, tick: number, confidence: number): AttackTrackerState {
+  const spec = scenarioSpecs[type];
+  return {
+    agent_id: spec.agentId,
+    current_stage: "armed",
+    scenario_family: spec.family,
+    scenario_id: `${type}-${tick}`,
+    scenario_name: type,
+    start_tick: tick,
+    stages: createAttackStages(tick, Date.now(), "armed", confidence),
+    status: "armed"
   };
 }
 
@@ -267,28 +325,30 @@ function snapshotFromLevels(bids: PriceLevel[], asks: PriceLevel[]): OrderBookSn
   };
 }
 
-function createFeatures(book: OrderBookSnapshot, scenario?: MockScenarioType): MarketFeatures {
+function createFeatures(book: OrderBookSnapshot, scenario?: MockScenarioType, tick = 0, demo = false): MarketFeatures {
   const topBidDepth = sumQuantity(book.bids.slice(0, 3));
   const topAskDepth = sumQuantity(book.asks.slice(0, 3));
   const totalTopDepth = topBidDepth + topAskDepth;
+  const naturalWave = demo ? Math.sin(tick / 6) : 0;
   return {
-    cancel_to_trade_ratio: scenario === "quote_stuffing" ? 42 : 3.5,
-    depth_change_pct: scenario === "liquidity_evaporation" ? -68 : Math.round((Math.random() - 0.5) * 8),
+    cancel_to_trade_ratio: scenario === "quote_stuffing" ? 34 + Math.round(Math.abs(naturalWave) * 16) : demo ? 8 + Math.round(Math.abs(naturalWave) * 8) : 3.5,
+    depth_change_pct: scenario === "liquidity_evaporation" ? -58 - Math.round(Math.abs(naturalWave) * 16) : Math.round((Math.random() - 0.5) * (demo ? 18 : 8)),
     depth_top_n: roundQuantity(totalTopDepth),
     imbalance: totalTopDepth > 0 ? roundQuantity((topBidDepth - topAskDepth) / totalTopDepth) : 0,
-    message_rate: scenario === "quote_stuffing" ? 260 : 18 + Math.round(Math.random() * 8),
-    order_lifetime_ms: scenario === "spoofing_like_wall" ? 1_400 : 8_500,
+    message_rate: scenario === "quote_stuffing" ? 220 + Math.round(Math.abs(naturalWave) * 95) : demo ? 34 + Math.round(Math.abs(naturalWave) * 22) : 18 + Math.round(Math.random() * 8),
+    order_lifetime_ms: scenario === "spoofing_like_wall" ? 1_200 + Math.round(Math.abs(naturalWave) * 700) : 8_500,
     spread_bps: book.mid && book.spread ? roundQuantity((book.spread / book.mid) * 10_000) : 0,
-    wall_size_ratio: scenario === "spoofing_like_wall" ? 9.2 : scenario === "layering_like" ? 5.5 : 1.1
+    wall_size_ratio: scenario === "spoofing_like_wall" ? 7.8 + roundQuantity(Math.abs(naturalWave) * 2.4) : scenario === "layering_like" ? 5.1 + roundQuantity(Math.abs(naturalWave) * 1.8) : demo ? 1.6 + roundQuantity(Math.abs(naturalWave) * 0.9) : 1.1
   };
 }
 
-function createDetectorScores(scenario?: MockScenarioType) {
+function createDetectorScores(scenario?: MockScenarioType, tick = 0, demo = false) {
+  const primaryConfidence = scenario ? demoConfidenceFor(scenario, tick) : 0;
   const scores: DetectorScore[] = [
-    score("Spoofing", scenario === "spoofing_like_wall" ? 0.92 : 0.12),
-    score("Layering", scenario === "layering_like" ? 0.86 : 0.1),
-    score("Quote Stuffing", scenario === "quote_stuffing" ? 0.95 : 0.08),
-    score("Liquidity Shock", scenario === "liquidity_evaporation" ? 0.88 : 0.14)
+    score("Spoofing", scenario === "spoofing_like_wall" ? primaryConfidence : backgroundConfidence(tick, 0, demo), scenario === "spoofing_like_wall"),
+    score("Layering", scenario === "layering_like" ? primaryConfidence : backgroundConfidence(tick, 1, demo), scenario === "layering_like"),
+    score("Quote Stuffing", scenario === "quote_stuffing" ? primaryConfidence : backgroundConfidence(tick, 2, demo), scenario === "quote_stuffing"),
+    score("Liquidity Shock", scenario === "liquidity_evaporation" ? primaryConfidence : backgroundConfidence(tick, 3, demo), scenario === "liquidity_evaporation")
   ];
   return {
     alerts: scores.filter((item) => item.alert),
@@ -360,12 +420,77 @@ function createAttackStages(
   });
 }
 
-function score(name: string, confidence: number): DetectorScore {
+function score(name: string, confidence: number, includeEvidence = false): DetectorScore {
   return {
     alert: confidence >= 0.75,
     confidence,
+    evidence: includeEvidence ? detectorEvidence(name, confidence) : undefined,
     name,
-    severity: confidence >= 0.9 ? "critical" : confidence >= 0.8 ? "high" : "low"
+    severity: confidence >= 0.9 ? "critical" : confidence >= 0.8 ? "high" : confidence >= 0.45 ? "medium" : "low"
+  };
+}
+
+function detectorEvidence(name: string, confidence: number): EvidenceItem[] {
+  return [
+    { key: "confidence", label: "Detector confidence", value: confidence.toFixed(2) },
+    { key: "pattern", label: "Pattern", value: name },
+    { key: "window", label: "Replay window", value: "auto-collected" }
+  ];
+}
+
+function demoConfidenceFor(scenario: MockScenarioType, tick: number) {
+  const phase = scenario === "quote_stuffing" ? 0.7 : scenario === "layering_like" ? 1.4 : scenario === "liquidity_evaporation" ? 2.1 : 0;
+  return clampConfidence(0.82 + Math.sin(tick / 5 + phase) * 0.08 + Math.sin(tick / 13) * 0.035);
+}
+
+function backgroundConfidence(tick: number, offset: number, demo: boolean) {
+  if (!demo) {
+    return [0.12, 0.1, 0.08, 0.14][offset] ?? 0.1;
+  }
+  return clampConfidence(0.24 + Math.sin(tick / 9 + offset) * 0.1 + Math.sin(tick / 17 + offset) * 0.06);
+}
+
+function clampConfidence(value: number) {
+  return Number(Math.min(0.97, Math.max(0.04, value)).toFixed(2));
+}
+
+function demoIncidentIntervalTicks(startTick: number) {
+  return 40 + Math.abs((startTick * 17 + 29) % 41);
+}
+
+function nextDemoScenario(current: MockScenarioType | undefined, tick: number) {
+  if (!current) {
+    return demoScenarioOrder[Math.abs(tick) % demoScenarioOrder.length];
+  }
+  const currentIndex = demoScenarioOrder.indexOf(current);
+  return demoScenarioOrder[(currentIndex + 1) % demoScenarioOrder.length];
+}
+
+function createDemoIncident(
+  scenario: AttackTrackerState,
+  tick: number,
+  scores: DetectorScore[],
+  features: MarketFeatures
+): Incident {
+  const topScore = [...scores].sort((left, right) => right.confidence - left.confidence)[0] ?? score("Smart Detection", 0.82, true);
+  const severity = topScore.confidence >= 0.9 ? "Critical" : topScore.confidence >= 0.8 ? "High" : "Medium";
+  return {
+    agent: scenario.agent_id,
+    confidence: topScore.confidence,
+    evidence: [
+      { key: "message_rate", label: "Message rate", value: features.message_rate, unit: "updates/sec" },
+      { key: "wall_size_ratio", label: "Wall size ratio", value: features.wall_size_ratio },
+      { key: "cancel_to_trade_ratio", label: "Cancel/trade ratio", value: features.cancel_to_trade_ratio },
+      { key: "depth_change_pct", label: "Depth change", value: features.depth_change_pct, unit: "%" }
+    ],
+    explanation: `${topScore.name} confidence rose during a continuously running demo scenario and the evidence window was collected automatically.`,
+    id: `DEMO-${scenario.scenario_id}-${tick}`,
+    scenario_family: scenario.scenario_family,
+    scenario_id: scenario.scenario_id,
+    severity,
+    tick,
+    title: `${topScore.name} demo incident`,
+    type: scenario.scenario_name
   };
 }
 
@@ -373,7 +498,8 @@ function buildEvents(
   current: ArenaState,
   tick: number,
   scenarioStillActive: boolean,
-  scenarioName?: MockScenarioType
+  scenarioName?: MockScenarioType,
+  symbol = DEFAULT_SYMBOL
 ): AgentEvent[] {
   const baselineEvent: AgentEvent = {
     agent_id: tick % 3 === 0 ? "LiquidityTakerAgent" : tick % 2 === 0 ? "NoiseTraderAgent" : "MarketMakerAgent",
@@ -381,7 +507,7 @@ function buildEvents(
     price: current.mid ?? BASE_MID,
     quantity: roundQuantity(0.2 + Math.random() * 1.8),
     side: tick % 2 === 0 ? "buy" : "sell",
-    symbol: SYMBOL,
+    symbol,
     timestamp: Date.now(),
     type: tick % 3 === 0 ? "trade" : "limit_order"
   };
@@ -395,7 +521,7 @@ function buildEvents(
       scenario_family: spec.family,
       scenario_id: current.active_scenario?.scenario_id,
       scenario_name: scenarioName,
-      symbol: SYMBOL,
+      symbol,
       timestamp: Date.now(),
       type: scenarioName === "quote_stuffing" ? "message_rate_spike" : "scenario_pressure"
     });
@@ -405,7 +531,7 @@ function buildEvents(
       scenario_family: spec.family,
       scenario_id: current.active_scenario?.scenario_id,
       scenario_name: scenarioName,
-      symbol: SYMBOL,
+      symbol,
       timestamp: Date.now(),
       type: "detector_score_update"
     });
@@ -418,7 +544,7 @@ function buildEvents(
       scenario_family: current.active_scenario.scenario_family,
       scenario_id: current.active_scenario.scenario_id,
       scenario_name: current.active_scenario.scenario_name,
-      symbol: SYMBOL,
+      symbol,
       timestamp: Date.now(),
       type: "scenario_cancelled"
     });
@@ -428,7 +554,7 @@ function buildEvents(
       scenario_family: current.active_scenario.scenario_family,
       scenario_id: current.active_scenario.scenario_id,
       scenario_name: current.active_scenario.scenario_name,
-      symbol: SYMBOL,
+      symbol,
       timestamp: Date.now(),
       type: "detector_incident_confirmed"
     });

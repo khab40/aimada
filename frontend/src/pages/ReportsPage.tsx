@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   artifactDownloadUrl,
   clearReportsData,
+  exportArtifact,
   getManagedExperiment,
   getManagedExperimentLeaderboard,
   getManagedExperimentReport,
@@ -70,6 +71,8 @@ export function ReportsPage() {
   const [artifactIndexEntries, setArtifactIndexEntries] = useState<ArtifactIndexEntry[]>([]);
   const [experimentError, setExperimentError] = useState<string | null>(null);
   const [experimentLoading, setExperimentLoading] = useState(false);
+  const [reportExportBusy, setReportExportBusy] = useState<"json" | "pdf" | null>(null);
+  const [reportExportMessage, setReportExportMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -313,13 +316,6 @@ export function ReportsPage() {
   const historyRows = useMemo<HistoryRecord[]>(() => {
     return [...(summary?.history_artifacts ?? [])].reverse().slice(0, 25);
   }, [summary]);
-  const historyCounts = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const row of summary?.history_artifacts ?? []) {
-      counts.set(row.kind, (counts.get(row.kind) ?? 0) + 1);
-    }
-    return Array.from(counts.entries()).sort(([left], [right]) => left.localeCompare(right));
-  }, [summary]);
   const artifactIndexArtifacts = useMemo<ArtifactItem[]>(() => {
     if (!selectedExperiment) return [];
     const artifactIndexPath = selectedExperiment.artifact_paths.artifact_index;
@@ -359,31 +355,85 @@ export function ReportsPage() {
       }));
     return dedupeArtifactItems([...fromExperiment, ...fromIndex]);
   }, [artifactIndexEntries, selectedExperiment]);
+  const complianceReport = useMemo(() => {
+    const primaryIncident = detectionRows[0];
+    const reportTimestamp = selectedExperiment?.updated_at ?? historyRows[0]?.created_at ?? new Date().toISOString();
+    return {
+      affectedSymbols: collectAffectedSymbols(summary),
+      confidence: primaryIncident?.confidence ?? maxLeaderboardScore(experimentLeaderboard),
+      evidenceCount: benchmarkArtifacts.length + artifactIndexArtifacts.length + localBatchArtifacts.length + explanationRows.length + (summary?.evidence_screenshots.length ?? 0),
+      generatedBy: experimentInvestigations.length ? "Nebius AI Investigator" : "AI Market Abuse Detection Arena",
+      incidentType: primaryIncident?.type ?? selectedExperiment?.scenarios[0]?.replaceAll("_", " ") ?? "No incident selected",
+      timeline: `${historyRows.length} records / ${summary?.history_ticks.length ?? 0} ticks`,
+      timestamp: reportTimestamp
+    };
+  }, [
+    artifactIndexArtifacts.length,
+    benchmarkArtifacts.length,
+    detectionRows,
+    experimentInvestigations.length,
+    experimentLeaderboard,
+    explanationRows.length,
+    historyRows,
+    localBatchArtifacts.length,
+    selectedExperiment,
+    summary
+  ]);
+
+  async function exportCompliancePdf() {
+    const reportPath = selectedExperiment?.artifact_paths.benchmark_report;
+    if (!reportPath) {
+      setReportExportMessage("No report artifact is available for PDF export.");
+      return;
+    }
+    setReportExportBusy("pdf");
+    setReportExportMessage(null);
+    try {
+      const exported = await exportArtifact(reportPath, "pdf");
+      window.open(exported.download_url || artifactDownloadUrl(exported.path), "_blank", "noreferrer");
+      setReportExportMessage(`PDF export created: ${exported.path}`);
+    } catch (nextError) {
+      setReportExportMessage(nextError instanceof Error ? nextError.message : "PDF export failed.");
+    } finally {
+      setReportExportBusy(null);
+    }
+  }
+
+  function exportComplianceJson() {
+    setReportExportBusy("json");
+    setReportExportMessage(null);
+    try {
+      downloadJson("incident-compliance-report.json", complianceReport);
+      setReportExportMessage("JSON export created.");
+    } catch {
+      setReportExportMessage("JSON export failed.");
+    } finally {
+      setReportExportBusy(null);
+    }
+  }
 
   return (
     <section className="reports-page">
       <div className="panel lab-hero-panel">
         <div>
-          <p className="eyebrow">Detection output</p>
-          <h2>Evidence & Reports</h2>
-          <p>Review detection outputs: saved experiment evidence, incident replay windows, AI Investigator reports, Nebius artifacts, exports, and promoted challenge evidence.</p>
-        </div>
-        <div className="reports-hero-actions">
-          <span className="endpoint-badge">{summary ? "persisted evidence" : "loading evidence"}</span>
-          <button className="danger-button" onClick={() => setClearDialogOpen(true)} type="button">Clean Detection Output Data</button>
+          <h2>Incident Investigation</h2>
         </div>
       </div>
       {error ? <div className="empty-state warning">{error}</div> : null}
       {clearMessage ? <div className="empty-state">{clearMessage}</div> : null}
 
-      <div className="reports-grid">
+      <div className="reports-grid investigation-workflow">
         <section className="panel report-card wide experiment-reports-panel">
           <div className="section-heading-row">
             <div>
-              <h3>Phase 4.5 Experiments</h3>
-              <p className="empty-state">Synthetic educational benchmark reports generated by the local experiment manager.</p>
+              <h3>Incident Summary</h3>
             </div>
-            <span className="endpoint-badge">{experiments.length} experiments</span>
+          </div>
+          <div className="surveillance-status-strip">
+            <Metric label="Persisted Incidents" value={String(summary?.incidents.length ?? 0)} />
+            <Metric label="AI Analyses" value={String((summary?.explanations.length ?? 0) + (summary?.nebius_investigation_reports.length ?? 0))} />
+            <Metric label="Experiments" value={String(experiments.length)} />
+            <Metric label="Selected Run" value={selectedExperiment?.id ?? "none"} />
           </div>
           {experimentError ? <div className="empty-state warning">{experimentError}</div> : null}
           <div className="experiment-report-layout">
@@ -404,7 +454,6 @@ export function ReportsPage() {
             <div className="experiment-report-detail">
               <div className="experiment-report-header">
                 <div>
-                  <span className="eyebrow">Selected experiment</span>
                   <h3>{selectedExperiment?.name ?? "No experiment selected"}</h3>
                 </div>
                 <span className={`report-status ${selectedExperiment?.status ?? "draft"}`}>
@@ -416,7 +465,7 @@ export function ReportsPage() {
                 <Metric label="Attack Count" value={String(selectedExperiment?.attack_count ?? 0)} />
                 <Metric label="Labeled Attacks" value={String(experimentSummary?.total_attacks ?? 0)} />
                 <Metric label="Alerts" value={String(experimentSummary?.total_alerts ?? 0)} />
-                <Metric label="Detection Reports" value={String(experimentInvestigations.length || experimentSummary?.investigation_count || 0)} />
+                <Metric label="Investigation Reports" value={String(experimentInvestigations.length || experimentSummary?.investigation_count || 0)} />
                 <Metric label="Failed Runs" value={String(experimentSummary?.failed_runs ?? 0)} />
               </div>
 
@@ -435,26 +484,165 @@ export function ReportsPage() {
                 </section>
 
                 <section className="nebius-result-block">
-                  <span>Benchmark report viewer</span>
-                  {selectedExperiment && experimentReport ? (
-                    <>
-                      <div className="artifact-preview-title">
-                        <strong>benchmark_report.md</strong>
-                        <a href={getManagedExperimentReportUrl(selectedExperiment.id)} target="_blank" rel="noreferrer">Open raw</a>
-                      </div>
-                      <pre className="markdown-report-preview">{experimentReport}</pre>
-                    </>
-                  ) : (
-                    <p>Run aggregation to generate `benchmark_report.md`.</p>
-                  )}
+                  <span>Incident type summary</span>
+                  <div className="detection-summary-list">
+                    {detectionRows.map((item) => (
+                      <article key={item.type}>
+                        <div>
+                          <strong>{item.type}</strong>
+                          <span>{item.count} incidents</span>
+                        </div>
+                        <dl>
+                          <div><dt>Confidence</dt><dd>{item.confidence.toFixed(2)}</dd></div>
+                          <div><dt>Latency</dt><dd>{item.latency}</dd></div>
+                        </dl>
+                      </article>
+                    ))}
+                  </div>
                 </section>
               </div>
             </div>
           </div>
+        </section>
 
+        <section className="panel report-card wide">
+          <div className="section-heading-row">
+            <div>
+              <h3>Evidence</h3>
+            </div>
+          </div>
+          <ArtifactWorkbench
+            artifacts={benchmarkArtifacts}
+            incidentIds={incidentIds}
+            runIds={runIds}
+            selectedRunId={runIds[0] ?? null}
+            title="Evidence Artifacts"
+          />
+          <div className="experiment-artifact-workbench-grid">
+            <ArtifactWorkbench
+              artifacts={artifactIndexArtifacts}
+              runIds={selectedExperiment ? [selectedExperiment.id] : []}
+              selectedRunId={selectedExperiment?.id ?? null}
+              title="Artifact Index"
+            />
+            <ArtifactWorkbench
+              artifacts={localBatchArtifacts}
+              runIds={selectedExperiment ? [selectedExperiment.id] : []}
+              selectedRunId={selectedExperiment?.id ?? null}
+              title="Local Batch Originals"
+            />
+          </div>
+          <ArtifactWorkbench
+            artifacts={explanationArtifacts}
+            explanationRows={explanationRows}
+            incidentIds={incidentIds}
+            runIds={runIds}
+            selectedRunId={runIds[0] ?? null}
+            title="AI Explanation Evidence"
+          />
+        </section>
+
+        <section className="panel report-card wide">
+          <div className="section-heading-row">
+            <div>
+              <h3>Replay</h3>
+            </div>
+          </div>
+          <div className="surveillance-status-strip">
+            <Metric label="History Artifacts" value={String(summary?.history_artifacts.length ?? 0)} />
+            <Metric label="Replay Ticks" value={String(summary?.history_ticks.length ?? 0)} />
+            <Metric label="Investigation Reports" value={String(experimentInvestigations.length)} />
+            <Metric label="Completed Runs" value={String(runRows.length)} />
+          </div>
+          {historyRows.length ? (
+            <div className="report-table-wrap">
+              <table className="benchmark-table">
+                <thead>
+                  <tr>
+                    <th>Kind</th>
+                    <th>Summary</th>
+                    <th>Run</th>
+                    <th>Tick</th>
+                    <th>Saved</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {historyRows.map((row) => (
+                    <tr key={row.history_id}>
+                      <td>{row.kind.replaceAll("_", " ")}</td>
+                      <td>{row.summary}</td>
+                      <td>{row.run_id ?? row.scenario_id ?? "n/a"}</td>
+                      <td>{row.tick ?? "n/a"}</td>
+                      <td>{formatSavedAt(row.created_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="empty-state">No replay history yet. Run a scenario or generate an investigation report.</p>
+          )}
+          <div className="report-table-wrap">
+            <table className="benchmark-table">
+              <thead>
+                <tr>
+                  <th>Run</th>
+                  <th>Mode</th>
+                  <th>Scenarios</th>
+                  <th>Incidents</th>
+                  <th>F1</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {runRows.map((run) => (
+                  <tr key={run.id}>
+                    <td>{run.id}</td>
+                    <td>{run.mode}</td>
+                    <td>{run.scenarios}</td>
+                    <td>{run.incidents}</td>
+                    <td>{run.f1 === null ? "n/a" : run.f1.toFixed(2)}</td>
+                    <td><span className={`report-status ${run.status}`}>{run.status}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="panel report-card wide">
+          <div className="section-heading-row">
+            <div>
+              <h3>Report</h3>
+            </div>
+            <button className="danger-button" onClick={() => setClearDialogOpen(true)} type="button">Clean Investigation Data</button>
+          </div>
+          <section className="nebius-result-block compliance-report-panel">
+            <div className="artifact-preview-title">
+              <strong>Compliance Report</strong>
+              <div className="nebius-button-row">
+                <button disabled={reportExportBusy !== null} onClick={() => void exportCompliancePdf()} type="button">
+                  {reportExportBusy === "pdf" ? "Exporting..." : "Export PDF"}
+                </button>
+                <button disabled={reportExportBusy !== null} onClick={exportComplianceJson} type="button">
+                  {reportExportBusy === "json" ? "Exporting..." : "Export JSON"}
+                </button>
+              </div>
+            </div>
+            <div className="compliance-card-grid">
+              <ComplianceField label="Incident type" value={complianceReport.incidentType} />
+              <ComplianceField label="Confidence" value={formatScore(complianceReport.confidence)} />
+              <ComplianceField label="Evidence count" value={String(complianceReport.evidenceCount)} />
+              <ComplianceField label="Timeline" value={complianceReport.timeline} />
+              <ComplianceField label="Affected symbols" value={complianceReport.affectedSymbols.join(", ")} />
+              <ComplianceField label="Generated by" value={complianceReport.generatedBy} />
+              <ComplianceField label="Timestamp" value={formatSavedAt(complianceReport.timestamp)} />
+            </div>
+            {reportExportMessage ? <p className="empty-state">{reportExportMessage}</p> : null}
+          </section>
           <div className="experiment-report-output-grid">
             <section className="nebius-result-block">
-              <span>Leaderboard</span>
+              <span>Investigation metrics appendix</span>
               {experimentLeaderboard.length ? (
                 <div className="report-table-wrap">
                   <table className="benchmark-table">
@@ -484,7 +672,7 @@ export function ReportsPage() {
             </section>
 
             <section className="nebius-result-block">
-              <span>AI Investigator reports</span>
+              <span>AI Investigator report files</span>
               {experimentInvestigations.length ? (
                 <div className="detection-report-list">
                   {experimentInvestigations.map((report) => (
@@ -503,175 +691,28 @@ export function ReportsPage() {
             </section>
           </div>
 
-          <div className="experiment-artifact-workbench-grid">
-            <ArtifactWorkbench
-              artifacts={artifactIndexArtifacts}
-              runIds={selectedExperiment ? [selectedExperiment.id] : []}
-              selectedRunId={selectedExperiment?.id ?? null}
-              title="Artifact Index"
-            />
-            <ArtifactWorkbench
-              artifacts={localBatchArtifacts}
-              runIds={selectedExperiment ? [selectedExperiment.id] : []}
-              selectedRunId={selectedExperiment?.id ?? null}
-              title="Local Batch Originals"
-            />
-          </div>
-        </section>
-
-        <section className="panel report-card wide">
-          <h3>Unified History Model</h3>
-          <div className="surveillance-status-strip">
-            <Metric label="History Artifacts" value={String(summary?.history_artifacts.length ?? 0)} />
-            <Metric label="Recent Ticks" value={String(summary?.history_ticks.length ?? 0)} />
-            <Metric label="AI Investigator Reports" value={String((summary?.explanations.length ?? 0) + (summary?.nebius_investigation_reports.length ?? 0))} />
-            <Metric label="Detections" value={String((summary?.incidents.length ?? 0) + (summary?.nebius_detections.length ?? 0))} />
-          </div>
-          {historyCounts.length ? (
-            <div className="history-kind-list">
-              {historyCounts.map(([kind, count]) => (
-                <span className="endpoint-badge" key={kind}>{kind.replaceAll("_", " ")}: {count}</span>
-              ))}
-            </div>
-          ) : null}
-          {historyRows.length ? (
-            <div className="report-table-wrap">
-              <table className="benchmark-table">
-                <thead>
-                  <tr>
-                    <th>Kind</th>
-                    <th>Summary</th>
-                    <th>Run</th>
-                    <th>Tick</th>
-                    <th>Saved</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {historyRows.map((row) => (
-                    <tr key={row.history_id}>
-                      <td>{row.kind.replaceAll("_", " ")}</td>
-                      <td>{row.summary}</td>
-                      <td>{row.run_id ?? row.scenario_id ?? "n/a"}</td>
-                      <td>{row.tick ?? "n/a"}</td>
-                      <td>{formatSavedAt(row.created_at)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <p className="empty-state">No unified history records yet. Start surveillance, inject a red-team scenario, run detection, or generate a report.</p>
-          )}
-        </section>
-
-        <section className="panel report-card wide">
-          <h3>Previous Runs</h3>
-          <div className="report-table-wrap">
-            <table className="benchmark-table">
-              <thead>
-                <tr>
-                  <th>Run</th>
-                  <th>Mode</th>
-                  <th>Scenarios</th>
-                  <th>Incidents</th>
-                  <th>F1</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {runRows.map((run) => (
-                  <tr key={run.id}>
-                    <td>{run.id}</td>
-                    <td>{run.mode}</td>
-                    <td>{run.scenarios}</td>
-                    <td>{run.incidents}</td>
-                    <td>{run.f1 === null ? "n/a" : run.f1.toFixed(2)}</td>
-                    <td><span className={`report-status ${run.status}`}>{run.status}</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section className="panel report-card">
-          <h3>Detection Summary</h3>
-          <div className="detection-summary-list">
-            {detectionRows.map((item) => (
-              <article key={item.type}>
-                <div>
-                  <strong>{item.type}</strong>
-                  <span>{item.count} detections</span>
+          <section className="nebius-result-block">
+            <span>Final report preview</span>
+            {selectedExperiment && experimentReport ? (
+              <>
+                <div className="artifact-preview-title">
+                  <strong>benchmark_report.md</strong>
+                  <a href={getManagedExperimentReportUrl(selectedExperiment.id)} target="_blank" rel="noreferrer">Open raw</a>
                 </div>
-                <dl>
-                  <div><dt>Confidence</dt><dd>{item.confidence.toFixed(2)}</dd></div>
-                  <div><dt>Latency</dt><dd>{item.latency}</dd></div>
-                </dl>
-              </article>
-            ))}
-          </div>
-        </section>
+                <pre className="markdown-report-preview">{experimentReport}</pre>
+              </>
+            ) : (
+              <p>Run aggregation to generate `benchmark_report.md`.</p>
+            )}
+          </section>
 
-        <section className="panel report-card wide">
-          <h3>Generated Artifacts</h3>
-          <ArtifactWorkbench
-            artifacts={benchmarkArtifacts}
-            incidentIds={incidentIds}
-            runIds={runIds}
-            selectedRunId={runIds[0] ?? null}
-            title="Benchmark Reports"
-          />
-        </section>
-
-        <section className="panel report-card wide">
-          <h3>Nebius Analysis History</h3>
-          {explanationRows.length ? (
-            <div className="report-table-wrap">
-              <table className="benchmark-table">
-                <thead>
-                  <tr>
-                    <th>Explanation</th>
-                    <th>Incident</th>
-                    <th>Mode</th>
-                    <th>Risk</th>
-                    <th>Saved</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {explanationRows.map((row) => (
-                    <tr key={String(row.id ?? row.explanation_id ?? row.created_at)}>
-                      <td>{String(row.id ?? "EXP-AI")}</td>
-                      <td>{String(row.incident_id ?? "n/a")}</td>
-                      <td>{String(row.mode ?? "n/a")}</td>
-                      <td>{String(row.risk_level ?? "n/a")}</td>
-                      <td>{String(row.created_at ?? "recorded")}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <p className="empty-state">No persisted Nebius incident explanations yet.</p>
-          )}
-        </section>
-
-        <section className="panel report-card wide">
-          <ArtifactWorkbench
-            artifacts={explanationArtifacts}
-            explanationRows={explanationRows}
-            incidentIds={incidentIds}
-            runIds={runIds}
-            selectedRunId={runIds[0] ?? null}
-            title="Explanations"
-          />
         </section>
       </div>
       {clearDialogOpen ? (
         <div className="dialog-backdrop" role="presentation">
           <section aria-labelledby="clear-reports-title" aria-modal="true" className="confirm-dialog" role="dialog">
             <div>
-              <p className="eyebrow">Destructive action</p>
-              <h2 id="clear-reports-title">Clean all detection output data?</h2>
+              <h2 id="clear-reports-title">Clean all investigation data?</h2>
               <p>
                 This clears persisted report indexes, benchmark run history, Nebius batch records,
                 incidents, explanations, screenshot evidence, exports, and promoted evidence from the local output store.
@@ -700,6 +741,15 @@ export function ReportsPage() {
         </div>
       ) : null}
     </section>
+  );
+}
+
+function ComplianceField({ label, value }: { label: string; value: string }) {
+  return (
+    <article className="compliance-card">
+      <span>{label}</span>
+      <strong>{value || "n/a"}</strong>
+    </article>
   );
 }
 
@@ -763,4 +813,40 @@ function dedupeArtifactItems(items: ArtifactItem[]) {
 
 function formatScore(value: number) {
   return Number.isFinite(value) ? value.toFixed(3) : "n/a";
+}
+
+function maxLeaderboardScore(rows: ExperimentLeaderboardRow[]) {
+  const scores = rows.map((row) => row.f1).filter(Number.isFinite);
+  return scores.length ? Math.max(...scores) : 0;
+}
+
+function collectAffectedSymbols(summary: ReportsSummary | null) {
+  const symbols = new Set<string>();
+  for (const row of [...(summary?.incidents ?? []), ...(summary?.history_artifacts ?? []), ...(summary?.history_ticks ?? [])]) {
+    collectSymbolFromRecord(row as Record<string, unknown>, symbols);
+  }
+  return symbols.size ? Array.from(symbols) : ["AIMADA-SIM"];
+}
+
+function collectSymbolFromRecord(row: Record<string, unknown>, symbols: Set<string>) {
+  for (const key of ["symbol", "ticker", "instrument"]) {
+    const value = row[key];
+    if (typeof value === "string" && value.trim()) {
+      symbols.add(value.trim());
+    }
+  }
+  const payload = row.payload;
+  if (payload && typeof payload === "object") {
+    collectSymbolFromRecord(payload as Record<string, unknown>, symbols);
+  }
+}
+
+function downloadJson(filename: string, payload: unknown) {
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
 }

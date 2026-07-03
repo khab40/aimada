@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { AttackBuilder } from "@/components/AttackBuilder";
 import { AttackTracker } from "@/components/AttackTracker";
 import { AgentTimeline } from "@/components/AgentTimeline";
@@ -9,6 +10,7 @@ import { LiquidityHeatmap } from "@/components/LiquidityHeatmap";
 import { MarketTimeline, type MarketTimelineFrame, type TimelineMarkerType } from "@/components/MarketTimeline";
 import { OrderBookLadder } from "@/components/OrderBookLadder";
 import { useArenaSource } from "@/hooks/useArenaSource";
+import { getProductDemoConfig, type ProductDemoConfig } from "@/demoModes";
 import { OrderBookTerrain } from "@/tabs/MarketBattlefield3D/components/OrderBookTerrain";
 import { arenaStateToFrame } from "@/tabs/MarketBattlefield3D/hooks/useMarketBattlefieldData";
 import type { BattlefieldFrame } from "@/tabs/MarketBattlefield3D/types";
@@ -39,7 +41,13 @@ function formatScenarioLabel(name?: string | null) {
 }
 
 export function ArenaPage() {
-  const { launchScenario, mode, pause, reset, running, sourceStatus, start, state, tick } = useArenaSource();
+  const [searchParams] = useSearchParams();
+  const demoConfig = getProductDemoConfig(searchParams.get("demo"));
+  const { launchScenario, mode, pause, reset, running, sourceStatus, start, state, tick } = useArenaSource({
+    demo: Boolean(demoConfig),
+    demoScenario: demoConfig?.scenarioType,
+    symbol: demoConfig?.marketSymbol
+  });
   const [visualizationMode, setVisualizationMode] = useState<ArenaVisualizationMode>("battlefield");
   const [secondaryView, setSecondaryView] = useState<DetectionSecondaryView>("evidence");
   const [marketSecondaryView, setMarketSecondaryView] = useState<MarketSecondaryView>("heatmap");
@@ -53,7 +61,7 @@ export function ArenaPage() {
   const incident = useMemo(() => createIncident(state), [state]);
   const [lastIncident, setLastIncident] = useState<Incident | null>(incident);
   const loading = mode === "websocket" && sourceStatus === "connecting";
-  const connected = mode === "mock" || sourceStatus === "connected";
+  const connected = mode === "demo" || mode === "mock" || sourceStatus === "connected";
   const canReset = tick > 0 || running || state.events.length > 0 || Boolean(state.active_scenario) || Boolean(state.incidents?.length);
 
   useEffect(() => {
@@ -151,7 +159,7 @@ export function ArenaPage() {
         running={running}
         selectedScenario={formatScenarioLabel(state.active_scenario?.scenario_name)}
         tick={tick}
-        source={mode === "websocket" ? `backend websocket:${sourceStatus}` : `local mock:${sourceStatus}`}
+        source={mode === "websocket" ? `backend websocket:${sourceStatus}` : mode === "demo" ? demoConfig?.title ?? "demo mode" : `local mock:${sourceStatus}`}
       />
 
       <div className="shortcut-help">
@@ -193,10 +201,11 @@ export function ArenaPage() {
         </div>
       ) : null}
 
+      {demoConfig ? <ArenaDemoBanner config={demoConfig} /> : null}
+
       <div className="cockpit-grid">
         <section className="panel cockpit-left arena-column">
           <header className="arena-column-header">
-            <span className="eyebrow">Left</span>
             <h2>Scenario / Attack configuration</h2>
           </header>
           <AttackTracker attack={state.active_scenario} />
@@ -206,7 +215,6 @@ export function ArenaPage() {
         <section className="panel cockpit-center arena-column">
           <header className="arena-column-header market-visualization-header">
             <div>
-              <span className="eyebrow">Visualization</span>
               <h2>Market</h2>
               {visualizationMode === "battlefield" ? (
                 <div className="market-microstructure-strip" aria-label="Market microstructure metrics">
@@ -236,29 +244,32 @@ export function ArenaPage() {
               </label>
             </fieldset>
           </header>
-          {visualizationMode === "standard" ? (
-            <>
-              <OrderBookLadder snapshot={state.book} />
-              <section className="market-secondary-view">
-                <div className="widget-tab-row" role="tablist" aria-label="Secondary market views">
-                  <button className={marketSecondaryView === "heatmap" ? "active" : ""} onClick={() => setMarketSecondaryView("heatmap")} type="button">Heatmap</button>
-                  <button className={marketSecondaryView === "timeline" ? "active" : ""} onClick={() => setMarketSecondaryView("timeline")} type="button">Timeline</button>
-                </div>
-                {marketSecondaryView === "heatmap" ? (
-                  <LiquidityHeatmap maxFrames={WIDGET_TICK_WINDOW} snapshots={heatmapSnapshots} visibleLevels={20} />
-                ) : (
-                  <MarketTimeline frames={timeline} />
-                )}
-              </section>
-            </>
-          ) : (
-            <OrderBookTerrain currentTick={tick} frames={battlefieldFrames.length ? battlefieldFrames : [arenaStateToFrame(state)]} />
-          )}
+          <div className="market-mode-panel" key={visualizationMode}>
+            {visualizationMode === "standard" ? (
+              <>
+                <OrderBookLadder snapshot={state.book} />
+                <section className="market-secondary-view">
+                  <div className="widget-tab-row" role="tablist" aria-label="Secondary market views">
+                    <button className={marketSecondaryView === "heatmap" ? "active" : ""} onClick={() => setMarketSecondaryView("heatmap")} type="button">Heatmap</button>
+                    <button className={marketSecondaryView === "timeline" ? "active" : ""} onClick={() => setMarketSecondaryView("timeline")} type="button">Timeline</button>
+                  </div>
+                  <div className="tab-content-panel" key={marketSecondaryView}>
+                    {marketSecondaryView === "heatmap" ? (
+                      <LiquidityHeatmap maxFrames={WIDGET_TICK_WINDOW} snapshots={heatmapSnapshots} visibleLevels={20} />
+                    ) : (
+                      <MarketTimeline frames={timeline} />
+                    )}
+                  </div>
+                </section>
+              </>
+            ) : (
+              <OrderBookTerrain currentTick={tick} frames={battlefieldFrames.length ? battlefieldFrames : [arenaStateToFrame(state)]} />
+            )}
+          </div>
         </section>
 
         <section className="panel cockpit-right arena-column">
           <header className="arena-column-header">
-            <span className="eyebrow">Right</span>
             <h2>Detection</h2>
           </header>
           <DetectorConfidence detectors={state.detectors} />
@@ -267,14 +278,43 @@ export function ArenaPage() {
               <button className={secondaryView === "evidence" ? "active" : ""} onClick={() => setSecondaryView("evidence")} type="button">📄 Evidence</button>
               <button className={secondaryView === "timeline" ? "active" : ""} onClick={() => setSecondaryView("timeline")} type="button">🕒 Timeline</button>
             </div>
-            {secondaryView === "evidence" ? (
-              <EvidencePanel state={state} />
-            ) : (
-              <AgentTimeline events={state.events} layout="compact" title="Timeline" />
-            )}
+            <div className="tab-content-panel" key={secondaryView}>
+              {secondaryView === "evidence" ? (
+                <EvidencePanel state={state} />
+              ) : (
+                <AgentTimeline events={state.events} layout="compact" title="Timeline" />
+              )}
+            </div>
           </section>
-          <IncidentDrawer incident={incident ?? lastIncident} currentTick={tick} incidentTick={(incident ?? lastIncident)?.tick ?? tick} mode={incident ? incidentDetailsMode : "replay"} />
+          <IncidentDrawer demoConfig={demoConfig} incident={incident ?? lastIncident} currentTick={tick} incidentTick={(incident ?? lastIncident)?.tick ?? tick} mode={incident ? incidentDetailsMode : "replay"} />
         </section>
+      </div>
+    </section>
+  );
+}
+
+function ArenaDemoBanner({ config }: { config: ProductDemoConfig }) {
+  return (
+    <section className="panel arena-demo-banner" aria-label="Selected demo mode">
+      <div>
+        <span>Demo mode</span>
+        <strong>{config.title}</strong>
+      </div>
+      <div>
+        <span>Symbol</span>
+        <strong>{config.marketSymbol}</strong>
+      </div>
+      <div>
+        <span>Attack</span>
+        <strong>{config.attackPattern}</strong>
+      </div>
+      <div>
+        <span>Detector</span>
+        <strong>{config.detectorProfile}</strong>
+      </div>
+      <div>
+        <span>AI investigation</span>
+        <strong>{config.aiInvestigationMode}</strong>
       </div>
     </section>
   );
@@ -312,10 +352,6 @@ function TopStatusBar({
 }) {
   return (
     <header className="cockpit-status-bar">
-      <div>
-        <span className="eyebrow">Arena session</span>
-        <strong>Session</strong>
-      </div>
       <MetricPill label="State" value={running ? "Running" : "Paused"} tone={running ? "good" : "warn"} />
       <MetricPill label="Tick" value={String(tick)} />
       <MetricPill label="Scenario" value={selectedScenario} />

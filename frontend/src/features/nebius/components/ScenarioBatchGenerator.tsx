@@ -13,11 +13,9 @@ export function ScenarioBatchGenerator({ config, onChange, onGenerate, onRunSele
     <section className="panel scenario-generator-card">
       <div className="nebius-card-heading">
         <div>
-          <p className="eyebrow">Experiment Grid</p>
           <h2>Scenario Batch Generator</h2>
         </div>
       </div>
-      <p className="nebius-card-purpose">Generate experimental scenario grids for detector robustness testing.</p>
       <div className="scenario-generator-grid">
         <Select label="Market volatility" value={config.marketVolatility} options={["Low", "Medium", "High"]} onChange={(marketVolatility) => onChange({ ...config, marketVolatility: marketVolatility as ScenarioGridConfig["marketVolatility"] })} />
         <Select label="Liquidity" value={config.liquidity} options={["Thin", "Normal", "Deep"]} onChange={(liquidity) => onChange({ ...config, liquidity: liquidity as ScenarioGridConfig["liquidity"] })} />

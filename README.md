@@ -22,11 +22,12 @@ Implemented:
 - Deterministic detector evidence model for synthetic spoofing-like, layering-like, quote-stuffing-like, and liquidity-shock patterns.
 - Nebius endpoint and job scaffolds with local typed fallbacks, Docker/config files, scripts, and UI control surfaces.
 - Phase 4.5 Managed Experiments with deterministic attack manifests, local smart-batch execution, artifact normalization, aggregation, bounded AI Investigator reports, and Detection review of summaries, leaderboards, markdown reports, artifact indexes, and original local-batch files.
-- Product UI consolidation around six top-level destinations: Arena, Scenario Generator, Detection, Experiments, Nebius AI, and About.
+- Product UI consolidation around seven top-level destinations: Arena, Demo, Scenario Generator, Detection, Experiments, Nebius AI, and About.
+- Demo page for three deterministic 3-minute product demo paths: Real Nebius AI Run, Two-Model Pipeline, and Streaming Explanation.
 - Arena split into Scenario / Attack Configuration, Market, and Detection sections, with Standard and Battlefield market visualization modes.
 - Detection owns live detector output, incident replay, evidence, AI Investigator reports, and report artifacts; Reports is no longer a primary navigation destination.
 - Nebius AI page focuses on why Nebius matters: model selection, inference, batch execution, GPU utilization, datasets, and Managed Experiments.
-- About includes a four-area architecture diagram covering Front, Back, Nebius Serverless Cloud, and Agent Runners Workspace.
+- About and ARD-0001 include four-area architecture diagrams covering Front, Back, Agent Runners Workspace, and Nebius Serverless Cloud.
 - Coherent day/night/system UI theme behavior across widgets, charts, status chips, order-book levels, and canvas visualizations, plus compact vertical-navigation controls, paused-state-stable liquidity visualization, and documentation set for quick start, architecture, ARDs, runtime model, benchmark methodology, safety framing, deployment, and design ideas.
 
 Not yet complete:

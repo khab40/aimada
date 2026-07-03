@@ -9,6 +9,7 @@
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --body-bg: #020617;
   --body-text: #d8f3ff;
+  --text-main: #d8f3ff;
   --terminal-bg: #070d14;
   --panel-bg: #0a121d;
   --panel-bg-soft: #0c1724;
@@ -30,6 +31,12 @@
   --control-hover-bg: #0a2634;
   --control-text: #d8f3ff;
   --control-hover-text: #e0faff;
+  --surface-muted: rgba(2, 6, 23, 0.48);
+  --radius-panel: 6px;
+  --radius-card: 6px;
+  --radius-control: 6px;
+  --space-panel: 12px;
+  --space-card: 10px;
   --panel-surface: linear-gradient(180deg, rgba(10, 18, 29, 0.98), rgba(7, 13, 20, 0.98));
   --panel-highlight: rgba(255, 255, 255, 0.035);
   --auth-bg: rgba(3, 9, 16, 0.68);
@@ -74,6 +81,7 @@
   color-scheme: light;
   --body-bg: #f5f7fb;
   --body-text: #172033;
+  --text-main: #172033;
   --terminal-bg: #eef4f8;
   --panel-bg: #ffffff;
   --panel-bg-soft: #f4f8fb;
@@ -95,6 +103,7 @@
   --control-hover-bg: #eaf6fb;
   --control-text: #172033;
   --control-hover-text: #0d1726;
+  --surface-muted: rgba(248, 251, 255, 0.9);
   --panel-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(244, 248, 251, 0.98));
   --panel-highlight: rgba(255, 255, 255, 0.72);
   --auth-bg: rgba(255, 255, 255, 0.72);
@@ -150,10 +159,11 @@ input,
 button,
 select {
   border: 1px solid var(--panel-border-strong);
-  border-radius: 4px;
+  border-radius: var(--radius-control);
   background: var(--control-bg);
   color: var(--control-text);
   font: inherit;
+  min-height: 34px;
   padding: 6px 9px;
 }
 
@@ -162,18 +172,41 @@ input {
 }
 
 button {
+  align-items: center;
   cursor: pointer;
+  display: inline-flex;
+  gap: 7px;
+  justify-content: center;
+  line-height: 1.2;
 }
 
-.primary-link-button {
-  border: 1px solid rgba(34, 211, 238, 0.45);
-  border-radius: 6px;
-  background: linear-gradient(135deg, rgba(34, 211, 238, 0.22), rgba(34, 171, 148, 0.18));
-  color: #e6f7ff;
+.primary-link-button,
+.primary-button {
+  border: 1px solid rgba(var(--info-rgb), 0.45);
+  border-radius: var(--radius-control);
+  background: linear-gradient(135deg, rgba(var(--info-rgb), 0.22), rgba(var(--success-rgb), 0.18));
+  color: var(--heading);
   display: inline-flex;
+  gap: 7px;
+  justify-content: center;
   font-weight: 700;
+  line-height: 1.2;
+  min-height: 36px;
   padding: 10px 12px;
   text-decoration: none;
+}
+
+.secondary-button {
+  border-color: rgba(var(--info-rgb), 0.24);
+  background: rgba(var(--info-rgb), 0.08);
+  color: var(--heading-soft);
+}
+
+button svg,
+.primary-link-button svg {
+  flex: 0 0 auto;
+  height: 16px;
+  width: 16px;
 }
 
 button:disabled {
@@ -192,6 +225,121 @@ button.active {
   border-color: var(--accent);
   background: var(--control-hover-bg);
   color: var(--control-hover-text);
+}
+
+.primary-button:hover,
+.primary-link-button:hover {
+  border-color: rgba(var(--info-rgb), 0.62);
+  background: linear-gradient(135deg, rgba(var(--info-rgb), 0.28), rgba(var(--success-rgb), 0.2));
+  color: var(--heading);
+}
+
+.secondary-button:hover {
+  border-color: rgba(var(--info-rgb), 0.38);
+  background: rgba(var(--info-rgb), 0.12);
+  color: var(--heading);
+}
+
+.demo-page {
+  display: grid;
+  gap: 16px;
+}
+
+.demo-hero-panel {
+  display: grid;
+  gap: 6px;
+}
+
+.demo-hero-panel p {
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.demo-card-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.demo-scenario-card {
+  align-content: start;
+  display: grid;
+  gap: 12px;
+}
+
+.demo-card-heading {
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.demo-card-heading span {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.demo-scenario-card p {
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.demo-card-meta,
+.ai-cost-latency-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.demo-card-meta div,
+.ai-cost-latency-grid div {
+  border: 1px solid var(--widget-border-soft);
+  border-radius: var(--radius-card);
+  background: var(--widget-bg-muted);
+  min-width: 0;
+  padding: 8px;
+}
+
+.demo-card-meta dt,
+.ai-cost-latency-grid dt {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.demo-card-meta dd,
+.ai-cost-latency-grid dd {
+  color: var(--heading);
+  font-weight: 700;
+  margin: 2px 0 0;
+}
+
+.demo-shows-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.demo-shows-list span {
+  border: 1px solid rgba(var(--success-rgb), 0.24);
+  border-radius: 999px;
+  background: rgba(var(--success-rgb), 0.1);
+  color: var(--success-text);
+  font-size: 12px;
+  padding: 4px 8px;
+}
+
+.demo-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.demo-card-actions a:not(.primary-link-button) {
+  color: var(--info-text);
+  font-weight: 700;
+  padding: 10px 0;
 }
 
 .app-shell {
@@ -253,6 +401,7 @@ button.active {
 h1,
 h2,
 h3,
+h4,
 p {
   margin-top: 0;
 }
@@ -260,13 +409,20 @@ p {
 h1 {
   color: var(--heading);
   font-size: 20px;
+  line-height: 1.2;
   letter-spacing: 0;
   margin: 0;
 }
 
 h2,
-h3 {
+h3,
+h4 {
   color: var(--heading-soft);
+  line-height: 1.25;
+}
+
+h4 {
+  font-size: 13px;
 }
 
 .sidebar-brand {
@@ -651,10 +807,10 @@ h3 {
 .scenario-launcher {
   @apply shadow-sm;
   border: 1px solid var(--panel-border);
-  border-radius: 6px;
+  border-radius: var(--radius-panel);
   background: var(--panel-surface);
   box-shadow: inset 0 1px var(--panel-highlight);
-  padding: 10px;
+  padding: var(--space-panel);
 }
 
 .toolbar {
@@ -672,6 +828,7 @@ h3 {
   background: rgba(16, 185, 129, 0.16);
   color: #86efac;
   padding: 8px 10px;
+  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
 }
 
 .status-pill.connection.connecting {
@@ -1192,35 +1349,6 @@ h3 {
   width: 25px;
 }
 
-.team-hero-badges {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: flex-end;
-}
-
-.team-badge {
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  padding: 6px 9px;
-  text-transform: uppercase;
-}
-
-.team-badge.red {
-  background: rgba(127, 29, 29, 0.34);
-  box-shadow: inset 0 0 0 1px rgba(248, 113, 113, 0.4);
-  color: #fecaca;
-}
-
-.team-badge.blue {
-  background: rgba(12, 74, 110, 0.34);
-  box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.4);
-  color: #bae6fd;
-}
-
 .lab-grid {
   grid-template-columns: minmax(320px, 0.85fr) minmax(420px, 1.15fr);
 }
@@ -1343,6 +1471,23 @@ h3 {
 
 .nebius-control-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.nebius-infra-workflow {
+  display: grid;
+  gap: 14px;
+}
+
+.nebius-infra-section {
+  border-color: rgba(34, 211, 238, 0.16);
+  display: grid;
+  gap: 14px;
+}
+
+.nebius-infra-metric-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .why-nebius-panel {
@@ -1565,6 +1710,95 @@ h3 {
   border-color: rgba(248, 113, 113, 0.18);
 }
 
+.scenario-wizard {
+  border-color: rgba(248, 113, 113, 0.18);
+  display: grid;
+  gap: 14px;
+}
+
+.scenario-wizard-header,
+.scenario-step-heading {
+  align-items: flex-start;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.scenario-wizard-header h2,
+.scenario-step-heading h3 {
+  margin: 0;
+}
+
+.scenario-primary-action {
+  border-color: rgba(var(--success-rgb), 0.48);
+  background: rgba(var(--success-rgb), 0.18);
+  color: var(--success-text);
+  font-weight: 800;
+}
+
+.scenario-wizard-step {
+  border: 1px solid rgba(248, 113, 113, 0.14);
+  border-radius: 8px;
+  background: rgba(3, 9, 16, 0.48);
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
+
+.scenario-step-heading {
+  justify-content: flex-start;
+}
+
+.scenario-step-heading > span {
+  align-items: center;
+  border: 1px solid rgba(248, 113, 113, 0.28);
+  border-radius: 999px;
+  background: rgba(248, 113, 113, 0.12);
+  color: #fecaca;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-weight: 800;
+  height: 28px;
+  justify-content: center;
+  width: 28px;
+}
+
+.scenario-step-heading p {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin: 4px 0 0;
+}
+
+.scenario-control-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+}
+
+.scenario-advanced-panel {
+  border: 1px solid rgba(34, 211, 238, 0.12);
+  border-radius: 6px;
+  background: rgba(2, 6, 23, 0.28);
+  padding: 10px;
+}
+
+.scenario-advanced-panel summary {
+  color: var(--heading-soft);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.scenario-advanced-panel[open] {
+  display: grid;
+  gap: 10px;
+}
+
+.scenario-execution-output {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(260px, 0.75fr) minmax(0, 1.25fr);
+}
+
 .attack-scenario-page .nebius-card-heading .eyebrow {
   color: #fca5a5;
 }
@@ -1709,6 +1943,7 @@ h3 {
   font-style: normal;
   padding: 3px 7px;
   text-transform: uppercase;
+  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
 }
 
 .capability-card p,
@@ -1943,6 +2178,7 @@ h3 {
 }
 
 .nebius-runtime-card {
+  display: grid;
   gap: 12px;
 }
 
@@ -2005,8 +2241,33 @@ h3 {
 }
 
 .nebius-card-heading h1,
-.nebius-card-heading h2 {
+.nebius-card-heading h2,
+.nebius-panel-heading h2,
+.artifact-workbench-header h3,
+.artifact-preview-title h3,
+.experiment-report-header h3,
+.scenario-wizard-header h2,
+.scenario-step-heading h3,
+.section-heading-row h2,
+.section-heading-row h3,
+.ladder-header h2 {
   margin: 0;
+}
+
+.nebius-card-heading,
+.nebius-panel-heading,
+.artifact-workbench-header,
+.artifact-preview-title,
+.experiment-report-header,
+.scenario-wizard-header,
+.section-heading-row,
+.scenario-card-header,
+.ladder-header,
+.detector-meter-header,
+.evidence-item-header,
+.event-tape-topline,
+.runtime-standard-card-header {
+  min-width: 0;
 }
 
 .nebius-card-purpose {
@@ -2025,7 +2286,66 @@ h3 {
 }
 
 .runtime-status-grid {
-  grid-template-columns: repeat(7, minmax(120px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.runtime-standard-card {
+  border: 1px solid rgba(34, 211, 238, 0.14);
+  border-radius: 8px;
+  background: rgba(2, 6, 23, 0.42);
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px;
+}
+
+.runtime-standard-card-header {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.runtime-standard-card-header strong {
+  color: #e6f7ff;
+  font-size: 15px;
+}
+
+.runtime-standard-card-header span {
+  border: 1px solid rgba(34, 211, 238, 0.18);
+  border-radius: 999px;
+  color: var(--text-muted);
+  font-size: 11px;
+  padding: 3px 8px;
+  text-transform: capitalize;
+}
+
+.runtime-standard-card dl {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.runtime-standard-card dl div {
+  border: 1px solid rgba(34, 211, 238, 0.1);
+  border-radius: 6px;
+  min-width: 0;
+  padding: 8px;
+}
+
+.runtime-standard-card dt {
+  color: var(--text-muted);
+  font-size: 11px;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.runtime-standard-card dd {
+  color: #e6f7ff;
+  font-size: 14px;
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .runtime-metric,
@@ -2091,6 +2411,28 @@ h3 {
   gap: 6px;
   margin: 8px 0 12px;
   padding-left: 22px;
+}
+
+.ai-analyst-workflow {
+  display: grid;
+  gap: 10px;
+}
+
+.ai-analyst-step {
+  border: 1px solid rgba(34, 211, 238, 0.12);
+  border-radius: 6px;
+  background: rgba(2, 6, 23, 0.34);
+  padding: 10px;
+}
+
+.ai-analyst-step h3 {
+  color: var(--heading-soft);
+  font-size: 13px;
+  margin: 0 0 6px;
+}
+
+.ai-analyst-step ul {
+  margin-bottom: 0;
 }
 
 .serverless-config-grid,
@@ -2208,6 +2550,73 @@ h3 {
   margin: 0;
 }
 
+.reusable-scenario-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.reusable-scenario-card {
+  border: 1px solid rgba(34, 211, 238, 0.14);
+  border-radius: 6px;
+  background: rgba(2, 6, 23, 0.42);
+  color: inherit;
+  display: grid;
+  gap: 9px;
+  padding: 10px;
+  text-align: left;
+  width: 100%;
+}
+
+.reusable-scenario-card.selected {
+  border-color: rgba(34, 211, 238, 0.72);
+  background: rgba(34, 211, 238, 0.12);
+}
+
+.reusable-scenario-header {
+  align-items: baseline;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.reusable-scenario-header strong {
+  color: var(--heading-soft);
+  font-size: 14px;
+  text-transform: capitalize;
+}
+
+.reusable-scenario-header span {
+  color: var(--text-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.reusable-scenario-meta {
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.reusable-scenario-meta div {
+  border: 1px solid rgba(34, 211, 238, 0.1);
+  border-radius: 4px;
+  padding: 6px;
+}
+
+.reusable-scenario-meta dt {
+  color: var(--text-muted);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.reusable-scenario-meta dd {
+  color: var(--heading-soft);
+  font-size: 12px;
+  margin: 3px 0 0;
+  overflow-wrap: anywhere;
+}
+
 .attack-variant-list article,
 .attack-scenario-select {
   display: grid;
@@ -2253,6 +2662,7 @@ h3 {
   font-weight: 700;
   padding: 3px 7px;
   text-transform: uppercase;
+  transition: background-color 180ms ease, color 180ms ease;
 }
 
 .job-status.running,
@@ -2438,6 +2848,14 @@ h3 {
   grid-template-columns: repeat(2, minmax(280px, 1fr));
 }
 
+.investigation-workflow {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.investigation-workflow .report-card.wide {
+  grid-column: 1;
+}
+
 .architecture-card {
   grid-template-columns: 1fr;
   justify-items: center;
@@ -2528,19 +2946,6 @@ h3 {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-.history-kind-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.reports-hero-actions {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
 .experiment-reports-panel,
 .experiment-report-detail,
 .experiment-report-sections,
@@ -2628,6 +3033,38 @@ h3 {
   white-space: pre-wrap;
 }
 
+.compliance-report-panel {
+  gap: 12px;
+}
+
+.compliance-card-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.compliance-card {
+  border: 1px solid rgba(34, 211, 238, 0.12);
+  border-radius: 6px;
+  background: rgba(2, 6, 23, 0.42);
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 10px;
+}
+
+.compliance-card span {
+  color: var(--text-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.compliance-card strong {
+  color: var(--text-main);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
 .detection-report-list article {
   border: 1px solid rgba(34, 211, 238, 0.12);
   border-radius: 6px;
@@ -2645,6 +3082,12 @@ h3 {
   border-color: rgba(244, 63, 94, 0.48);
   background: rgba(244, 63, 94, 0.14);
   color: #fda4af;
+}
+
+.danger-button:hover {
+  border-color: rgba(var(--danger-rgb), 0.56);
+  background: rgba(var(--danger-rgb), 0.18);
+  color: var(--danger-text);
 }
 
 .danger-button:disabled {
@@ -2701,6 +3144,7 @@ h3 {
   font-size: 11px;
   padding: 3px 8px;
   text-transform: uppercase;
+  transition: background-color 180ms ease, color 180ms ease;
 }
 
 .report-status.completed {
@@ -2914,10 +3358,10 @@ kbd {
 .incident-alert-banner {
   border-color: rgba(244, 63, 94, 0.64);
   background: rgba(244, 63, 94, 0.12);
-  box-shadow: 0 0 0 1px rgba(244, 63, 94, 0.14), 0 0 28px rgba(244, 63, 94, 0.14);
+  box-shadow: 0 0 0 1px rgba(244, 63, 94, 0.14);
   color: #fecdd3;
   font-weight: 700;
-  animation: incident-pulse 1.35s ease-in-out infinite;
+  animation: arena-appear 220ms ease-out;
 }
 
 .cockpit-page.incident-active .cockpit-right {
@@ -2927,18 +3371,13 @@ kbd {
 
 .cockpit-status-bar {
   display: grid;
-  grid-template-columns: minmax(170px, 1.2fr) repeat(4, minmax(110px, 0.7fr)) auto;
+  grid-template-columns: repeat(4, minmax(110px, 1fr)) auto;
   gap: 6px;
   align-items: stretch;
   border: 1px solid var(--panel-border);
   border-radius: 6px;
   background: #07111b;
   padding: 7px;
-}
-
-.cockpit-status-bar > div:first-child {
-  display: grid;
-  align-content: center;
 }
 
 .cockpit-controls,
@@ -2979,6 +3418,7 @@ kbd {
   display: grid;
   gap: 2px;
   padding: 6px 8px;
+  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
 }
 
 .cockpit-pill span {
@@ -3052,6 +3492,12 @@ kbd {
   min-width: 0;
 }
 
+.market-mode-panel,
+.tab-content-panel {
+  animation: arena-appear 190ms ease-out;
+  min-width: 0;
+}
+
 .visualization-toggle {
   border: 0;
   display: inline-flex;
@@ -3070,12 +3516,14 @@ kbd {
   gap: 6px;
   min-height: 30px;
   padding: 5px 10px;
+  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease, transform 180ms ease;
 }
 
 .visualization-toggle label.selected {
   border-color: rgba(34, 211, 238, 0.58);
   background: rgba(34, 211, 238, 0.12);
   color: var(--heading);
+  transform: translateY(-1px);
 }
 
 .visualization-toggle input {
@@ -3102,12 +3550,14 @@ kbd {
   border-radius: 999px;
   min-height: 30px;
   padding: 5px 10px;
+  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease, transform 180ms ease;
 }
 
 .widget-tab-row button.active {
   border-color: rgba(34, 211, 238, 0.58);
   background: rgba(34, 211, 238, 0.12);
   color: var(--heading);
+  transform: translateY(-1px);
 }
 
 .detection-page {
@@ -3492,12 +3942,13 @@ kbd {
   display: grid;
   gap: 5px;
   padding: 7px;
-  transition: border-color 180ms ease, background-color 180ms ease;
+  transition: border-color 180ms ease, background-color 180ms ease, transform 180ms ease;
 }
 
 .detector-meter.highlighted {
   border-color: rgba(251, 191, 36, 0.68);
   background: rgba(251, 191, 36, 0.1);
+  animation: confidence-accent 220ms ease-out;
 }
 
 .detector-meter-header {
@@ -3532,6 +3983,7 @@ kbd {
   font-weight: 700;
   padding: 2px 6px;
   text-transform: uppercase;
+  animation: arena-appear 180ms ease-out;
 }
 
 .detector-meter-track {
@@ -3545,7 +3997,7 @@ kbd {
   height: 100%;
   border-radius: inherit;
   background: #22d3ee;
-  transition: width 320ms ease, background-color 180ms ease;
+  transition: width 220ms ease, background-color 180ms ease;
 }
 
 .detector-meter.watch .detector-meter-track div {
@@ -3568,6 +4020,7 @@ kbd {
   font-size: 11px;
   padding: 3px 7px;
   text-transform: uppercase;
+  transition: background-color 180ms ease, color 180ms ease;
 }
 
 .detector-meter.watch .detector-severity {
@@ -3874,6 +4327,33 @@ kbd {
   gap: 8px;
 }
 
+.arena-demo-banner {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.arena-demo-banner div {
+  border: 1px solid var(--widget-border-soft);
+  border-radius: var(--radius-card);
+  background: var(--widget-bg-muted);
+  min-width: 0;
+  padding: 8px;
+}
+
+.arena-demo-banner span {
+  color: var(--text-muted);
+  display: block;
+  font-size: 11px;
+}
+
+.arena-demo-banner strong {
+  color: var(--heading);
+  display: block;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
 .nebius-investigator-placeholder,
 .nebius-investigator-panel {
   border: 1px solid rgba(167, 139, 250, 0.24);
@@ -3932,6 +4412,31 @@ kbd {
 .investigator-result {
   display: grid;
   gap: 8px;
+}
+
+.streaming-demo-steps {
+  display: grid;
+  gap: 6px;
+  list-style: decimal inside;
+  margin: 0;
+  padding: 0;
+}
+
+.streaming-demo-steps li {
+  border: 1px solid rgba(var(--info-rgb), 0.18);
+  border-radius: var(--radius-card);
+  background: rgba(var(--info-rgb), 0.08);
+  color: var(--info-text);
+  padding: 6px 8px;
+}
+
+.ai-cost-latency-card {
+  border: 1px solid rgba(var(--info-rgb), 0.2);
+  border-radius: var(--radius-card);
+  background: rgba(var(--info-rgb), 0.06);
+  display: grid;
+  gap: 8px;
+  padding: 10px;
 }
 
 .investigator-state p,
@@ -4316,16 +4821,25 @@ kbd {
   margin: 0;
 }
 
-@keyframes incident-pulse {
-  0%,
-  100% {
-    transform: translateY(0);
-    box-shadow: 0 0 0 1px rgba(244, 63, 94, 0.14), 0 0 18px rgba(244, 63, 94, 0.08);
+@keyframes arena-appear {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
   }
 
-  50% {
-    transform: translateY(-1px);
-    box-shadow: 0 0 0 1px rgba(244, 63, 94, 0.28), 0 0 34px rgba(244, 63, 94, 0.2);
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes confidence-accent {
+  from {
+    transform: translateY(1px);
+  }
+
+  to {
+    transform: translateY(0);
   }
 }
 
@@ -4336,6 +4850,34 @@ kbd {
 
   to {
     transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .incident-alert-banner,
+  .market-mode-panel,
+  .tab-content-panel,
+  .detector-meter.highlighted,
+  .detector-meter-value em {
+    animation: none;
+  }
+
+  .visualization-toggle label,
+  .widget-tab-row button,
+  .detector-meter,
+  .detector-meter-track div,
+  .cockpit-pill,
+  .status-pill,
+  .runtime-status,
+  .job-status,
+  .report-status,
+  .event-badge,
+  .runtime-top-badge,
+  .detector-severity,
+  .evidence-item-header span,
+  .battlefield-risk,
+  .endpoint-badge {
+    transition: none;
   }
 }
 
@@ -4409,7 +4951,10 @@ kbd {
 .battlefield-agent-grid article,
 .battlefield-events li,
 .battlefield-tick,
-.depth-chart {
+.depth-chart,
+.demo-scenario-card,
+.arena-demo-banner,
+.ai-cost-latency-card {
   border-color: var(--widget-border);
   background: var(--widget-bg);
 }
@@ -4423,6 +4968,9 @@ kbd {
 .segmented-options label,
 .checkbox-grid label,
 .job-status-timeline li,
+.why-nebius-grid article,
+.experiment-form-card,
+.experiment-progress-card,
 .suspicious-agent-list article,
 .capability-card,
 .runtime-health-list article,
@@ -4431,16 +4979,28 @@ kbd {
 .artifact-nav-list,
 .artifact-preview-panel,
 .runtime-metric,
+.runtime-standard-card,
+.runtime-standard-card dl div,
 .usage-monitor-metric,
 .ai-console-meta span,
 .ai-response-panel,
+.ai-analyst-step,
+.scenario-wizard-step,
+.scenario-advanced-panel,
 .attack-plan-preview,
+.attack-plan-meta div,
 .attack-variant-list article,
 .attack-scenario-select,
+.reusable-scenario-card,
+.reusable-scenario-meta div,
 .generated-scenario-list article,
 .deployment-health-list article,
 .f1-chart-frame,
 .research-link-grid a,
+.experiment-list-panel,
+.experiment-list-panel button,
+.markdown-report-preview,
+.compliance-card,
 .detection-summary-list article,
 .detection-summary-list dl div,
 .artifact-list li,
@@ -4448,6 +5008,9 @@ kbd {
 .attack-risk-panel,
 .incident-replay-timeline li,
 .serverless-output-options,
+.secondary-widget-drawer,
+.visualization-toggle label,
+.widget-tab-row button,
 .cockpit-chart,
 .timeline-chart,
 .cockpit-heatmap,
@@ -4455,6 +5018,79 @@ kbd {
   border-color: var(--widget-border-soft);
   background: var(--widget-bg-muted);
   color: var(--body-text);
+}
+
+.metric,
+.chart,
+.recharts-frame,
+.heatmap-canvas,
+.feed-list li,
+.agent-list span,
+.segmented-options label,
+.checkbox-grid label,
+.job-status-timeline li,
+.why-nebius-grid article,
+.experiment-form-card,
+.experiment-progress-card,
+.suspicious-agent-list article,
+.capability-card,
+.runtime-health-list article,
+.nebius-result-block,
+.evidence-placeholder,
+.artifact-nav-list,
+.artifact-preview-panel,
+.runtime-metric,
+.runtime-standard-card,
+.runtime-standard-card dl div,
+.usage-monitor-metric,
+.ai-console-meta span,
+.ai-response-panel,
+.ai-analyst-step,
+.scenario-wizard-step,
+.scenario-advanced-panel,
+.attack-plan-preview,
+.attack-plan-meta div,
+.attack-variant-list article,
+.attack-scenario-select,
+.reusable-scenario-card,
+.reusable-scenario-meta div,
+.generated-scenario-list article,
+.deployment-health-list article,
+.f1-chart-frame,
+.research-link-grid a,
+.experiment-list-panel,
+.experiment-list-panel button,
+.markdown-report-preview,
+.compliance-card,
+.detection-summary-list article,
+.detection-summary-list dl div,
+.artifact-list li,
+.decision-grid span,
+.attack-risk-panel,
+.incident-replay-timeline li,
+.serverless-output-options,
+.secondary-widget-drawer,
+.visualization-toggle label,
+.widget-tab-row button,
+.cockpit-chart,
+.timeline-chart,
+.cockpit-heatmap,
+.battlefield-terrain-canvas,
+.attack-card,
+.attack-stage,
+.scenario-card,
+.detector-meter,
+.demo-card-meta div,
+.demo-shows-list span,
+.arena-demo-banner div,
+.ai-cost-latency-grid div,
+.streaming-demo-steps li,
+.event-tape-item,
+.evidence-item,
+.battlefield-signal-list li,
+.battlefield-agent-grid article,
+.battlefield-events li {
+  border-radius: var(--radius-card);
 }
 
 .cockpit-chart,
@@ -4673,6 +5309,7 @@ kbd {
 .endpoint-badge {
   background: rgba(var(--neutral-rgb), 0.13);
   color: var(--neutral-text);
+  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
 }
 
 .nebius-investigator-placeholder,
@@ -4693,7 +5330,6 @@ kbd {
   background: linear-gradient(90deg, rgba(var(--info-rgb), 0.13), var(--widget-bg));
 }
 
-.team-badge.red,
 .team-mark.red,
 .team-nav-link.red:hover,
 .team-nav-link.red.active {
@@ -4701,7 +5337,6 @@ kbd {
   color: var(--danger-text);
 }
 
-.team-badge.blue,
 .team-mark.blue,
 .team-nav-link.blue:hover,
 .team-nav-link.blue.active {
@@ -4888,9 +5523,12 @@ kbd,
   .experiment-report-sections,
   .experiment-report-output-grid,
   .experiment-artifact-workbench-grid,
+  .scenario-execution-output,
   .battlefield-grid,
   .research-link-grid,
-  .decision-grid {
+  .decision-grid,
+  .demo-card-grid,
+  .arena-demo-banner {
     grid-template-columns: 1fr 1fr;
   }
 
@@ -4929,8 +5567,10 @@ kbd,
 
   .runtime-status-grid,
   .experiment-summary-grid,
+  .nebius-infra-metric-grid,
   .serverless-config-grid,
   .attack-generator-grid,
+  .scenario-control-grid,
   .scenario-generator-grid,
   .usage-monitor-grid,
   .tournament-role-grid {
@@ -5015,10 +5655,18 @@ kbd,
   .experiment-report-sections,
   .experiment-report-output-grid,
   .experiment-artifact-workbench-grid,
+  .scenario-execution-output,
   .battlefield-grid,
   .battlefield-bottom,
   .research-link-grid,
   .decision-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .demo-card-grid,
+  .arena-demo-banner,
+  .demo-card-meta,
+  .ai-cost-latency-grid {
     grid-template-columns: 1fr;
   }
 
@@ -5056,21 +5704,20 @@ kbd,
   .tournament-hero,
   .runtime-status-grid,
   .ai-console-meta,
+  .nebius-infra-metric-grid,
   .serverless-config-grid,
   .attack-generator-grid,
+  .scenario-control-grid,
   .attack-plan-meta,
   .scenario-generator-grid,
   .usage-monitor-grid,
   .generated-scenario-list,
   .deployment-health-list,
   .surveillance-status-strip,
+  .compliance-card-grid,
   .experiment-report-metrics,
   .tournament-role-grid {
     grid-template-columns: 1fr;
-  }
-
-  .team-hero-badges {
-    justify-content: flex-start;
   }
 
   .job-status-timeline {

@@ -24,7 +24,7 @@ Status as of 2026-07-02:
 | [ARD-0012](ARD-0012-google-authentication.md) | `[done]` | Refresh tokens, revocation, asymmetric signing, and external secret management are future work |
 | [ARD-0013](ARD-0013-ui-shell-preferences.md) | `[done]` | Screenshot capture and broader light-mode chart tuning are future work |
 
-Current UI architecture note: the product shell now exposes six destinations only: Arena, Scenario Generator, Detection, Experiments, Nebius AI, and About. Reports are Detection outputs, not an independent destination. The About diagram documents the four execution areas: Front, Back, Agent Runners Workspace, and Nebius Serverless Cloud.
+Current UI architecture note: the product shell now exposes seven destinations: Arena, Demo, Scenario Generator, Detection, Experiments, Nebius AI, and About. Reports are Detection outputs, not an independent destination. The About and ARD-0001 diagrams document the four execution areas: Front, Back, Agent Runners Workspace, and Nebius Serverless Cloud.
 
 ## Records
 
