@@ -2862,16 +2862,50 @@ h4 {
   overflow: hidden;
 }
 
-.architecture-diagram-image {
-  aspect-ratio: 20 / 9;
-  background: #07111b;
-  border: 1px solid rgba(34, 211, 238, 0.16);
+.architecture-flow-diagram {
+  aspect-ratio: 1100 / 540;
+  background: #ffffff;
+  border: 1px solid rgba(139, 92, 246, 0.22);
   border-radius: 8px;
   display: block;
   height: auto;
   max-width: 1120px;
-  object-fit: contain;
   width: 100%;
+}
+
+.architecture-node rect {
+  fill: #f0edff;
+  stroke: #a78bfa;
+  stroke-width: 1.6;
+}
+
+.architecture-node text {
+  fill: #202433;
+  font-size: 16px;
+  font-weight: 600;
+  text-anchor: middle;
+}
+
+.architecture-edge {
+  fill: none;
+  marker-end: url("#architecture-arrow");
+  stroke: #2f3340;
+  stroke-width: 1.25;
+}
+
+.architecture-flow-diagram marker path {
+  fill: #2f3340;
+}
+
+.architecture-edge-label {
+  fill: #202433;
+  font-size: 15px;
+  font-weight: 600;
+  paint-order: stroke;
+  stroke: #ffffff;
+  stroke-linejoin: round;
+  stroke-width: 7px;
+  text-anchor: middle;
 }
 
 .benchmark-summary-grid {

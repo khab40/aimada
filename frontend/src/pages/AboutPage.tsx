@@ -145,11 +145,7 @@ export function AboutPage() {
         <div className="section-heading-row">
           <h3>Architecture Diagram</h3>
         </div>
-        <img
-          alt="Architecture diagram showing Front, Back, Agent Runners Workspace, and Nebius Serverless Cloud areas"
-          className="architecture-diagram-image"
-          src="/img/about_architecture_diagram.jpg"
-        />
+        <ArchitectureDiagram />
       </section>
 
       <div className="about-grid">
@@ -194,5 +190,88 @@ export function AboutPage() {
         </div>
       </section>
     </section>
+  );
+}
+
+function ArchitectureDiagram() {
+  return (
+    <svg
+      aria-label="Architecture diagram showing Front, Back, Agent Runners Workspace, Nebius Serverless Cloud, and Artifacts"
+      className="architecture-flow-diagram"
+      role="img"
+      viewBox="0 0 1100 540"
+    >
+      <defs>
+        <marker id="architecture-arrow" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
+          <path d="M0,0 L8,4 L0,8 Z" />
+        </marker>
+      </defs>
+
+      <g className="architecture-node architecture-front">
+        <rect height="132" width="270" x="415" y="24" />
+        <text x="550" y="58">
+          <tspan x="550">Front - React / Vite UI -</tspan>
+          <tspan x="550" dy="25">Arena, Demo, Scenario</tspan>
+          <tspan x="550" dy="25">Generator, Detection,</tspan>
+          <tspan x="550" dy="25">Experiments, Nebius AI,</tspan>
+          <tspan x="550" dy="25">About</tspan>
+        </text>
+      </g>
+
+      <g className="architecture-node architecture-back">
+        <rect height="96" width="270" x="415" y="224" />
+        <text x="550" y="260">
+          <tspan x="550">Back - FastAPI backend -</tspan>
+          <tspan x="550" dy="25">REST, WebSocket,</tspan>
+          <tspan x="550" dy="25">orchestration, persistence</tspan>
+        </text>
+      </g>
+
+      <g className="architecture-node architecture-runners">
+        <rect height="92" width="275" x="75" y="410" />
+        <text x="212" y="446">
+          <tspan x="212">Agent Runners Workspace -</tspan>
+          <tspan x="212" dy="25">local Docker and remote</tspan>
+          <tspan x="212" dy="25">workers</tspan>
+        </text>
+      </g>
+
+      <g className="architecture-node architecture-nebius">
+        <rect height="112" width="285" x="430" y="400" />
+        <text x="572" y="432">
+          <tspan x="572">Nebius Serverless Cloud -</tspan>
+          <tspan x="572" dy="25">model selection,</tspan>
+          <tspan x="572" dy="25">inference, batch jobs, GPU</tspan>
+          <tspan x="572" dy="25">runtime, datasets, artifacts</tspan>
+        </text>
+      </g>
+
+      <g className="architecture-node architecture-artifacts">
+        <rect height="112" width="245" x="805" y="400" />
+        <text x="928" y="432">
+          <tspan x="928">Artifacts - events,</tspan>
+          <tspan x="928" dy="25">snapshots, incidents,</tspan>
+          <tspan x="928" dy="25">reports, benchmark</tspan>
+          <tspan x="928" dy="25">outputs</tspan>
+        </text>
+      </g>
+
+      <path className="architecture-edge" d="M550 156 L550 224" />
+      <text className="architecture-edge-label" x="550" y="194">REST and WebSocket</text>
+
+      <path className="architecture-edge architecture-edge-curved" d="M415 282 C290 300 80 325 160 410" />
+      <text className="architecture-edge-label" x="200" y="334">snapshot and run config</text>
+
+      <path className="architecture-edge architecture-edge-curved" d="M275 410 C330 360 360 326 415 318" />
+      <text className="architecture-edge-label" x="355" y="365">agent intents and detector outputs</text>
+
+      <path className="architecture-edge" d="M550 320 L550 400" />
+      <text className="architecture-edge-label" x="550" y="365">LLM calls and managed jobs</text>
+
+      <path className="architecture-edge architecture-edge-curved" d="M650 400 C710 355 710 330 685 306" />
+      <text className="architecture-edge-label" x="716" y="348">explanations, metrics, artifacts</text>
+
+      <path className="architecture-edge architecture-edge-curved" d="M685 280 C875 318 980 332 928 400" />
+    </svg>
   );
 }
