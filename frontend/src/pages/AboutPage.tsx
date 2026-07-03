@@ -163,16 +163,24 @@ export function AboutPage() {
 
         <section className="panel about-card benchmark-summary-card">
           <h3>Benchmark Summary</h3>
-          <p>The benchmark path evaluates detector behavior against labeled synthetic scenarios rather than live intuition.</p>
+          <p>Benchmarks compare detector performance across labeled synthetic scenarios and repeatable replay windows.</p>
           <div className="benchmark-summary-grid">
-            <span>Precision</span>
-            <span>Recall</span>
-            <span>F1</span>
-            <span>Latency</span>
-            <span>False positives</span>
-            <span>False negatives</span>
+            <article>
+              <span>Detection quality</span>
+              <strong>Precision, recall, F1</strong>
+              <p>How reliably the detector separates suspicious market behavior from normal liquidity.</p>
+            </article>
+            <article>
+              <span>Error profile</span>
+              <strong>False positives / negatives</strong>
+              <p>Where the detector over-alerts or misses labeled manipulation windows.</p>
+            </article>
+            <article>
+              <span>Operational cost</span>
+              <strong>Latency, artifacts, reports</strong>
+              <p>How quickly a run produces evidence, replay data, and report-ready outputs.</p>
+            </article>
           </div>
-          <p>Each run keeps raw events, labels, detector outputs, aggregate metrics, per-scenario observations, and report-ready charts.</p>
         </section>
       </div>
 
@@ -196,7 +204,7 @@ export function AboutPage() {
 function ArchitectureDiagram() {
   return (
     <svg
-      aria-label="Architecture diagram showing Front, Back, Agent Runners Workspace, Nebius Serverless Cloud, and Artifacts"
+      aria-label="Architecture diagram showing Front, Back, Platform Identity, Agent Runners Workspace, Nebius Serverless Cloud, and Artifacts"
       className="architecture-flow-diagram"
       role="img"
       viewBox="0 0 1100 540"
@@ -224,6 +232,15 @@ function ArchitectureDiagram() {
           <tspan x="550">Back - FastAPI backend -</tspan>
           <tspan x="550" dy="25">REST, WebSocket,</tspan>
           <tspan x="550" dy="25">orchestration, persistence</tspan>
+        </text>
+      </g>
+
+      <g className="architecture-node architecture-identity">
+        <rect height="94" width="250" x="760" y="214" />
+        <text x="885" y="246">
+          <tspan x="885">Platform Identity -</tspan>
+          <tspan x="885" dy="25">users, workspace, roles,</tspan>
+          <tspan x="885" dy="25">cases, audit trail</tspan>
         </text>
       </g>
 
@@ -258,6 +275,12 @@ function ArchitectureDiagram() {
 
       <path className="architecture-edge" d="M550 156 L550 224" />
       <text className="architecture-edge-label" x="550" y="194">REST and WebSocket</text>
+
+      <path className="architecture-edge architecture-edge-curved" d="M685 94 C780 118 830 160 860 214" />
+      <text className="architecture-edge-label" x="820" y="142">Google or demo identity</text>
+
+      <path className="architecture-edge architecture-edge-curved" d="M760 272 C725 280 710 285 685 286" />
+      <text className="architecture-edge-label" x="750" y="310">case metadata and audit</text>
 
       <path className="architecture-edge architecture-edge-curved" d="M415 282 C290 300 80 325 160 410" />
       <text className="architecture-edge-label" x="200" y="334">snapshot and run config</text>

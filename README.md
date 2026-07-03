@@ -18,7 +18,8 @@ Implemented:
 - In-process `AgentManager` for hundreds of lightweight normal agents with per-tick deadlines and single-writer exchange application.
 - Separate `agent-runner` service for out-of-process agents over HTTP, while the backend keeps the exchange/order book authoritative.
 - LangGraph-compatible generic remote agents and worker-pool heavy agents inside `agent-runner`.
-- Google authentication completion with verified Google identity storage, app-issued JWT sessions, and a collapsible professional auth widget.
+- Google authentication completion with verified Google identity storage, app-issued JWT sessions, and one global workspace/user menu.
+- Multiuser platform foundation with demo fallback identity, workspace metadata, case ownership, reviewer metadata, report attribution, and audit trail records for investigation actions.
 - Deterministic detector evidence model for synthetic spoofing-like, layering-like, quote-stuffing-like, and liquidity-shock patterns.
 - Nebius endpoint and job scaffolds with local typed fallbacks, Docker/config files, scripts, and UI control surfaces.
 - Phase 4.5 Managed Experiments with deterministic attack manifests, local smart-batch execution, artifact normalization, aggregation, bounded AI Investigator reports, and Detection review of summaries, leaderboards, markdown reports, artifact indexes, and original local-batch files.
@@ -36,6 +37,7 @@ Not yet complete:
 - Committed sample benchmark report under `outputs/benchmark/`.
 - Final screenshot assets for the README screenshot table beyond the About architecture diagram.
 - Dedicated Judge Mode timeline-window selector and formal benchmark artifact schema versioning.
+- Durable backend workspace/organization tables, case assignment APIs, and persisted audit-log APIs beyond the current frontend platform foundation.
 
 ## Repository Structure
 

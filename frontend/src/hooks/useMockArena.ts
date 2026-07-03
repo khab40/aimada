@@ -84,7 +84,7 @@ export function useMockArena({
     }, TICK_MS);
 
     return () => window.clearInterval(handle);
-  }, [state.running]);
+  }, [demo, state.running, symbol]);
 
   const start = useCallback(() => {
     setState((current) => ({ ...current, running: true }));
@@ -120,7 +120,7 @@ export function useMockArena({
         running: true
       };
     });
-  }, []);
+  }, [symbol]);
 
   return useMemo(
     () => ({
@@ -133,7 +133,7 @@ export function useMockArena({
       symbol,
       tick: state.tick
     }),
-    [launchScenario, pause, reset, start, state]
+    [launchScenario, pause, reset, start, state, symbol]
   );
 }
 

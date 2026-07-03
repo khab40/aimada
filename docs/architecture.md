@@ -16,6 +16,8 @@ The two execution paths are:
 
 The design keeps the browser UI, demo orchestration backend, agent runner workspace, Nebius Serverless Cloud, and persisted event artifacts separate so each part can evolve independently.
 
+A platform identity layer maps Google or local demo users into workspace, role, case ownership, report attribution, and audit trail metadata. Demo mode uses `Demo Analyst` in `Aimada Surveillance Desk` when Google Auth is not configured.
+
 ## Interactive Demo Path
 
 ```mermaid
@@ -31,12 +33,14 @@ graph TD
     LiquidityGuard["Baseline Liquidity Guard - two-sided ladder invariant"]
     Detectors["Deterministic Detectors - features + confidence scores"]
     Incidents["Incident Store - evidence + metadata"]
+    Identity["Platform Identity - user, workspace, role, case ownership, audit"]
     Explain["Nebius Serverless Cloud - Nebius AI, LLM inference, Managed Experiment jobs"]
     Artifacts["Local Artifacts - events, snapshots, incidents, reports"]
 
     Demo -->|selects demo mode| UI
     UI -->|WebSocket live commands| WS
     UI -->|REST Nebius/artifact/report APIs| API
+    UI --> Identity
     WS --> API
     API --> Runtime
     Runtime --> Agents
@@ -47,6 +51,7 @@ graph TD
     LiquidityGuard --> Exchange
     Exchange --> Detectors
     Detectors --> Incidents
+    Identity -->|owner, analyst, reviewer, audit| Incidents
     Runtime --> WS
     WS -->|arena_state| UI
     Incidents -->|explain request| Explain
@@ -59,7 +64,8 @@ graph TD
 
 | Component | Responsibility |
 | --- | --- |
-| React / Vite UI | Presents the themed product shell, Google/auth widget, role/session controls, Demo, Arena, Scenario Generator, Detection, Experiments, Nebius AI, About, Standard/Battlefield visualization modes, detector output, Incident Details, and AI Investigator reports. Arena live controls and state use WebSocket; Nebius AI, experiment, artifact, and report actions use backend REST APIs. |
+| React / Vite UI | Presents the themed product shell, global workspace/user menu, Demo, Arena, Scenario Generator, Detection, Experiments, Nebius AI, About, Standard/Battlefield visualization modes, detector output, Incident Details, and AI Investigator reports. Arena live controls and state use WebSocket; Nebius AI, experiment, artifact, and report actions use backend REST APIs. |
+| Platform identity layer | Maps Google or demo users to workspace, role, case ownership, report attribution, reviewer metadata, and audit trail records. |
 | FastAPI demo backend | Owns the demo control plane. It starts and stops simulations, launches scenarios, broadcasts state to the UI, persists incidents, and calls Nebius AI endpoints for explanation and report generation. |
 | Local live simulation | Runs the authoritative exchange, scenario state, detector engine, local agent scheduling, single-writer book mutation, per-agent quote ownership, and baseline liquidity guard. |
 | Agent Runners Workspace | Runs local, remote, heavy, and LangGraph-compatible agents behind the common intent protocol; returns intents but never mutates the exchange directly. |
@@ -186,6 +192,7 @@ graph TD
 
 - The UI should not directly call the simulation engine, Agent Runners Workspace, or Nebius AI endpoints. It should communicate through the FastAPI backend.
 - UI shell preferences such as theme mode and auth-widget visibility are local browser preferences; the backend owns identity verification and app session issuance.
+- Platform identity must have a demo-mode fallback and must not block local demos on Google login.
 - The simulation engine should emit structured events and detector results without depending on UI concerns.
 - Agent runners may decide remotely, but they must return intents only; they must not mutate exchange state directly.
 - The backend should be the integration boundary for live transport, persistence, scenario orchestration, and AI calls.
@@ -207,6 +214,7 @@ This architecture supports all workflows described in [Use Cases](USE_CASES.md):
 6. **Synthetic Dataset Generation** — Batch / Benchmark Path artifact outputs
 7. **Detection Outputs And Evidence Review** — Detection reads persisted benchmark, Managed Experiment, Nebius AI, AI Investigator, screenshot, and promoted evidence artifacts
 8. **Role-Based Demo Review And UI Shell Personalization** — Google-authenticated role/session state plus local day/night/system and auth-widget preferences
+9. **Multiuser Investigation Workflow** — Platform identity metadata ties investigations, reports, reviewers, and audit trail entries to users and workspaces
 
 Detailed architecture decisions are recorded in [Architecture Records (ARDs)](architecture/README.md):
 
@@ -222,3 +230,4 @@ Detailed architecture decisions are recorded in [Architecture Records (ARDs)](ar
 - [ARD-0011: Exchange Liquidity Invariant And Agent Quote Ownership](architecture/ARD-0011-exchange-liquidity-invariant.md) — Baseline ladder and per-agent quote ownership
 - [ARD-0012: Google Authentication And App Sessions](architecture/ARD-0012-google-authentication.md) — Google verification, user persistence, and app JWT sessions
 - [ARD-0013: UI Shell Preferences And Demo Presentation](architecture/ARD-0013-ui-shell-preferences.md) — Banner asset, theme preference, collapsible auth widget, compact navigation, and paused visualizations
+- [ARD-0014: Multiuser Platform Foundation](architecture/ARD-0014-multiuser-platform-foundation.md) — Users, workspaces, roles, case ownership, report attribution, and audit trail model

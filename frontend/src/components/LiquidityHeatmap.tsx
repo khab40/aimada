@@ -108,7 +108,7 @@ export function LiquidityHeatmap({
       <div className="heatmap-legend">
         <span><i className="legend-swatch low" /> dark = low liquidity</span>
         <span><i className="legend-swatch high" /> bright = high liquidity</span>
-        <span><i className="legend-swatch abuser" /> outline = abuser liquidity</span>
+        <span><i className="legend-swatch abuser" /> outline = suspect liquidity</span>
       </div>
     </section>
   );

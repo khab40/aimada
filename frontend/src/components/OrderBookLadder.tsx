@@ -69,7 +69,7 @@ function BookLevelRow({
       <div className="book-level-bar" style={{ width: barWidth }} />
       <span className="book-price">{formatPrice(level.price)}</span>
       <strong className="book-size">{level.quantity.toFixed(3)}</strong>
-      {isAbuser ? <em>abuser</em> : null}
+      {isAbuser ? <em>suspect</em> : null}
     </div>
   );
 }

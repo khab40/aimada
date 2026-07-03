@@ -11,6 +11,7 @@ import {
   type AuthUser
 } from "@/api/client";
 import { AuthContext, type AuthState } from "@/auth/authState";
+import { platformUserFromAuth, workspaceForUser } from "@/platform/identity";
 const STORAGE_KEY = "aimada.auth.session";
 
 type GoogleCodeClient = {
@@ -181,18 +182,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [session]);
 
+  const platformUser = useMemo(() => platformUserFromAuth(user), [user]);
+  const workspace = useMemo(() => workspaceForUser(platformUser), [platformUser]);
+
   const value = useMemo<AuthState>(() => ({
     busy,
     error,
     lastMessage,
     loginWithGoogle,
     logout,
+    platformUser,
     role,
     saveNow,
     session,
     setRole,
-    user
-  }), [busy, error, lastMessage, loginWithGoogle, logout, role, saveNow, session, setRole, user]);
+    user,
+    workspace
+  }), [busy, error, lastMessage, loginWithGoogle, logout, platformUser, role, saveNow, session, setRole, user, workspace]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

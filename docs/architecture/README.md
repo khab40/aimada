@@ -6,7 +6,7 @@ ARDs capture architecture decisions, context, tradeoffs, implementation phases, 
 
 ## Implementation Summary
 
-Status as of 2026-07-02:
+Status as of 2026-07-03:
 
 | ARD | Implementation | Main Gap |
 |-----|----------------|----------|
@@ -23,6 +23,7 @@ Status as of 2026-07-02:
 | [ARD-0011](ARD-0011-exchange-liquidity-invariant.md) | `[done]` | Dynamic reference-price tracking and UI tuning are future work |
 | [ARD-0012](ARD-0012-google-authentication.md) | `[done]` | Refresh tokens, revocation, asymmetric signing, and external secret management are future work |
 | [ARD-0013](ARD-0013-ui-shell-preferences.md) | `[done]` | Screenshot capture and broader light-mode chart tuning are future work |
+| [ARD-0014](ARD-0014-multiuser-platform-foundation.md) | `[partial]` | Durable backend workspace/case/audit tables and assignment APIs are future work |
 
 Current UI architecture note: the product shell now exposes seven destinations: Arena, Demo, Scenario Generator, Detection, Experiments, Nebius AI, and About. Reports are Detection outputs, not an independent destination. The About and ARD-0001 diagrams document the four execution areas: Front, Back, Agent Runners Workspace, and Nebius Serverless Cloud.
 
@@ -50,6 +51,7 @@ Current UI architecture note: the product shell now exposes seven destinations: 
 ### Authentication
 
 - [ARD-0012: Google Authentication And App Sessions](ARD-0012-google-authentication.md) — Google ID token verification, SQLite user storage, and app JWT sessions
+- [ARD-0014: Multiuser Platform Foundation](ARD-0014-multiuser-platform-foundation.md) — Users, workspaces, roles, case ownership, report attribution, and audit trail model
 
 ### UI Shell And Presentation
 

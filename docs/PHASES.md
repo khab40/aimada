@@ -324,10 +324,12 @@ Deliverables:
 - `[todo]` committed sample benchmark report under `outputs/benchmark/`
 - `[done]` final disclaimer and safety language in README/docs/UI
 - `[done]` professional UI shell controls: collapsible Google/auth widget, compact sidebar toggle, day/night/system theme selector, and paused-state-stable Liquidity Map
+- `[done]` multiuser platform foundation with demo fallback user/workspace, global workspace/user menu, case ownership metadata, report attribution, and audit trail records.
 - `[done]` seven-entry navigation: Arena, Demo, Scenario Generator, Detection, Experiments, Nebius AI, and About
 - `[done]` `/demo` page orchestrates Real Nebius AI Run, Two-Model Pipeline, and Streaming Explanation paths into Arena demo modes
 - `[done]` Arena three-section layout: Scenario / Attack Configuration, Market, and Detection
 - `[done]` About and ARD-0001 architecture diagrams show Front, Back, Agent Runners Workspace, and Nebius Serverless Cloud
+- `[partial]` durable backend workspace/case/audit persistence APIs remain future work beyond the current frontend platform foundation.
 
 Exit criteria:
 

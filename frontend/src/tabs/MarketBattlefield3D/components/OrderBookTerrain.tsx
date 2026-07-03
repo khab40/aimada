@@ -612,7 +612,7 @@ function drawAxisOverlay(
   context.strokeRect(14.5, 14.5, 268, hoveredCell ? 118 : 88);
   context.font = "11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
   context.fillStyle = "#67e8f9";
-  context.fillText(`Camera yaw ${camera.yaw.toFixed(2)} | zoom ${camera.zoom.toFixed(2)}`, 28, 36);
+  context.fillText("Price-time surveillance view", 28, 36);
   context.fillStyle = "#a7f3d0";
   context.fillText("Normal orders: green / blue prisms", 28, 56);
   context.fillStyle = "#fde68a";

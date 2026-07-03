@@ -26,6 +26,8 @@ import {
 } from "@/api/client";
 import { ArtifactWorkbench, type ArtifactItem } from "@/components/ArtifactWorkbench";
 import { NebiusExecutionTrace, type NebiusExecutionTraceData } from "@/components/NebiusExecutionTrace";
+import { useAuth } from "@/auth/useAuth";
+import { createAuditTrail, createCaseOwnership, type CaseStatus } from "@/platform/identity";
 
 const previousRuns = [
   { id: "RUN-2026-0602-001", mode: "Detector tournament", scenarios: 4, incidents: 37, f1: 0.88, status: "completed" },
@@ -61,7 +63,9 @@ type ArtifactIndexEntry = {
 };
 
 export function ReportsPage() {
+  const { platformUser, workspace } = useAuth();
   const [searchParams] = useSearchParams();
+  const batchJobDemo = searchParams.get("demo") === "batch-job";
   const [summary, setSummary] = useState<ReportsSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [clearDialogOpen, setClearDialogOpen] = useState(false);
@@ -129,7 +133,7 @@ export function ReportsPage() {
           setExperimentInvestigations(result.investigations);
           setExperimentJobs(result.jobs);
           setArtifactIndexEntries(result.artifactIndexEntries);
-          setDeepInvestigationTrace(createIdleDeepInvestigationTrace(result.experiment, searchParams.get("demo") === "batch-job"));
+          setDeepInvestigationTrace(createIdleDeepInvestigationTrace(result.experiment, batchJobDemo));
         }
       })
       .catch((nextError: unknown) => {
@@ -145,7 +149,7 @@ export function ReportsPage() {
     return () => {
       cancelled = true;
     };
-  }, [selectedExperimentId]);
+  }, [batchJobDemo, selectedExperimentId]);
 
   async function loadReports() {
     setError(null);
@@ -373,12 +377,16 @@ export function ReportsPage() {
   const complianceReport = useMemo(() => {
     const primaryIncident = detectionRows[0];
     const reportTimestamp = selectedExperiment?.updated_at ?? historyRows[0]?.created_at ?? new Date().toISOString();
+    const ownership = createCaseOwnership(platformUser, workspace, caseStatusForExperiment(selectedExperiment));
     return {
       affectedSymbols: collectAffectedSymbols(summary),
+      assignedAnalyst: ownership.assignedAnalyst.name,
       confidence: primaryIncident?.confidence ?? maxLeaderboardScore(experimentLeaderboard),
       evidenceCount: benchmarkArtifacts.length + artifactIndexArtifacts.length + localBatchArtifacts.length + explanationRows.length + (summary?.evidence_screenshots.length ?? 0),
-      generatedBy: experimentInvestigations.length ? "Nebius AI Investigator" : "AI Market Abuse Detection Arena",
+      generatedBy: platformUser.name,
       incidentType: primaryIncident?.type ?? selectedExperiment?.scenarios[0]?.replaceAll("_", " ") ?? "No incident selected",
+      reviewedBy: ownership.reviewers.map((reviewer) => reviewer.name).join(", "),
+      status: ownership.status,
       timeline: `${historyRows.length} records / ${summary?.history_ticks.length ?? 0} ticks`,
       timestamp: reportTimestamp
     };
@@ -386,14 +394,17 @@ export function ReportsPage() {
     artifactIndexArtifacts.length,
     benchmarkArtifacts.length,
     detectionRows,
-    experimentInvestigations.length,
     experimentLeaderboard,
     explanationRows.length,
     historyRows,
     localBatchArtifacts.length,
+    platformUser,
     selectedExperiment,
-    summary
+    summary,
+    workspace
   ]);
+  const caseOwnership = useMemo(() => createCaseOwnership(platformUser, workspace, caseStatusForExperiment(selectedExperiment)), [platformUser, selectedExperiment, workspace]);
+  const auditTrail = useMemo(() => createAuditTrail(platformUser, selectedExperiment?.id ?? "current-investigation", caseOwnership.status), [caseOwnership.status, platformUser, selectedExperiment?.id]);
 
   async function exportCompliancePdf() {
     const reportPath = selectedExperiment?.artifact_paths.benchmark_report;
@@ -473,6 +484,14 @@ export function ReportsPage() {
             <Metric label="AI Analyses" value={String((summary?.explanations.length ?? 0) + (summary?.nebius_investigation_reports.length ?? 0))} />
             <Metric label="Experiments" value={String(experiments.length)} />
             <Metric label="Selected Run" value={selectedExperiment?.id ?? "none"} />
+          </div>
+          <div className="case-ownership-grid">
+            <ComplianceField label="Workspace" value={workspace.name} />
+            <ComplianceField label="Owner" value={caseOwnership.owner.name} />
+            <ComplianceField label="Assigned analyst" value={caseOwnership.assignedAnalyst.name} />
+            <ComplianceField label="Reviewer" value={caseOwnership.reviewers.map((reviewer) => reviewer.name).join(", ")} />
+            <ComplianceField label="Case status" value={caseOwnership.status} />
+            <ComplianceField label="Last updated by" value={caseOwnership.lastUpdatedBy.name} />
           </div>
           {experimentError ? <div className="empty-state warning">{experimentError}</div> : null}
           <div className="experiment-report-layout">
@@ -688,10 +707,12 @@ export function ReportsPage() {
               <ComplianceField label="Confidence" value={formatScore(complianceReport.confidence)} />
               <ComplianceField label="Evidence count" value={String(complianceReport.evidenceCount)} />
               <ComplianceField label="Timeline" value={complianceReport.timeline} />
-              <ComplianceField label="Affected symbols" value={complianceReport.affectedSymbols.join(", ")} />
-              <ComplianceField label="Generated by" value={complianceReport.generatedBy} />
-              <ComplianceField label="Timestamp" value={formatSavedAt(complianceReport.timestamp)} />
-            </div>
+                <ComplianceField label="Affected symbols" value={complianceReport.affectedSymbols.join(", ")} />
+                <ComplianceField label="Generated by" value={complianceReport.generatedBy} />
+                <ComplianceField label="Reviewed by" value={complianceReport.reviewedBy} />
+                <ComplianceField label="Case status" value={complianceReport.status} />
+                <ComplianceField label="Timestamp" value={formatSavedAt(complianceReport.timestamp)} />
+              </div>
             {reportExportMessage ? <p className="empty-state">{reportExportMessage}</p> : null}
           </section>
           <div className="experiment-report-output-grid">
@@ -744,6 +765,19 @@ export function ReportsPage() {
               ) : <p>Run AI Investigator reports to populate report files.</p>}
             </section>
           </div>
+
+          <section className="nebius-result-block">
+            <span>Audit trail</span>
+            <div className="audit-trail-list">
+              {auditTrail.map((entry) => (
+                <article key={`${entry.actionType}-${entry.timestamp}`}>
+                  <strong>{entry.actionType}</strong>
+                  <span>{formatSavedAt(entry.timestamp)} · {entry.user.name} · {entry.targetEntity}</span>
+                  <p>{entry.description}</p>
+                </article>
+              ))}
+            </div>
+          </section>
 
           <section className="nebius-result-block">
             <span>Final report preview</span>
@@ -933,6 +967,14 @@ function dedupeArtifactItems(items: ArtifactItem[]) {
     seen.add(item.path);
     return true;
   });
+}
+
+function caseStatusForExperiment(experiment: ManagedExperiment | null): CaseStatus {
+  if (!experiment) return "open";
+  if (experiment.status === "completed") return "approved";
+  if (experiment.status === "failed") return "investigating";
+  if (experiment.status === "manifest_generated") return "review";
+  return "investigating";
 }
 
 function formatScore(value: number) {

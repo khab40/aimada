@@ -5,6 +5,15 @@ Update this file with each significant commit before pushing.
 
 ## Unreleased
 
+### Current - feat: add multiuser platform foundation
+
+- Added a frontend platform identity model for users, workspaces, roles, case ownership, report attribution, and audit trail entries.
+- Kept demo mode unblocked with `Demo Analyst` in `Aimada Surveillance Desk` when Google Auth is not configured.
+- Updated Investigation to show assigned analyst, reviewer, case status, last-updated user, and audit trail records.
+- Updated compliance report metadata with generated-by, reviewed-by, timestamp, assigned analyst, and case status.
+- Kept one global workspace/user menu and no duplicate Google Auth widgets.
+- Added ARD-0014 and refreshed architecture docs for identity, workspace, case ownership, and audit boundaries.
+
 ### Current - feat: add product demo orchestration
 
 - Added `/demo` as a top-level product demo page with Real Nebius AI Run, Two-Model Pipeline, and Streaming Explanation cards.

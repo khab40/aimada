@@ -354,12 +354,12 @@ const arenaRoles: { label: string; value: ArenaRole }[] = [
 ];
 
 function AuthPanel() {
-  const { busy, error, lastMessage, loginWithGoogle, logout, role, saveNow, session, setRole, user } = useAuth();
+  const { busy, error, lastMessage, loginWithGoogle, logout, platformUser, role, saveNow, session, setRole, workspace } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
-  const accountName = user?.name || user?.email || "Google";
-  const accountDetail = user?.email || "Google connected";
-  const initial = (user?.name || user?.email || "G").trim().charAt(0).toUpperCase() || "G";
-  const statusText = error ? "Google error" : session ? "Google connected" : busy ? "Connecting..." : "Not connected";
+  const accountName = platformUser.name;
+  const accountDetail = session ? platformUser.email : workspace.name;
+  const initial = (platformUser.name || platformUser.email || "A").trim().charAt(0).toUpperCase() || "A";
+  const statusText = error ? "Google error" : session ? "Google connected" : "Demo workspace";
 
   useEffect(() => {
     setMenuOpen(false);
@@ -386,6 +386,7 @@ function AuthPanel() {
           {menuOpen ? (
             <div className="auth-details" role="menu">
               <span className="auth-status">{accountDetail}</span>
+              <span className="auth-status">{workspace.name}</span>
               {lastMessage ? <span className="auth-status">{lastMessage}</span> : null}
               <label className="auth-role-select" title="Tournament role">
                 Role
@@ -402,11 +403,36 @@ function AuthPanel() {
         </>
       ) : (
         <>
-          <button className="google-login-button" disabled={busy} onClick={() => void loginWithGoogle(role)} title="Connect Google" type="button">
-            <span className="google-icon" aria-hidden="true">G</span>
-            <span>{busy ? "Connecting..." : error ? "Retry Google" : "Connect Google"}</span>
+          <button
+            aria-expanded={menuOpen}
+            className="auth-compact-toggle"
+            onClick={() => setMenuOpen((value) => !value)}
+            title="Workspace account"
+            type="button"
+          >
+            <span className="auth-avatar" aria-hidden="true">{initial}</span>
+            <span className="auth-compact-copy">
+              <strong>{accountName}</strong>
+              <span>{statusText}</span>
+            </span>
+            <AuthToggleIcon expanded={menuOpen} />
           </button>
-          <span className={`auth-status ${error ? "warning" : ""}`}>{error ? shortAuthError(error) : statusText}</span>
+          {menuOpen ? (
+            <div className="auth-details" role="menu">
+              <span className="auth-status">{accountDetail}</span>
+              {error ? <span className="auth-status warning">{shortAuthError(error)}</span> : null}
+              <label className="auth-role-select" title="Tournament role">
+                Role
+                <select disabled={busy} value={role} onChange={(event) => void setRole(event.target.value as ArenaRole)}>
+                  {arenaRoles.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+                </select>
+              </label>
+              <button className="google-login-button" disabled={busy} onClick={() => void loginWithGoogle(role)} title="Connect Google" type="button">
+                <span className="google-icon" aria-hidden="true">G</span>
+                <span>{busy ? "Connecting..." : error ? "Retry Google" : "Connect Google"}</span>
+              </button>
+            </div>
+          ) : null}
         </>
       )}
     </section>
