@@ -20,6 +20,11 @@ const demoCards: Record<ProductDemoMode, {
     cta: "Start Streaming Demo",
     description: "Streams an AI investigation response step by step.",
     shows: ["Connecting", "Retrieving context", "Reasoning", "Streamed explanation", "Metrics"]
+  },
+  "batch-job": {
+    cta: "Start Batch Job Demo",
+    description: "Runs a post-event Nebius job over replay, evidence, detector logs, and market snapshots.",
+    shows: ["Job status", "Job id", "Runtime", "Output artifact", "Report summary"]
   }
 };
 
@@ -27,6 +32,10 @@ export function DemoPage() {
   const navigate = useNavigate();
 
   function startDemo(mode: ProductDemoMode) {
+    if (mode === "batch-job") {
+      navigate("/detection?demo=batch-job");
+      return;
+    }
     navigate(`/arena?demo=${mode}`);
   }
 

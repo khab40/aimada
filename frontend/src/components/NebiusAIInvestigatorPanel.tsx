@@ -1,22 +1,10 @@
 import { useEffect, useState } from "react";
 import { createInvestigationReport, explainIncident, type IncidentExplanation, type InvestigationReportResponse } from "@/api/client";
+import { AiCostLatencyCard, type NebiusExecutionTraceData } from "@/components/NebiusExecutionTrace";
 import type { ProductDemoConfig } from "@/demoModes";
 import type { Incident } from "@/types/arena";
 
 type InvestigatorState = "idle" | "analyzing" | "completed" | "error";
-
-type AiRunMetrics = {
-  estimatedCost: string;
-  lastExecution: string;
-  latency: string;
-  mode: string;
-  models: string;
-  provider: string;
-  runtime: string;
-  status: string;
-  tokensIn: string;
-  tokensOut: string;
-};
 
 export function NebiusAIInvestigatorPanel({
   demoConfig,
@@ -26,12 +14,12 @@ export function NebiusAIInvestigatorPanel({
   incident?: Incident | null;
 }) {
   const [explanation, setExplanation] = useState<IncidentExplanation | null>(null);
-  const [metrics, setMetrics] = useState<AiRunMetrics>(() => createInitialMetrics(demoConfig));
+  const [trace, setTrace] = useState<NebiusExecutionTraceData>(() => createInitialTrace(demoConfig));
   const [state, setState] = useState<InvestigatorState>("idle");
 
   useEffect(() => {
     setExplanation(null);
-    setMetrics(createInitialMetrics(demoConfig));
+    setTrace(createInitialTrace(demoConfig));
     setState("idle");
   }, [demoConfig, incident?.id]);
 
@@ -42,7 +30,7 @@ export function NebiusAIInvestigatorPanel({
 
     const startedAt = performance.now();
     setState("analyzing");
-    setMetrics((current) => ({ ...current, status: "Running" }));
+    setTrace((current) => ({ ...current, status: "running" }));
     try {
       const result = demoConfig?.id === "real"
         ? toIncidentExplanation(await createInvestigationReport(), incident)
@@ -50,12 +38,12 @@ export function NebiusAIInvestigatorPanel({
           ? await mockExplainIncident(incident, demoConfig)
           : await explainIncident(incident.id);
       setExplanation(result);
-      setMetrics(createCompletedMetrics(demoConfig, incident, result, startedAt));
+      setTrace(createCompletedTrace(demoConfig, incident, result, startedAt));
       setState("completed");
     } catch {
       const result = await mockExplainIncident(incident, demoConfig, "Nebius unavailable. Using cached demo explanation.");
       setExplanation(result);
-      setMetrics(createCompletedMetrics(demoConfig, incident, result, startedAt));
+      setTrace(createCompletedTrace(demoConfig, incident, result, startedAt));
       setState("completed");
     }
   }
@@ -70,7 +58,7 @@ export function NebiusAIInvestigatorPanel({
       {state === "idle" && (
         <div className="investigator-state">
           <button type="button" disabled={!incident} onClick={() => void analyzeIncident()}>
-            Run AI Investigator
+            Explain with Nebius AI
           </button>
         </div>
       )}
@@ -118,65 +106,51 @@ export function NebiusAIInvestigatorPanel({
         </div>
       )}
 
-      <AiCostLatencyCard metrics={metrics} />
+      <AiCostLatencyCard trace={trace} />
     </section>
   );
 }
 
-function AiCostLatencyCard({ metrics }: { metrics: AiRunMetrics }) {
-  return (
-    <section className="ai-cost-latency-card" aria-label="AI cost and latency">
-      <div className="section-heading-row">
-        <h4>AI Cost &amp; Latency</h4>
-        <span>{metrics.status}</span>
-      </div>
-      <dl className="ai-cost-latency-grid">
-        <div><dt>Provider</dt><dd>{metrics.provider}</dd></div>
-        <div><dt>Mode</dt><dd>{metrics.mode}</dd></div>
-        <div><dt>Model(s)</dt><dd>{metrics.models}</dd></div>
-        <div><dt>Latency</dt><dd>{metrics.latency}</dd></div>
-        <div><dt>Tokens in</dt><dd>{metrics.tokensIn}</dd></div>
-        <div><dt>Tokens out</dt><dd>{metrics.tokensOut}</dd></div>
-        <div><dt>Estimated cost</dt><dd>{metrics.estimatedCost}</dd></div>
-        <div><dt>GPU/runtime</dt><dd>{metrics.runtime}</dd></div>
-        <div><dt>Last execution time</dt><dd>{metrics.lastExecution}</dd></div>
-      </dl>
-    </section>
-  );
-}
-
-function createInitialMetrics(demoConfig?: ProductDemoConfig | null): AiRunMetrics {
+function createInitialTrace(demoConfig?: ProductDemoConfig | null): NebiusExecutionTraceData {
   return {
+    artifactLink: null,
+    endpointId: "nebius-ai-endpoint",
     estimatedCost: "-",
-    lastExecution: "Not run yet",
+    executionType: demoConfig?.id === "streaming" ? "streaming" : "endpoint",
+    fallback: demoConfig ? "simulated" : "real",
+    jobId: null,
+    lastExecutionTime: "Not run yet",
     latency: "-",
-    mode: demoConfig?.aiInvestigationMode ?? "Structured incident explanation",
-    models: demoConfig?.models ?? "Nebius AI incident explainer",
-    provider: "Nebius AI",
-    runtime: demoConfig ? "Demo runtime" : "Nebius Serverless GPU",
+    model: demoConfig?.models ?? "Nebius AI incident explainer",
+    runId: demoConfig ? `demo-${demoConfig.id}` : "arena-endpoint",
+    runtimeGpu: demoConfig ? "Demo runtime" : "Nebius Serverless GPU",
     status: "Idle",
     tokensIn: "-",
     tokensOut: "-"
   };
 }
 
-function createCompletedMetrics(
+function createCompletedTrace(
   demoConfig: ProductDemoConfig | null | undefined,
   incident: Incident,
   explanation: IncidentExplanation,
   startedAt: number
-): AiRunMetrics {
+): NebiusExecutionTraceData {
   const tokensIn = 1200 + incident.evidence.length * 95 + incident.title.length * 4;
   const tokensOut = 360 + explanation.evidence.length * 44 + explanation.recommended_action.length;
   const simulated = explanation.mode === "mock" || Boolean(explanation.fallback_reason);
   return {
+    artifactLink: explanation.stored_artifact ?? null,
+    endpointId: explanation.endpoint,
     estimatedCost: simulated ? "$0.0000 simulated" : `$${((tokensIn * 0.00000045) + (tokensOut * 0.0000012)).toFixed(4)}`,
-    lastExecution: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+    executionType: demoConfig?.id === "streaming" ? "streaming" : "endpoint",
+    fallback: simulated ? "simulated" : "real",
+    jobId: null,
+    lastExecutionTime: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
     latency: `${Math.max(0.2, (performance.now() - startedAt) / 1000).toFixed(1)}s`,
-    mode: demoConfig?.aiInvestigationMode ?? explanation.mode,
-    models: demoConfig?.models ?? "Nebius AI incident explainer",
-    provider: simulated ? "Nebius AI (simulated fallback)" : "Nebius AI",
-    runtime: simulated ? "Cached demo response" : "Nebius Serverless GPU",
+    model: demoConfig?.models ?? "Nebius AI incident explainer",
+    runId: incident.id,
+    runtimeGpu: simulated ? "Cached demo response" : "Nebius Serverless GPU",
     status: simulated ? "Simulated fallback" : "Completed",
     tokensIn: tokensIn.toLocaleString(),
     tokensOut: tokensOut.toLocaleString()

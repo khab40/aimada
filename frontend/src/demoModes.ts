@@ -1,6 +1,6 @@
 import type { MockScenarioType } from "@/hooks/useMockArena";
 
-export type ProductDemoMode = "real" | "two-model" | "streaming";
+export type ProductDemoMode = "real" | "two-model" | "streaming" | "batch-job";
 
 export type ProductDemoConfig = {
   aiInvestigationMode: string;
@@ -47,6 +47,17 @@ export const productDemoConfigs: ProductDemoConfig[] = [
     models: "Streaming investigator",
     scenarioType: "quote_stuffing",
     title: "Streaming Explanation"
+  },
+  {
+    aiInvestigationMode: "Post-event deep investigation job",
+    attackPattern: "Full replay evidence package",
+    detectorProfile: "Replay, detector logs, evidence bundle",
+    id: "batch-job",
+    label: "Best for post-incident workflow",
+    marketSymbol: "BTCUSDT",
+    models: "Nebius investigation job",
+    scenarioType: "spoofing_like_wall",
+    title: "Batch Investigation Job"
   }
 ];
 

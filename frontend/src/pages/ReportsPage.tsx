@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   artifactDownloadUrl,
   clearReportsData,
@@ -9,17 +10,22 @@ import {
   getManagedExperimentReportUrl,
   getManagedExperimentSummary,
   getReportsSummary,
+  listManagedExperimentJobs,
   listManagedExperimentInvestigations,
   listManagedExperiments,
   readArtifact,
+  runManagedExperimentInvestigations,
   type ExperimentLeaderboardRow,
+  type ExperimentJobRecord,
   type ExperimentSummary,
   type HistoryRecord,
+  type InvestigationRunResponse,
   type InvestigationRecord,
   type ManagedExperiment,
   type ReportsSummary
 } from "@/api/client";
 import { ArtifactWorkbench, type ArtifactItem } from "@/components/ArtifactWorkbench";
+import { NebiusExecutionTrace, type NebiusExecutionTraceData } from "@/components/NebiusExecutionTrace";
 
 const previousRuns = [
   { id: "RUN-2026-0602-001", mode: "Detector tournament", scenarios: 4, incidents: 37, f1: 0.88, status: "completed" },
@@ -55,6 +61,7 @@ type ArtifactIndexEntry = {
 };
 
 export function ReportsPage() {
+  const [searchParams] = useSearchParams();
   const [summary, setSummary] = useState<ReportsSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [clearDialogOpen, setClearDialogOpen] = useState(false);
@@ -68,9 +75,13 @@ export function ReportsPage() {
   const [experimentLeaderboard, setExperimentLeaderboard] = useState<ExperimentLeaderboardRow[]>([]);
   const [experimentReport, setExperimentReport] = useState("");
   const [experimentInvestigations, setExperimentInvestigations] = useState<InvestigationRecord[]>([]);
+  const [experimentJobs, setExperimentJobs] = useState<ExperimentJobRecord[]>([]);
   const [artifactIndexEntries, setArtifactIndexEntries] = useState<ArtifactIndexEntry[]>([]);
   const [experimentError, setExperimentError] = useState<string | null>(null);
   const [experimentLoading, setExperimentLoading] = useState(false);
+  const [deepInvestigationBusy, setDeepInvestigationBusy] = useState(false);
+  const [deepInvestigationMessage, setDeepInvestigationMessage] = useState<string | null>(null);
+  const [deepInvestigationTrace, setDeepInvestigationTrace] = useState<NebiusExecutionTraceData>(() => createIdleDeepInvestigationTrace(null));
   const [reportExportBusy, setReportExportBusy] = useState<"json" | "pdf" | null>(null);
   const [reportExportMessage, setReportExportMessage] = useState<string | null>(null);
 
@@ -116,7 +127,9 @@ export function ReportsPage() {
           setExperimentLeaderboard(result.leaderboard);
           setExperimentReport(result.report);
           setExperimentInvestigations(result.investigations);
+          setExperimentJobs(result.jobs);
           setArtifactIndexEntries(result.artifactIndexEntries);
+          setDeepInvestigationTrace(createIdleDeepInvestigationTrace(result.experiment, searchParams.get("demo") === "batch-job"));
         }
       })
       .catch((nextError: unknown) => {
@@ -141,11 +154,12 @@ export function ReportsPage() {
 
   async function loadExperimentReports(experimentId: string) {
     const experiment = await getManagedExperiment(experimentId);
-    const [experimentSummaryResult, leaderboard, report, investigations] = await Promise.all([
+    const [experimentSummaryResult, leaderboard, report, investigations, jobs] = await Promise.all([
       getManagedExperimentSummary(experimentId).catch(() => null),
       getManagedExperimentLeaderboard(experimentId).catch(() => []),
       getManagedExperimentReport(experimentId).catch(() => ""),
-      listManagedExperimentInvestigations(experimentId).catch(() => [])
+      listManagedExperimentInvestigations(experimentId).catch(() => []),
+      listManagedExperimentJobs(experimentId).catch(() => [])
     ]);
     const artifactIndexPath = experiment.artifact_paths.artifact_index;
     const artifactIndexEntriesResult = artifactIndexPath
@@ -157,6 +171,7 @@ export function ReportsPage() {
       artifactIndexEntries: artifactIndexEntriesResult,
       experiment,
       investigations,
+      jobs,
       leaderboard,
       report,
       summary: experimentSummaryResult
@@ -412,6 +427,30 @@ export function ReportsPage() {
     }
   }
 
+  async function runDeepInvestigationJob() {
+    const startedAt = performance.now();
+    setDeepInvestigationBusy(true);
+    setDeepInvestigationMessage(null);
+    setDeepInvestigationTrace((current) => ({ ...current, status: "running" }));
+    if (!selectedExperiment) {
+      setDeepInvestigationTrace(createFallbackDeepInvestigationTrace(null, startedAt, "No persisted experiment selected."));
+      setDeepInvestigationMessage("No experiment selected. Using deterministic simulated fallback.");
+      setDeepInvestigationBusy(false);
+      return;
+    }
+    try {
+      const result = await runManagedExperimentInvestigations(selectedExperiment.id, 7);
+      setExperimentInvestigations(result.investigations);
+      setDeepInvestigationTrace(createDeepInvestigationTrace(selectedExperiment, result, startedAt));
+      setDeepInvestigationMessage(`Deep investigation job completed for ${result.investigation_count} alert(s).`);
+    } catch (nextError) {
+      setDeepInvestigationTrace(createFallbackDeepInvestigationTrace(selectedExperiment, startedAt));
+      setDeepInvestigationMessage(nextError instanceof Error ? `${nextError.message}. Using deterministic simulated fallback.` : "Using deterministic simulated fallback.");
+    } finally {
+      setDeepInvestigationBusy(false);
+    }
+  }
+
   return (
     <section className="reports-page">
       <div className="panel lab-hero-panel">
@@ -467,7 +506,22 @@ export function ReportsPage() {
                 <Metric label="Alerts" value={String(experimentSummary?.total_alerts ?? 0)} />
                 <Metric label="Investigation Reports" value={String(experimentInvestigations.length || experimentSummary?.investigation_count || 0)} />
                 <Metric label="Failed Runs" value={String(experimentSummary?.failed_runs ?? 0)} />
+                <Metric label="Nebius Jobs" value={String(experimentJobs.length)} />
               </div>
+
+              <section className="nebius-result-block deep-investigation-job">
+                <div className="artifact-preview-title">
+                  <strong>Deep Investigation Job</strong>
+                  <button disabled={deepInvestigationBusy || !selectedExperiment} onClick={() => void runDeepInvestigationJob()} type="button">
+                    {deepInvestigationBusy ? "Running..." : "Run Deep Investigation Job"}
+                  </button>
+                </div>
+                <p>
+                  Sends incident replay, evidence, detector logs, and market snapshots into the Nebius job workflow.
+                </p>
+                <NebiusExecutionTrace trace={deepInvestigationTrace} />
+                {deepInvestigationMessage ? <p className="empty-state">{deepInvestigationMessage}</p> : null}
+              </section>
 
               <div className="experiment-report-sections">
                 <section className="nebius-result-block">
@@ -777,6 +831,76 @@ function formatSavedAt(value: string) {
 
 function sortExperiments(experiments: ManagedExperiment[]) {
   return [...experiments].sort((left, right) => Date.parse(right.updated_at) - Date.parse(left.updated_at));
+}
+
+function createIdleDeepInvestigationTrace(experiment: ManagedExperiment | null, demo = false): NebiusExecutionTraceData {
+  return {
+    artifactLink: experiment?.artifact_paths.benchmark_report ?? experiment?.artifact_dir ?? null,
+    endpointId: null,
+    estimatedCost: "-",
+    executionType: "job",
+    fallback: demo || experiment?.nebius_mode !== "real_nebius_pending" ? "simulated" : "real",
+    jobId: null,
+    lastExecutionTime: "Not run yet",
+    latency: "-",
+    model: "Nebius investigation job",
+    runId: experiment?.id ?? "no-experiment",
+    runtimeGpu: demo ? "Deterministic demo fallback" : "Nebius Serverless Job",
+    status: demo ? "Ready for batch demo" : "Idle",
+    tokensIn: "-",
+    tokensOut: "-"
+  };
+}
+
+function createDeepInvestigationTrace(
+  experiment: ManagedExperiment,
+  result: InvestigationRunResponse,
+  startedAt: number
+): NebiusExecutionTraceData {
+  const fallback = result.investigation_mode === "mock" || result.investigations.some((item) => item.fallback_reason) ? "simulated" : "real";
+  const tokensIn = 2200 + result.selected_count * 420;
+  const tokensOut = 900 + result.investigation_count * 180;
+  return {
+    artifactLink: result.investigations[0]?.markdown_path ?? experiment.artifact_paths.benchmark_report ?? experiment.artifact_dir,
+    endpointId: "nebius-investigation-report",
+    estimatedCost: fallback === "simulated" ? "$0.0000 simulated" : `$${((tokensIn * 0.00000045) + (tokensOut * 0.0000012)).toFixed(4)}`,
+    executionType: "job",
+    fallback,
+    jobId: `JOB-${experiment.id}-INV`,
+    lastExecutionTime: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+    latency: `${Math.max(result.endpoint_avg_latency_seconds || 0, (performance.now() - startedAt) / 1000).toFixed(1)}s`,
+    model: result.investigation_mode === "mock" ? "Deterministic fallback investigator" : "Nebius investigation model",
+    runId: experiment.id,
+    runtimeGpu: fallback === "simulated" ? "Local deterministic fallback" : "Nebius Serverless GPU job",
+    status: fallback === "simulated" ? "Simulated fallback" : "Completed",
+    tokensIn: tokensIn.toLocaleString(),
+    tokensOut: tokensOut.toLocaleString()
+  };
+}
+
+function createFallbackDeepInvestigationTrace(
+  experiment: ManagedExperiment | null,
+  startedAt: number,
+  reason = "Nebius credentials or job configuration unavailable."
+): NebiusExecutionTraceData {
+  const tokensIn = 1800 + (experiment?.attack_count ?? 1) * 12;
+  const tokensOut = 760;
+  return {
+    artifactLink: experiment?.artifact_paths.benchmark_report ?? experiment?.artifact_dir ?? null,
+    endpointId: null,
+    estimatedCost: "$0.0000 simulated",
+    executionType: "job",
+    fallback: "simulated",
+    jobId: experiment ? `SIM-JOB-${experiment.id}` : "SIM-JOB-NO-EXPERIMENT",
+    lastExecutionTime: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+    latency: `${Math.max(0.2, (performance.now() - startedAt) / 1000).toFixed(1)}s`,
+    model: "Deterministic fallback investigator",
+    runId: experiment?.id ?? "no-experiment",
+    runtimeGpu: "Local deterministic fallback",
+    status: `Simulated fallback: ${reason}`,
+    tokensIn: tokensIn.toLocaleString(),
+    tokensOut: tokensOut.toLocaleString()
+  };
 }
 
 function parseArtifactIndexEntries(content: string): ArtifactIndexEntry[] {

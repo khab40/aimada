@@ -286,7 +286,7 @@ button.active {
 }
 
 .demo-card-meta,
-.ai-cost-latency-grid {
+.nebius-execution-grid {
   display: grid;
   gap: 8px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -294,7 +294,7 @@ button.active {
 }
 
 .demo-card-meta div,
-.ai-cost-latency-grid div {
+.nebius-execution-grid div {
   border: 1px solid var(--widget-border-soft);
   border-radius: var(--radius-card);
   background: var(--widget-bg-muted);
@@ -303,13 +303,13 @@ button.active {
 }
 
 .demo-card-meta dt,
-.ai-cost-latency-grid dt {
+.nebius-execution-grid dt {
   color: var(--text-muted);
   font-size: 11px;
 }
 
 .demo-card-meta dd,
-.ai-cost-latency-grid dd {
+.nebius-execution-grid dd {
   color: var(--heading);
   font-weight: 700;
   margin: 2px 0 0;
@@ -4464,13 +4464,46 @@ kbd {
   padding: 6px 8px;
 }
 
-.ai-cost-latency-card {
+.nebius-execution-trace {
   border: 1px solid rgba(var(--info-rgb), 0.2);
   border-radius: var(--radius-card);
   background: rgba(var(--info-rgb), 0.06);
   display: grid;
   gap: 8px;
   padding: 10px;
+}
+
+.deep-investigation-job,
+.experiment-run-records {
+  gap: 12px;
+}
+
+.deep-investigation-job p {
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.experiment-comparison-grid,
+.experiment-run-trace-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.experiment-comparison-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.experiment-comparison-grid span {
+  border: 1px solid rgba(var(--info-rgb), 0.18);
+  border-radius: var(--radius-card);
+  background: rgba(var(--info-rgb), 0.08);
+  color: var(--info-text);
+  font-weight: 700;
+  padding: 8px;
+}
+
+.experiment-run-trace-grid {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }
 
 .investigator-state p,
@@ -4988,7 +5021,7 @@ kbd {
 .depth-chart,
 .demo-scenario-card,
 .arena-demo-banner,
-.ai-cost-latency-card {
+.nebius-execution-trace {
   border-color: var(--widget-border);
   background: var(--widget-bg);
 }
@@ -5117,7 +5150,7 @@ kbd {
 .demo-card-meta div,
 .demo-shows-list span,
 .arena-demo-banner div,
-.ai-cost-latency-grid div,
+.nebius-execution-grid div,
 .streaming-demo-steps li,
 .event-tape-item,
 .evidence-item,
@@ -5618,6 +5651,7 @@ kbd,
   .attack-plan-meta {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
 }
 
 @media (max-width: 980px) {
@@ -5700,7 +5734,8 @@ kbd,
   .demo-card-grid,
   .arena-demo-banner,
   .demo-card-meta,
-  .ai-cost-latency-grid {
+  .nebius-execution-grid,
+  .experiment-comparison-grid {
     grid-template-columns: 1fr;
   }
 
