@@ -43,7 +43,6 @@ export function DemoPage() {
     <section className="demo-page">
       <div className="panel demo-hero-panel">
         <h2>3-Minute Product Demo</h2>
-        <p>Choose a deterministic demo path, then run it in Arena.</p>
       </div>
 
       <div className="demo-card-grid">

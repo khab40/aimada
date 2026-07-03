@@ -347,13 +347,8 @@ button.active {
   background: var(--shell-bg);
   color: var(--body-text);
   display: grid;
-  grid-template-columns: 292px minmax(0, 1fr);
+  grid-template-columns: var(--sidebar-width, 292px) minmax(0, 1fr);
   min-height: 100vh;
-  transition: grid-template-columns 160ms ease;
-}
-
-.app-shell.sidebar-collapsed {
-  grid-template-columns: 78px minmax(0, 1fr);
 }
 
 .app-sidebar {
@@ -371,15 +366,20 @@ button.active {
 
 .app-workspace {
   min-width: 0;
-  padding: 14px;
+  padding: 10px 14px 14px;
 }
 
 .global-workspace-header {
-  align-items: flex-start;
+  align-items: center;
   display: grid;
   gap: 12px;
   grid-template-columns: minmax(0, 1fr) auto;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
+}
+
+.global-workspace-header .theme-panel {
+  justify-self: start;
+  width: min(360px, 100%);
 }
 
 .global-workspace-header .auth-panel {
@@ -440,10 +440,10 @@ h4 {
 }
 
 .sidebar-brand {
-  align-items: flex-start;
+  align-items: center;
   display: flex;
   gap: 10px;
-  justify-content: space-between;
+  justify-content: flex-end;
   min-width: 0;
 }
 
@@ -466,6 +466,35 @@ h4 {
 .sidebar-toggle-icon {
   height: 15px;
   width: 15px;
+}
+
+.sidebar-resize-handle {
+  bottom: 0;
+  cursor: col-resize;
+  position: absolute;
+  right: -4px;
+  top: 0;
+  width: 8px;
+  z-index: 8;
+}
+
+.sidebar-resize-handle::after {
+  background: transparent;
+  content: "";
+  display: block;
+  height: 100%;
+  margin-left: 3px;
+  width: 1px;
+}
+
+.sidebar-resize-handle:hover::after,
+body[data-sidebar-resizing="true"] .sidebar-resize-handle::after {
+  background: var(--accent);
+}
+
+body[data-sidebar-resizing="true"] {
+  cursor: col-resize;
+  user-select: none;
 }
 
 .side-nav {
@@ -525,12 +554,6 @@ h4 {
 }
 
 
-.sidebar-utility-stack {
-  display: grid;
-  gap: 8px;
-  min-width: 0;
-}
-
 .theme-panel {
   align-items: center;
   border: 1px solid rgba(43, 90, 120, 0.4);
@@ -573,15 +596,6 @@ h4 {
 .theme-icon {
   height: 15px;
   width: 15px;
-}
-
-.sidebar-collapsed .sidebar-utility-stack {
-  justify-items: center;
-}
-
-.sidebar-collapsed .theme-panel {
-  display: inline-flex;
-  padding: 5px;
 }
 
 .auth-panel {
@@ -753,7 +767,8 @@ h4 {
 
 .sidebar-collapsed .sidebar-brand h1,
 .sidebar-collapsed .nav-label,
-.sidebar-collapsed .team-mark {
+.sidebar-collapsed .team-mark,
+.sidebar-collapsed .sidebar-resize-handle {
   display: none;
 }
 
@@ -821,9 +836,10 @@ h4 {
   border-radius: 6px;
   background: var(--warning-bg);
   color: var(--warning-text);
-  font-size: 12px;
-  margin-bottom: 10px;
-  padding: 9px 12px;
+  font-size: 11px;
+  line-height: 1.35;
+  margin-bottom: 8px;
+  padding: 6px 9px;
 }
 
 .toolbar,

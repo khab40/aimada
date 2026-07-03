@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BrowserRouter, Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
 import "./App.css";
 import { AboutPage } from "@/pages/AboutPage";
@@ -18,9 +19,16 @@ type ThemePreference = "system" | "light" | "dark";
 type ResolvedTheme = "light" | "dark";
 
 const THEME_PREFERENCE_KEY = "aimada.themePreference";
+const SIDEBAR_WIDTH_KEY = "aimada.sidebarWidth";
+const SIDEBAR_MIN_WIDTH = 220;
+const SIDEBAR_MAX_WIDTH = 420;
+const SIDEBAR_DEFAULT_WIDTH = 292;
+const SIDEBAR_COLLAPSED_WIDTH = 78;
 
 export function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(() => getStoredSidebarWidth());
+  const resizingRef = useRef(false);
   const [themePreference, setThemePreference] = useState<ThemePreference>(() => getStoredThemePreference());
   const [systemTheme, setSystemTheme] = useState<ResolvedTheme>(() => getSystemTheme());
   const resolvedTheme = themePreference === "system" ? systemTheme : themePreference;
@@ -42,19 +50,51 @@ export function App() {
   }, [themePreference]);
 
   useEffect(() => {
+    if (!sidebarCollapsed) {
+      window.localStorage.setItem(SIDEBAR_WIDTH_KEY, String(sidebarWidth));
+    }
+  }, [sidebarCollapsed, sidebarWidth]);
+
+  useEffect(() => {
     document.documentElement.dataset.theme = resolvedTheme;
     document.documentElement.dataset.themePreference = themePreference;
     document.documentElement.style.colorScheme = resolvedTheme;
   }, [resolvedTheme, themePreference]);
 
+  function startSidebarResize(event: ReactPointerEvent<HTMLDivElement>) {
+    if (sidebarCollapsed) {
+      return;
+    }
+    resizingRef.current = true;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    document.body.dataset.sidebarResizing = "true";
+  }
+
+  function resizeSidebar(event: ReactPointerEvent<HTMLDivElement>) {
+    if (!resizingRef.current) {
+      return;
+    }
+    setSidebarWidth(clampSidebarWidth(event.clientX));
+  }
+
+  function stopSidebarResize(event: ReactPointerEvent<HTMLDivElement>) {
+    if (!resizingRef.current) {
+      return;
+    }
+    resizingRef.current = false;
+    event.currentTarget.releasePointerCapture(event.pointerId);
+    delete document.body.dataset.sidebarResizing;
+  }
+
+  const shellStyle = {
+    "--sidebar-width": `${sidebarCollapsed ? SIDEBAR_COLLAPSED_WIDTH : sidebarWidth}px`
+  } as CSSProperties;
+
   return (
     <BrowserRouter>
-      <main className={`app-shell ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}>
+      <main className={`app-shell ${sidebarCollapsed ? "sidebar-collapsed" : ""}`} style={shellStyle}>
         <aside className="app-sidebar" aria-label="Application navigation">
           <div className="sidebar-brand">
-            <div>
-              <h1>AI Market Abuse Detection Arena</h1>
-            </div>
             <button
               aria-label={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}
               className="sidebar-toggle"
@@ -77,20 +117,27 @@ export function App() {
               />
             ))}
           </nav>
-
-          <div className="sidebar-utility-stack">
-            <ThemePanel
-              collapsed={sidebarCollapsed}
-              onPreferenceChange={setThemePreference}
-              preference={themePreference}
-              resolvedTheme={resolvedTheme}
-            />
-          </div>
+          <div />
+          <div
+            aria-hidden={sidebarCollapsed}
+            className="sidebar-resize-handle"
+            onDoubleClick={() => setSidebarWidth(SIDEBAR_DEFAULT_WIDTH)}
+            onPointerCancel={stopSidebarResize}
+            onPointerDown={startSidebarResize}
+            onPointerMove={resizeSidebar}
+            onPointerUp={stopSidebarResize}
+            role="separator"
+          />
         </aside>
 
         <section className="app-workspace">
           <header className="global-workspace-header" aria-label="Global account controls">
-            <div />
+            <ThemePanel
+              collapsed={false}
+              onPreferenceChange={setThemePreference}
+              preference={themePreference}
+              resolvedTheme={resolvedTheme}
+            />
             <AuthPanel />
           </header>
           <section className="disclaimer" aria-label="Project disclaimer">
@@ -120,6 +167,15 @@ export function App() {
 function getStoredThemePreference(): ThemePreference {
   const stored = window.localStorage.getItem(THEME_PREFERENCE_KEY);
   return stored === "light" || stored === "dark" || stored === "system" ? stored : "system";
+}
+
+function getStoredSidebarWidth() {
+  const stored = Number(window.localStorage.getItem(SIDEBAR_WIDTH_KEY));
+  return clampSidebarWidth(Number.isFinite(stored) ? stored : SIDEBAR_DEFAULT_WIDTH);
+}
+
+function clampSidebarWidth(value: number) {
+  return Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, Math.round(value)));
 }
 
 function getSystemTheme(): ResolvedTheme {
