@@ -33,8 +33,7 @@ import { UsageCostMonitor } from "@/features/nebius/components/UsageCostMonitor"
 import type {
   ExperimentArtifact,
   NebiusRuntimeStatus,
-  NebiusUsageMetrics,
-  ServerlessExperimentJob
+  NebiusUsageMetrics
 } from "@/features/nebius/types";
 
 const fallbackRuntimeStatus: NebiusRuntimeStatus = {
@@ -92,7 +91,6 @@ const initialExperimentForm: ExperimentFormState = {
 
 export function NebiusControlPanelPage() {
   const [artifacts, setArtifacts] = useState<ExperimentArtifact[]>([]);
-  const [jobs, setJobs] = useState<ServerlessExperimentJob[]>([]);
   const [runtimeStatus, setRuntimeStatus] = useState<NebiusRuntimeStatus>(fallbackRuntimeStatus);
   const [usageMetrics, setUsageMetrics] = useState<NebiusUsageMetrics>(fallbackUsageMetrics);
   const [experiment, setExperiment] = useState<ManagedExperiment | null>(null);
@@ -124,7 +122,6 @@ export function NebiusControlPanelPage() {
       setNebiusObservatory(observatory);
       setRuntimeStatus(runtimeFrom(status, observatory));
       setUsageMetrics(usageFrom(observatory, reports));
-      setJobs(jobsFrom(reports, observatory));
       setArtifacts(artifactsFrom(reports, observatory));
     } catch (error) {
       setDeploymentPanelMessage(error instanceof Error ? error.message : "Control plane refresh failed.");
@@ -890,14 +887,6 @@ function usageFrom(observatory: NebiusObservatory, reports: ReportsSummary): Neb
   };
 }
 
-function jobsFrom(reports: ReportsSummary, observatory: NebiusObservatory): ServerlessExperimentJob[] {
-  const batches = [...(reports.nebius_batches ?? [])];
-  if (observatory.latest_batch && !batches.some((batch) => batch.id === observatory.latest_batch?.id)) {
-    batches.push(observatory.latest_batch);
-  }
-  return batches.reverse().map((batch) => jobFromRecord(batch));
-}
-
 function artifactsFrom(reports: ReportsSummary, observatory: NebiusObservatory): ExperimentArtifact[] {
   const artifacts = (reports.nebius_artifacts ?? []).map(artifactFromRecord);
   const latestArtifacts = observatory.latest_batch && typeof observatory.latest_batch.artifact_paths === "object"
@@ -949,21 +938,4 @@ function artifactTypeFor(value: string): ExperimentArtifact["type"] {
   if (value.includes("dataset") || value.includes("trades") || value.includes("labels")) return "dataset";
   if (value.includes("scenario_template")) return "scenario_template";
   return "report";
-}
-
-function jobFromRecord(batch: Record<string, unknown>): ServerlessExperimentJob {
-  const metrics = Array.isArray(batch.metrics) ? batch.metrics as Record<string, unknown>[] : [];
-  const alerts = metrics.reduce((total, row) => total + Number(row.alerts ?? 0), 0);
-  const precisionRows = metrics.map((row) => Number(row.precision ?? Number.NaN)).filter(Number.isFinite);
-  const precision = precisionRows.length ? precisionRows.reduce((total, value) => total + value, 0) / precisionRows.length : undefined;
-  const runs = Number(batch.runs ?? 0);
-  return {
-    alerts: alerts || undefined,
-    estimatedCostUsd: Number((0.21 + runs * 0.004).toFixed(2)),
-    id: String(batch.id ?? "JOB"),
-    precision,
-    runs,
-    scenario: Array.isArray(batch.scenarios) ? batch.scenarios.join(", ") : String(batch.scenario ?? "Nebius batch"),
-    status: batch.status === "completed" ? "done" : batch.status === "failed" ? "failed" : "running"
-  };
 }

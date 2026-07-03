@@ -85,11 +85,14 @@ export function App() {
               preference={themePreference}
               resolvedTheme={resolvedTheme}
             />
-            <AuthPanel collapsed={sidebarCollapsed} />
           </div>
         </aside>
 
         <section className="app-workspace">
+          <header className="global-workspace-header" aria-label="Global account controls">
+            <div />
+            <AuthPanel />
+          </header>
           <section className="disclaimer" aria-label="Project disclaimer">
             <strong>Disclaimer: </strong>
             {disclaimer}
@@ -343,8 +346,6 @@ function AuthToggleIcon({ expanded }: { expanded: boolean }) {
   );
 }
 
-const AUTH_PANEL_EXPANDED_KEY = "aimada.authPanelExpanded";
-
 const arenaRoles: { label: string; value: ArenaRole }[] = [
   { label: "Observer", value: "observer" },
   { label: "Attacker", value: "attacker" },
@@ -352,69 +353,66 @@ const arenaRoles: { label: string; value: ArenaRole }[] = [
   { label: "Judge", value: "judge" }
 ];
 
-function AuthPanel({ collapsed }: { collapsed: boolean }) {
+function AuthPanel() {
   const { busy, error, lastMessage, loginWithGoogle, logout, role, saveNow, session, setRole, user } = useAuth();
-  const [expanded, setExpanded] = useState(() => window.localStorage.getItem(AUTH_PANEL_EXPANDED_KEY) === "true");
-  const detailsVisible = expanded && !collapsed;
-  const displayName = user?.name || "Sign in";
-  const displayDetail = user?.email || "Google auth and role";
+  const [menuOpen, setMenuOpen] = useState(false);
+  const accountName = user?.name || user?.email || "Google";
+  const accountDetail = user?.email || "Google connected";
   const initial = (user?.name || user?.email || "G").trim().charAt(0).toUpperCase() || "G";
+  const statusText = error ? "Google error" : session ? "Google connected" : busy ? "Connecting..." : "Not connected";
 
   useEffect(() => {
-    if (error) {
-      setExpanded(true);
-    }
-  }, [error]);
-
-  function toggleExpanded() {
-    setExpanded((current) => {
-      const next = !current;
-      window.localStorage.setItem(AUTH_PANEL_EXPANDED_KEY, String(next));
-      return next;
-    });
-  }
+    setMenuOpen(false);
+  }, [session?.session_id]);
 
   return (
-    <section className={`auth-panel ${detailsVisible ? "expanded" : "compact"}`} aria-label="Google login and tournament persona">
-      <button
-        aria-expanded={detailsVisible}
-        className="auth-compact-toggle"
-        onClick={toggleExpanded}
-        title={detailsVisible ? "Hide account controls" : "Show account controls"}
-        type="button"
-      >
-        <span className="auth-avatar" aria-hidden="true">{initial}</span>
-        <span className="auth-compact-copy">
-          <strong>{displayName}</strong>
-          <span>{displayDetail}</span>
-        </span>
-        <AuthToggleIcon expanded={detailsVisible} />
-      </button>
-
-      {detailsVisible ? (
-        <div className="auth-details">
-          <label className="auth-role-select" title="Tournament role">
-            Role
-            <select disabled={busy} value={role} onChange={(event) => void setRole(event.target.value as ArenaRole)}>
-              {arenaRoles.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-            </select>
-          </label>
-          <div className="auth-actions">
-            {session ? (
-              <>
-                <button disabled={busy} onClick={() => void saveNow()} title="Save History" type="button">Save History</button>
-                <button disabled={busy} onClick={() => void logout()} title="Logout" type="button">Logout</button>
-              </>
-            ) : (
-              <button className="google-login-button" disabled={busy} onClick={() => void loginWithGoogle(role)} title="Continue with Google" type="button">
-                <span className="google-icon" aria-hidden="true">G</span>
-                <span>Continue with Google</span>
-              </button>
-            )}
-          </div>
-          {error ? <span className="auth-status warning">{error}</span> : lastMessage ? <span className="auth-status">{lastMessage}</span> : null}
-        </div>
-      ) : null}
+    <section className={`auth-panel ${error ? "error" : session ? "connected" : "not-connected"}`} aria-label="Google account">
+      {session ? (
+        <>
+          <button
+            aria-expanded={menuOpen}
+            className="auth-compact-toggle"
+            onClick={() => setMenuOpen((value) => !value)}
+            title="Google account"
+            type="button"
+          >
+            <span className="auth-avatar" aria-hidden="true">{initial}</span>
+            <span className="auth-compact-copy">
+              <strong>{accountName}</strong>
+              <span>{statusText}</span>
+            </span>
+            <AuthToggleIcon expanded={menuOpen} />
+          </button>
+          {menuOpen ? (
+            <div className="auth-details" role="menu">
+              <span className="auth-status">{accountDetail}</span>
+              {lastMessage ? <span className="auth-status">{lastMessage}</span> : null}
+              <label className="auth-role-select" title="Tournament role">
+                Role
+                <select disabled={busy} value={role} onChange={(event) => void setRole(event.target.value as ArenaRole)}>
+                  {arenaRoles.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+                </select>
+              </label>
+              <div className="auth-actions">
+                <button disabled={busy} onClick={() => void saveNow()} title="Save history" type="button">Save history</button>
+                <button disabled={busy} onClick={() => void logout()} title="Disconnect Google" type="button">Disconnect</button>
+              </div>
+            </div>
+          ) : null}
+        </>
+      ) : (
+        <>
+          <button className="google-login-button" disabled={busy} onClick={() => void loginWithGoogle(role)} title="Connect Google" type="button">
+            <span className="google-icon" aria-hidden="true">G</span>
+            <span>{busy ? "Connecting..." : error ? "Retry Google" : "Connect Google"}</span>
+          </button>
+          <span className={`auth-status ${error ? "warning" : ""}`}>{error ? shortAuthError(error) : statusText}</span>
+        </>
+      )}
     </section>
   );
+}
+
+function shortAuthError(message: string) {
+  return message.length > 96 ? `${message.slice(0, 93)}...` : message;
 }

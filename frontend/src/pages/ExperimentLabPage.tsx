@@ -29,7 +29,7 @@ const tournamentRoles: { value: ArenaRole; label: string; summary: string }[] = 
 ];
 
 export function ExperimentLabPage() {
-  const { busy, loginWithGoogle, role, session, setRole, user } = useAuth();
+  const { busy, role, session, setRole, user } = useAuth();
   const selectedRole = tournamentRoles.find((item) => item.value === role) ?? tournamentRoles[2];
   const [experiments, setExperiments] = useState<ManagedExperiment[]>([]);
 
@@ -60,14 +60,9 @@ export function ExperimentLabPage() {
           <h2>Select Role, Login, Join Arena</h2>
         </div>
         <div className="tournament-login-box">
-          <span className="endpoint-badge">{session ? "logged in" : "login required"}</span>
+          <span className="endpoint-badge">{session ? "Google connected" : "Google not connected"}</span>
           <strong>{session ? `${user?.name ?? "Player"} as ${selectedRole.label}` : selectedRole.label}</strong>
-          {!session ? (
-            <button className="google-login-button" disabled={busy} onClick={() => void loginWithGoogle(role)} type="button">
-              <span className="google-icon" aria-hidden="true">G</span>
-              <span>Login with Google</span>
-            </button>
-          ) : null}
+          <span>{session ? user?.email ?? "Signed in" : "Use the account menu in the top-right to sign in."}</span>
         </div>
       </div>
 

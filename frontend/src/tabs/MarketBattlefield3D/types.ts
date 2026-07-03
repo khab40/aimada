@@ -1,7 +1,9 @@
 export type BattlefieldCell = {
   anomalyScore: number;
+  agentId?: string;
   price?: number;
   priceLevel: number;
+  state?: "alert" | "cancelled" | "normal" | "suspicious" | "trade";
   side: "bid" | "ask";
   tick: number;
   volume: number;

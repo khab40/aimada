@@ -374,6 +374,20 @@ button.active {
   padding: 14px;
 }
 
+.global-workspace-header {
+  align-items: flex-start;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin-bottom: 10px;
+}
+
+.global-workspace-header .auth-panel {
+  justify-self: end;
+  width: min(300px, 100%);
+  z-index: 4;
+}
+
 .app-header,
 .toolbar,
 .metric-row,
@@ -571,13 +585,25 @@ h4 {
 }
 
 .auth-panel {
+  align-items: center;
   border: 1px solid rgba(43, 90, 120, 0.4);
   border-radius: 6px;
   background: var(--auth-bg);
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+  justify-content: flex-end;
   min-width: 0;
-  padding: 6px;
+  padding: 5px;
+  position: relative;
+}
+
+.auth-panel.connected {
+  border-color: rgba(34, 197, 94, 0.34);
+}
+
+.auth-panel.error {
+  border-color: rgba(248, 113, 113, 0.55);
 }
 
 .auth-compact-toggle {
@@ -647,23 +673,38 @@ h4 {
 }
 
 .auth-details {
-  border-top: 1px solid rgba(43, 90, 120, 0.34);
+  background: var(--panel-bg);
+  border: 1px solid rgba(43, 90, 120, 0.46);
+  border-radius: 6px;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.24);
   display: grid;
   gap: 8px;
-  padding: 8px 2px 2px;
+  min-width: 260px;
+  padding: 10px;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 20;
 }
 
 .auth-role-select,
 .auth-actions {
-  align-items: flex-start;
   display: flex;
-  flex-direction: column;
   gap: 8px;
 }
 
 .auth-role-select select,
 .auth-actions button {
-  width: 100%;
+  width: auto;
+}
+
+.auth-role-select {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.auth-role-select select {
+  min-width: 128px;
 }
 
 .google-login-button {
@@ -671,6 +712,8 @@ h4 {
   display: inline-flex;
   gap: 8px;
   justify-content: center;
+  min-height: 32px;
+  white-space: nowrap;
 }
 
 .google-icon {
@@ -690,30 +733,11 @@ h4 {
 .auth-status {
   display: block;
   line-height: 1.35;
+  max-width: 100%;
 }
 
 .auth-status.warning {
   color: #fda4af;
-}
-
-.sidebar-collapsed .auth-panel {
-  justify-items: center;
-  padding: 5px;
-}
-
-.sidebar-collapsed .auth-compact-toggle {
-  display: inline-flex;
-  height: 34px;
-  justify-content: center;
-  min-height: 34px;
-  padding: 2px;
-  width: 34px;
-}
-
-.sidebar-collapsed .auth-compact-copy,
-.sidebar-collapsed .auth-toggle-mark,
-.sidebar-collapsed .auth-details {
-  display: none;
 }
 
 .team-nav-link {
@@ -1242,6 +1266,12 @@ h4 {
 
 .tournament-login-box strong {
   color: var(--heading);
+}
+
+.tournament-login-box > span:last-child {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .tournament-role-panel,
@@ -4611,10 +4641,44 @@ kbd {
 
 .battlefield-terrain-panel {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   gap: 8px;
   height: 100%;
   min-height: 0;
+}
+
+.battlefield-camera-controls {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.battlefield-camera-controls button {
+  background: rgba(9, 21, 32, 0.92);
+  border: 1px solid rgba(43, 90, 120, 0.64);
+  color: var(--text-muted);
+  min-height: 30px;
+  padding: 5px 9px;
+}
+
+.battlefield-camera-controls button.active {
+  border-color: rgba(25, 167, 206, 0.9);
+  color: var(--text-primary);
+}
+
+.battlefield-camera-controls label {
+  align-items: center;
+  color: var(--text-muted);
+  display: inline-flex;
+  font-size: 11px;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.battlefield-camera-controls input[type="range"] {
+  accent-color: var(--accent);
+  width: 112px;
 }
 
 .battlefield-terrain-canvas {
@@ -4634,15 +4698,20 @@ kbd {
 .battlefield-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
   color: var(--text-muted);
   font-size: 10px;
+  line-height: 1.2;
 }
 
 .battlefield-legend span {
   display: inline-flex;
   align-items: center;
+  background: rgba(9, 21, 32, 0.66);
+  border: 1px solid rgba(43, 90, 120, 0.35);
+  border-radius: 3px;
   gap: 6px;
+  padding: 3px 6px;
 }
 
 .legend-swatch.bid {
@@ -4655,6 +4724,22 @@ kbd {
 
 .legend-swatch.warning {
   background: rgba(245, 184, 65, 0.95);
+}
+
+.legend-swatch.suspicious {
+  background: rgba(245, 158, 11, 0.95);
+}
+
+.legend-swatch.cancelled {
+  background: rgba(148, 163, 184, 0.95);
+}
+
+.legend-swatch.trade {
+  background: rgba(103, 232, 249, 0.95);
+}
+
+.legend-swatch.path {
+  background: rgba(251, 191, 36, 0.95);
 }
 
 .legend-swatch.attack {
@@ -5680,8 +5765,7 @@ kbd,
 
   .sidebar-brand h1,
   .nav-label,
-  .team-mark,
-  .auth-details {
+  .team-mark {
     display: none;
   }
 
@@ -5705,6 +5789,14 @@ kbd,
   .auth-panel {
     max-width: none;
     width: 100%;
+  }
+
+  .global-workspace-header {
+    grid-template-columns: 1fr;
+  }
+
+  .global-workspace-header .auth-panel {
+    justify-self: stretch;
   }
 
   .lab-grid,

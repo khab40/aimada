@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useArenaSource } from "@/hooks/useArenaSource";
 import type { AgentEvent, ArenaState, PriceLevel } from "@/types/arena";
-import type { BattlefieldEvent, BattlefieldFrame, BattlefieldPlaybackState } from "../types";
+import type { BattlefieldCell, BattlefieldEvent, BattlefieldFrame, BattlefieldPlaybackState } from "../types";
 
 const MAX_HISTORY = 64;
 const VISIBLE_LEVELS_PER_SIDE = 12;
@@ -69,10 +69,12 @@ export function arenaStateToFrame(state: ArenaState): BattlefieldFrame {
     ?.map((stage) => stage.detector_confidence ?? 0)
     .reduce((max, value) => Math.max(max, value), 0) ?? 0;
 
+  const recentEvents = state.events.slice(0, 32);
+
   return {
     cells: [
-      ...levelsToCells(state.book.bids, "bid", state.tick, detectorConfidence),
-      ...levelsToCells(state.book.asks, "ask", state.tick, detectorConfidence)
+      ...levelsToCells(state.book.bids, "bid", state.tick, detectorConfidence, recentEvents),
+      ...levelsToCells(state.book.asks, "ask", state.tick, detectorConfidence, recentEvents)
     ],
     events: [
       ...eventsToBattlefieldEvents(state.events, state.tick),
@@ -88,15 +90,30 @@ function levelsToCells(
   levels: PriceLevel[],
   side: "ask" | "bid",
   tick: number,
-  detectorConfidence: number
+  detectorConfidence: number,
+  events: AgentEvent[]
 ) {
+  const hasCancel = events.some((event) => classifyEvent(event) === "CANCEL_BURST");
+  const hasTrade = events.some((event) => classifyEvent(event) === "PRICE_MOVE" && event.type.toLowerCase().includes("trade"));
   const visible = levels.slice(0, VISIBLE_LEVELS_PER_SIDE);
   return visible.map((level, index) => {
     const ownedByAbuser = level.owner === "abuser" || level.agent_id?.toLowerCase().includes("abuser");
+    const anomalyScore = ownedByAbuser ? Math.max(0.86, detectorConfidence) : Math.max(0, detectorConfidence - 0.55) * 0.45;
+    const state: BattlefieldCell["state"] = ownedByAbuser && hasCancel
+        ? "cancelled"
+        : ownedByAbuser && detectorConfidence > 0.82
+          ? "alert"
+          : ownedByAbuser
+            ? "suspicious"
+            : hasTrade && index < 2
+              ? "trade"
+              : "normal";
     return {
-      anomalyScore: ownedByAbuser ? Math.max(0.86, detectorConfidence) : Math.max(0, detectorConfidence - 0.55) * 0.45,
+      agentId: level.agent_id,
+      anomalyScore,
       price: level.price,
       priceLevel: side === "ask" ? index + 1 : -(index + 1),
+      state,
       side,
       tick,
       volume: level.quantity
