@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   artifactDownloadUrl,
+  API_BASE_URL,
   clearReportsData,
   exportArtifact,
   getManagedExperiment,
@@ -25,9 +26,10 @@ import {
   type ReportsSummary
 } from "@/api/client";
 import { ArtifactWorkbench, type ArtifactItem } from "@/components/ArtifactWorkbench";
+import { AuditTrailCard } from "@/components/AuditTrailCard";
 import { NebiusExecutionTrace, type NebiusExecutionTraceData } from "@/components/NebiusExecutionTrace";
 import { useAuth } from "@/auth/useAuth";
-import { createAuditTrail, createCaseOwnership, type CaseStatus } from "@/platform/identity";
+import { createAuditTrail, createCaseOwnership, productRoleForArenaRole, type CaseStatus } from "@/platform/identity";
 
 const previousRuns = [
   { id: "RUN-2026-0602-001", mode: "Detector tournament", scenarios: 4, incidents: 37, f1: 0.88, status: "completed" },
@@ -63,7 +65,7 @@ type ArtifactIndexEntry = {
 };
 
 export function ReportsPage() {
-  const { platformUser, workspace } = useAuth();
+  const { platformUser, role, workspace } = useAuth();
   const [searchParams] = useSearchParams();
   const batchJobDemo = searchParams.get("demo") === "batch-job";
   const [summary, setSummary] = useState<ReportsSummary | null>(null);
@@ -191,6 +193,17 @@ export function ReportsPage() {
       setClearDialogOpen(false);
       setClearConfirmation("");
       setSummary(await loadReports());
+      setExperiments([]);
+      setSelectedExperimentId(null);
+      setSelectedExperiment(null);
+      setExperimentSummary(null);
+      setExperimentLeaderboard([]);
+      setExperimentReport("");
+      setExperimentInvestigations([]);
+      setExperimentJobs([]);
+      setArtifactIndexEntries([]);
+      setDeepInvestigationTrace(createIdleDeepInvestigationTrace(null));
+      setReportExportMessage(null);
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : "Could not clear reports.");
     } finally {
@@ -388,7 +401,8 @@ export function ReportsPage() {
       reviewedBy: ownership.reviewers.map((reviewer) => reviewer.name).join(", "),
       status: ownership.status,
       timeline: `${historyRows.length} records / ${summary?.history_ticks.length ?? 0} ticks`,
-      timestamp: reportTimestamp
+      timestamp: reportTimestamp,
+      workspace: workspace.name
     };
   }, [
     artifactIndexArtifacts.length,
@@ -404,22 +418,27 @@ export function ReportsPage() {
     workspace
   ]);
   const caseOwnership = useMemo(() => createCaseOwnership(platformUser, workspace, caseStatusForExperiment(selectedExperiment)), [platformUser, selectedExperiment, workspace]);
-  const auditTrail = useMemo(() => createAuditTrail(platformUser, selectedExperiment?.id ?? "current-investigation", caseOwnership.status), [caseOwnership.status, platformUser, selectedExperiment?.id]);
+  const auditTrail = useMemo(
+    () => createAuditTrail(platformUser, selectedExperiment?.id ?? "current-investigation", caseOwnership.status, productRoleForArenaRole(role)),
+    [caseOwnership.status, platformUser, role, selectedExperiment?.id]
+  );
 
   async function exportCompliancePdf() {
     const reportPath = selectedExperiment?.artifact_paths.benchmark_report;
-    if (!reportPath) {
-      setReportExportMessage("No report artifact is available for PDF export.");
-      return;
-    }
     setReportExportBusy("pdf");
     setReportExportMessage(null);
     try {
-      const exported = await exportArtifact(reportPath, "pdf");
-      window.open(exported.download_url || artifactDownloadUrl(exported.path), "_blank", "noreferrer");
-      setReportExportMessage(`PDF export created: ${exported.path}`);
+      if (reportPath) {
+        const exported = await exportArtifact(reportPath, "pdf");
+        window.open(exportedArtifactDownloadUrl(exported), "_blank", "noreferrer");
+        setReportExportMessage(`PDF export created: ${exported.path}`);
+        return;
+      }
+      downloadPdf("incident-compliance-report.pdf", createCompliancePdfLines(complianceReport));
+      setReportExportMessage("PDF export created from current report metadata.");
     } catch (nextError) {
-      setReportExportMessage(nextError instanceof Error ? nextError.message : "PDF export failed.");
+      downloadPdf("incident-compliance-report.pdf", createCompliancePdfLines(complianceReport));
+      setReportExportMessage(nextError instanceof Error ? `${nextError.message}. Downloaded fallback PDF.` : "Downloaded fallback PDF.");
     } finally {
       setReportExportBusy(null);
     }
@@ -475,9 +494,7 @@ export function ReportsPage() {
       <div className="reports-grid investigation-workflow">
         <section className="panel report-card wide experiment-reports-panel">
           <div className="section-heading-row">
-            <div>
-              <h3>Incident Summary</h3>
-            </div>
+            <WorkflowStepHeading step={1} title="Incident Summary" />
           </div>
           <div className="surveillance-status-strip">
             <Metric label="Persisted Incidents" value={String(summary?.incidents.length ?? 0)} />
@@ -492,6 +509,7 @@ export function ReportsPage() {
             <ComplianceField label="Reviewer" value={caseOwnership.reviewers.map((reviewer) => reviewer.name).join(", ")} />
             <ComplianceField label="Case status" value={caseOwnership.status} />
             <ComplianceField label="Last updated by" value={caseOwnership.lastUpdatedBy.name} />
+            <ComplianceField label="Updated at" value={formatSavedAt(caseOwnership.updated_at)} />
           </div>
           {experimentError ? <div className="empty-state warning">{experimentError}</div> : null}
           <div className="experiment-report-layout">
@@ -580,9 +598,7 @@ export function ReportsPage() {
 
         <section className="panel report-card wide">
           <div className="section-heading-row">
-            <div>
-              <h3>Evidence</h3>
-            </div>
+            <WorkflowStepHeading step={2} title="Evidence" />
           </div>
           <ArtifactWorkbench
             artifacts={benchmarkArtifacts}
@@ -617,9 +633,7 @@ export function ReportsPage() {
 
         <section className="panel report-card wide">
           <div className="section-heading-row">
-            <div>
-              <h3>Replay</h3>
-            </div>
+            <WorkflowStepHeading step={3} title="Replay" />
           </div>
           <div className="surveillance-status-strip">
             <Metric label="History Artifacts" value={String(summary?.history_artifacts.length ?? 0)} />
@@ -685,9 +699,7 @@ export function ReportsPage() {
 
         <section className="panel report-card wide">
           <div className="section-heading-row">
-            <div>
-              <h3>Report</h3>
-            </div>
+            <WorkflowStepHeading step={4} title="Report" />
             <button className="danger-button" onClick={() => setClearDialogOpen(true)} type="button">Clean Investigation Data</button>
           </div>
           <section className="nebius-result-block compliance-report-panel">
@@ -708,6 +720,7 @@ export function ReportsPage() {
               <ComplianceField label="Evidence count" value={String(complianceReport.evidenceCount)} />
               <ComplianceField label="Timeline" value={complianceReport.timeline} />
                 <ComplianceField label="Affected symbols" value={complianceReport.affectedSymbols.join(", ")} />
+                <ComplianceField label="Workspace" value={complianceReport.workspace} />
                 <ComplianceField label="Generated by" value={complianceReport.generatedBy} />
                 <ComplianceField label="Reviewed by" value={complianceReport.reviewedBy} />
                 <ComplianceField label="Case status" value={complianceReport.status} />
@@ -766,18 +779,7 @@ export function ReportsPage() {
             </section>
           </div>
 
-          <section className="nebius-result-block">
-            <span>Audit trail</span>
-            <div className="audit-trail-list">
-              {auditTrail.map((entry) => (
-                <article key={`${entry.actionType}-${entry.timestamp}`}>
-                  <strong>{entry.actionType}</strong>
-                  <span>{formatSavedAt(entry.timestamp)} · {entry.user.name} · {entry.targetEntity}</span>
-                  <p>{entry.description}</p>
-                </article>
-              ))}
-            </div>
-          </section>
+          <AuditTrailCard events={auditTrail} status={caseOwnership.status} targetId={selectedExperiment?.id ?? "current-investigation"} />
 
           <section className="nebius-result-block">
             <span>Final report preview</span>
@@ -838,6 +840,15 @@ function ComplianceField({ label, value }: { label: string; value: string }) {
       <span>{label}</span>
       <strong>{value || "n/a"}</strong>
     </article>
+  );
+}
+
+function WorkflowStepHeading({ step, title }: { step: number; title: string }) {
+  return (
+    <div className="workflow-step-heading">
+      <span>{step}</span>
+      <h3>{title}</h3>
+    </div>
   );
 }
 
@@ -973,7 +984,7 @@ function caseStatusForExperiment(experiment: ManagedExperiment | null): CaseStat
   if (!experiment) return "open";
   if (experiment.status === "completed") return "approved";
   if (experiment.status === "failed") return "investigating";
-  if (experiment.status === "manifest_generated") return "review";
+  if (experiment.status === "manifest_generated") return "pending_review";
   return "investigating";
 }
 
@@ -1007,6 +1018,12 @@ function collectSymbolFromRecord(row: Record<string, unknown>, symbols: Set<stri
   }
 }
 
+function exportedArtifactDownloadUrl(exported: { download_url?: string | null; path: string }) {
+  if (exported.download_url?.startsWith("http")) return exported.download_url;
+  if (exported.download_url?.startsWith("/")) return `${API_BASE_URL}${exported.download_url}`;
+  return artifactDownloadUrl(exported.path);
+}
+
 function downloadJson(filename: string, payload: unknown) {
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -1015,4 +1032,74 @@ function downloadJson(filename: string, payload: unknown) {
   anchor.download = filename;
   anchor.click();
   URL.revokeObjectURL(url);
+}
+
+function createCompliancePdfLines(report: {
+  affectedSymbols: string[];
+  assignedAnalyst: string;
+  confidence: number;
+  evidenceCount: number;
+  generatedBy: string;
+  incidentType: string;
+  reviewedBy: string;
+  status: string;
+  timeline: string;
+  timestamp: string;
+  workspace: string;
+}) {
+  return [
+    "Aimada Compliance Report",
+    `Incident type: ${report.incidentType}`,
+    `Confidence: ${formatScore(report.confidence)}`,
+    `Evidence count: ${report.evidenceCount}`,
+    `Timeline: ${report.timeline}`,
+    `Affected symbols: ${report.affectedSymbols.join(", ")}`,
+    `Workspace: ${report.workspace}`,
+    `Assigned analyst: ${report.assignedAnalyst}`,
+    `Generated by: ${report.generatedBy}`,
+    `Reviewed by: ${report.reviewedBy}`,
+    `Case status: ${report.status}`,
+    `Timestamp: ${formatSavedAt(report.timestamp)}`
+  ];
+}
+
+function downloadPdf(filename: string, lines: string[]) {
+  const content = lines.map((line, index) => `BT /F1 12 Tf 50 ${760 - index * 24} Td (${escapePdfText(line)}) Tj ET`).join("\n");
+  const objects = [
+    "1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj",
+    "2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj",
+    "3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >> endobj",
+    "4 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj",
+    `5 0 obj << /Length ${content.length} >> stream\n${content}\nendstream endobj`
+  ];
+  const header = "%PDF-1.4\n";
+  let body = "";
+  const offsets = [0];
+  for (const object of objects) {
+    offsets.push(header.length + body.length);
+    body += `${object}\n`;
+  }
+  const xrefOffset = header.length + body.length;
+  const xref = [
+    `xref\n0 ${objects.length + 1}`,
+    "0000000000 65535 f ",
+    ...offsets.slice(1).map((offset) => `${String(offset).padStart(10, "0")} 00000 n `),
+    `trailer << /Size ${objects.length + 1} /Root 1 0 R >>`,
+    `startxref\n${xrefOffset}`,
+    "%%EOF"
+  ].join("\n");
+  downloadBlob(filename, new Blob([header, body, xref], { type: "application/pdf" }));
+}
+
+function downloadBlob(filename: string, blob: Blob) {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+function escapePdfText(value: string) {
+  return value.replaceAll("\\", "\\\\").replaceAll("(", "\\(").replaceAll(")", "\\)");
 }

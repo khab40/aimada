@@ -87,7 +87,7 @@ describe("Core UI navigation and workflow contracts", () => {
     assert.doesNotMatch(app, /label: "Blue Team"/);
   });
 
-  it("keeps Arena status, controls, tabs, and visualization switch discoverable", () => {
+  it("keeps Arena status, controls, tabs, and standard market visible", () => {
     expectIncludes(arena, [
       "MetricPill label=\"State\"",
       "MetricPill label=\"Tick\"",
@@ -97,12 +97,13 @@ describe("Core UI navigation and workflow contracts", () => {
       "className=\"arena-pause-button\"",
       "className=\"arena-reset-button\"",
       "aria-label=\"Keyboard shortcuts\"",
-      "Standard",
-      "Battlefield",
+      "MetricPill label=\"Mid\"",
+      "MetricPill label=\"Spread\"",
       "📄 Evidence",
       "🕒 Timeline",
       "IncidentDrawer"
     ]);
+    assert.doesNotMatch(arena, /aria-label="Market visualization"/);
   });
 
   it("keeps the three-minute demo launch paths wired", () => {
@@ -149,9 +150,12 @@ describe("Core UI navigation and workflow contracts", () => {
       "Save history"
     ]);
     expectIncludes(experiments, [
-      "Google connected",
-      "Google not connected",
-      "Use the account menu in the top-right to sign in."
+      "Experiment Workspace",
+      "Running as Demo Analyst in Aimada Surveillance Desk.",
+      "Permissions",
+      "workspace.name",
+      "platformUser.name",
+      "productRoleLabel(role)"
     ]);
     assert.equal((app.match(/google-login-button/g) ?? []).length, 1);
     assert.doesNotMatch(experiments, /google-login-button/);

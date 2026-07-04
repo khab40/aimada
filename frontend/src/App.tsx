@@ -11,6 +11,7 @@ import { DemoPage } from "@/pages/DemoPage";
 import { DetectionPage } from "@/pages/DetectionPage";
 import { ExperimentLabPage } from "@/pages/ExperimentLabPage";
 import { NebiusControlPanelPage } from "@/pages/NebiusControlPanelPage";
+import { productRoleLabel } from "@/platform/identity";
 
 const disclaimer =
   "This project is an educational simulation. It does not detect real market manipulation, does not provide trading signals, and should not be used for compliance decisions. The scenarios are synthetic “abuse-like” patterns designed to demonstrate order-book anomaly detection and AI Investigator explanations.";
@@ -291,12 +292,12 @@ const observerAndJudge: ArenaRole[] = ["observer", "judge"];
 
 const sidebarItems: SidebarItem[] = [
   { icon: "arena", label: "Arena", shortLabel: "AR", to: "/arena", visibleFor: allRoles },
-  { icon: "demo", label: "Demo", shortLabel: "DM", to: "/demo", visibleFor: allRoles },
   { icon: "attack", label: "Scenario Generator", shortLabel: "SG", team: "red", to: "/attack-scenarios", visibleFor: ["observer", "attacker", "judge"] },
   { icon: "detection", label: "Detection", shortLabel: "DT", team: "blue", to: "/detection", visibleFor: allRoles },
   { icon: "tournament", label: "Experiments", shortLabel: "EX", to: "/lab", visibleFor: observerAndJudge },
   { icon: "cloud", label: "Nebius AI", shortLabel: "AI", to: "/nebius", visibleFor: allRoles },
-  { icon: "about", label: "About", shortLabel: "AB", to: "/about", visibleFor: allRoles }
+  { icon: "about", label: "About", shortLabel: "AB", to: "/about", visibleFor: allRoles },
+  { icon: "demo", label: "Demo", shortLabel: "DM", to: "/demo", visibleFor: allRoles }
 ];
 
 function canAccessPath(role: ArenaRole, path: string) {
@@ -413,9 +414,11 @@ function AuthPanel() {
   const { busy, error, lastMessage, loginWithGoogle, logout, platformUser, role, saveNow, session, setRole, workspace } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const accountName = platformUser.name;
-  const accountDetail = session ? platformUser.email : workspace.name;
+  const accountDetail = session ? platformUser.email : platformUser.email;
   const initial = (platformUser.name || platformUser.email || "A").trim().charAt(0).toUpperCase() || "A";
   const statusText = error ? "Google error" : session ? "Google connected" : "Demo workspace";
+  const roleLabel = productRoleLabel(role);
+  const connectLabel = busy && !session ? "Connecting..." : error ? "Retry Google" : "Connect Google";
 
   useEffect(() => {
     setMenuOpen(false);
@@ -435,7 +438,7 @@ function AuthPanel() {
             <span className="auth-avatar" aria-hidden="true">{initial}</span>
             <span className="auth-compact-copy">
               <strong>{accountName}</strong>
-              <span>{statusText}</span>
+              <span>{workspace.name} · {roleLabel} · {statusText}</span>
             </span>
             <AuthToggleIcon expanded={menuOpen} />
           </button>
@@ -443,9 +446,11 @@ function AuthPanel() {
             <div className="auth-details" role="menu">
               <span className="auth-status">{accountDetail}</span>
               <span className="auth-status">{workspace.name}</span>
+              <span className="auth-status">Product role: {roleLabel}</span>
+              <span className="auth-status">{statusText}</span>
               {lastMessage ? <span className="auth-status">{lastMessage}</span> : null}
-              <label className="auth-role-select" title="Tournament role">
-                Role
+              <label className="auth-role-select" title="Access profile">
+                Access
                 <select disabled={busy} value={role} onChange={(event) => void setRole(event.target.value as ArenaRole)}>
                   {arenaRoles.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
                 </select>
@@ -469,23 +474,26 @@ function AuthPanel() {
             <span className="auth-avatar" aria-hidden="true">{initial}</span>
             <span className="auth-compact-copy">
               <strong>{accountName}</strong>
-              <span>{statusText}</span>
+              <span>{workspace.name} · {roleLabel} · {statusText}</span>
             </span>
             <AuthToggleIcon expanded={menuOpen} />
           </button>
           {menuOpen ? (
             <div className="auth-details" role="menu">
               <span className="auth-status">{accountDetail}</span>
+              <span className="auth-status">{workspace.name}</span>
+              <span className="auth-status">Product role: {roleLabel}</span>
+              <span className="auth-status">{statusText}</span>
               {error ? <span className="auth-status warning">{shortAuthError(error)}</span> : null}
-              <label className="auth-role-select" title="Tournament role">
-                Role
+              <label className="auth-role-select" title="Access profile">
+                Access
                 <select disabled={busy} value={role} onChange={(event) => void setRole(event.target.value as ArenaRole)}>
                   {arenaRoles.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
                 </select>
               </label>
               <button className="google-login-button" disabled={busy} onClick={() => void loginWithGoogle(role)} title="Connect Google" type="button">
                 <span className="google-icon" aria-hidden="true">G</span>
-                <span>{busy ? "Connecting..." : error ? "Retry Google" : "Connect Google"}</span>
+                <span>{connectLabel}</span>
               </button>
             </div>
           ) : null}

@@ -60,10 +60,15 @@ const objectives: AttackScenarioInput["objective"][] = ["Buy cheaper", "Sell hig
 const stealthLevels: AttackScenarioInput["stealthLevel"][] = ["Obvious", "Medium", "Subtle"];
 const durations: AttackScenarioInput["attackDuration"][] = ["Short", "Medium", "Long"];
 const redTeamAgentCounts: AttackScenarioInput["redTeamAgentCount"][] = [1, 2, 5, 10];
-const detectorDifficulties: AttackScenarioInput["detectorDifficulty"][] = ["Easy", "Medium", "Hard"];
 const scenarioFamilies = ["Normal Market", "Spoofing Attack", "Layering Attack", "Quote Stuffing", "Mixed Abuse Scenario"];
 const batchAttackTypes = ["Spoofing", "Layering", "Quote Stuffing", "Mixed"];
-const detectors = ["Rule-based", "Isolation Forest", "AI Investigator"];
+const detectorProfiles = [
+  { detector: "Rule-based", difficulty: "Medium", label: "Rule-based wall detector" },
+  { detector: "Rule-based", difficulty: "Hard", label: "Layering sequence detector" },
+  { detector: "Rule-based", difficulty: "Hard", label: "Cross-agent trade pattern" },
+  { detector: "Rule-based", difficulty: "Medium", label: "Message-rate detector" },
+  { detector: "AI Investigator", difficulty: "Hard", label: "AI Investigator triage" }
+] as const;
 
 type ReusableScenarioTemplate = {
   attackInput: Partial<AttackScenarioInput>;
@@ -130,6 +135,7 @@ export function AttackScenarioGeneratorPage() {
   const [attackVariants, setAttackVariants] = useState<AttackScenario[]>([]);
   const [batchConfig, setBatchConfig] = useState<ExperimentBatchConfig>(initialBatchConfig);
   const [busy, setBusy] = useState(false);
+  const [detectorProfile, setDetectorProfile] = useState<string>(detectorProfiles[0].label);
   const [generatedScenarios, setGeneratedScenarios] = useState<GeneratedScenario[]>([]);
   const [jobs, setJobs] = useState<ServerlessExperimentJob[]>([]);
   const [message, setMessage] = useState<string | null>(null);
@@ -165,6 +171,7 @@ export function AttackScenarioGeneratorPage() {
   }
 
   function applyScenarioTemplate(template: ReusableScenarioTemplate) {
+    applyDetectorProfile(template.detectorProfile);
     setAttackInput((current) => ({
       ...current,
       ...template.attackInput,
@@ -178,6 +185,19 @@ export function AttackScenarioGeneratorPage() {
     }));
     setArenaRunReady(false);
     setMessage(`${template.title} template loaded. Generate the scenario, then run it in Arena.`);
+  }
+
+  function applyDetectorProfile(label: string) {
+    const profile = detectorProfiles.find((item) => item.label === label) ?? detectorProfiles[0];
+    setDetectorProfile(profile.label);
+    setAttackInput((current) => ({
+      ...current,
+      detectorDifficulty: profile.difficulty as AttackScenarioInput["detectorDifficulty"]
+    }));
+    setBatchConfig((current) => ({
+      ...current,
+      detector: profile.detector
+    }));
   }
 
 
@@ -334,14 +354,7 @@ export function AttackScenarioGeneratorPage() {
             </div>
           </div>
           <div className="scenario-control-grid">
-            <Select label="Detector difficulty" value={attackInput.detectorDifficulty} options={detectorDifficulties} onChange={(detectorDifficulty) => setAttackInput({ ...attackInput, detectorDifficulty: detectorDifficulty as AttackScenarioInput["detectorDifficulty"] })} />
-            <Select label="Detector" value={batchConfig.detector} options={detectors} onChange={(detector) => setBatchConfig({ ...batchConfig, detector })} />
-            <label className="form-row">
-              Detection threshold
-              <input max={1} min={0} onChange={(event) => setScenarioConfig({ ...scenarioConfig, detectionThreshold: Number(event.target.value) })} step={0.01} type="range" value={scenarioConfig.detectionThreshold} />
-              <span>{scenarioConfig.detectionThreshold.toFixed(2)}</span>
-            </label>
-            <Select label="Latency model" value={scenarioConfig.latencyModel} options={["None", "Random", "Agent-specific"]} onChange={(latencyModel) => setScenarioConfig({ ...scenarioConfig, latencyModel: latencyModel as ScenarioGridConfig["latencyModel"] })} />
+            <Select label="Detector profile" value={detectorProfile} options={detectorProfiles.map((profile) => profile.label)} onChange={applyDetectorProfile} />
           </div>
         </section>
 

@@ -306,6 +306,7 @@ export function NebiusControlPanelPage() {
 
       <section className="nebius-infra-workflow">
         <InfrastructureSection
+          step={1}
           title="Models"
           description="Select and validate the hosted Nebius AI model used by backend inference adapters."
         >
@@ -321,6 +322,7 @@ export function NebiusControlPanelPage() {
         </InfrastructureSection>
 
         <InfrastructureSection
+          step={2}
           title="Inference"
           description="Use Nebius for model-backed incident analysis and report generation behind the backend boundary."
         >
@@ -337,6 +339,7 @@ export function NebiusControlPanelPage() {
         </InfrastructureSection>
 
         <InfrastructureSection
+          step={3}
           title="Batch Jobs"
           description="Run managed experiment batches without tying compute to the browser session."
         >
@@ -361,6 +364,7 @@ export function NebiusControlPanelPage() {
         </InfrastructureSection>
 
         <InfrastructureSection
+          step={4}
           title="GPU Runtime"
           description="Prepare serverless job configs and track GPU-oriented job execution on Nebius."
         >
@@ -380,6 +384,7 @@ export function NebiusControlPanelPage() {
         </InfrastructureSection>
 
         <InfrastructureSection
+          step={5}
           title="Artifacts"
           description="Collect reports, normalized batches, manifests, and datasets produced by Nebius workloads."
         >
@@ -392,6 +397,7 @@ export function NebiusControlPanelPage() {
         </InfrastructureSection>
 
         <InfrastructureSection
+          step={6}
           title="Costs"
           description="Track endpoint calls, serverless jobs, token usage, and estimated infrastructure spend."
         >
@@ -406,17 +412,22 @@ export function NebiusControlPanelPage() {
 function InfrastructureSection({
   children,
   description,
+  step,
   title
 }: {
   children: ReactNode;
   description: string;
+  step: number;
   title: string;
 }) {
   return (
     <section className="panel nebius-infra-section">
       <div className="nebius-card-heading">
         <div>
-          <h2>{title}</h2>
+          <div className="workflow-step-heading">
+            <span>{step}</span>
+            <h2>{title}</h2>
+          </div>
           <p className="nebius-card-purpose">{description}</p>
         </div>
       </div>

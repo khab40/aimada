@@ -48,7 +48,7 @@ export function ArenaPage() {
     demoScenario: demoConfig?.scenarioType,
     symbol: demoConfig?.marketSymbol
   });
-  const [visualizationMode, setVisualizationMode] = useState<ArenaVisualizationMode>("battlefield");
+  const [visualizationMode] = useState<ArenaVisualizationMode>("standard");
   const [secondaryView, setSecondaryView] = useState<DetectionSecondaryView>("evidence");
   const [marketSecondaryView, setMarketSecondaryView] = useState<MarketSecondaryView>("heatmap");
   const [heatmapSnapshots, setHeatmapSnapshots] = useState<HeatmapSnapshotFrame[]>(() => [toHeatmapSnapshotFrame(state)]);
@@ -216,33 +216,11 @@ export function ArenaPage() {
           <header className="arena-column-header market-visualization-header">
             <div>
               <h2>Market</h2>
-              {visualizationMode === "battlefield" ? (
-                <div className="market-microstructure-strip" aria-label="Market microstructure metrics">
-                  <MetricPill label="Mid" value={formatNumber(state.mid)} />
-                  <MetricPill label="Spread" value={formatNumber(state.spread)} />
-                </div>
-              ) : null}
+              <div className="market-microstructure-strip" aria-label="Market microstructure metrics">
+                <MetricPill label="Mid" value={formatNumber(state.mid)} />
+                <MetricPill label="Spread" value={formatNumber(state.spread)} />
+              </div>
             </div>
-            <fieldset className="visualization-toggle" aria-label="Market visualization">
-              <label className={visualizationMode === "standard" ? "selected" : ""}>
-                <input
-                  checked={visualizationMode === "standard"}
-                  name="arena-visualization"
-                  onChange={() => setVisualizationMode("standard")}
-                  type="radio"
-                />
-                Standard
-              </label>
-              <label className={visualizationMode === "battlefield" ? "selected" : ""}>
-                <input
-                  checked={visualizationMode === "battlefield"}
-                  name="arena-visualization"
-                  onChange={() => setVisualizationMode("battlefield")}
-                  type="radio"
-                />
-                Battlefield
-              </label>
-            </fieldset>
           </header>
           <div className="market-mode-panel" key={visualizationMode}>
             {visualizationMode === "standard" ? (

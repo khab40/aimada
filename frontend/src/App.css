@@ -1290,6 +1290,45 @@ body[data-sidebar-resizing="true"] {
   line-height: 1.35;
 }
 
+.experiment-workspace-context {
+  border: 1px solid rgba(43, 90, 120, 0.36);
+  border-radius: 6px;
+  background: var(--widget-bg);
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+}
+
+.experiment-workspace-context p {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin: 0;
+}
+
+.experiment-workspace-context dl {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+}
+
+.experiment-workspace-context div {
+  display: grid;
+  gap: 4px;
+  grid-template-columns: 92px minmax(0, 1fr);
+}
+
+.experiment-workspace-context dt {
+  color: var(--text-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.experiment-workspace-context dd {
+  color: var(--heading);
+  font-size: 12px;
+  margin: 0;
+}
+
 .tournament-role-panel,
 .tournament-locked-panel,
 .tournament-workspace {
@@ -1813,6 +1852,32 @@ body[data-sidebar-resizing="true"] {
   color: var(--text-muted);
   font-size: 13px;
   margin: 4px 0 0;
+}
+
+.workflow-step-heading {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+
+.workflow-step-heading > span {
+  align-items: center;
+  border: 1px solid rgba(var(--info-rgb), 0.34);
+  border-radius: 999px;
+  background: rgba(var(--info-rgb), 0.1);
+  color: var(--info-text);
+  display: inline-flex;
+  flex: 0 0 28px;
+  font-size: 13px;
+  font-weight: 800;
+  height: 28px;
+  justify-content: center;
+  width: 28px;
+}
+
+.workflow-step-heading h2,
+.workflow-step-heading h3 {
+  margin: 0;
 }
 
 .scenario-control-grid {
@@ -3169,18 +3234,59 @@ body[data-sidebar-resizing="true"] {
   overflow-wrap: anywhere;
 }
 
-.audit-trail-list {
+.audit-trail-card {
+  border: 1px solid rgba(34, 211, 238, 0.12);
+  border-radius: 6px;
+  background: rgba(2, 6, 23, 0.24);
   display: grid;
   gap: 8px;
+  padding: 10px;
+}
+
+.audit-trail-card-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.audit-trail-card-header span {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.audit-trail-card-header strong {
+  color: var(--heading-soft);
+  font-size: 12px;
+}
+
+.audit-trail-list {
+  display: grid;
+  gap: 6px;
 }
 
 .audit-trail-list article {
-  border: 1px solid rgba(34, 211, 238, 0.12);
+  align-items: start;
+  border: 1px solid rgba(34, 211, 238, 0.1);
   border-radius: 6px;
   background: rgba(2, 6, 23, 0.36);
   display: grid;
-  gap: 4px;
-  padding: 10px;
+  gap: 8px;
+  grid-template-columns: 82px minmax(0, 1fr);
+  padding: 8px;
+}
+
+.audit-trail-list time {
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.audit-trail-list article > div {
+  display: grid;
+  gap: 3px;
 }
 
 .audit-trail-list strong {
@@ -4596,6 +4702,28 @@ kbd {
   color: var(--info-text);
   font-weight: 700;
   padding: 8px;
+}
+
+.experiment-detector-settings {
+  gap: 10px;
+}
+
+.detector-settings-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+}
+
+.detector-settings-grid label {
+  color: var(--text-muted);
+  display: grid;
+  font-size: 12px;
+  gap: 6px;
+}
+
+.detector-settings-grid span {
+  color: var(--heading-soft);
+  font-weight: 700;
 }
 
 .experiment-run-trace-grid {

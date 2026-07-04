@@ -4,6 +4,7 @@ import { listManagedExperiments, type ManagedExperiment } from "@/api/client";
 import { useAuth } from "@/auth/useAuth";
 import { NebiusExecutionTrace, type NebiusExecutionTraceData } from "@/components/NebiusExecutionTrace";
 import type { ArenaRole } from "@/api/client";
+import { productRoleLabel } from "@/platform/identity";
 
 const tournamentRoles: { value: ArenaRole; label: string; summary: string }[] = [
   {
@@ -28,9 +29,18 @@ const tournamentRoles: { value: ArenaRole; label: string; summary: string }[] = 
   }
 ];
 
+const detectorEngines = ["Rule-based", "Isolation Forest", "AI Investigator"];
+const detectorDifficulties = ["Easy", "Medium", "Hard"];
+const latencyModels = ["None", "Random", "Agent-specific"];
+
 export function ExperimentLabPage() {
-  const { busy, role, session, setRole, user } = useAuth();
-  const selectedRole = tournamentRoles.find((item) => item.value === role) ?? tournamentRoles[2];
+  const { busy, platformUser, role, session, setRole, workspace } = useAuth();
+  const [detectorSettings, setDetectorSettings] = useState({
+    difficulty: "Medium",
+    engine: "Rule-based",
+    latencyModel: "Random",
+    threshold: 0.72
+  });
   const [experiments, setExperiments] = useState<ManagedExperiment[]>([]);
 
   useEffect(() => {
@@ -52,22 +62,27 @@ export function ExperimentLabPage() {
   }, []);
 
   const traces = useMemo(() => createExperimentRunTraces(experiments), [experiments]);
+  const productRole = productRoleLabel(role);
 
   return (
     <section className="experiment-lab-page tournament-page">
       <div className="panel lab-hero-panel tournament-hero">
         <div>
-          <h2>Select Role, Login, Join Arena</h2>
+          <h2>Experiment Workspace</h2>
         </div>
-        <div className="tournament-login-box">
-          <span className="endpoint-badge">{session ? "Google connected" : "Google not connected"}</span>
-          <strong>{session ? `${user?.name ?? "Player"} as ${selectedRole.label}` : selectedRole.label}</strong>
-          <span>{session ? user?.email ?? "Signed in" : "Use the account menu in the top-right to sign in."}</span>
+        <div className="experiment-workspace-context">
+          {!session ? <p>Running as Demo Analyst in Aimada Surveillance Desk.</p> : null}
+          <dl>
+            <div><dt>Workspace</dt><dd>{workspace.name}</dd></div>
+            <div><dt>User</dt><dd>{platformUser.name}</dd></div>
+            <div><dt>Product role</dt><dd>{productRole}</dd></div>
+            <div><dt>Permissions</dt><dd>{experimentPermissionSummary(role)}</dd></div>
+          </dl>
         </div>
       </div>
 
-      <section className="panel tournament-role-panel" aria-label="Tournament role selection">
-        <h3>Role</h3>
+      <section className="panel tournament-role-panel" aria-label="Demo persona selection">
+        <h3>Demo Persona</h3>
         <div className="tournament-role-grid">
           {tournamentRoles.map((item) => (
             <button
@@ -84,11 +99,40 @@ export function ExperimentLabPage() {
         </div>
       </section>
 
-      {session ? <RoleWorkspace role={role} /> : (
-        <section className="panel tournament-locked-panel">
-          <h3>{selectedRole.label} controls locked</h3>
-        </section>
-      )}
+      <RoleWorkspace role={role} />
+
+      <section className="panel experiment-detector-settings" aria-label="Detector experiment settings">
+        <div className="section-heading-row">
+          <div>
+            <h3>Detector Benchmark Settings</h3>
+          </div>
+        </div>
+        <div className="detector-settings-grid">
+          <label>
+            Detector engine
+            <select value={detectorSettings.engine} onChange={(event) => setDetectorSettings({ ...detectorSettings, engine: event.target.value })}>
+              {detectorEngines.map((engine) => <option key={engine} value={engine}>{engine}</option>)}
+            </select>
+          </label>
+          <label>
+            Difficulty target
+            <select value={detectorSettings.difficulty} onChange={(event) => setDetectorSettings({ ...detectorSettings, difficulty: event.target.value })}>
+              {detectorDifficulties.map((difficulty) => <option key={difficulty} value={difficulty}>{difficulty}</option>)}
+            </select>
+          </label>
+          <label>
+            Detection threshold
+            <input max={1} min={0} onChange={(event) => setDetectorSettings({ ...detectorSettings, threshold: Number(event.target.value) })} step={0.01} type="range" value={detectorSettings.threshold} />
+            <span>{detectorSettings.threshold.toFixed(2)}</span>
+          </label>
+          <label>
+            Latency model
+            <select value={detectorSettings.latencyModel} onChange={(event) => setDetectorSettings({ ...detectorSettings, latencyModel: event.target.value })}>
+              {latencyModels.map((model) => <option key={model} value={model}>{model}</option>)}
+            </select>
+          </label>
+        </div>
+      </section>
 
       <section className="panel tournament-workspace experiment-run-records">
         <div className="section-heading-row">
@@ -109,6 +153,13 @@ export function ExperimentLabPage() {
       </section>
     </section>
   );
+}
+
+function experimentPermissionSummary(role: ArenaRole) {
+  if (role === "judge") return "Review runs, approve reports, inspect artifacts.";
+  if (role === "observer") return "View runs, metrics, and artifacts.";
+  if (role === "attacker") return "Create scenarios and compare detector response.";
+  return "Run detector experiments and review alert quality.";
 }
 
 function createExperimentRunTraces(experiments: ManagedExperiment[]): NebiusExecutionTraceData[] {

@@ -50,8 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(response.user);
     setSession(response.session);
     setLocalRole(response.session.role);
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    const existingAccessToken = stored ? (JSON.parse(stored) as { access_token?: string | null }).access_token : null;
+    const existingAccessToken = readStoredAccessToken();
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify({
       access_token: response.access_token ?? existingAccessToken ?? null,
       session_id: response.session.session_id
@@ -90,8 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const sessionId = session.session_id;
     function handleBeforeUnload() {
-      const stored = window.localStorage.getItem(STORAGE_KEY);
-      const accessToken = stored ? (JSON.parse(stored) as { access_token?: string | null }).access_token : null;
+      const accessToken = readStoredAccessToken();
       void saveAuthSession(sessionId, true, accessToken).catch(() => undefined);
     }
     window.addEventListener("beforeunload", handleBeforeUnload);
@@ -116,7 +114,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         applyAuthResponse(response, "Logged in with local demo auth.");
       }
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : "Login failed.");
+      try {
+        const response = await completeGoogleLogin(nextRole);
+        applyAuthResponse(response, "Google unavailable. Logged in with local demo auth.");
+        setError(null);
+      } catch (fallbackError) {
+        if (isFetchFailure(nextError) || isFetchFailure(fallbackError)) {
+          setError(null);
+          setLastMessage("Google unavailable. Running in demo workspace.");
+        } else {
+          setError(nextError instanceof Error ? nextError.message : "Login failed.");
+        }
+      }
     } finally {
       setBusy(false);
     }
@@ -130,12 +139,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setBusy(true);
     setError(null);
     try {
-      const stored = window.localStorage.getItem(STORAGE_KEY);
-      const accessToken = stored ? (JSON.parse(stored) as { access_token?: string | null }).access_token : null;
+      const accessToken = readStoredAccessToken();
       const response = await updateAuthRole(session.session_id, nextRole, accessToken);
       applyAuthResponse(response, `Role set to ${nextRole}.`);
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : "Role update failed.");
+      if (isFetchFailure(nextError)) {
+        setError(null);
+        setLastMessage(`Demo persona set to ${nextRole}.`);
+      } else {
+        setError(nextError instanceof Error ? nextError.message : "Role update failed.");
+      }
     } finally {
       setBusy(false);
     }
@@ -148,8 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setBusy(true);
     setError(null);
     try {
-      const stored = window.localStorage.getItem(STORAGE_KEY);
-      const accessToken = stored ? (JSON.parse(stored) as { access_token?: string | null }).access_token : null;
+      const accessToken = readStoredAccessToken();
       const response = await saveAuthSession(session.session_id, false, accessToken);
       const snapshot = response.snapshot;
       const history = snapshot && typeof snapshot === "object" ? (snapshot.history as { tick_count?: number; artifact_count?: number } | undefined) : undefined;
@@ -168,8 +180,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setBusy(true);
     setError(null);
     try {
-      const stored = window.localStorage.getItem(STORAGE_KEY);
-      const accessToken = stored ? (JSON.parse(stored) as { access_token?: string | null }).access_token : null;
+      const accessToken = readStoredAccessToken();
       await logoutAuthSession(session.session_id, accessToken);
       setLastMessage("History saved on logout.");
       setSession(null);
@@ -201,6 +212,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }), [busy, error, lastMessage, loginWithGoogle, logout, platformUser, role, saveNow, session, setRole, user, workspace]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+function readStoredAccessToken() {
+  const stored = window.localStorage.getItem(STORAGE_KEY);
+  if (!stored) return null;
+  try {
+    return (JSON.parse(stored) as { access_token?: string | null }).access_token ?? null;
+  } catch {
+    window.localStorage.removeItem(STORAGE_KEY);
+    return null;
+  }
+}
+
+function isFetchFailure(error: unknown) {
+  return error instanceof TypeError && error.message.toLowerCase().includes("fetch");
 }
 
 function requestGoogleAuthorizationCode(clientId: string, redirectUri: string): Promise<string> {
