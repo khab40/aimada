@@ -13,6 +13,7 @@ import {
 import { AuthContext, type AuthState } from "@/auth/authState";
 import { platformUserFromAuth, workspaceForUser } from "@/platform/identity";
 const STORAGE_KEY = "aimada.auth.session";
+const AUTO_RESTORE_GOOGLE_SESSION = false;
 
 type GoogleCodeClient = {
   requestCode: () => void;
@@ -45,6 +46,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setLocalRole] = useState<ArenaRole>("observer");
   const [session, setSession] = useState<AuthSession | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
+  const clearAuthError = useCallback(() => {
+    setError(null);
+    setLastMessage("Continuing in Local Demo.");
+  }, []);
 
   const applyAuthResponse = useCallback((response: { access_token?: string | null; user: AuthUser; session: AuthSession; restored_history?: Record<string, unknown> | null }, fallbackMessage: string) => {
     setUser(response.user);
@@ -65,6 +70,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (!AUTO_RESTORE_GOOGLE_SESSION) {
+      return;
+    }
     const stored = window.localStorage.getItem(STORAGE_KEY);
     if (!stored) {
       return;
@@ -110,22 +118,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
         applyAuthResponse(response, "Logged in with Google.");
       } else {
-        const response = await completeGoogleLogin(nextRole);
-        applyAuthResponse(response, "Logged in with local demo auth.");
+        setError("Google is not configured for this demo.");
+        setLastMessage("Continue in Local Demo.");
       }
     } catch (nextError) {
-      try {
-        const response = await completeGoogleLogin(nextRole);
-        applyAuthResponse(response, "Google unavailable. Logged in with local demo auth.");
-        setError(null);
-      } catch (fallbackError) {
-        if (isFetchFailure(nextError) || isFetchFailure(fallbackError)) {
-          setError(null);
-          setLastMessage("Google unavailable. Running in demo workspace.");
-        } else {
-          setError(nextError instanceof Error ? nextError.message : "Login failed.");
-        }
-      }
+      setError(isFetchFailure(nextError) ? "Google unavailable. Continue in Local Demo." : nextError instanceof Error ? nextError.message : "Google login failed.");
+      setLastMessage("Continue in Local Demo.");
     } finally {
       setBusy(false);
     }
@@ -198,6 +196,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<AuthState>(() => ({
     busy,
+    clearAuthError,
     error,
     lastMessage,
     loginWithGoogle,
@@ -209,7 +208,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setRole,
     user,
     workspace
-  }), [busy, error, lastMessage, loginWithGoogle, logout, platformUser, role, saveNow, session, setRole, user, workspace]);
+  }), [busy, clearAuthError, error, lastMessage, loginWithGoogle, logout, platformUser, role, saveNow, session, setRole, user, workspace]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

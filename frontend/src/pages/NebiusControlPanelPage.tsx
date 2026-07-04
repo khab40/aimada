@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   aggregateManagedExperiment,
   artifactDownloadUrl,
@@ -35,6 +36,13 @@ import type {
   NebiusRuntimeStatus,
   NebiusUsageMetrics
 } from "@/features/nebius/types";
+import {
+  getStoredRuntimeMode,
+  RUNTIME_MODE_EVENT,
+  storeRuntimeMode,
+  visibleRuntimeOptions,
+  type RuntimeMode
+} from "@/runtimeModes";
 
 const fallbackRuntimeStatus: NebiusRuntimeStatus = {
   activeSimulation: "Spoofing Attack #042",
@@ -61,6 +69,16 @@ const fallbackUsageMetrics: NebiusUsageMetrics = {
 };
 
 type ExperimentFormState = Required<Pick<ManagedExperimentCreateRequest, "name" | "attack_count" | "batch_size" | "scenarios" | "seed">>;
+type DemoScenario = {
+  attackKey: string;
+  cta?: string;
+  demonstrates: string[];
+  duration?: string;
+  id: string;
+  purpose?: string;
+  runtime: RuntimeMode;
+  title: string;
+};
 type ExperimentAction =
   | "create-experiment"
   | "generate-manifest"
@@ -89,7 +107,42 @@ const initialExperimentForm: ExperimentFormState = {
   seed: 42
 };
 
+const demoScenarios: DemoScenario[] = [
+  {
+    attackKey: "spoofing",
+    cta: "Start",
+    demonstrates: ["attack generation", "detection", "mock AI investigation", "simulated execution trace"],
+    duration: "30 seconds",
+    id: "local-lightweight",
+    runtime: "local-demo",
+    title: "Local Lightweight Demo"
+  },
+  {
+    attackKey: "layering",
+    demonstrates: ["fast classifier", "reasoning model", "simulated latency", "simulated cost"],
+    id: "local-ai-pipeline",
+    purpose: "Show AI architecture even offline.",
+    runtime: "local-demo",
+    title: "Local AI Pipeline Demo"
+  },
+  {
+    attackKey: "quote_stuffing",
+    demonstrates: ["real Nebius Endpoint", "streaming explanation", "latency", "tokens", "cost"],
+    id: "nebius-endpoint",
+    runtime: "nebius-cloud",
+    title: "Nebius Endpoint Demo"
+  },
+  {
+    attackKey: "wash_trading",
+    demonstrates: ["complete platform", "endpoint", "jobs", "benchmark", "artifacts", "execution trace"],
+    id: "nebius-platform",
+    runtime: "nebius-cloud",
+    title: "Nebius Platform Demo"
+  }
+];
+
 export function NebiusControlPanelPage() {
+  const navigate = useNavigate();
   const [artifacts, setArtifacts] = useState<ExperimentArtifact[]>([]);
   const [runtimeStatus, setRuntimeStatus] = useState<NebiusRuntimeStatus>(fallbackRuntimeStatus);
   const [usageMetrics, setUsageMetrics] = useState<NebiusUsageMetrics>(fallbackUsageMetrics);
@@ -103,12 +156,30 @@ export function NebiusControlPanelPage() {
   const [nebiusStatus, setNebiusStatus] = useState<NebiusStatus | null>(null);
   const [nebiusObservatory, setNebiusObservatory] = useState<NebiusObservatory | null>(null);
   const [deploymentPanelMessage, setDeploymentPanelMessage] = useState<string | null>(null);
+  const [runtimeMode, setRuntimeMode] = useState<RuntimeMode>(() => getStoredRuntimeMode());
 
   useEffect(() => {
     void refreshControlPlane();
     void refreshExperimentLab();
     // Initial control-plane hydration only; user-triggered refreshes keep this page current.
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    function syncRuntimeMode(event: Event) {
+      const next = event instanceof CustomEvent && typeof event.detail === "string"
+        ? event.detail
+        : getStoredRuntimeMode();
+      if (next === "local-demo" || next === "hybrid" || next === "nebius-cloud") {
+        setRuntimeMode(next);
+      }
+    }
+    window.addEventListener(RUNTIME_MODE_EVENT, syncRuntimeMode);
+    window.addEventListener("storage", syncRuntimeMode);
+    return () => {
+      window.removeEventListener(RUNTIME_MODE_EVENT, syncRuntimeMode);
+      window.removeEventListener("storage", syncRuntimeMode);
+    };
   }, []);
 
   async function refreshControlPlane() {
@@ -141,7 +212,7 @@ export function NebiusControlPanelPage() {
       }
       await refreshExperimentDetails(targetId);
     } catch (error) {
-      setExperimentMessage(error instanceof Error ? error.message : "Managed Experiment Lab refresh failed.");
+      setExperimentMessage(error instanceof Error ? error.message : "Benchmark refresh failed.");
     }
   }
 
@@ -168,7 +239,7 @@ export function NebiusControlPanelPage() {
       await fn();
       await refreshControlPlane();
     } catch (error) {
-      setExperimentMessage(error instanceof Error ? error.message : "Experiment action failed.");
+      setExperimentMessage(error instanceof Error ? error.message : "Benchmark action failed.");
     } finally {
       setExperimentBusyAction(null);
     }
@@ -198,7 +269,7 @@ export function NebiusControlPanelPage() {
       const created = await createManagedExperiment({
         attack_count: Math.max(1, experimentForm.attack_count),
         batch_size: Math.max(1, experimentForm.batch_size),
-        name: experimentForm.name.trim() || "AI-MADA experiment",
+        name: experimentForm.name.trim() || "AI-MADA benchmark",
         scenarios: experimentForm.scenarios,
         seed: experimentForm.seed
       });
@@ -206,7 +277,7 @@ export function NebiusControlPanelPage() {
       setExperimentJobs([]);
       setExperimentLeaderboard([]);
       setExperimentSummary(null);
-      setExperimentMessage(`Created experiment ${created.id}.`);
+      setExperimentMessage(`Created benchmark ${created.id}.`);
       await refreshExperimentDetails(created.id);
     });
   }
@@ -233,7 +304,7 @@ export function NebiusControlPanelPage() {
     if (!experiment) return;
     await runExperimentAction("submit-nebius", async () => {
       const job = await submitManagedExperimentNebius(experiment.id);
-      setExperimentMessage(job.status === "real_nebius_pending" ? "pending real Nebius execution" : job.message);
+      setExperimentMessage(job.status === "real_nebius_pending" ? "pending Nebius job execution" : job.message);
       await refreshExperimentDetails(experiment.id);
     });
   }
@@ -290,58 +361,108 @@ export function NebiusControlPanelPage() {
     if (!experiment) return;
     await runExperimentAction("run-investigations", async () => {
       const result = await runManagedExperimentInvestigations(experiment.id);
-      setExperimentMessage(`Ran ${result.investigation_count} AI Investigator reports in ${result.investigation_mode} mode.`);
+      setExperimentMessage(`Produced ${result.investigation_count} AI Investigation summaries in ${result.investigation_mode} mode.`);
       await refreshExperimentDetails(experiment.id);
     });
   }
 
+  function switchRuntimeMode(nextMode: RuntimeMode) {
+    storeRuntimeMode(nextMode);
+    setRuntimeMode(nextMode);
+  }
+
+  function startDemoScenario(scenario: DemoScenario) {
+    switchRuntimeMode(scenario.runtime);
+    const params = new URLSearchParams({
+      attack: scenario.attackKey,
+      demoScenario: scenario.id,
+      runtime: scenario.runtime
+    });
+    navigate(`/attack-scenarios?${params.toString()}`);
+  }
+
+  const runtimeLabel = visibleRuntimeOptions.find((option) => option.value === runtimeMode)?.label ?? "Local Demo";
+  const endpointConfigured = Boolean(nebiusStatus?.incident_explainer_configured);
+  const jobConfigured = Boolean(nebiusStatus?.job_submit_template_configured);
+  const endpointWillUseNebius = runtimeMode !== "local-demo" && endpointConfigured;
+  const jobWillUseNebius = runtimeMode !== "local-demo" && jobConfigured;
+  const fallbackStatus = endpointWillUseNebius || jobWillUseNebius ? "real Nebius path available" : runtimeMode === "local-demo" ? "Simulated / Local Demo" : "fallback to deterministic mock";
+  const deploymentRequired = runtimeMode === "nebius-cloud" && !(nebiusStatus?.api_key_configured || nebiusStatus?.cli_installed);
+
   return (
     <section className="nebius-control-page">
-      <div className="panel nebius-hero-panel">
+      <header className="ai-platform-header">
         <div>
-          <h1>Why Nebius?</h1>
-          <p>Nebius turns detector analysis into scalable AI infrastructure: model-backed inference, parallel batch execution, GPU-ready runtimes, durable artifacts, and cost visibility.</p>
+          <h1>AI Platform</h1>
+          <p>Runtime, investigation, benchmark, and execution trace for the Attack {"->"} Detect {"->"} Explain with AI {"->"} Improve AI workflow.</p>
         </div>
-      </div>
+        <span className="ai-platform-badge">Powered by Nebius AI Cloud</span>
+      </header>
 
       <section className="nebius-infra-workflow">
         <InfrastructureSection
           step={1}
-          title="Models"
-          description="Select and validate the hosted Nebius AI model used by backend inference adapters."
+          title="Runtime"
+          description="Current runtime, component status, deployment status, and cloud availability for the Attack -> Detection -> Explanation -> Improvement workflow."
         >
+          <RuntimeStatusCard status={runtimeStatus} usage={usageMetrics} />
           <InfrastructureMetricGrid>
-            <MetricBlock label="Configured model" value={nebiusStatus?.model || "not configured"} />
+            <MetricBlock label="Current mode" value={runtimeLabel} />
+            <MetricBlock label="Frontend / backend / runner" value={runtimeMode === "nebius-cloud" ? "Nebius" : "local"} />
+            <MetricBlock label="Nebius connection status" value={nebiusStatus?.api_key_configured || nebiusStatus?.cli_installed ? "Connected" : deploymentRequired ? "Deployment required" : "Not configured"} />
+            <MetricBlock label="Model name" value={nebiusStatus?.model || "mock deterministic model"} />
             <MetricBlock label="Endpoint mode" value={nebiusStatus?.endpoint_mode ?? nebiusObservatory?.endpoint_mode ?? "mock"} />
-            <MetricBlock label="Endpoint base URL" value={nebiusStatus?.endpoint_base_url || "not configured"} />
-            <MetricBlock label="API key" value={nebiusStatus?.api_key_configured ? "configured" : "not configured"} />
+            <MetricBlock label="Endpoint availability" value={endpointWillUseNebius ? "real endpoint used" : runtimeMode === "nebius-cloud" ? "Nebius endpoint unavailable" : "mock fallback"} />
+            <MetricBlock label="Job availability" value={jobWillUseNebius ? "Nebius job available" : runtimeMode === "nebius-cloud" ? "Deployment required" : "deterministic fallback"} />
           </InfrastructureMetricGrid>
           <div className="nebius-button-row">
-            <button className="secondary-button" disabled={experimentBusyAction === "test-endpoint-health"} onClick={() => void testEndpointHealth()} type="button">Test endpoint health</button>
+            <button className="secondary-button" onClick={() => switchRuntimeMode("local-demo")} type="button">Switch runtime: Local Demo</button>
+            <button className="secondary-button" onClick={() => switchRuntimeMode("nebius-cloud")} type="button">Switch runtime: Nebius Cloud</button>
+            <button className="secondary-button" disabled={experimentBusyAction === "test-endpoint-health"} onClick={() => void testEndpointHealth()} type="button">Test Nebius connection</button>
           </div>
+          <RealNebiusDeploymentPanel
+            busyAction={experimentBusyAction}
+            experiment={experiment}
+            jobs={experimentJobs}
+            message={deploymentPanelMessage}
+            observatory={nebiusObservatory}
+            onCollectArtifacts={() => void collectExperimentCloudArtifacts()}
+            onRefreshJobStatus={() => void refreshExperimentJobStatus()}
+            onRenderJobConfig={() => void renderExperimentJobConfig()}
+            onSubmitNebius={() => void submitExperimentToNebius()}
+            status={nebiusStatus}
+          />
         </InfrastructureSection>
+
+        <DemoScenariosSection
+          deploymentRequired={deploymentRequired}
+          onStart={startDemoScenario}
+        />
 
         <InfrastructureSection
           step={2}
-          title="Inference"
-          description="Use Nebius for model-backed incident analysis and report generation behind the backend boundary."
+          title="AI Investigation"
+          description="Explain the current incident: mock AI in Local Demo, real Nebius Endpoint in Nebius Cloud when deployed."
         >
           <InfrastructureMetricGrid>
             <MetricBlock label="Inference calls" value={String(usageMetrics.aiEndpointCallsToday)} />
             <MetricBlock label="Average latency" value={`${usageMetrics.averageLlmLatencySec.toFixed(2)}s`} />
-            <MetricBlock label="Incident explainer" value={nebiusStatus?.incident_explainer_configured ? "configured" : "not configured"} />
-            <MetricBlock label="Report adapter" value={nebiusStatus?.investigation_report_configured ? "configured" : "not configured"} />
+            <MetricBlock label="Current incident explanation" value={endpointWillUseNebius ? "real endpoint used" : "mock fallback"} />
+            <MetricBlock label="Model name" value={nebiusStatus?.model || "mock deterministic model"} />
+            <MetricBlock label="Fallback status" value={endpointWillUseNebius ? "real endpoint used" : fallbackStatus} />
+            <MetricBlock label="Report reasoning" value={runtimeMode !== "local-demo" && nebiusStatus?.investigation_report_configured ? "real endpoint used" : "mock fallback"} />
           </InfrastructureMetricGrid>
+          <p className="fallback-note">{runtimeMode === "nebius-cloud" ? "Nebius Cloud calls a real endpoint when configured. If Nebius fails, the response falls back to deterministic mock AI and is labeled clearly." : "Local Demo uses a deterministic mock response. Switch to Nebius Cloud to run this explanation on a real Nebius endpoint."}</p>
           <div className="nebius-button-row">
-            <button className="secondary-button" disabled={!experiment || experimentBusyAction === "run-investigations"} onClick={() => void runExperimentInvestigations()} type="button">Run AI Investigator reports</button>
+            <button className="secondary-button" disabled={!experiment || experimentBusyAction === "run-investigations"} onClick={() => void runExperimentInvestigations()} type="button">Explain current incident</button>
           </div>
           {experimentMessage ? <p className="experiment-message">{experimentMessage}</p> : null}
         </InfrastructureSection>
 
         <InfrastructureSection
           step={3}
-          title="Batch Jobs"
-          description="Run managed experiment batches without tying compute to the browser session."
+          title="Benchmark"
+          description="Improve the detector using AI by comparing models, prompts, detector settings, and scenario outcomes. Run Jobs in Nebius Cloud or deterministic mock benchmarks in Local Demo."
         >
           <ExperimentLab
             busyAction={experimentBusyAction}
@@ -365,47 +486,73 @@ export function NebiusControlPanelPage() {
 
         <InfrastructureSection
           step={4}
-          title="GPU Runtime"
-          description="Prepare serverless job configs and track GPU-oriented job execution on Nebius."
+          title="Execution Trace"
+          description="Compact execution graph plus endpoint, jobs, latency, tokens, GPU, cost, artifacts, and real versus simulated status."
         >
-          <RuntimeStatusCard status={runtimeStatus} usage={usageMetrics} />
-          <RealNebiusDeploymentPanel
-            busyAction={experimentBusyAction}
-            experiment={experiment}
-            jobs={experimentJobs}
-            message={deploymentPanelMessage}
-            observatory={nebiusObservatory}
-            onCollectArtifacts={() => void collectExperimentCloudArtifacts()}
-            onRefreshJobStatus={() => void refreshExperimentJobStatus()}
-            onRenderJobConfig={() => void renderExperimentJobConfig()}
-            onSubmitNebius={() => void submitExperimentToNebius()}
-            status={nebiusStatus}
-          />
-        </InfrastructureSection>
-
-        <InfrastructureSection
-          step={5}
-          title="Artifacts"
-          description="Collect reports, normalized batches, manifests, and datasets produced by Nebius workloads."
-        >
-          <ExperimentArtifactLinks artifacts={experiment ? experimentArtifactsFrom(experiment, experimentSummary) : []} experimentId={experiment?.id} />
+          <ExecutionGraph endpointActive={endpointWillUseNebius} jobActive={jobWillUseNebius} runtimeMode={runtimeMode} />
           <InfrastructureMetricGrid>
-            <MetricBlock label="Collected artifacts" value={String(artifacts.length)} />
+            <MetricBlock label="Endpoint" value={endpointWillUseNebius ? "real endpoint used" : runtimeMode === "nebius-cloud" ? "Nebius endpoint unavailable" : "mock deterministic endpoint"} />
+            <MetricBlock label="Jobs" value={jobWillUseNebius ? latestExperimentJob(experimentJobs)?.status.replaceAll("_", " ") ?? "Nebius job available" : runtimeMode === "nebius-cloud" ? "Deployment required" : latestExperimentJob(experimentJobs)?.status.replaceAll("_", " ") ?? "deterministic mock results"} />
+            <MetricBlock label="Latency" value={`${usageMetrics.averageLlmLatencySec.toFixed(2)}s`} />
+            <MetricBlock label="Tokens" value={String(usageMetrics.tokensUsed)} />
+            <MetricBlock label="GPU" value={runtimeMode === "nebius-cloud" && (endpointWillUseNebius || jobWillUseNebius) ? "Nebius GPU runtime" : "not used in Local Demo"} />
+            <MetricBlock label="Cost" value={`$${usageMetrics.estimatedCostUsd.toFixed(2)}`} />
+            <MetricBlock label="Model name" value={nebiusStatus?.model || "mock deterministic model"} />
+            <MetricBlock label="Execution type" value={runtimeMode === "local-demo" ? "Simulated / Local Demo" : endpointWillUseNebius || jobWillUseNebius ? "real Nebius execution" : "Simulated / fallback"} />
+            <MetricBlock label="Fallback status" value={fallbackStatus} />
+            <MetricBlock label="Artifacts" value={String(artifacts.length)} />
             <MetricBlock label="Replay storage" value={`${usageMetrics.replayStorageMb.toFixed(0)} MB`} />
-            <MetricBlock label="Artifact collection" value={artifactCollectionStatus(experiment)} />
           </InfrastructureMetricGrid>
-        </InfrastructureSection>
-
-        <InfrastructureSection
-          step={6}
-          title="Costs"
-          description="Track endpoint calls, serverless jobs, token usage, and estimated infrastructure spend."
-        >
+          <p className="fallback-note">No credentials, Google login, or deployment are required in Local Demo. Benchmark results use deterministic mock data until Nebius Cloud is selected.</p>
           <UsageCostMonitor metrics={usageMetrics} />
+          <ExperimentArtifactLinks artifacts={experiment ? experimentArtifactsFrom(experiment, experimentSummary) : []} experimentId={experiment?.id} />
         </InfrastructureSection>
       </section>
 
     </section>
+  );
+}
+
+function DemoScenariosSection({
+  deploymentRequired,
+  onStart
+}: {
+  deploymentRequired: boolean;
+  onStart: (scenario: DemoScenario) => void;
+}) {
+  return (
+    <details className="panel demo-scenarios-section">
+      <summary>
+        <span>Demo Scenarios</span>
+        <strong>Choose a guided path through Attack {"->"} Arena {"->"} AI Platform.</strong>
+      </summary>
+      <div className="demo-scenario-grid">
+        {demoScenarios.map((scenario) => {
+          const cloudScenario = scenario.runtime === "nebius-cloud";
+          return (
+            <article className="demo-scenario-card" key={scenario.id}>
+              <div className="nebius-card-heading">
+                <div>
+                  <h3>{scenario.title}</h3>
+                  <p className="nebius-card-purpose">Runtime: {scenario.runtime === "local-demo" ? "Local Demo" : "Nebius Cloud"}</p>
+                </div>
+                {cloudScenario && deploymentRequired ? <span className="runtime-status not_configured">Deployment required</span> : null}
+              </div>
+              <div>
+                <span>Demonstrates</span>
+                <ul>
+                  {scenario.demonstrates.map((item) => <li key={item}>{item}</li>)}
+                </ul>
+              </div>
+              {scenario.duration ? <p><strong>Duration</strong> {scenario.duration}</p> : null}
+              {scenario.purpose ? <p><strong>Purpose</strong> {scenario.purpose}</p> : null}
+              {cloudScenario && deploymentRequired ? <p className="fallback-note">Deployment required. Nebius status is shown honestly before cloud execution.</p> : null}
+              <button className="primary-button" onClick={() => onStart(scenario)} type="button">{scenario.cta ?? "Start"}</button>
+            </article>
+          );
+        })}
+      </div>
+    </details>
   );
 }
 
@@ -438,6 +585,37 @@ function InfrastructureSection({
 
 function InfrastructureMetricGrid({ children }: { children: ReactNode }) {
   return <div className="nebius-infra-metric-grid">{children}</div>;
+}
+
+function ExecutionGraph({
+  endpointActive,
+  jobActive,
+  runtimeMode
+}: {
+  endpointActive: boolean;
+  jobActive: boolean;
+  runtimeMode: RuntimeMode;
+}) {
+  const endpointStatus = endpointActive ? "real endpoint" : runtimeMode === "nebius-cloud" ? "endpoint unavailable" : "mock endpoint";
+  const jobStatus = jobActive ? "Nebius job" : runtimeMode === "nebius-cloud" ? "deployment required" : "mock job";
+  const resultsStatus = endpointActive || jobActive ? "real results" : "deterministic results";
+  const steps = [
+    ["Scenario", "ready"],
+    ["Detector", "ready"],
+    ["Endpoint", endpointStatus],
+    ["Job", jobStatus],
+    ["Result", resultsStatus]
+  ];
+  return (
+    <ol className="execution-graph" aria-label="Execution graph">
+      {steps.map(([label, status]) => (
+        <li key={label}>
+          <span>{label}</span>
+          <strong>{status}</strong>
+        </li>
+      ))}
+    </ol>
+  );
 }
 
 function runtimeFrom(status: NebiusStatus, observatory: NebiusObservatory): NebiusRuntimeStatus {
@@ -504,12 +682,18 @@ function ExperimentLab({
     <section className="experiment-lab-panel">
       <div className="nebius-card-heading">
         <div>
-          <h2>Managed Experiment Lab</h2>
+          <h2>Benchmark</h2>
         </div>
         <div className="nebius-button-row">
-          <span className={`runtime-status ${experiment?.status ?? "missing"}`}>{experiment?.status.replaceAll("_", " ") ?? "no experiment"}</span>
+          <span className={`runtime-status ${experiment?.status ?? "missing"}`}>{experiment?.status.replaceAll("_", " ") ?? "no benchmark"}</span>
           <button className="secondary-button" onClick={onRefresh} type="button">Refresh</button>
         </div>
+      </div>
+      <div className="benchmark-capability-strip" aria-label="Benchmark capabilities">
+        <span>Compare models</span>
+        <span>Run Jobs</span>
+        <span>Detector comparison</span>
+        <span>Model comparison</span>
       </div>
 
       <div className="experiment-lab-layout">
@@ -549,7 +733,7 @@ function ExperimentLab({
               />
             </label>
           </div>
-          <div className="experiment-scenario-picker" aria-label="Experiment scenarios">
+          <div className="experiment-scenario-picker" aria-label="Benchmark scenarios">
             {experimentScenarioOptions.map((scenario) => (
               <button
                 className={form.scenarios.includes(scenario) ? "scenario-pill selected" : "scenario-pill"}
@@ -567,25 +751,25 @@ function ExperimentLab({
             onClick={onCreate}
             type="button"
           >
-            {busyAction === "create-experiment" ? "Creating..." : "Create Managed Experiment"}
+            {busyAction === "create-experiment" ? "Creating..." : "Create benchmark"}
           </button>
         </div>
 
         <div className="experiment-progress-card">
           <div className="experiment-active-summary">
-            <span>Current Managed Experiment</span>
-            <strong>{experiment?.name ?? "Create or refresh a Managed Experiment"}</strong>
-            <p>{experiment ? `${experiment.id} · ${experiment.attack_count} workloads · batch ${experiment.batch_size}` : "The Managed Experiment flow runs through FastAPI and keeps Nebius AI calls behind the backend boundary."}</p>
+            <span>Current Benchmark</span>
+            <strong>{experiment?.name ?? "Create or refresh a benchmark"}</strong>
+            <p>{experiment ? `${experiment.id} · ${experiment.attack_count} workloads · batch ${experiment.batch_size}` : "Local Demo benchmark runs deterministic mock results locally, then Nebius Cloud can run the same benchmark as Nebius Jobs."}</p>
           </div>
           <div className="experiment-flow-actions">
             <button disabled={!canRun || busyAction === "generate-manifest"} onClick={onGenerateManifest} type="button">Generate manifest</button>
-            <button disabled={!canRun || busyAction === "run-local-batch"} onClick={onRunLocalBatch} type="button">Run local batch</button>
-            <button disabled={!canRun || busyAction === "submit-nebius"} onClick={onSubmitNebius} type="button">Submit to Nebius</button>
+            <button disabled={!canRun || busyAction === "run-local-batch"} onClick={onRunLocalBatch} type="button">Run Local Demo benchmark</button>
+            <button disabled={!canRun || busyAction === "submit-nebius"} onClick={onSubmitNebius} type="button">Run Nebius job</button>
             <button disabled={!canRun || busyAction === "aggregate"} onClick={onAggregate} type="button">Aggregate</button>
-            <button disabled={!canRun || busyAction === "run-investigations"} onClick={onRunInvestigations} type="button">Run AI Investigator reports</button>
+            <button disabled={!canRun || busyAction === "run-investigations"} onClick={onRunInvestigations} type="button">Run AI Investigation</button>
           </div>
           {message ? <p className="experiment-message">{message}</p> : null}
-          {pendingNebiusJob ? <p className="experiment-pending-note">pending real Nebius execution: {pendingNebiusJob.message}</p> : null}
+          {pendingNebiusJob ? <p className="experiment-pending-note">pending Nebius job execution: {pendingNebiusJob.message}</p> : null}
           <ExperimentProgressSummary experiment={experiment} summary={summary} jobs={jobs} />
         </div>
       </div>
@@ -631,7 +815,7 @@ function RealNebiusDeploymentPanel({
     <section className="experiment-lab-panel real-nebius-deployment-panel">
       <div className="nebius-card-heading">
         <div>
-          <h2>Real Nebius Deployment</h2>
+          <h2>Deployment Status</h2>
         </div>
         <span className={`runtime-status ${cloudJob?.status ?? "missing"}`}>
           {cloudJob?.status.replaceAll("_", " ") ?? "no cloud job"}
@@ -674,7 +858,7 @@ function RealNebiusDeploymentPanel({
           onClick={onSubmitNebius}
           type="button"
         >
-          Submit real Nebius job
+          Submit Nebius job
         </button>
         <button
           className="secondary-button"
@@ -696,7 +880,7 @@ function RealNebiusDeploymentPanel({
 
       {status?.job_submit_template_configured ? null : (
         <p className="experiment-pending-note">
-          Real job submit template is not configured. Submitting records pending real Nebius execution instead of fake cloud success.
+          Nebius job submit template is not configured. Submitting records pending Nebius execution and keeps Local Demo fallback available.
         </p>
       )}
       {cloudJob?.message ? <p className="experiment-message">{cloudJob.message}</p> : null}
@@ -722,7 +906,7 @@ function ExperimentProgressSummary({
       <MetricBlock label="Jobs" value={`${completedJobs}/${jobs.length} done`} />
       <MetricBlock label="Alerts" value={summary ? String(summary.total_alerts) : "not aggregated"} />
       <MetricBlock label="Failed runs" value={String(summary?.failed_runs ?? failedJobs)} />
-      <MetricBlock label="Detection Reports" value={String(summary?.investigation_count ?? metricValue(experiment, "investigation_count") ?? 0)} />
+      <MetricBlock label="AI Investigation" value={String(summary?.investigation_count ?? metricValue(experiment, "investigation_count") ?? 0)} />
     </div>
   );
 }
@@ -739,7 +923,7 @@ function MetricBlock({ label, value }: { label: string; value: string }) {
 function ExperimentJobsTable({ jobs }: { jobs: ExperimentJobRecord[] }) {
   return (
     <div className="nebius-result-block experiment-jobs-block">
-      <span>Job records</span>
+      <span>Benchmark job runs</span>
       {jobs.length ? (
         <div className="benchmark-table-panel">
           <table className="benchmark-table compact-job-table">
@@ -779,7 +963,7 @@ function ExperimentArtifactLinks({
 }) {
   return (
     <div className="nebius-result-block experiment-artifacts-block">
-      <span>Artifact links</span>
+      <span>Execution artifacts</span>
       {artifacts.length ? (
         <div className="experiment-artifact-list">
           {artifacts.map(([label, path]) => (
@@ -794,7 +978,7 @@ function ExperimentArtifactLinks({
           ) : null}
         </div>
       ) : (
-        <p>Artifacts appear after manifest generation, local batch execution, normalization, aggregation, or investigations.</p>
+        <p>Artifacts appear after benchmark generation, local execution, Nebius jobs, aggregation, or AI Investigation.</p>
       )}
     </div>
   );
@@ -803,7 +987,7 @@ function ExperimentArtifactLinks({
 function ExperimentLeaderboardTable({ leaderboard }: { leaderboard: ExperimentLeaderboardRow[] }) {
   return (
     <div className="nebius-result-block experiment-leaderboard-block">
-      <span>Detector leaderboard</span>
+      <span>Benchmark leaderboard</span>
       {leaderboard.length ? (
         <div className="benchmark-table-panel">
           <table className="benchmark-table compact-job-table">
@@ -830,7 +1014,7 @@ function ExperimentLeaderboardTable({ leaderboard }: { leaderboard: ExperimentLe
           </table>
         </div>
       ) : (
-        <p>Aggregate the experiment to populate detector rankings.</p>
+        <p>Aggregate the benchmark to populate detector rankings.</p>
       )}
     </div>
   );
@@ -878,7 +1062,7 @@ function healthStatusLabel(health: Record<string, unknown> | null | undefined) {
 }
 
 function artifactCollectionStatus(experiment: ManagedExperiment | null) {
-  if (!experiment) return "no experiment";
+  if (!experiment) return "no benchmark";
   if (experiment.status === "cloud_artifacts_pending") return "cloud artifacts pending";
   if (experiment.artifact_paths.artifact_index) return "collected";
   return "not collected";

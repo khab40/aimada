@@ -229,11 +229,13 @@ Responsibilities:
 - add limit orders
 - cancel orders
 - apply market orders
+- preserve price-time priority within a price level
+- preserve fractional partial-fill remainders
 - maintain best bid and ask
 - expose L2 snapshots
 - append replayable event logs
 
-This layer should stay deterministic and testable.
+This layer should stay deterministic and testable. Regression coverage now includes add/cancel/market flows, price-time priority, partial fills, L2 snapshots, and deterministic simulation replay.
 
 ```mermaid
 graph TD

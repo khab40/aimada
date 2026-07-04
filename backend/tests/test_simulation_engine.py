@@ -39,3 +39,51 @@ def test_simulation_engine_step_updates_visible_depth() -> None:
     assert next_state["tick"] == 1
     assert next_state["book"]["bids"] != initial["book"]["bids"]
     assert next_state["events"][0]["agent_id"] in {"MM_01", "NOISE_01"}
+
+
+def test_simulation_replay_is_deterministic_for_same_seed() -> None:
+    first = SimulationEngine(seed=99)
+    second = SimulationEngine(seed=99)
+
+    first.launch_scenario("spoofing-like")
+    second.launch_scenario("spoofing-like")
+    first_states = [first.step() for _ in range(8)]
+    second_states = [second.step() for _ in range(8)]
+
+    assert [
+        (
+            state["tick"],
+            state["book"]["best_bid"],
+            state["book"]["best_ask"],
+            state["features"]["wall_size_ratio"],
+            [(event["type"], event.get("agent_id"), event.get("stage")) for event in state["events"][:5]],
+        )
+        for state in first_states
+    ] == [
+        (
+            state["tick"],
+            state["book"]["best_bid"],
+            state["book"]["best_ask"],
+            state["features"]["wall_size_ratio"],
+            [(event["type"], event.get("agent_id"), event.get("stage")) for event in state["events"][:5]],
+        )
+        for state in second_states
+    ]
+
+
+def test_spoofing_scenario_creates_single_scenario_linked_incident() -> None:
+    engine = SimulationEngine(seed=11)
+    engine.launch_scenario("spoofing-like")
+
+    state = {}
+    for _ in range(8):
+        state = engine.step()
+
+    incidents = [
+        incident
+        for incident in state["incidents"]
+        if incident["scenario_family"] == "spoofing_like"
+    ]
+    assert len(incidents) == 1
+    assert incidents[0]["confidence"] >= 0.8
+    assert incidents[0]["evidence"]

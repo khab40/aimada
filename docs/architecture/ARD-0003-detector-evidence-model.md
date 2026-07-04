@@ -13,10 +13,11 @@ Implemented:
 - Deterministic feature extraction and detector modules for spoofing-like, layering-like, quote-stuffing-like, and liquidity shock patterns.
 - Aggregate detector scores, incident cards, Incident Details evidence, persisted incident records, and backend explanation payloads grounded in structured evidence.
 - Benchmark and report surfaces that reuse detector evidence rather than relying on generated prose as the detector.
+- Regression tests for normal market-making false positives, spoofing-like alerts, layering-like alerts, quote-stuffing noise limits, and deterministic replay incident linkage.
 
 Follow-up:
 
-- Threshold calibration against broader synthetic distributions and historical-style replay datasets remains future validation work.
+- Threshold calibration against broader historical-style replay datasets remains future validation work.
 
 ## Context
 

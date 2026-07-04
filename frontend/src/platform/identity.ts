@@ -82,9 +82,9 @@ const demoReviewer: PlatformUser = {
 export const demoWorkspace: PlatformWorkspace = {
   created_at: "2026-07-03T00:00:00.000Z",
   defaultRole: "analyst",
-  id: "aimada-surveillance-desk",
+  id: "local-demo",
   members: [demoUser, demoReviewer],
-  name: "Aimada Surveillance Desk",
+  name: "Local Demo",
   organization_type: "demo"
 };
 

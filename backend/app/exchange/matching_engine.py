@@ -34,7 +34,7 @@ class MatchingEngine:
 
     def match_limit_order(self, order: Order) -> list[dict[str, object]]:
         trades = self.book.match_order(order, limit_price=order.price)
-        filled_quantity = sum(int(trade["quantity"]) for trade in trades)
+        filled_quantity = sum(float(trade["quantity"]) for trade in trades)
         remaining_quantity = order.quantity - filled_quantity
         events = list(trades)
         if remaining_quantity <= 0:

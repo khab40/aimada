@@ -23,6 +23,61 @@ def test_order_book_applies_market_order_against_best_price() -> None:
     assert book.snapshot()["asks"][0] == {"price": 100.2, "quantity": 8}
 
 
+def test_price_time_priority_matches_older_order_first_at_same_price() -> None:
+    book = OrderBook()
+    book.add_limit_order(Order("a-old", "maker-old", "sell", 3.0, 100.0, timestamp=1))
+    book.add_limit_order(Order("a-new", "maker-new", "sell", 4.0, 100.0, timestamp=2))
+
+    trades = book.apply_market_order(Order("m-buy", "taker", "buy", 5.0, order_type="market", timestamp=3))
+
+    assert [trade["resting_order_id"] for trade in trades] == ["a-old", "a-new"]
+    assert [trade["quantity"] for trade in trades] == [3.0, 2.0]
+    assert book.orders["a-new"].quantity == 2.0
+    assert book.snapshot()["asks"] == [{"price": 100.0, "quantity": 2.0}]
+
+
+def test_cancel_unknown_order_is_noop() -> None:
+    book = OrderBook()
+
+    assert book.cancel_order("missing") is None
+    assert book.snapshot()["bids"] == []
+    assert book.snapshot()["asks"] == []
+
+
+def test_agent_level_modify_replaces_only_that_agents_quantity() -> None:
+    book = OrderBook()
+    book.update_agent_level("bid", 99.0, 5.0, agent_id="MM_A")
+    book.update_agent_level("bid", 99.0, 7.0, agent_id="MM_B")
+
+    book.update_agent_level("bid", 99.0, 2.0, agent_id="MM_A")
+
+    assert book.snapshot()["bids"] == [{"price": 99.0, "quantity": 9.0}]
+    assert book.orders["l2-bid-99.00000000-MM_A"].quantity == 2.0
+    assert book.orders["l2-bid-99.00000000-MM_B"].quantity == 7.0
+
+
+def test_limit_order_without_price_is_rejected() -> None:
+    book = OrderBook()
+
+    try:
+        book.add_limit_order(Order("bad", "maker", "buy", 1.0))
+    except ValueError as exc:
+        assert str(exc) == "limit order requires a price"
+    else:
+        raise AssertionError("limit order without price should fail")
+
+
+def test_apply_market_order_requires_market_order_type() -> None:
+    book = OrderBook()
+
+    try:
+        book.apply_market_order(Order("bad", "taker", "buy", 1.0, 100.0))
+    except ValueError as exc:
+        assert str(exc) == "apply_market_order requires a market order"
+    else:
+        raise AssertionError("non-market order should fail")
+
+
 def test_l2_market_order_call_form_consumes_visible_depth() -> None:
     book = OrderBook(mid_price=100.0, levels=2, tick_size=1.0)
 

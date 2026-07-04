@@ -3,7 +3,7 @@ export type NebiusExecutionTraceData = {
   endpointId?: string | null;
   estimatedCost: string;
   executionType: "endpoint" | "job" | "streaming";
-  fallback: "real" | "simulated";
+  fallback: "real" | "simulated" | "Simulated / Local Demo";
   jobId?: string | null;
   lastExecutionTime: string;
   latency: string;
@@ -26,8 +26,8 @@ export function NebiusExecutionTrace({
     <section className="nebius-execution-trace" aria-label={title}>
       <div className="section-heading-row">
         <h4>{title}</h4>
-        <span className={`endpoint-badge ${trace.fallback === "simulated" ? "mock_fallback" : "healthy"}`}>
-          {trace.fallback === "simulated" ? "simulated fallback" : "real"}
+        <span className={`endpoint-badge ${trace.fallback === "real" ? "healthy" : "mock_fallback"}`}>
+          {trace.fallback === "real" ? "real" : trace.fallback}
         </span>
       </div>
       <dl className="nebius-execution-grid">

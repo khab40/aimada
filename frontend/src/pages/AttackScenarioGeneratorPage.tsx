@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   generateNebiusAttackScenario,
   generateNebiusAttackVariants,
@@ -130,6 +130,8 @@ const reusableScenarioTemplates: ReusableScenarioTemplate[] = [
 ];
 
 export function AttackScenarioGeneratorPage() {
+  const [searchParams] = useSearchParams();
+  const appliedDemoScenarioRef = useRef<string | null>(null);
   const [attackInput, setAttackInput] = useState<AttackScenarioInput>(initialAttackInput);
   const [attackScenario, setAttackScenario] = useState<AttackScenario | null>(null);
   const [attackVariants, setAttackVariants] = useState<AttackScenario[]>([]);
@@ -147,6 +149,18 @@ export function AttackScenarioGeneratorPage() {
     void refresh();
     void generateNebiusScenarioGrid(initialScenarioConfig).then(setGeneratedScenarios).catch(() => undefined);
   }, []);
+
+  useEffect(() => {
+    const demoScenario = searchParams.get("demoScenario");
+    const attackKey = searchParams.get("attack");
+    if (!demoScenario || appliedDemoScenarioRef.current === demoScenario) return;
+    const template = reusableScenarioTemplates.find((item) => item.key === attackKey) ?? reusableScenarioTemplates[0];
+    appliedDemoScenarioRef.current = demoScenario;
+    applyScenarioTemplate(template);
+    setMessage(`${template.title} demo scenario loaded. Start here, then continue to Arena and Nebius AI.`);
+    // Demo query params intentionally load once per scenario id.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   async function refresh() {
     const [scenarios, reports] = await Promise.all([

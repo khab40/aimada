@@ -4,6 +4,7 @@ import type { PlatformUser, PlatformWorkspace } from "@/platform/identity";
 
 export type AuthState = {
   busy: boolean;
+  clearAuthError: () => void;
   error: string | null;
   lastMessage: string | null;
   role: ArenaRole;

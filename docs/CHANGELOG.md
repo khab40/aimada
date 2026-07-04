@@ -5,6 +5,15 @@ Update this file with each significant commit before pushing.
 
 ## Unreleased
 
+### Current - test: expand exchange and detector coverage
+
+- Added backend coverage tooling with `pytest-cov` and documented the coverage command.
+- Added matching-engine and order-book tests for add/cancel/market flows, price-time priority, partial fills, modify-like quote updates, and L2 snapshots.
+- Added detector tests for normal market-making false positives, spoofing-like alerts, layering-like alerts, and quote-stuffing noise limits.
+- Added deterministic replay and scenario-linked incident regression coverage.
+- Fixed fractional partial-fill accounting in the matching engine.
+- Updated README, ARD index, ARD-0001, ARD-0003, ARD-0011, and phase docs for the new validation coverage.
+
 ### Current - feat: add multiuser platform foundation
 
 - Added a frontend platform identity model for users, workspaces, roles, case ownership, report attribution, and audit trail entries.

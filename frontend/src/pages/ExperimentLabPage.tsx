@@ -71,7 +71,7 @@ export function ExperimentLabPage() {
           <h2>Experiment Workspace</h2>
         </div>
         <div className="experiment-workspace-context">
-          {!session ? <p>Running as Demo Analyst in Aimada Surveillance Desk.</p> : null}
+          {!session ? <p>Running as Demo Analyst in Local Demo.</p> : null}
           <dl>
             <div><dt>Workspace</dt><dd>{workspace.name}</dd></div>
             <div><dt>User</dt><dd>{platformUser.name}</dd></div>

@@ -54,6 +54,7 @@ Exit criteria:
 - `[done]` Normal agents generate baseline activity.
 - `[done]` The backend can register hundreds of lightweight normal agents while keeping exchange mutation single-writer.
 - `[done]` The matching engine updates the synthetic book.
+- `[done]` Regression tests cover add/cancel/market flows, price-time priority, partial fills, modify-like quote updates, and L2 snapshots.
 - `[done]` The frontend receives or can display live state.
 - `[done]` The UI shows bids, asks, best levels, and basic market state.
 
@@ -178,6 +179,12 @@ Core features:
 - cancel-to-trade ratio
 - order lifetime
 - wall size ratio
+
+Validation:
+
+- `[done]` Normal market-making features do not alert.
+- `[done]` Spoofing-like, layering-like, and quote-stuffing detector paths have focused regression tests.
+- `[done]` Deterministic simulation replay is covered for same-seed runs.
 - depth change percentage
 
 Exit criteria:

@@ -15,6 +15,7 @@ Implemented:
 - `ARENA_BASELINE_LIQUIDITY_*` configuration for ladder depth, size, tick size, and reference price.
 - `ARENA_MAX_AGENT_QUOTE_SIZE` guardrail to cap normal/remote agent quote size before exchange mutation.
 - Regression tests for empty-side reseeding, shared-price additive liquidity, quote clamping, and long-run bounded depth.
+- Exchange regression tests for price-time priority, add/cancel flows, modify-like per-agent quote replacement, partial fills, and L2 snapshots.
 
 Not yet complete:
 

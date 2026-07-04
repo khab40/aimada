@@ -67,22 +67,29 @@ describe("Battlefield visualization UI contract", () => {
 describe("Core UI navigation and workflow contracts", () => {
   const app = read("src/App.tsx");
   const arena = read("src/pages/ArenaPage.tsx");
-  const demo = read("src/pages/DemoPage.tsx");
-  const experiments = read("src/pages/ExperimentLabPage.tsx");
+  const identity = read("src/platform/identity.ts");
+  const nebius = read("src/pages/NebiusControlPanelPage.tsx");
+  const runtimeModes = read("src/runtimeModes.ts");
   const trace = read("src/components/NebiusExecutionTrace.tsx");
 
   it("keeps product navigation focused and removes implementation destinations", () => {
     expectIncludes(app, [
+      "label: \"Attack\"",
       "label: \"Arena\"",
-      "label: \"Demo\"",
-      "label: \"Scenario Generator\"",
-      "label: \"Detection\"",
-      "label: \"Experiments\"",
-      "label: \"Nebius AI\"",
+      "label: \"AI Platform\"",
       "label: \"About\"",
-      "<Route path=\"/reports\" element={<Navigate to=\"/detection\" replace />} />",
-      "<Route path=\"/blue-team\" element={<Navigate to=\"/detection\" replace />} />"
+      "<Route path=\"/demo\" element={<Navigate to=\"/nebius\" replace />} />",
+      "<Route path=\"/lab\" element={<Navigate to=\"/nebius\" replace />} />",
+      "<Route path=\"/experiments\" element={<Navigate to=\"/nebius\" replace />} />",
+      "<Route path=\"/deployment\" element={<Navigate to=\"/nebius\" replace />} />",
+      "<Route path=\"/ai-platform\" element={<Navigate to=\"/nebius\" replace />} />",
+      "<Route path=\"/reports\" element={<Navigate to=\"/arena\" replace />} />",
+      "<Route path=\"/blue-team\" element={<Navigate to=\"/arena\" replace />} />"
     ]);
+    assert.doesNotMatch(app, /label: "Demo"/);
+    assert.doesNotMatch(app, /label: "Scenario Generator"/);
+    assert.doesNotMatch(app, /label: "Detection"/);
+    assert.doesNotMatch(app, /label: "Experiments"/);
     assert.doesNotMatch(app, /label: "Reports"/);
     assert.doesNotMatch(app, /label: "Blue Team"/);
   });
@@ -106,18 +113,6 @@ describe("Core UI navigation and workflow contracts", () => {
     assert.doesNotMatch(arena, /aria-label="Market visualization"/);
   });
 
-  it("keeps the three-minute demo launch paths wired", () => {
-    expectIncludes(demo, [
-      "Start Real Run",
-      "Start Two-Model Demo",
-      "Start Streaming Demo",
-      "Start Batch Job Demo",
-      "navigate(`/arena?demo=${mode}`)",
-      "navigate(\"/detection?demo=batch-job\")",
-      "Open in Arena"
-    ]);
-  });
-
   it("keeps shared Nebius execution trace and cost latency fields complete", () => {
     expectIncludes(trace, [
       "Execution type",
@@ -133,32 +128,105 @@ describe("Core UI navigation and workflow contracts", () => {
       "Estimated cost",
       "Artifact link",
       "Last execution time",
-      "simulated fallback",
+      "Simulated / Local Demo",
       "AI Cost & Latency"
     ]);
   });
 
-  it("keeps Google auth as one global entry point", () => {
+  it("keeps Nebius AI focused on runtime, investigation, benchmark, and trace", () => {
+    expectIncludes(nebius, [
+      "AI Platform",
+      "Powered by Nebius AI Cloud",
+      "title=\"Runtime\"",
+      "Demo Scenarios",
+      "Local Lightweight Demo",
+      "Local AI Pipeline Demo",
+      "Nebius Endpoint Demo",
+      "Nebius Platform Demo",
+      "demoScenario",
+      "navigate(`/attack-scenarios?",
+      "title=\"AI Investigation\"",
+      "title=\"Benchmark\"",
+      "Improve the detector using AI",
+      "prompts",
+      "title=\"Execution Trace\"",
+      "Attack -> Detection -> Explanation -> Improvement",
+      "Explain current incident",
+      "Switch to Nebius Cloud to run this explanation on a real Nebius endpoint.",
+      "Compare models",
+      "Run Jobs",
+      "Detector comparison",
+      "Model comparison",
+      "Run Local Demo benchmark",
+      "Run Nebius job",
+      "Execution graph",
+      "Scenario",
+      "Detector",
+      "Endpoint",
+      "Job",
+      "Result",
+      "real endpoint used",
+      "real Nebius execution",
+      "fallback to deterministic mock",
+      "Deployment required",
+      "Nebius endpoint unavailable",
+      "Model name",
+      "GPU",
+      "Cost",
+      "Artifacts",
+      "Tokens",
+      "Deployment Status",
+      "Simulated / Local Demo",
+      "mock fallback",
+      "No credentials, Google login, or deployment are required in Local Demo",
+      "deterministic mock results"
+    ]);
+    assert.equal((nebius.match(/<InfrastructureSection/g) ?? []).length, 4);
+    assert.doesNotMatch(nebius, /title="Models"/);
+    assert.doesNotMatch(nebius, /title="Inference"/);
+    assert.doesNotMatch(nebius, /title="Batch Jobs"/);
+    assert.doesNotMatch(nebius, /title="GPU Runtime"/);
+    assert.doesNotMatch(nebius, /title="Artifacts"/);
+    assert.doesNotMatch(nebius, /title="Costs"/);
+    assert.doesNotMatch(nebius, /Managed Experiment Lab/);
+  });
+
+  it("keeps demo runtime as the default auth experience", () => {
     expectIncludes(app, [
       "className=\"global-workspace-header\"",
-      "<AuthPanel />",
-      "Connect Google",
-      "Connecting...",
-      "Google connected",
-      "Retry Google",
-      "Disconnect",
-      "Save history"
+      "<RuntimePanel />",
+      "<IdentityPanel />",
+      "Runtime mode",
+      "Switch to Local Demo",
+      "Switch to Nebius Cloud",
+      "Test Nebius Connection",
+      "Deploy to Nebius Cloud",
+      "Falling back to mock AI",
+      "User and workspace",
+      "Connect Google Account",
+      "Continue in Demo Mode"
     ]);
-    expectIncludes(experiments, [
-      "Experiment Workspace",
-      "Running as Demo Analyst in Aimada Surveillance Desk.",
-      "Permissions",
-      "workspace.name",
-      "platformUser.name",
-      "productRoleLabel(role)"
+    expectIncludes(runtimeModes, [
+      "Local Demo",
+      "Nebius Cloud",
+      "Component",
+      "Frontend",
+      "Backend",
+      "Runner",
+      "AI Endpoint",
+      "Jobs",
+      "Storage",
+      "Ready",
+      "Mock",
+      "Connected",
+      "Not configured",
+      "Deployment required",
+      "Endpoint unavailable",
+      "Deploying",
+      "Error"
     ]);
+    expectIncludes(identity, ["Demo Analyst", "Local Demo"]);
     assert.equal((app.match(/google-login-button/g) ?? []).length, 1);
-    assert.doesNotMatch(experiments, /google-login-button/);
-    assert.doesNotMatch(experiments, /loginWithGoogle/);
+    assert.doesNotMatch(app, /Switch to Hybrid/);
   });
 });

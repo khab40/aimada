@@ -7,11 +7,17 @@ import { useAuth } from "@/auth/useAuth";
 import type { ArenaRole } from "@/api/client";
 import { ArenaPage } from "@/pages/ArenaPage";
 import { AttackScenarioGeneratorPage } from "@/pages/AttackScenarioGeneratorPage";
-import { DemoPage } from "@/pages/DemoPage";
-import { DetectionPage } from "@/pages/DetectionPage";
-import { ExperimentLabPage } from "@/pages/ExperimentLabPage";
 import { NebiusControlPanelPage } from "@/pages/NebiusControlPanelPage";
 import { productRoleLabel } from "@/platform/identity";
+import {
+  getStoredRuntimeMode,
+  runtimeComponents,
+  storeRuntimeMode,
+  visibleRuntimeOptions,
+  type RuntimeComponent,
+  type RuntimeMode,
+  type RuntimeStatus
+} from "@/runtimeModes";
 
 const disclaimer =
   "This project is an educational simulation. It does not detect real market manipulation, does not provide trading signals, and should not be used for compliance decisions. The scenarios are synthetic “abuse-like” patterns designed to demonstrate order-book anomaly detection and AI Investigator explanations.";
@@ -33,8 +39,7 @@ export function App() {
   const [themePreference, setThemePreference] = useState<ThemePreference>(() => getStoredThemePreference());
   const [systemTheme, setSystemTheme] = useState<ResolvedTheme>(() => getSystemTheme());
   const resolvedTheme = themePreference === "system" ? systemTheme : themePreference;
-  const { role } = useAuth();
-  const visibleSidebarItems = sidebarItems.filter((item) => item.visibleFor.includes(role));
+  const visibleSidebarItems = sidebarItems;
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
@@ -139,7 +144,8 @@ export function App() {
               preference={themePreference}
               resolvedTheme={resolvedTheme}
             />
-            <AuthPanel />
+            <IdentityPanel />
+            <RuntimePanel />
           </header>
           <section className="disclaimer" aria-label="Project disclaimer">
             <strong>Disclaimer: </strong>
@@ -148,14 +154,20 @@ export function App() {
 
           <Routes>
             <Route path="/" element={<Navigate to="/arena" replace />} />
-            <Route path="/demo" element={<DemoPage />} />
+            <Route path="/demo" element={<Navigate to="/nebius" replace />} />
             <Route path="/arena" element={<ArenaPage />} />
-            <Route path="/attack-scenarios" element={canAccessPath(role, "/attack-scenarios") ? <AttackScenarioGeneratorPage /> : <Navigate to="/arena" replace />} />
-            <Route path="/detection" element={canAccessPath(role, "/detection") ? <DetectionPage /> : <Navigate to="/arena" replace />} />
-            <Route path="/blue-team" element={<Navigate to="/detection" replace />} />
-            <Route path="/lab" element={canAccessPath(role, "/lab") ? <ExperimentLabPage /> : <Navigate to="/arena" replace />} />
+            <Route path="/attack" element={<Navigate to="/attack-scenarios" replace />} />
+            <Route path="/attack-scenarios" element={<AttackScenarioGeneratorPage />} />
+            <Route path="/scenario-generator" element={<Navigate to="/attack-scenarios" replace />} />
+            <Route path="/detection" element={<Navigate to="/arena" replace />} />
+            <Route path="/blue-team" element={<Navigate to="/arena" replace />} />
+            <Route path="/lab" element={<Navigate to="/nebius" replace />} />
+            <Route path="/experiments" element={<Navigate to="/nebius" replace />} />
+            <Route path="/deploy" element={<Navigate to="/nebius" replace />} />
+            <Route path="/deployment" element={<Navigate to="/nebius" replace />} />
+            <Route path="/ai-platform" element={<Navigate to="/nebius" replace />} />
             <Route path="/nebius" element={<NebiusControlPanelPage />} />
-            <Route path="/reports" element={<Navigate to="/detection" replace />} />
+            <Route path="/reports" element={<Navigate to="/arena" replace />} />
             <Route path="/about" element={<AboutPage />} />
           </Routes>
           <ArenaSplashOverlay />
@@ -288,22 +300,12 @@ type SidebarItem = {
 };
 
 const allRoles: ArenaRole[] = ["observer", "attacker", "defender", "judge"];
-const observerAndJudge: ArenaRole[] = ["observer", "judge"];
-
 const sidebarItems: SidebarItem[] = [
+  { icon: "attack", label: "Attack", shortLabel: "AT", team: "red", to: "/attack-scenarios", visibleFor: allRoles },
   { icon: "arena", label: "Arena", shortLabel: "AR", to: "/arena", visibleFor: allRoles },
-  { icon: "attack", label: "Scenario Generator", shortLabel: "SG", team: "red", to: "/attack-scenarios", visibleFor: ["observer", "attacker", "judge"] },
-  { icon: "detection", label: "Detection", shortLabel: "DT", team: "blue", to: "/detection", visibleFor: allRoles },
-  { icon: "tournament", label: "Experiments", shortLabel: "EX", to: "/lab", visibleFor: observerAndJudge },
-  { icon: "cloud", label: "Nebius AI", shortLabel: "AI", to: "/nebius", visibleFor: allRoles },
-  { icon: "about", label: "About", shortLabel: "AB", to: "/about", visibleFor: allRoles },
-  { icon: "demo", label: "Demo", shortLabel: "DM", to: "/demo", visibleFor: allRoles }
+  { icon: "cloud", label: "AI Platform", shortLabel: "AI", to: "/nebius", visibleFor: allRoles },
+  { icon: "about", label: "About", shortLabel: "AB", to: "/about", visibleFor: allRoles }
 ];
-
-function canAccessPath(role: ArenaRole, path: string) {
-  const item = sidebarItems.find((candidate) => candidate.to === path);
-  return item ? item.visibleFor.includes(role) : true;
-}
 
 function AppIcon({ name }: { name: AppIconName }) {
   const paths: Record<AppIconName, string[]> = {
@@ -403,106 +405,166 @@ function AuthToggleIcon({ expanded }: { expanded: boolean }) {
   );
 }
 
-const arenaRoles: { label: string; value: ArenaRole }[] = [
-  { label: "Observer", value: "observer" },
-  { label: "Attacker", value: "attacker" },
-  { label: "Detector", value: "defender" },
-  { label: "Judge", value: "judge" }
-];
-
-function AuthPanel() {
-  const { busy, error, lastMessage, loginWithGoogle, logout, platformUser, role, saveNow, session, setRole, workspace } = useAuth();
+function RuntimePanel() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const accountName = platformUser.name;
-  const accountDetail = session ? platformUser.email : platformUser.email;
-  const initial = (platformUser.name || platformUser.email || "A").trim().charAt(0).toUpperCase() || "A";
-  const statusText = error ? "Google error" : session ? "Google connected" : "Demo workspace";
-  const roleLabel = productRoleLabel(role);
-  const connectLabel = busy && !session ? "Connecting..." : error ? "Retry Google" : "Connect Google";
+  const [runtimeMode, setRuntimeMode] = useState<RuntimeMode>(() => getStoredRuntimeMode());
+  const [runtimeMessage, setRuntimeMessage] = useState("Local Demo is ready. Mock AI fallback is active.");
+  const [runtimeOverrides, setRuntimeOverrides] = useState<Partial<Record<RuntimeMode, Partial<Record<RuntimeComponent, RuntimeStatus>>>>>({});
+  const runtime = visibleRuntimeOptions.find((option) => option.value === runtimeMode) ?? visibleRuntimeOptions[0];
+  const currentMatrix = { ...runtime.matrix, ...runtimeOverrides[runtimeMode] };
 
-  useEffect(() => {
-    setMenuOpen(false);
-  }, [session?.session_id]);
+  useEffect(() => storeRuntimeMode(runtimeMode), [runtimeMode]);
+
+  function switchRuntime(mode: RuntimeMode) {
+    setRuntimeMode(mode);
+    if (mode === "local-demo") {
+      setRuntimeOverrides({});
+      setRuntimeMessage("Switched to Local Demo. Mock AI fallback is active.");
+      return;
+    }
+    setRuntimeMessage(`${visibleRuntimeOptions.find((option) => option.value === mode)?.label ?? "Runtime"} selected. If Nebius is not configured, cloud status will show deployment required.`);
+  }
+
+  function testNebiusConnection() {
+    setRuntimeOverrides((current) => ({
+      ...current,
+      [runtimeMode]: {
+        ...current[runtimeMode],
+        "AI Endpoint": "Endpoint unavailable"
+      }
+    }));
+    setRuntimeMessage("Nebius unavailable or not configured. Falling back to mock AI.");
+  }
+
+  function deployNebiusCloud() {
+    if (runtimeMode !== "nebius-cloud") {
+      setRuntimeMessage("Switch to Nebius Cloud before deploying.");
+      return;
+    }
+    setRuntimeOverrides((current) => ({
+      ...current,
+      "nebius-cloud": Object.fromEntries(runtimeComponents.map((component) => [component, "Deploying" as RuntimeStatus]))
+    }));
+    setRuntimeMessage("Nebius deployment requested. If credentials are missing, the demo continues with mock AI.");
+  }
 
   return (
-    <section className={`auth-panel ${error ? "error" : session ? "connected" : "not-connected"}`} aria-label="Google account">
-      {session ? (
-        <>
-          <button
-            aria-expanded={menuOpen}
-            className="auth-compact-toggle"
-            onClick={() => setMenuOpen((value) => !value)}
-            title="Google account"
-            type="button"
-          >
-            <span className="auth-avatar" aria-hidden="true">{initial}</span>
-            <span className="auth-compact-copy">
-              <strong>{accountName}</strong>
-              <span>{workspace.name} · {roleLabel} · {statusText}</span>
-            </span>
-            <AuthToggleIcon expanded={menuOpen} />
-          </button>
-          {menuOpen ? (
-            <div className="auth-details" role="menu">
-              <span className="auth-status">{accountDetail}</span>
-              <span className="auth-status">{workspace.name}</span>
-              <span className="auth-status">Product role: {roleLabel}</span>
-              <span className="auth-status">{statusText}</span>
-              {lastMessage ? <span className="auth-status">{lastMessage}</span> : null}
-              <label className="auth-role-select" title="Access profile">
-                Access
-                <select disabled={busy} value={role} onChange={(event) => void setRole(event.target.value as ArenaRole)}>
-                  {arenaRoles.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-                </select>
-              </label>
-              <div className="auth-actions">
-                <button disabled={busy} onClick={() => void saveNow()} title="Save history" type="button">Save history</button>
-                <button disabled={busy} onClick={() => void logout()} title="Disconnect Google" type="button">Disconnect</button>
-              </div>
-            </div>
-          ) : null}
-        </>
-      ) : (
-        <>
-          <button
-            aria-expanded={menuOpen}
-            className="auth-compact-toggle"
-            onClick={() => setMenuOpen((value) => !value)}
-            title="Workspace account"
-            type="button"
-          >
-            <span className="auth-avatar" aria-hidden="true">{initial}</span>
-            <span className="auth-compact-copy">
-              <strong>{accountName}</strong>
-              <span>{workspace.name} · {roleLabel} · {statusText}</span>
-            </span>
-            <AuthToggleIcon expanded={menuOpen} />
-          </button>
-          {menuOpen ? (
-            <div className="auth-details" role="menu">
-              <span className="auth-status">{accountDetail}</span>
-              <span className="auth-status">{workspace.name}</span>
-              <span className="auth-status">Product role: {roleLabel}</span>
-              <span className="auth-status">{statusText}</span>
-              {error ? <span className="auth-status warning">{shortAuthError(error)}</span> : null}
-              <label className="auth-role-select" title="Access profile">
-                Access
-                <select disabled={busy} value={role} onChange={(event) => void setRole(event.target.value as ArenaRole)}>
-                  {arenaRoles.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-                </select>
-              </label>
-              <button className="google-login-button" disabled={busy} onClick={() => void loginWithGoogle(role)} title="Connect Google" type="button">
-                <span className="google-icon" aria-hidden="true">G</span>
-                <span>{connectLabel}</span>
+    <section className="runtime-control" aria-label="Runtime mode">
+      <button
+        aria-expanded={menuOpen}
+        className="runtime-status-pill"
+        onClick={() => setMenuOpen((value) => !value)}
+        title="Runtime mode"
+        type="button"
+      >
+        <span aria-hidden="true">{runtime.marker}</span>
+        <strong>{runtime.label}</strong>
+        <AuthToggleIcon expanded={menuOpen} />
+      </button>
+      {menuOpen ? (
+        <div className="runtime-drawer" role="menu">
+          <div className="runtime-mode-options" role="group" aria-label="Runtime modes">
+            {visibleRuntimeOptions.map((option) => (
+              <button
+                aria-pressed={option.value === runtimeMode}
+                className={option.value === runtimeMode ? "active" : ""}
+                key={option.value}
+                onClick={() => switchRuntime(option.value)}
+                type="button"
+              >
+                Switch to {option.label}
               </button>
-            </div>
-          ) : null}
-        </>
-      )}
+            ))}
+          </div>
+          <p>{runtime.description}</p>
+          <table className="runtime-matrix">
+            <thead>
+              <tr>
+                <th>Component</th>
+                {visibleRuntimeOptions.map((option) => <th key={option.value}>{option.label}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {runtimeComponents.map((component) => (
+                <tr key={component}>
+                  <th>{component}</th>
+                  {visibleRuntimeOptions.map((option) => {
+                    const status = option.value === runtimeMode ? currentMatrix[component] : option.matrix[component];
+                    return <td className={option.value === runtimeMode ? "current" : ""} key={option.value}><span className={`runtime-status ${status.toLowerCase().replace(/\s+/g, "-")}`}>{status}</span></td>;
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="runtime-actions">
+            <button onClick={() => switchRuntime("local-demo")} type="button">Switch to Local Demo</button>
+            <button onClick={() => switchRuntime("nebius-cloud")} type="button">Switch to Nebius Cloud</button>
+            <button onClick={testNebiusConnection} type="button">Test Nebius Connection</button>
+            <button disabled={runtimeMode !== "nebius-cloud"} onClick={deployNebiusCloud} type="button">Deploy to Nebius Cloud</button>
+          </div>
+          <p className="runtime-fallback-note">{runtimeMessage}</p>
+        </div>
+      ) : null}
     </section>
   );
 }
 
-function shortAuthError(message: string) {
-  return message.length > 96 ? `${message.slice(0, 93)}...` : message;
+function IdentityPanel() {
+  const { busy, clearAuthError, error, lastMessage, loginWithGoogle, logout, platformUser, role, saveNow, session, workspace } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const accountName = platformUser.name;
+  const initial = (platformUser.name || platformUser.email || "A").trim().charAt(0).toUpperCase() || "A";
+  const connected = Boolean(session);
+
+  return (
+    <section className={`auth-panel identity-panel ${connected ? "connected" : "not-connected"} ${error ? "error" : ""}`} aria-label="User and workspace">
+      <button
+        aria-expanded={menuOpen}
+        className="auth-compact-toggle identity-chip"
+        onClick={() => setMenuOpen((value) => !value)}
+        title="User and workspace"
+        type="button"
+      >
+        <span className="auth-avatar" aria-hidden="true">{initial}</span>
+        <span className="auth-compact-copy">
+          <strong>👤 {accountName}</strong>
+          <span>{connected ? "Google connected" : "Local Demo"}</span>
+        </span>
+        <AuthToggleIcon expanded={menuOpen} />
+      </button>
+      {menuOpen ? (
+        <div className="auth-details" role="menu">
+          <div className="auth-detail-block">
+            <span>Current User</span>
+            <strong>{accountName}</strong>
+            <small>{platformUser.email}</small>
+          </div>
+          <div className="auth-detail-block">
+            <span>Workspace</span>
+            <strong>{workspace.name}</strong>
+            <small>{productRoleLabel(role)}</small>
+          </div>
+          <div className="auth-actions">
+            {connected ? (
+              <>
+                <button disabled={busy} onClick={() => void saveNow()} type="button">Save history</button>
+                <button disabled={busy} onClick={() => void logout()} type="button">Disconnect</button>
+              </>
+            ) : (
+              <button className="google-login-button" disabled={busy} onClick={() => void loginWithGoogle(role)} type="button">
+                <span className="google-icon" aria-hidden="true">G</span>
+                {busy ? "Connecting..." : "Connect Google Account"}
+              </button>
+            )}
+          </div>
+          {error ? (
+            <div className="auth-actions">
+              <span className="auth-status warning">{error}</span>
+              <button onClick={clearAuthError} type="button">Continue in Demo Mode</button>
+            </div>
+          ) : <span className="auth-status">{lastMessage ?? "Demo mode requires no login."}</span>}
+        </div>
+      ) : null}
+    </section>
+  );
 }

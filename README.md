@@ -81,6 +81,7 @@ For guided next steps, see [docs/QUICKSTART.md](docs/QUICKSTART.md).
 make backend-dev              # Run backend with auto-reload
 make frontend-dev             # Run frontend dev server
 make backend-test             # Run pytest suite
+cd backend && uv run pytest --cov=app --cov-report=term-missing
 make serverless-benchmark     # Build batch job scaffold
 ```
 

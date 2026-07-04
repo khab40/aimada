@@ -6,13 +6,13 @@ ARDs capture architecture decisions, context, tradeoffs, implementation phases, 
 
 ## Implementation Summary
 
-Status as of 2026-07-03:
+Status as of 2026-07-04:
 
 | ARD | Implementation | Main Gap |
 |-----|----------------|----------|
 | [ARD-0001](ARD-0001-overall-architecture.md) | `[partial]` | Real archived Nebius endpoint/job run is still missing |
 | [ARD-0002](ARD-0002-websocket-state-schema.md) | `[done]` | Optional exported JSON schema and load-test throttling |
-| [ARD-0003](ARD-0003-detector-evidence-model.md) | `[done]` | Broader threshold calibration and validation |
+| [ARD-0003](ARD-0003-detector-evidence-model.md) | `[done]` | Broader threshold calibration against historical-style replay datasets |
 | [ARD-0004](ARD-0004-benchmark-artifact-format.md) | `[partial]` | Run-specific canonical path and schema versioning are not complete |
 | [ARD-0005](ARD-0005-nebius-endpoint-contract.md) | `[partial]` | Contract not yet proven with archived real endpoint execution |
 | [ARD-0006](ARD-0006-scenario-labeling-and-reproducibility.md) | `[partial]` | Live label finalization and full event/order ID linkage remain incomplete |
@@ -25,7 +25,7 @@ Status as of 2026-07-03:
 | [ARD-0013](ARD-0013-ui-shell-preferences.md) | `[done]` | Screenshot capture and broader light-mode chart tuning are future work |
 | [ARD-0014](ARD-0014-multiuser-platform-foundation.md) | `[partial]` | Durable backend workspace/case/audit tables and assignment APIs are future work |
 
-Current UI architecture note: the product shell now exposes seven destinations: Arena, Demo, Scenario Generator, Detection, Experiments, Nebius AI, and About. Reports are Detection outputs, not an independent destination. The About and ARD-0001 diagrams document the four execution areas: Front, Back, Agent Runners Workspace, and Nebius Serverless Cloud.
+Current UI architecture note: the product shell now exposes four workflow destinations: Attack, Arena, AI Platform, and About. Experiments, deployment status, and demo scenarios are folded into AI Platform. Reports and Detection are Arena/AI Platform outputs, not independent destinations. The About and ARD-0001 diagrams document the four execution areas: Front, Back, Agent Runners Workspace, and Nebius Serverless Cloud.
 
 ## Records
 
