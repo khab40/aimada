@@ -246,3 +246,16 @@ describe("Google auth UI contract", () => {
     ]);
   });
 });
+
+describe("API error contract", () => {
+  const client = read("src/api/client.ts");
+
+  it("keeps structured smart-batch backend errors visible", () => {
+    expectIncludes(client, [
+      "formatApiErrorDetail",
+      "record.message",
+      "stderr:",
+      "Smart batch run failed"
+    ]);
+  });
+});

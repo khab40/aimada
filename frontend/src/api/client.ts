@@ -973,7 +973,7 @@ export async function runSmartBatches(runs = 100, batchSize = 100, scenarios = [
     method: "POST"
   });
   if (!response.ok) {
-    throw new Error(`Smart batch run failed: ${response.status}`);
+    throw new Error(await apiErrorMessage(response, "Smart batch run failed"));
   }
   return response.json();
 }
@@ -1106,13 +1106,32 @@ export async function generateNebiusTrainingData(): Promise<ExperimentArtifact> 
 async function apiErrorMessage(response: Response, prefix: string): Promise<string> {
   try {
     const payload = await response.json() as { detail?: unknown };
-    if (typeof payload.detail === "string" && payload.detail.trim()) {
-      return `${prefix}: ${response.status} - ${payload.detail}`;
+    const detail = formatApiErrorDetail(payload.detail);
+    if (detail) {
+      return `${prefix}: ${response.status} - ${detail}`;
     }
   } catch {
     // Fall back to status-only errors when the response is not JSON.
   }
   return `${prefix}: ${response.status}`;
+}
+
+function formatApiErrorDetail(detail: unknown): string | null {
+  if (typeof detail === "string") {
+    return detail.trim() || null;
+  }
+  if (Array.isArray(detail)) {
+    const values = detail.map(formatApiErrorDetail).filter(Boolean);
+    return values.length ? values.join("; ") : null;
+  }
+  if (detail && typeof detail === "object") {
+    const record = detail as Record<string, unknown>;
+    const message = formatApiErrorDetail(record.message);
+    const stderr = formatApiErrorDetail(record.stderr);
+    const stdout = formatApiErrorDetail(record.stdout);
+    return [message, stderr && `stderr: ${stderr}`, stdout && `stdout: ${stdout}`].filter(Boolean).join(" - ") || null;
+  }
+  return null;
 }
 
 function authHeaders(sessionId: string, accessToken?: string | null): Record<string, string> {

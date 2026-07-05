@@ -1,4 +1,5 @@
 import csv
+import shutil
 import subprocess
 import sys
 import time
@@ -28,8 +29,8 @@ def run_local_smart_batch(
     timeout_seconds: int = 120,
 ) -> LocalSmartBatchResult:
     command = [
-        sys.executable,
-        str(repo_root / "serverless" / "jobs" / "run_batch_experiments.py"),
+        *_batch_python_command(repo_root),
+        str(_batch_script(repo_root)),
         "--runs",
         str(runs),
         "--batch-size",
@@ -70,6 +71,18 @@ def smart_batch_artifact_paths(output_dir: Path) -> dict[str, str]:
         "generated_report": str(output_dir / "generated_report.md"),
         "manifest": str(output_dir / "manifest.json"),
     }
+
+
+def _batch_script(repo_root: Path) -> Path:
+    return repo_root / "serverless" / "jobs" / "run_batch_experiments.py"
+
+
+def _batch_python_command(repo_root: Path) -> list[str]:
+    uv = shutil.which("uv")
+    backend_project = repo_root / "backend"
+    if uv and (backend_project / "pyproject.toml").exists():
+        return [uv, "run", "--project", str(backend_project), "python"]
+    return [sys.executable]
 
 
 def read_metrics(path: Path) -> list[dict[str, Any]]:
