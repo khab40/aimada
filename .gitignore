@@ -31,6 +31,9 @@ logs/
 # Local outputs
 outputs/*
 !outputs/.gitkeep
+aimada-latest.zip
+.coverage
+backend/.coverage
 
 # Build artifacts
 dist/

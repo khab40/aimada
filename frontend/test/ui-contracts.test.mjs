@@ -230,3 +230,19 @@ describe("Core UI navigation and workflow contracts", () => {
     assert.doesNotMatch(app, /Switch to Hybrid/);
   });
 });
+
+describe("Google auth UI contract", () => {
+  const auth = read("src/auth/AuthContext.tsx");
+
+  it("rejects popup and script-load failures so Connecting state can clear", () => {
+    expectIncludes(auth, [
+      "GOOGLE_AUTH_TIMEOUT_MS",
+      "GOOGLE_SCRIPT_TIMEOUT_MS",
+      "error_callback",
+      "popup_closed",
+      "popup_failed_to_open",
+      "Timed out loading Google Identity Services.",
+      "Google sign-in timed out. Check popup blockers and try again."
+    ]);
+  });
+});

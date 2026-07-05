@@ -14,9 +14,17 @@ import { AuthContext, type AuthState } from "@/auth/authState";
 import { platformUserFromAuth, workspaceForUser } from "@/platform/identity";
 const STORAGE_KEY = "aimada.auth.session";
 const AUTO_RESTORE_GOOGLE_SESSION = false;
+const GOOGLE_AUTH_TIMEOUT_MS = 120_000;
+const GOOGLE_SCRIPT_TIMEOUT_MS = 15_000;
 
 type GoogleCodeClient = {
   requestCode: () => void;
+};
+
+type GooglePopupError = {
+  error?: string;
+  message?: string;
+  type?: string;
 };
 
 type GoogleIdentityServices = {
@@ -25,6 +33,7 @@ type GoogleIdentityServices = {
       initCodeClient: (config: {
         callback: (response: { code?: string; error?: string }) => void;
         client_id: string;
+        error_callback?: (response: GooglePopupError) => void;
         scope: string;
         redirect_uri?: string;
         ux_mode: "popup";
@@ -230,33 +239,66 @@ function isFetchFailure(error: unknown) {
 
 function requestGoogleAuthorizationCode(clientId: string, redirectUri: string): Promise<string> {
   return new Promise((resolve, reject) => {
+    let settled = false;
+    let timeoutId: number | undefined;
+    const finish = (code: string | null, nextError?: Error) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      if (timeoutId !== undefined) {
+        window.clearTimeout(timeoutId);
+      }
+      if (nextError) {
+        reject(nextError);
+      } else if (code) {
+        resolve(code);
+      } else {
+        reject(new Error("Google did not return an authorization code."));
+      }
+    };
+
+    timeoutId = window.setTimeout(
+      () => finish(null, new Error("Google sign-in timed out. Check popup blockers and try again.")),
+      GOOGLE_AUTH_TIMEOUT_MS
+    );
+
     void loadGoogleIdentityServices()
       .then(() => {
         const initCodeClient = window.google?.accounts?.oauth2?.initCodeClient;
         if (!initCodeClient) {
-          reject(new Error("Google Identity Services did not initialize."));
+          finish(null, new Error("Google Identity Services did not initialize."));
           return;
         }
         const client = initCodeClient({
           callback: (response) => {
             if (response.error) {
-              reject(new Error(response.error));
+              finish(null, new Error(response.error));
               return;
             }
             if (!response.code) {
-              reject(new Error("Google did not return an authorization code."));
+              finish(null, new Error("Google did not return an authorization code."));
               return;
             }
-            resolve(response.code);
+            finish(response.code);
           },
           client_id: clientId,
+          error_callback: (response) => {
+            finish(null, new Error(googlePopupErrorMessage(response)));
+          },
           redirect_uri: redirectUri,
           scope: "openid email profile",
           ux_mode: "popup"
         });
-        client.requestCode();
+        try {
+          client.requestCode();
+        } catch (nextError) {
+          finish(null, nextError instanceof Error ? nextError : new Error("Google sign-in popup could not open."));
+        }
       })
-      .catch(reject);
+      .catch((nextError) => {
+        finish(null, nextError instanceof Error ? nextError : new Error("Google Identity Services failed to load."));
+      });
   });
 }
 
@@ -264,19 +306,69 @@ function loadGoogleIdentityServices(): Promise<void> {
   if (window.google?.accounts?.oauth2) {
     return Promise.resolve();
   }
+  const existing = document.querySelector<HTMLScriptElement>('script[src="https://accounts.google.com/gsi/client"]');
+  if (existing) {
+    return waitForGoogleIdentityServices(existing);
+  }
+  const script = document.createElement("script");
+  script.async = true;
+  script.defer = true;
+  script.src = "https://accounts.google.com/gsi/client";
+  document.head.appendChild(script);
+  return waitForGoogleIdentityServices(script);
+}
+
+function waitForGoogleIdentityServices(script: HTMLScriptElement): Promise<void> {
   return new Promise((resolve, reject) => {
-    const existing = document.querySelector<HTMLScriptElement>('script[src="https://accounts.google.com/gsi/client"]');
-    if (existing) {
-      existing.addEventListener("load", () => resolve(), { once: true });
-      existing.addEventListener("error", () => reject(new Error("Failed to load Google Identity Services.")), { once: true });
-      return;
+    let settled = false;
+    let intervalId: number | undefined;
+    let timeoutId: number | undefined;
+    let onError: () => void = () => undefined;
+    const finish = (nextError?: Error) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      if (intervalId !== undefined) {
+        window.clearInterval(intervalId);
+      }
+      if (timeoutId !== undefined) {
+        window.clearTimeout(timeoutId);
+      }
+      script.removeEventListener("error", onError);
+      if (nextError) {
+        reject(nextError);
+      } else {
+        resolve();
+      }
+    };
+    onError = () => finish(new Error("Failed to load Google Identity Services."));
+    intervalId = window.setInterval(() => {
+      if (window.google?.accounts?.oauth2) {
+        finish();
+      }
+    }, 50);
+    timeoutId = window.setTimeout(
+      () => finish(new Error("Timed out loading Google Identity Services.")),
+      GOOGLE_SCRIPT_TIMEOUT_MS
+    );
+    script.addEventListener("error", onError, { once: true });
+    if (window.google?.accounts?.oauth2) {
+      finish();
     }
-    const script = document.createElement("script");
-    script.async = true;
-    script.defer = true;
-    script.src = "https://accounts.google.com/gsi/client";
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error("Failed to load Google Identity Services."));
-    document.head.appendChild(script);
   });
+}
+
+function googlePopupErrorMessage(response: GooglePopupError): string {
+  const code = response.type || response.error;
+  if (code === "popup_closed") {
+    return "Google sign-in popup was closed before it finished.";
+  }
+  if (code === "popup_failed_to_open") {
+    return "Google sign-in popup could not open. Check popup blockers and try again.";
+  }
+  if (response.message?.trim()) {
+    return response.message.trim();
+  }
+  return "Google sign-in did not complete.";
 }
