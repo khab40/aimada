@@ -1,8 +1,17 @@
-# ARD-003: AI Detector Tournament
+# ARD-0017: AI Detector Tournament
 
-Status: Done
+Status: Accepted
 
 Date: 2026-07-06
+
+Implementation Status: `[done]`
+
+Primary implementation:
+
+- Backend API: `POST /api/nebius/tournament/start`, `GET /api/nebius/tournament/{id}`, `GET /api/nebius/tournament/{id}/artifacts`
+- Backend service: `backend/app/nebius/detector_tournament.py`
+- Serverless job: `serverless/jobs/detector_tournament.py`
+- Frontend surface: AI Command Center detector tournament panel
 
 ## Context
 
@@ -20,7 +29,7 @@ Phase 3 should expose this as “AI Detector Tournament using Nebius Serverless 
 
 ## Decision
 
-Add a Nebius product facade for tournament operations:
+Use a Nebius product facade for tournament operations:
 
 - `POST /api/nebius/tournament/start`
 - `GET /api/nebius/tournament/{id}`
@@ -28,7 +37,8 @@ Add a Nebius product facade for tournament operations:
 
 The facade reuses existing experiment APIs and runners internally:
 
-- Local/mock fallback uses `serverless/jobs/detector_tournament.py` for detector-set comparison when the user starts a lightweight tournament.
+- `local_mock` fallback returns deterministic leaderboard rows without backend batch execution.
+- Explicit `local` execution uses `serverless/jobs/detector_tournament.py` for capped detector-set comparison when the user starts a lightweight tournament.
 - Managed Nebius job path uses `ManagedExperiment`, `render-nebius-job-config`, `submit-nebius`, `collect-nebius-artifacts`, and `aggregate`.
 - Larger artifact-heavy tournaments continue to use `run_batch_experiments.py` because it already produces canonical JSONL/CSV/MD artifacts for investigations and reports.
 
@@ -68,7 +78,7 @@ Tournament start form:
 - `difficulty_mix`: object such as `{ "easy": 0.2, "medium": 0.5, "hard": 0.2, "adversarial": 0.1 }`
 - `detector_set`: list of `spoofing_like`, `layering_like`, `quote_stuffing`, `liquidity_shock`
 - `random_seed`: integer
-- `execution_mode`: `mock | local | nebius`
+- `execution_mode`: `local_mock | local | nebius`
 
 The first implementation can map `difficulty_mix` into scenario repetition/manifest metadata until simulator difficulty-specific replay is available.
 
@@ -95,7 +105,7 @@ Request:
   },
   "detector_set": ["spoofing_like", "layering_like", "quote_stuffing"],
   "random_seed": 42,
-  "execution_mode": "local"
+  "execution_mode": "local_mock"
 }
 ```
 
@@ -126,12 +136,9 @@ Response:
     "total_alerts": 87,
     "macro_f1": 0.81
   },
-  "artifacts": {
-    "results": "outputs/benchmark/TRN-20260706-0001/results.json",
-    "metrics": "outputs/benchmark/TRN-20260706-0001/metrics.csv",
-    "report": "outputs/benchmark/TRN-20260706-0001/benchmark_report.md"
-  },
-  "summary": "Local detector tournament completed with deterministic synthetic ground truth."
+  "artifacts": {},
+  "summary": "Deterministic mock detector tournament completed after local runner fallback.",
+  "fallback_reason": "local_mock mode uses deterministic tournament output without backend batch execution."
 }
 ```
 
@@ -170,18 +177,17 @@ Returns artifact metadata and download URLs:
 }
 ```
 
-## Backend Implementation Plan
+## Backend Implementation
 
-Add `backend/app/nebius/tournament.py` with schemas:
+Implemented in `backend/app/nebius/detector_tournament.py` with schemas:
 
 - `DetectorTournamentStartRequest`
-- `DetectorTournamentStatus`
 - `DetectorTournamentLeaderboardRow`
 - `DetectorTournamentResponse`
 - `DetectorTournamentArtifact`
 - `DetectorTournamentArtifactsResponse`
 
-Add routes in `backend/app/api/routes_nebius.py`:
+Implemented routes in `backend/app/api/routes_nebius.py`:
 
 - `POST /api/nebius/tournament/start`
 - `GET /api/nebius/tournament/{id}`
@@ -194,11 +200,13 @@ Route behavior:
    - `layering` -> `layering`
    - `quote_stuffing` -> `quote_stuffing`
    - `wash_trading` -> `pump_and_cancel` or `normal_market` plus manifest metadata until direct simulator support exists
-2. If `execution_mode=local` or Nebius job config is missing, run local fallback through `serverless/jobs/detector_tournament.py`.
-3. If `execution_mode=nebius` and job submit config is present, create a `ManagedExperiment`, render job config, submit Nebius job, and return `real_nebius_pending` or `queued`.
-4. Persist tournament state under `nebius/tournaments/{tournament_id}/`.
-5. Append summary rows to `nebius/tournaments.jsonl`.
-6. Store history artifact with `kind="run"` and `source="ai_detector_tournament"`.
+2. If `execution_mode=local_mock`, return deterministic leaderboard rows immediately and do not launch backend batch work.
+3. If `execution_mode=local`, queue a capped local run through `serverless/jobs/detector_tournament.py`; only one local tournament can run at a time.
+4. If `execution_mode=nebius` and job submit config is present, submit a Nebius Serverless Job command, persist request/stdout artifacts, and return `queued`.
+5. If `execution_mode=nebius` and job submit config is missing, return deterministic mock output with a fallback reason.
+6. Persist tournament state under `nebius/tournaments/{tournament_id}/`.
+7. Append summary rows to `nebius/tournaments.jsonl`.
+8. Store history artifact with `kind="run"` and `source="ai_detector_tournament"`.
 
 ## Serverless Job Design
 
@@ -261,7 +269,7 @@ Design rule: do not create a third runner. If Phase 3 needs additional fields, e
 
 Reuse `NebiusControlPanelPage.tsx` Detector Tournament section.
 
-Add or refine controls:
+Implemented controls:
 
 - number of scenarios
 - manipulation type multi-select
@@ -289,9 +297,10 @@ The current buttons `Create benchmark`, `Run Local Demo tournament`, `Run server
 
 ## Fallback / Mock Behavior
 
-- No Nebius credentials or submit template: execute local `detector_tournament.py` and return `status="completed"` with local artifacts.
-- `execution_mode=nebius` without config: create a pending job record and return `status="real_nebius_pending"` with rendered config artifact if possible.
-- Local failures return `502` with bounded stdout/stderr and keep previous tournament state readable.
+- `local_mock`: return deterministic leaderboard rows immediately, with no subprocess and no artifacts.
+- Explicit `local`: execute capped `detector_tournament.py` and return `status="completed"` with local artifacts.
+- `execution_mode=nebius` without config: queue deterministic local fallback, set `execution_mode="local_mock"`, and include a fallback reason.
+- Local failures or timeout return deterministic mock output with a fallback reason and keep previous tournament state readable.
 - UI must label local fallback clearly and still show leaderboard/artifacts.
 
 ## Demo Script

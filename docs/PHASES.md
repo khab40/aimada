@@ -27,9 +27,9 @@ Implementation phases:
 Primary docs:
 
 - `docs/nebius-serverless-build-plan.md`
-- `docs/architecture/ARD-001-nebius-ai-investigation-team.md`
-- `docs/architecture/ARD-002-ai-scenario-generator.md`
-- `docs/architecture/ARD-003-ai-detector-tournament.md`
+- `docs/architecture/ARD-0015-nebius-ai-investigation-team.md`
+- `docs/architecture/ARD-0016-ai-scenario-generator.md`
+- `docs/architecture/ARD-0017-ai-detector-tournament.md`
 - `docs/use-cases/nebius-serverless-use-cases.md`
 - `docs/demo-script.md`
 

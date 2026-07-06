@@ -28,7 +28,8 @@ def test_detector_tournament_runs_local_mock_and_persists(tmp_path: Path) -> Non
     assert response.leaderboard
     assert response.leaderboard[0].false_positives >= 0
     assert response.leaderboard[0].false_negatives >= 0
-    assert response.artifacts["metrics"].endswith("metrics.csv")
+    assert response.artifacts == {}
+    assert response.fallback_reason
     assert loaded is not None
     assert loaded.tournament_id == response.tournament_id
 
@@ -66,4 +67,5 @@ def test_detector_tournament_api_facade_round_trip(tmp_path: Path) -> None:
     loaded = read_detector_tournament(response.tournament_id, request)
 
     assert loaded.tournament_id == response.tournament_id
-    assert loaded.status == "queued"
+    assert loaded.status == "completed"
+    assert loaded.execution_mode == "local_mock"

@@ -377,7 +377,8 @@ GET /api/nebius/tournament/{id}/artifacts
 ```
 
 - Keep existing experiment APIs working; facade wraps them instead of replacing them.
-- Use local `detector_tournament.py` as lightweight mock/local fallback.
+- Use deterministic mock output for `local_mock` so the backend never runs batch work for the default demo.
+- Use capped local `detector_tournament.py` only for explicit `execution_mode=local`.
 - Use Managed Experiment ids as job correlation ids for real Nebius Serverless Jobs.
 - Render job config into `experiments/{experiment_id}/nebius_job_config.rendered.yaml`.
 - Record job state in `experiments/{experiment_id}/jobs.jsonl`.
@@ -488,7 +489,8 @@ Response:
 ### Fallback / Mock Behavior
 
 - If job submit template is missing, `submit-nebius` records `real_nebius_pending`.
-- Local facade path runs `detector_tournament.py` and returns local leaderboard/artifacts.
+- `local_mock` facade path returns deterministic leaderboard rows without artifacts.
+- Explicit `local` facade path runs capped `detector_tournament.py` and returns local leaderboard/artifacts.
 - Managed local batch path runs `run_local_smart_batch()` and writes canonical experiment artifact names.
 - Aggregation reads local and collected cloud artifacts through the same experiment artifact paths.
 

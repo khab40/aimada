@@ -1,8 +1,17 @@
-# ARD-002: AI Scenario Generator
+# ARD-0016: AI Scenario Generator
 
-Status: Done
+Status: Accepted
 
 Date: 2026-07-06
+
+Implementation Status: `[done]`
+
+Primary implementation:
+
+- Backend API: `POST /api/nebius/scenario-generator/generate`
+- Backend service: `backend/app/nebius/scenario_generator.py`
+- Serverless endpoint: `POST /generate-market-abuse-scenario`
+- Frontend surface: AI Command Center scenario generator panel
 
 ## Context
 
@@ -19,7 +28,7 @@ Existing code to reuse:
 
 ## Decision
 
-Add a canonical AI scenario contract and expose it through new promoted aliases:
+Use a canonical AI scenario contract and expose it through promoted routes:
 
 - Backend: `POST /api/nebius/scenario-generator/generate`
 - Serverless endpoint: `POST /generate-market-abuse-scenario`
@@ -147,16 +156,17 @@ Event contract:
 
 ## Backend Changes
 
-Add `backend/app/nebius/scenario_generator.py` with:
+Implemented in `backend/app/nebius/scenario_generator.py` with:
 
 - `MarketAbuseScenarioGenerationRequest`
 - `ScenarioEvent`
 - `ScenarioGroundTruth`
 - `ExpectedDetectorBehavior`
 - `CanonicalMarketAbuseScenario`
-- `generate_market_abuse_scenario(request)`: prepares payload, calls `NebiusClient`, validates and normalizes response, falls back to deterministic templates
+- `generate_with_client(client, request)`: prepares payload, calls `NebiusClient`, validates and normalizes response, falls back to deterministic templates
+- `project_attack_scenario(scenario)`: adapts canonical scenarios into the existing Arena attack-scenario projection
 
-Add route in `backend/app/api/routes_nebius.py`:
+Implemented route in `backend/app/api/routes_nebius.py`:
 
 ```http
 POST /api/nebius/scenario-generator/generate
@@ -200,7 +210,7 @@ Do not remove:
 
 ## Serverless Endpoint Changes
 
-Add route in `serverless/endpoint/app.py`:
+Implemented route in `serverless/endpoint/app.py`:
 
 ```http
 POST /generate-market-abuse-scenario
@@ -229,7 +239,7 @@ Compatibility:
 
 ## Frontend Changes
 
-Add a “Generate AI Scenario” flow to `frontend/src/pages/NebiusControlPanelPage.tsx` or link from that page to the existing `AttackScenarioGeneratorPage.tsx`.
+The AI Command Center implements the “Generate AI Scenario” flow in `frontend/src/pages/NebiusControlPanelPage.tsx`, while the existing attack scenario page remains a compatibility surface.
 
 Visible controls:
 

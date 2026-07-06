@@ -45,10 +45,12 @@ def test_demo_surface_flags_default_to_reduced_demo_mode(monkeypatch: Any) -> No
 def test_backend_settings_default_to_lean_local_runtime(monkeypatch: Any) -> None:
     monkeypatch.delenv("ARENA_REMOTE_AGENT_URLS", raising=False)
     monkeypatch.delenv("NEBIUS_HEALTH_TIMEOUT_SECONDS", raising=False)
+    monkeypatch.delenv("NEBIUS_LOCAL_TOURNAMENT_SCENARIO_LIMIT", raising=False)
     settings = Settings(_env_file=None)
 
     assert settings.arena_remote_agent_urls == ""
     assert settings.nebius_health_timeout_seconds == 0.5
+    assert settings.nebius_local_tournament_scenario_limit == 24
 
 
 def test_backend_settings_derives_investigation_team_endpoint_from_base_url(monkeypatch: Any) -> None:

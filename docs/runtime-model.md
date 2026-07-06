@@ -46,13 +46,17 @@ ARENA_BASELINE_LIQUIDITY_TICK_SIZE=1.0
 ARENA_BASELINE_LIQUIDITY_REFERENCE_PRICE=68125.0
 ARENA_MAX_AGENT_QUOTE_SIZE=25.0
 AGENT_RUNNER_AGENT_COUNT=24
+AGENT_RUNNER_MAX_AGENT_COUNT=48
 AGENT_RUNNER_HEAVY_AGENT_COUNT=0
+AGENT_RUNNER_MAX_HEAVY_AGENT_COUNT=2
 AGENT_RUNNER_HEAVY_AGENT_WORKERS=1
+AGENT_RUNNER_MAX_HEAVY_AGENT_WORKERS=1
 AGENT_RUNNER_LANGGRAPH_AGENT_COUNT=0
+AGENT_RUNNER_MAX_LANGGRAPH_AGENT_COUNT=4
 AGENT_RUNNER_LANGGRAPH_STRATEGY=liquidity_rebalancer
 ```
 
-Local demo keeps `ARENA_REMOTE_AGENT_URLS` empty by default. Agents that miss the per-tick decision deadline are skipped for that tick. This keeps the live arena responsive. Runtime agent `set_level` intents update that agent's own bounded synthetic quote at a price level, so hundreds of agents can share one price without overwriting each other or compounding aggregate depth. The backend caps these quotes with `ARENA_MAX_AGENT_QUOTE_SIZE`. After each tick, the backend applies a baseline liquidity guard that restores the configured minimum bid/ask ladder around `ARENA_BASELINE_LIQUIDITY_REFERENCE_PRICE`, including when a side has been fully consumed.
+Local demo keeps `ARENA_REMOTE_AGENT_URLS` empty by default. Agents that miss the per-tick decision deadline are skipped for that tick. This keeps the live arena responsive. Runtime agent `set_level` intents update that agent's own bounded synthetic quote at a price level, so hundreds of agents can share one price without overwriting each other or compounding aggregate depth. The backend caps these quotes with `ARENA_MAX_AGENT_QUOTE_SIZE`. Worker-side `AGENT_RUNNER_MAX_*` caps clamp stale or aggressive env values before agents are built. After each tick, the backend applies a baseline liquidity guard that restores the configured minimum bid/ask ladder around `ARENA_BASELINE_LIQUIDITY_REFERENCE_PRICE`, including when a side has been fully consumed.
 
 Phase 2 adds out-of-process agent runners. A runner exposes `POST /decide`, receives the same read-only `MarketSnapshot`, and returns `AgentIntent` JSON. Start it with `docker compose --profile remote-agents up agent-runner`, then point `ARENA_REMOTE_AGENT_URLS` at it. Only the backend applies accepted intents to the exchange. This preserves deterministic single-writer market state while allowing agent decision work to scale independently.
 

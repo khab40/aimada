@@ -77,6 +77,12 @@ class Settings(BaseSettings):
         le=5.0,
         alias="NEBIUS_HEALTH_TIMEOUT_SECONDS",
     )
+    nebius_local_tournament_scenario_limit: int = Field(
+        default=24,
+        ge=1,
+        le=200,
+        alias="NEBIUS_LOCAL_TOURNAMENT_SCENARIO_LIMIT",
+    )
     arena_output_dir: Path = Field(default=Path("../outputs"), alias="ARENA_OUTPUT_DIR")
     arena_sample_data_dir: Path = Field(default=Path("../data/sample"), alias="ARENA_SAMPLE_DATA_DIR")
     google_client_id: str | None = Field(default=None, alias="GOOGLE_CLIENT_ID")

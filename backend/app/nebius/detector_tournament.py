@@ -3,6 +3,7 @@ import json
 import shlex
 import subprocess
 import sys
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal
@@ -19,6 +20,7 @@ ManipulationType = Literal["spoofing", "layering", "wash_trading", "quote_stuffi
 DetectorName = Literal["spoofing_like", "layering_like", "quote_stuffing", "liquidity_shock"]
 TournamentStatus = Literal["queued", "running", "completed", "failed", "real_nebius_pending"]
 TournamentExecutionMode = Literal["local_mock", "local", "nebius_serverless_job"]
+_LOCAL_TOURNAMENT_LOCK = threading.Lock()
 
 
 class DetectorTournamentStartRequest(BaseModel):
@@ -76,17 +78,28 @@ def start_tournament(
     tournament_id = f"TRN-{uuid4().hex[:8].upper()}"
     if request.execution_mode == "nebius" and get_settings().nebius_job_submit_command_template:
         response = _submit_nebius_job(request, tournament_id=tournament_id, started_at=started_at, store=store)
+    elif request.execution_mode in {"local_mock", "nebius"}:
+        fallback_reason = (
+            "NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE is not configured; returned deterministic local mock tournament."
+            if request.execution_mode == "nebius"
+            else "local_mock mode uses deterministic tournament output without backend batch execution."
+        )
+        response = _mock_tournament_response(
+            request,
+            tournament_id=tournament_id,
+            started_at=started_at,
+            completed_at=_now(),
+            artifacts={},
+            fallback_reason=fallback_reason,
+        )
     else:
-        fallback_reason = None
-        if request.execution_mode == "nebius":
-            fallback_reason = "NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE is not configured; ran deterministic local tournament fallback."
         response = _run_local_tournament(
             request,
             tournament_id=tournament_id,
             started_at=started_at,
             store=store,
             repo_root=repo_root,
-            fallback_reason=fallback_reason,
+            fallback_reason=None,
         )
     _persist_tournament(store, response)
     return response
@@ -102,6 +115,20 @@ def queue_tournament(
     tournament_id = f"TRN-{uuid4().hex[:8].upper()}"
     if request.execution_mode == "nebius" and get_settings().nebius_job_submit_command_template:
         response = _submit_nebius_job(request, tournament_id=tournament_id, started_at=started_at, store=store)
+    elif request.execution_mode in {"local_mock", "nebius"}:
+        fallback_reason = (
+            "NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE is not configured; returned deterministic local mock tournament."
+            if request.execution_mode == "nebius"
+            else "local_mock mode uses deterministic tournament output without backend batch execution."
+        )
+        response = _mock_tournament_response(
+            request,
+            tournament_id=tournament_id,
+            started_at=started_at,
+            completed_at=_now(),
+            artifacts={},
+            fallback_reason=fallback_reason,
+        )
     else:
         response = _queued_local_response(request, tournament_id=tournament_id, started_at=started_at)
     _persist_tournament(store, response)
@@ -123,18 +150,29 @@ def complete_queued_tournament(
         store,
         queued.model_copy(update={"status": "running", "summary": "Local detector tournament is running."}),
     )
-    fallback_reason = None
-    if request.execution_mode == "nebius":
-        fallback_reason = "NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE is not configured; ran deterministic local tournament fallback."
-    response = _run_local_tournament(
-        request,
-        tournament_id=tournament_id,
-        started_at=started_at,
-        store=store,
-        repo_root=repo_root,
-        fallback_reason=fallback_reason,
-    )
-    _persist_tournament(store, response)
+    if not _LOCAL_TOURNAMENT_LOCK.acquire(blocking=False):
+        response = _mock_tournament_response(
+            request,
+            tournament_id=tournament_id,
+            started_at=started_at,
+            completed_at=_now(),
+            artifacts={},
+            fallback_reason="local detector tournament runner is busy; returned deterministic mock output.",
+        )
+        _persist_tournament(store, response)
+        return
+    try:
+        response = _run_local_tournament(
+            request,
+            tournament_id=tournament_id,
+            started_at=started_at,
+            store=store,
+            repo_root=repo_root,
+            fallback_reason=None,
+        )
+        _persist_tournament(store, response)
+    finally:
+        _LOCAL_TOURNAMENT_LOCK.release()
 
 
 def get_tournament(tournament_id: str, *, store: LocalStore) -> DetectorTournamentResponse | None:
@@ -174,7 +212,15 @@ def _run_local_tournament(
     output_dir.mkdir(parents=True, exist_ok=True)
     scenarios = _scenario_names(request.manipulation_types)
     detectors = _detectors(request.detector_set)
-    runs_per_scenario = max(1, (request.number_of_scenarios + max(len(scenarios), 1) - 1) // max(len(scenarios), 1))
+    scenario_limit = get_settings().nebius_local_tournament_scenario_limit
+    effective_scenarios = min(request.number_of_scenarios, scenario_limit)
+    runs_per_scenario = max(1, (effective_scenarios + max(len(scenarios), 1) - 1) // max(len(scenarios), 1))
+    if request.number_of_scenarios > effective_scenarios:
+        cap_reason = (
+            f"local tournament capped at {effective_scenarios} scenarios; use Nebius Serverless Jobs "
+            f"for requested high-load run of {request.number_of_scenarios} scenarios."
+        )
+        fallback_reason = f"{fallback_reason} {cap_reason}".strip() if fallback_reason else cap_reason
     command = [
         sys.executable,
         str(repo_root / "serverless" / "jobs" / "detector_tournament.py"),
@@ -187,14 +233,24 @@ def _run_local_tournament(
         "--output",
         str(output_dir),
     ]
-    completed = subprocess.run(
-        command,
-        capture_output=True,
-        check=False,
-        cwd=repo_root,
-        text=True,
-        timeout=90,
-    )
+    try:
+        completed = subprocess.run(
+            command,
+            capture_output=True,
+            check=False,
+            cwd=repo_root,
+            text=True,
+            timeout=90,
+        )
+    except subprocess.TimeoutExpired:
+        return _mock_tournament_response(
+            request,
+            tournament_id=tournament_id,
+            started_at=started_at,
+            completed_at=_now(),
+            artifacts={},
+            fallback_reason="local detector tournament timed out; returned deterministic mock output.",
+        )
     if completed.returncode != 0:
         return _mock_tournament_response(
             request,

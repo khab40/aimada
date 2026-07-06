@@ -20,11 +20,31 @@ class DecideResponse(BaseModel):
     intents: list[dict[str, Any]] = Field(default_factory=list)
 
 
-AGENT_COUNT = int(os.getenv("AGENT_RUNNER_AGENT_COUNT", "200"))
-HEAVY_AGENT_COUNT = int(os.getenv("AGENT_RUNNER_HEAVY_AGENT_COUNT", "8"))
-HEAVY_AGENT_COMPLEXITY = int(os.getenv("AGENT_RUNNER_HEAVY_AGENT_COMPLEXITY", "20000"))
-HEAVY_AGENT_WORKERS = int(os.getenv("AGENT_RUNNER_HEAVY_AGENT_WORKERS", "2"))
-LANGGRAPH_AGENT_COUNT = int(os.getenv("AGENT_RUNNER_LANGGRAPH_AGENT_COUNT", "16"))
+def _env_int(name: str, default: int, *, minimum: int, maximum: int | None = None) -> int:
+    raw = os.getenv(name)
+    try:
+        value = int(raw) if raw is not None and raw.strip() else default
+    except ValueError:
+        value = default
+    value = max(minimum, value)
+    if maximum is not None:
+        value = min(maximum, value)
+    return value
+
+
+REQUESTED_AGENT_COUNT = _env_int("AGENT_RUNNER_AGENT_COUNT", 24, minimum=0)
+REQUESTED_HEAVY_AGENT_COUNT = _env_int("AGENT_RUNNER_HEAVY_AGENT_COUNT", 0, minimum=0)
+REQUESTED_HEAVY_AGENT_WORKERS = _env_int("AGENT_RUNNER_HEAVY_AGENT_WORKERS", 1, minimum=1)
+REQUESTED_LANGGRAPH_AGENT_COUNT = _env_int("AGENT_RUNNER_LANGGRAPH_AGENT_COUNT", 0, minimum=0)
+MAX_AGENT_COUNT = _env_int("AGENT_RUNNER_MAX_AGENT_COUNT", 48, minimum=0)
+MAX_HEAVY_AGENT_COUNT = _env_int("AGENT_RUNNER_MAX_HEAVY_AGENT_COUNT", 2, minimum=0)
+MAX_HEAVY_AGENT_WORKERS = _env_int("AGENT_RUNNER_MAX_HEAVY_AGENT_WORKERS", 1, minimum=1)
+MAX_LANGGRAPH_AGENT_COUNT = _env_int("AGENT_RUNNER_MAX_LANGGRAPH_AGENT_COUNT", 4, minimum=0)
+AGENT_COUNT = min(REQUESTED_AGENT_COUNT, MAX_AGENT_COUNT)
+HEAVY_AGENT_COUNT = min(REQUESTED_HEAVY_AGENT_COUNT, MAX_HEAVY_AGENT_COUNT)
+HEAVY_AGENT_COMPLEXITY = _env_int("AGENT_RUNNER_HEAVY_AGENT_COMPLEXITY", 20000, minimum=100, maximum=50000)
+HEAVY_AGENT_WORKERS = min(REQUESTED_HEAVY_AGENT_WORKERS, MAX_HEAVY_AGENT_WORKERS)
+LANGGRAPH_AGENT_COUNT = min(REQUESTED_LANGGRAPH_AGENT_COUNT, MAX_LANGGRAPH_AGENT_COUNT)
 LANGGRAPH_STRATEGY = os.getenv("AGENT_RUNNER_LANGGRAPH_STRATEGY", "liquidity_rebalancer")
 AGENT_PREFIX = os.getenv("AGENT_RUNNER_AGENT_ID_PREFIX", "REMOTE")
 RUNNER_ID = os.getenv("AGENT_RUNNER_ID", AGENT_PREFIX.lower())
@@ -68,6 +88,12 @@ def health() -> dict[str, object]:
         "heavy_agent_workers": HEAVY_AGENT_WORKERS if heavy_executor is not None else 0,
         "langgraph_agent_count": LANGGRAPH_AGENT_COUNT,
         "langgraph_strategy": LANGGRAPH_STRATEGY,
+        "requested_agent_count": REQUESTED_AGENT_COUNT,
+        "requested_heavy_agent_count": REQUESTED_HEAVY_AGENT_COUNT,
+        "requested_langgraph_agent_count": REQUESTED_LANGGRAPH_AGENT_COUNT,
+        "max_agent_count": MAX_AGENT_COUNT,
+        "max_heavy_agent_count": MAX_HEAVY_AGENT_COUNT,
+        "max_langgraph_agent_count": MAX_LANGGRAPH_AGENT_COUNT,
     }
 
 
@@ -82,6 +108,6 @@ async def decide(payload: DecideRequest) -> DecideResponse:
     intents = await manager.collect_intents(snapshot)
     return DecideResponse(
         runner_id=RUNNER_ID,
-        agent_ids=manager.agent_ids,
+        agent_ids=[],
         intents=[asdict(intent) for intent in intents],
     )

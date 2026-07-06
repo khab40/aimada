@@ -6,10 +6,10 @@ ARDs capture architecture decisions, context, tradeoffs, implementation phases, 
 
 ## Implementation Summary
 
-Status as of 2026-07-04:
+Status as of 2026-07-06:
 
-| ARD | Implementation | Main Gap |
-|-----|----------------|----------|
+| ARD | Implementation | Notes |
+|-----|----------------|-------|
 | [ARD-0001](ARD-0001-overall-architecture.md) | `[partial]` | Real archived Nebius endpoint/job run is still missing |
 | [ARD-0002](ARD-0002-websocket-state-schema.md) | `[done]` | Optional exported JSON schema and load-test throttling |
 | [ARD-0003](ARD-0003-detector-evidence-model.md) | `[done]` | Broader threshold calibration against historical-style replay datasets |
@@ -24,9 +24,9 @@ Status as of 2026-07-04:
 | [ARD-0012](ARD-0012-google-authentication.md) | `[done]` | Refresh tokens, revocation, asymmetric signing, and external secret management are future work |
 | [ARD-0013](ARD-0013-ui-shell-preferences.md) | `[done]` | Screenshot capture and broader light-mode chart tuning are future work |
 | [ARD-0014](ARD-0014-multiuser-platform-foundation.md) | `[partial]` | Durable backend workspace/case/audit tables and assignment APIs are future work |
-| [ARD-001](ARD-001-nebius-ai-investigation-team.md) | `[done]` | Investigation endpoint is the primary interactive Nebius AI Serverless workflow |
-| [ARD-002](ARD-002-ai-scenario-generator.md) | `[done]` | Scenario generation endpoint produces simulator-compatible AI Scenario Generator workloads |
-| [ARD-003](ARD-003-ai-detector-tournament.md) | `[done]` | Serverless Jobs contract and local fallback power the AI Detector Tournament workflow |
+| [ARD-0015](ARD-0015-nebius-ai-investigation-team.md) | `[done]` | Investigation endpoint is the primary interactive Nebius AI Serverless workflow |
+| [ARD-0016](ARD-0016-ai-scenario-generator.md) | `[done]` | Scenario generation endpoint produces simulator-compatible AI Scenario Generator workloads |
+| [ARD-0017](ARD-0017-ai-detector-tournament.md) | `[done]` | Serverless Jobs contract and local fallback power the AI Detector Tournament workflow |
 
 Current UI architecture note: the product shell now exposes AI Command Center, Arena / Workload Generator, and Docs / Demo as the primary demo destinations. Scenario setup, incidents, investigations, detector tournaments, deployment status, and experiment artifacts are folded into the AI Command Center or linked from the active workflow. The About and ARD-0001 diagrams document the four execution areas: Front, Back, Agent Runners Workspace, and Nebius Serverless Cloud.
 
@@ -66,9 +66,9 @@ Current UI architecture note: the product shell now exposes AI Command Center, A
 - [ARD-0007: Nebius Serverless AI Jobs](ARD-0007-nebius-serverless-ai-jobs.md) — Batch job execution for benchmarks and dataset generation
 - [ARD-0008: Nebius Serverless AI Endpoints](ARD-0008-nebius-serverless-ai-endpoints.md) — Interactive serverless AI endpoint integration
 - [ARD-0009: Judge Mode Investigation Reports](ARD-0009-judge-mode-investigation-reports.md) — Investigation and report generation workflows
-- [ARD-001: Nebius AI Investigation Team](ARD-001-nebius-ai-investigation-team.md) — Phase 1 build plan for AI investigation via Nebius AI Serverless Endpoint
-- [ARD-002: AI Scenario Generator](ARD-002-ai-scenario-generator.md) — Phase 2 build plan for scenario generation via Nebius AI Serverless Endpoint
-- [ARD-003: AI Detector Tournament](ARD-003-ai-detector-tournament.md) — Phase 3 build plan for detector tournaments via Nebius Serverless Jobs
+- [ARD-0015: Nebius AI Investigation Team](ARD-0015-nebius-ai-investigation-team.md) — Phase 1 build plan and implementation record for AI investigation via Nebius AI Serverless Endpoint
+- [ARD-0016: AI Scenario Generator](ARD-0016-ai-scenario-generator.md) — Phase 2 build plan and implementation record for scenario generation via Nebius AI Serverless Endpoint
+- [ARD-0017: AI Detector Tournament](ARD-0017-ai-detector-tournament.md) — Phase 3 build plan and implementation record for detector tournaments via Nebius Serverless Jobs
 
 ### Build Plan And Use Cases
 
