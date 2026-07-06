@@ -12,6 +12,7 @@ import {
   type ReportsSummary
 } from "@/api/client";
 import { TeamMark } from "@/components/TeamMark";
+import { featureFlags } from "@/featureFlags";
 import type {
   AttackScenario,
   AttackScenarioInput,
@@ -289,7 +290,7 @@ export function AttackScenarioGeneratorPage() {
       <div className="panel lab-hero-panel team-hero red">
         <TeamMark team="red" />
         <div>
-          <h2>Attack Scenario Generator</h2>
+          <h2>AI Scenario Generator</h2>
         </div>
       </div>
 
@@ -298,7 +299,7 @@ export function AttackScenarioGeneratorPage() {
       <div className="scenario-wizard panel">
         <div className="scenario-wizard-header">
           <div>
-            <h2>Market / Attack / Detector / Execution</h2>
+            <h2>Scenario Setup</h2>
           </div>
           {busy ? <span className="endpoint-badge">Working with Nebius AI...</span> : null}
         </div>
@@ -307,14 +308,21 @@ export function AttackScenarioGeneratorPage() {
           <div className="scenario-step-heading">
             <span>1</span>
             <div>
-              <h3>Market</h3>
+              <h3>Demo scenario</h3>
             </div>
           </div>
           <div className="scenario-control-grid">
-            <Select label="Market condition" value={attackInput.marketCondition} options={marketConditions} onChange={(marketCondition) => setAttackInput({ ...attackInput, marketCondition: marketCondition as AttackScenarioInput["marketCondition"] })} />
-            <Select label="Market volatility" value={scenarioConfig.marketVolatility} options={["Low", "Medium", "High"]} onChange={(marketVolatility) => setScenarioConfig({ ...scenarioConfig, marketVolatility: marketVolatility as ScenarioGridConfig["marketVolatility"] })} />
-            <Select label="Liquidity" value={scenarioConfig.liquidity} options={["Thin", "Normal", "Deep"]} onChange={(liquidity) => setScenarioConfig({ ...scenarioConfig, liquidity: liquidity as ScenarioGridConfig["liquidity"] })} />
-            <Select label="Agents in market" value={String(scenarioConfig.numberOfAgents)} options={["10", "50", "100", "500"]} onChange={(numberOfAgents) => setScenarioConfig({ ...scenarioConfig, numberOfAgents: Number(numberOfAgents) as ScenarioGridConfig["numberOfAgents"] })} />
+            <Select label="Manipulation type" value={attackInput.attackType} options={attackTypes} onChange={(attackType) => setAttackInput({ ...attackInput, attackType: attackType as AttackScenarioInput["attackType"] })} />
+            <Select label="Difficulty" value={attackInput.detectorDifficulty} options={["Easy", "Medium", "Hard"]} onChange={(detectorDifficulty) => setAttackInput({ ...attackInput, detectorDifficulty: detectorDifficulty as AttackScenarioInput["detectorDifficulty"] })} />
+            <Select label="Duration" value={attackInput.attackDuration} options={durations} onChange={(attackDuration) => setAttackInput({ ...attackInput, attackDuration: attackDuration as AttackScenarioInput["attackDuration"] })} />
+            {featureFlags.enableAdvancedAttackControls ? (
+              <>
+                <Select label="Market condition" value={attackInput.marketCondition} options={marketConditions} onChange={(marketCondition) => setAttackInput({ ...attackInput, marketCondition: marketCondition as AttackScenarioInput["marketCondition"] })} />
+                <Select label="Market volatility" value={scenarioConfig.marketVolatility} options={["Low", "Medium", "High"]} onChange={(marketVolatility) => setScenarioConfig({ ...scenarioConfig, marketVolatility: marketVolatility as ScenarioGridConfig["marketVolatility"] })} />
+                <Select label="Liquidity" value={scenarioConfig.liquidity} options={["Thin", "Normal", "Deep"]} onChange={(liquidity) => setScenarioConfig({ ...scenarioConfig, liquidity: liquidity as ScenarioGridConfig["liquidity"] })} />
+                <Select label="Agents in market" value={String(scenarioConfig.numberOfAgents)} options={["10", "50", "100", "500"]} onChange={(numberOfAgents) => setScenarioConfig({ ...scenarioConfig, numberOfAgents: Number(numberOfAgents) as ScenarioGridConfig["numberOfAgents"] })} />
+              </>
+            ) : null}
           </div>
         </section>
 
@@ -325,14 +333,14 @@ export function AttackScenarioGeneratorPage() {
               <h3>Attack</h3>
             </div>
           </div>
-          <div className="scenario-control-grid">
-            <Select label="Attack type" value={attackInput.attackType} options={attackTypes} onChange={(attackType) => setAttackInput({ ...attackInput, attackType: attackType as AttackScenarioInput["attackType"] })} />
-            <Select label="Attacker objective" value={attackInput.objective} options={objectives} onChange={(objective) => setAttackInput({ ...attackInput, objective: objective as AttackScenarioInput["objective"] })} />
-            <Select label="Stealth level" value={attackInput.stealthLevel} options={stealthLevels} onChange={(stealthLevel) => setAttackInput({ ...attackInput, stealthLevel: stealthLevel as AttackScenarioInput["stealthLevel"] })} />
-            <Select label="Attack duration" value={attackInput.attackDuration} options={durations} onChange={(attackDuration) => setAttackInput({ ...attackInput, attackDuration: attackDuration as AttackScenarioInput["attackDuration"] })} />
-            <Select label="Red-team agents" value={String(attackInput.redTeamAgentCount)} options={redTeamAgentCounts.map(String)} onChange={(redTeamAgentCount) => setAttackInput({ ...attackInput, redTeamAgentCount: Number(redTeamAgentCount) as AttackScenarioInput["redTeamAgentCount"] })} />
-            <Select label="Attack intensity" value={scenarioConfig.attackIntensity} options={["Subtle", "Medium", "Aggressive"]} onChange={(attackIntensity) => setScenarioConfig({ ...scenarioConfig, attackIntensity: attackIntensity as ScenarioGridConfig["attackIntensity"] })} />
-          </div>
+          {featureFlags.enableAdvancedAttackControls ? (
+            <div className="scenario-control-grid">
+              <Select label="Attacker objective" value={attackInput.objective} options={objectives} onChange={(objective) => setAttackInput({ ...attackInput, objective: objective as AttackScenarioInput["objective"] })} />
+              <Select label="Stealth level" value={attackInput.stealthLevel} options={stealthLevels} onChange={(stealthLevel) => setAttackInput({ ...attackInput, stealthLevel: stealthLevel as AttackScenarioInput["stealthLevel"] })} />
+              <Select label="Red-team agents" value={String(attackInput.redTeamAgentCount)} options={redTeamAgentCounts.map(String)} onChange={(redTeamAgentCount) => setAttackInput({ ...attackInput, redTeamAgentCount: Number(redTeamAgentCount) as AttackScenarioInput["redTeamAgentCount"] })} />
+              <Select label="Attack intensity" value={scenarioConfig.attackIntensity} options={["Subtle", "Medium", "Aggressive"]} onChange={(attackIntensity) => setScenarioConfig({ ...scenarioConfig, attackIntensity: attackIntensity as ScenarioGridConfig["attackIntensity"] })} />
+            </div>
+          ) : null}
           <div className="nebius-button-row">
             {!attackScenario ? (
               <button className="scenario-primary-action" onClick={() => void runAction(generateAttack)} type="button">Generate</button>
@@ -340,11 +348,18 @@ export function AttackScenarioGeneratorPage() {
               <button className="scenario-primary-action" disabled={busy} onClick={() => void runAction(injectScenario)} type="button">Run in Arena</button>
             )}
             {attackScenario ? <button onClick={() => void runAction(generateAttack)} type="button">Generate New</button> : null}
-            <button onClick={() => void runAction(generateVariants)} type="button">Generate 10 Variants</button>
+            {featureFlags.enableAdvancedAttackControls ? <button onClick={() => void runAction(generateVariants)} type="button">Generate 10 Variants</button> : null}
             {arenaRunReady ? <Link className="primary-link-button" to="/arena">Open Arena</Link> : null}
-            <button disabled={!attackScenario} onClick={() => void runAction(saveTemplate)} type="button">Save Template</button>
+            {attackScenario ? (
+              <Link className="primary-link-button" to={`/investigations?scenario=${encodeURIComponent(attackScenario.id)}&action=investigate`}>
+                Send to Nebius investigation
+              </Link>
+            ) : (
+              <button disabled type="button">Send to Nebius investigation</button>
+            )}
+            {featureFlags.enableAdvancedAttackControls ? <button disabled={!attackScenario} onClick={() => void runAction(saveTemplate)} type="button">Save Template</button> : null}
           </div>
-          <details className="scenario-advanced-panel">
+          {featureFlags.enableAdvancedAttackControls ? <details className="scenario-advanced-panel">
             <summary>Attack plan and stored scenarios</summary>
             <div className="attack-plan-layout">
               <AttackPlanPreview scenario={attackScenario} />
@@ -357,10 +372,10 @@ export function AttackScenarioGeneratorPage() {
                 onSelectScenario={selectAttackScenario}
               />
             </div>
-          </details>
+          </details> : null}
         </section>
 
-        <section className="scenario-wizard-step">
+        {featureFlags.enableAdvancedAttackControls ? <section className="scenario-wizard-step">
           <div className="scenario-step-heading">
             <span>3</span>
             <div>
@@ -370,9 +385,9 @@ export function AttackScenarioGeneratorPage() {
           <div className="scenario-control-grid">
             <Select label="Detector profile" value={detectorProfile} options={detectorProfiles.map((profile) => profile.label)} onChange={applyDetectorProfile} />
           </div>
-        </section>
+        </section> : null}
 
-        <section className="scenario-wizard-step">
+        {featureFlags.enableAdvancedAttackControls ? <section className="scenario-wizard-step">
           <div className="scenario-step-heading">
             <span>4</span>
             <div>
@@ -424,7 +439,7 @@ export function AttackScenarioGeneratorPage() {
               <JobTable jobs={jobs} />
             </div>
           </details>
-        </section>
+        </section> : null}
       </div>
     </section>
   );

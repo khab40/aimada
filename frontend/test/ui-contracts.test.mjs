@@ -70,15 +70,24 @@ describe("Core UI navigation and workflow contracts", () => {
   const identity = read("src/platform/identity.ts");
   const nebius = read("src/pages/NebiusControlPanelPage.tsx");
   const runtimeModes = read("src/runtimeModes.ts");
+  const css = read("src/App.css");
   const trace = read("src/components/NebiusExecutionTrace.tsx");
 
   it("keeps product navigation focused and removes implementation destinations", () => {
     expectIncludes(app, [
-      "label: \"Attack\"",
-      "label: \"Arena\"",
-      "label: \"AI Platform\"",
-      "label: \"About\"",
+      "label: \"Nebius Command Center\"",
+      "label: \"Arena / Workload Generator\"",
+      "label: \"Incidents / Investigations\"",
+      "label: \"Detector Benchmark\"",
+      "label: \"Docs / Demo\"",
+      "AIMADA",
+      "Nebius AI Serverless",
+      "Ask Investigator",
+      "Serverless AI active",
+      "<Route path=\"/\" element={<Navigate to=\"/nebius\" replace />} />",
       "<Route path=\"/demo\" element={<Navigate to=\"/nebius\" replace />} />",
+      "<Route path=\"/benchmark\" element={<NebiusControlPanelPage />} />",
+      "<Route path=\"/investigations\" element={<NebiusControlPanelPage />} />",
       "<Route path=\"/lab\" element={<Navigate to=\"/nebius\" replace />} />",
       "<Route path=\"/experiments\" element={<Navigate to=\"/nebius\" replace />} />",
       "<Route path=\"/deployment\" element={<Navigate to=\"/nebius\" replace />} />",
@@ -86,6 +95,7 @@ describe("Core UI navigation and workflow contracts", () => {
       "<Route path=\"/reports\" element={<Navigate to=\"/arena\" replace />} />",
       "<Route path=\"/blue-team\" element={<Navigate to=\"/arena\" replace />} />"
     ]);
+    assert.doesNotMatch(app, /label: "Attack"/);
     assert.doesNotMatch(app, /label: "Demo"/);
     assert.doesNotMatch(app, /label: "Scenario Generator"/);
     assert.doesNotMatch(app, /label: "Detection"/);
@@ -96,6 +106,9 @@ describe("Core UI navigation and workflow contracts", () => {
 
   it("keeps Arena status, controls, tabs, and standard market visible", () => {
     expectIncludes(arena, [
+      "Market Workload Generator",
+      "Scenario Setup",
+      "Incidents / Investigations",
       "MetricPill label=\"State\"",
       "MetricPill label=\"Tick\"",
       "MetricPill label=\"Scenario\"",
@@ -135,8 +148,13 @@ describe("Core UI navigation and workflow contracts", () => {
 
   it("keeps Nebius AI focused on runtime, investigation, benchmark, and trace", () => {
     expectIncludes(nebius, [
-      "AI Platform",
-      "Powered by Nebius AI Cloud",
+      "Nebius AI Serverless Command Center",
+      "Powered by Nebius AI Serverless",
+      "Serverless Endpoint",
+      "AI Investigation Team",
+      "AI Scenario Generator",
+      "Serverless Jobs",
+      "Detector Tournament",
       "title=\"Runtime\"",
       "Demo Scenarios",
       "Local Lightweight Demo",
@@ -146,19 +164,19 @@ describe("Core UI navigation and workflow contracts", () => {
       "demoScenario",
       "navigate(`/attack-scenarios?",
       "title=\"AI Investigation\"",
-      "title=\"Benchmark\"",
-      "Improve the detector using AI",
-      "prompts",
+      "title=\"AI Detector Tournament\"",
+      "Run local or Nebius Serverless detector tournaments",
       "title=\"Execution Trace\"",
-      "Attack -> Detection -> Explanation -> Improvement",
+      "Scenario Setup",
+      "Workload Generator",
       "Explain current incident",
       "Switch to Nebius Cloud to run this explanation on a real Nebius endpoint.",
       "Compare models",
       "Run Jobs",
       "Detector comparison",
       "Model comparison",
-      "Run Local Demo benchmark",
-      "Run Nebius job",
+      "Run Local Demo tournament",
+      "Run Nebius Serverless job",
       "Execution graph",
       "Scenario",
       "Detector",
@@ -195,14 +213,13 @@ describe("Core UI navigation and workflow contracts", () => {
     expectIncludes(app, [
       "className=\"global-workspace-header\"",
       "<RuntimePanel />",
-      "<IdentityPanel />",
+      "featureFlags.enableGoogleAuth ? <IdentityPanel /> : null",
       "Runtime mode",
       "Switch to Local Demo",
       "Switch to Nebius Cloud",
       "Test Nebius Connection",
       "Deploy to Nebius Cloud",
       "Falling back to mock AI",
-      "User and workspace",
       "Connect Google Account",
       "Continue in Demo Mode"
     ]);
@@ -228,6 +245,55 @@ describe("Core UI navigation and workflow contracts", () => {
     expectIncludes(identity, ["Demo Analyst", "Local Demo"]);
     assert.equal((app.match(/google-login-button/g) ?? []).length, 1);
     assert.doesNotMatch(app, /Switch to Hybrid/);
+  });
+
+  it("keeps Nebius-inspired console design tokens available", () => {
+    expectIncludes(css, [
+      "--color-bg",
+      "--color-bg-muted",
+      "--color-surface",
+      "--color-surface-elevated",
+      "--color-border",
+      "--color-border-strong",
+      "--color-text",
+      "--color-text-muted",
+      "--color-text-soft",
+      "--color-primary",
+      "--color-primary-hover",
+      "--color-primary-soft",
+      "--color-success",
+      "--color-warning",
+      "--color-danger",
+      "--color-sidebar-bg",
+      "--color-sidebar-text",
+      "--color-sidebar-muted",
+      "--color-sidebar-active-bg",
+      "--color-sidebar-active-text",
+      "--shadow-card",
+      "--radius-sm",
+      "--radius-md",
+      "--radius-lg",
+      "--layout-sidebar-width",
+      "--layout-topbar-height",
+      ".console-topbar",
+      ".command-center-service-grid"
+    ]);
+  });
+});
+
+describe("Demo surface feature flags", () => {
+  const flags = read("src/featureFlags.ts");
+  const attackBuilder = read("src/components/AttackBuilder.tsx");
+  const attackPage = read("src/pages/AttackScenarioGeneratorPage.tsx");
+
+  it("keeps auth, advanced attack controls, and legacy pages hidden by default", () => {
+    expectIncludes(flags, [
+      "VITE_ENABLE_GOOGLE_AUTH",
+      "VITE_ENABLE_ADVANCED_ATTACK_CONTROLS",
+      "VITE_ENABLE_LEGACY_PAGES"
+    ]);
+    expectIncludes(attackBuilder, ["Scenario Setup", "Manipulation type", "Difficulty", "Send to Nebius investigation"]);
+    expectIncludes(attackPage, ["AI Scenario Generator", "featureFlags.enableAdvancedAttackControls"]);
   });
 });
 

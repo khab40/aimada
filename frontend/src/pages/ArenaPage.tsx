@@ -148,7 +148,7 @@ export function ArenaPage() {
   }, [pauseArena, resetArena, running, startArena]);
 
   return (
-    <section className={`cockpit-page ${incident ? "incident-active" : ""}`} aria-label="Market microstructure cockpit">
+    <section className={`cockpit-page ${incident ? "incident-active" : ""}`} aria-label="Market workload generator">
       <TopStatusBar
         onPause={pauseArena}
         onReset={resetArena}
@@ -206,7 +206,7 @@ export function ArenaPage() {
       <div className="cockpit-grid">
         <section className="panel cockpit-left arena-column">
           <header className="arena-column-header">
-            <h2>Scenario / Attack configuration</h2>
+            <h2>Scenario Setup</h2>
           </header>
           <AttackTracker attack={state.active_scenario} />
           <AttackBuilder onLaunchScenario={launchScenario} />
@@ -215,7 +215,7 @@ export function ArenaPage() {
         <section className="panel cockpit-center arena-column">
           <header className="arena-column-header market-visualization-header">
             <div>
-              <h2>Market</h2>
+              <h2>Market Workload Generator</h2>
               <div className="market-microstructure-strip" aria-label="Market microstructure metrics">
                 <MetricPill label="Mid" value={formatNumber(state.mid)} />
                 <MetricPill label="Spread" value={formatNumber(state.spread)} />
@@ -248,7 +248,7 @@ export function ArenaPage() {
 
         <section className="panel cockpit-right arena-column">
           <header className="arena-column-header">
-            <h2>Detection</h2>
+            <h2>Incidents / Investigations</h2>
           </header>
           <DetectorConfidence detectors={state.detectors} />
           <section className="secondary-widget-drawer">

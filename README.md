@@ -2,7 +2,7 @@
 
 ![AI Market Abuse Detection Arena GitHub banner](assets/img/ai-mada.jpg)
 
-A research and performance engineering workspace for synthetic order-book market abuse detection, live visualization, benchmark runs, and AI Investigator explanations.
+A Nebius AI Serverless-powered market surveillance command center. The Arena generates suspicious market workloads; Nebius AI Serverless investigates, explains, generates scenarios, and runs detector tournaments.
 
 **🚀 Quick Start**: Get running in 5 minutes — see [Quick Start](#quick-start) section below, or read [docs/QUICKSTART.md](docs/QUICKSTART.md) for detailed walkthrough.
 
@@ -14,16 +14,17 @@ This project is an educational simulation. It does not detect real market manipu
 
 Implemented:
 
-- Live React/FastAPI arena with WebSocket state, order-book visualization, scenario launch, detector scores, incidents, and report/replay workflows.
+- Nebius AI Command Center as the primary UI entry point for AI investigation, scenario generation, detector tournaments, runtime status, and execution traces.
+- Live React/FastAPI Market Workload Generator with WebSocket state, order-book visualization, scenario launch, detector scores, incidents, and report/replay workflows.
 - In-process `AgentManager` for hundreds of lightweight normal agents with per-tick deadlines and single-writer exchange application.
 - Separate `agent-runner` service for out-of-process agents over HTTP, while the backend keeps the exchange/order book authoritative.
 - LangGraph-compatible generic remote agents and worker-pool heavy agents inside `agent-runner`.
-- Google authentication completion with verified Google identity storage, app-issued JWT sessions, and one global workspace/user menu.
+- Optional Google authentication behind `ENABLE_GOOGLE_AUTH=false` by default; local demo flows require no login.
 - Multiuser platform foundation with demo fallback identity, workspace metadata, case ownership, reviewer metadata, report attribution, and audit trail records for investigation actions.
 - Deterministic detector evidence model for synthetic spoofing-like, layering-like, quote-stuffing-like, and liquidity-shock patterns.
 - Nebius endpoint and job scaffolds with local typed fallbacks, Docker/config files, scripts, and UI control surfaces.
 - Phase 4.5 Managed Experiments with deterministic attack manifests, local smart-batch execution, artifact normalization, aggregation, bounded AI Investigator reports, and Detection review of summaries, leaderboards, markdown reports, artifact indexes, and original local-batch files.
-- Product UI consolidation around seven top-level destinations: Arena, Demo, Scenario Generator, Detection, Experiments, Nebius AI, and About.
+- Reduced demo navigation around Nebius Command Center, Workload Generator, Incidents / Investigations, Detector Benchmark, and Docs / Demo.
 - Demo page for three deterministic 3-minute product demo paths: Real Nebius AI Run, Two-Model Pipeline, and Streaming Explanation.
 - Arena split into Scenario / Attack Configuration, Market, and Detection sections, with Standard and Battlefield market visualization modes.
 - Detection owns live detector output, incident replay, evidence, AI Investigator reports, and report artifacts; Reports is no longer a primary navigation destination.
@@ -73,7 +74,18 @@ docker compose up --build
 
 ### 3. Explore
 
-For guided next steps, see [docs/QUICKSTART.md](docs/QUICKSTART.md).
+Open http://localhost:5173 to land directly in the Nebius AI Command Center.
+
+Default demo flow:
+
+1. Generate or select a suspicious market scenario.
+2. Replay it in the Arena / Market Workload Generator.
+3. Create detector output and an incident.
+4. Send the incident to Nebius AI Serverless.
+5. Review the AI investigation/report.
+6. Optionally run an AI Detector Tournament.
+
+For guided next steps, see [docs/QUICKSTART.md](docs/QUICKSTART.md), [docs/demo-surface-reduction.md](docs/demo-surface-reduction.md), and [docs/ui-theme.md](docs/ui-theme.md).
 
 ## Development
 
@@ -245,6 +257,8 @@ Use a comma-separated `ARENA_REMOTE_AGENT_URLS` value to point the backend at ag
 Google authentication:
 
 ```bash
+ENABLE_GOOGLE_AUTH=false
+VITE_ENABLE_GOOGLE_AUTH=false
 GOOGLE_CLIENT_ID=your-google-oauth-client-id
 GOOGLE_CLIENT_SECRET=your-google-oauth-client-secret
 GOOGLE_REDIRECT_URI=http://localhost:5173
@@ -253,7 +267,16 @@ AIMADA_JWT_ISSUER=ai-market-abuse-detection-arena
 AIMADA_JWT_EXPIRES_IN_SECONDS=43200
 ```
 
-When `GOOGLE_CLIENT_ID` is configured, `POST /api/auth/google/complete` requires a Google `id_token` or authorization code. The backend verifies the Google token, stores/updates the user in `outputs/auth/auth.db`, and returns its own app JWT. Google tokens are not used as long-lived app sessions.
+Google auth is hidden and disabled in the default demo. When both `ENABLE_GOOGLE_AUTH=true` and `GOOGLE_CLIENT_ID` are configured, `POST /api/auth/google/complete` requires a Google `id_token` or authorization code. The backend verifies the Google token, stores/updates the user in `outputs/auth/auth.db`, and returns its own app JWT. Google tokens are not used as long-lived app sessions.
+
+Demo surface flags:
+
+```bash
+ENABLE_ADVANCED_ATTACK_CONTROLS=false
+ENABLE_LEGACY_PAGES=false
+VITE_ENABLE_ADVANCED_ATTACK_CONTROLS=false
+VITE_ENABLE_LEGACY_PAGES=false
+```
 
 ## WebSocket
 

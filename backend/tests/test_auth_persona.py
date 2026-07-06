@@ -12,20 +12,28 @@ from app.auth.store import AuthStore
 from app.storage.local_store import LocalStore
 
 
-def _request(tmp_path: Path, *, google_client_id: str | None = None) -> SimpleNamespace:
+def _request(
+    tmp_path: Path,
+    *,
+    enable_google_auth: bool | None = None,
+    google_client_id: str | None = None,
+) -> SimpleNamespace:
     store = LocalStore(tmp_path)
+    settings = SimpleNamespace(
+        aimada_jwt_expires_in_seconds=3600,
+        aimada_jwt_issuer="test-issuer",
+        aimada_jwt_secret="test-secret",
+        google_client_id=google_client_id,
+        google_client_secret="google-secret" if google_client_id else None,
+        google_redirect_uri="http://localhost:5173/auth/callback",
+    )
+    if enable_google_auth is not None:
+        settings.enable_google_auth = enable_google_auth
     return SimpleNamespace(
         app=SimpleNamespace(
             state=SimpleNamespace(
                 auth_store=AuthStore(tmp_path / "auth" / "auth.db"),
-                settings=SimpleNamespace(
-                    aimada_jwt_expires_in_seconds=3600,
-                    aimada_jwt_issuer="test-issuer",
-                    aimada_jwt_secret="test-secret",
-                    google_client_id=google_client_id,
-                    google_client_secret="google-secret" if google_client_id else None,
-                    google_redirect_uri="http://localhost:5173/auth/callback",
-                ),
+                settings=settings,
                 store=store,
                 simulation=SimulationEngine(store=store),
             )
@@ -162,3 +170,13 @@ def test_configured_google_login_requires_google_token_or_code(tmp_path: Path) -
 
     assert exc.value.status_code == 400
     assert "id_token" in str(exc.value.detail)
+
+
+def test_explicit_google_auth_requires_client_id(tmp_path: Path) -> None:
+    request = _request(tmp_path, enable_google_auth=True)
+
+    with pytest.raises(HTTPException) as exc:
+        google_complete(GoogleCompleteRequest(email="player@example.com", role="observer"), request)
+
+    assert exc.value.status_code == 500
+    assert "GOOGLE_CLIENT_ID" in str(exc.value.detail)

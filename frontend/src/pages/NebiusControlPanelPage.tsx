@@ -102,7 +102,7 @@ const experimentScenarioOptions = [
 const initialExperimentForm: ExperimentFormState = {
   attack_count: 100,
   batch_size: 20,
-  name: "AI-MADA detector benchmark",
+  name: "AI-MADA detector tournament",
   scenarios: ["normal_market", "spoofing", "layering", "quote_stuffing", "pump_and_cancel"],
   seed: 42
 };
@@ -393,17 +393,45 @@ export function NebiusControlPanelPage() {
     <section className="nebius-control-page">
       <header className="ai-platform-header">
         <div>
-          <h1>AI Platform</h1>
-          <p>Runtime, investigation, benchmark, and execution trace for the Attack {"->"} Detect {"->"} Explain with AI {"->"} Improve AI workflow.</p>
+          <h1>Nebius AI Serverless Command Center</h1>
+          <p>A Nebius AI Serverless-powered market surveillance command center: generate suspicious workload, detect incidents, investigate with AI, and run detector tournaments.</p>
         </div>
-        <span className="ai-platform-badge">Powered by Nebius AI Cloud</span>
+        <span className="ai-platform-badge">Powered by Nebius AI Serverless</span>
       </header>
+
+      <section className="command-center-service-grid" aria-label="Nebius AI Serverless capabilities">
+        <CommandCenterServiceCard
+          title="Serverless Endpoint"
+          detail={nebiusStatus?.endpoint_base_url || "Mock endpoint active for local demo"}
+          status={endpointWillUseNebius ? "configured" : runtimeMode === "nebius-cloud" ? "pending" : "mock mode"}
+        />
+        <CommandCenterServiceCard
+          title="AI Investigation Team"
+          detail={endpointWillUseNebius ? nebiusStatus?.model || "Nebius model configured" : "Deterministic investigator fallback"}
+          status={endpointWillUseNebius ? "active" : "mock mode"}
+        />
+        <CommandCenterServiceCard
+          title="AI Scenario Generator"
+          detail={nebiusStatus?.scenario_generator_configured ? "Nebius scenario endpoint configured" : "Local scenario templates enabled"}
+          status={nebiusStatus?.scenario_generator_configured ? "configured" : "mock mode"}
+        />
+        <CommandCenterServiceCard
+          title="Serverless Jobs"
+          detail={jobConfigured ? nebiusStatus?.job_image || "Nebius job image configured" : "Local smart batch runner ready"}
+          status={jobConfigured ? "configured" : runtimeMode === "nebius-cloud" ? "pending" : "mock mode"}
+        />
+        <CommandCenterServiceCard
+          title="Detector Tournament"
+          detail={experiment ? `${experiment.attack_count} workloads · batch ${experiment.batch_size}` : "Create a detector tournament"}
+          status={experiment ? experiment.status.replaceAll("_", " ") : "pending"}
+        />
+      </section>
 
       <section className="nebius-infra-workflow">
         <InfrastructureSection
           step={1}
           title="Runtime"
-          description="Current runtime, component status, deployment status, and cloud availability for the Attack -> Detection -> Explanation -> Improvement workflow."
+          description="Current local demo, Nebius AI Serverless endpoint, job, artifact, and fallback status for the command-center workflow."
         >
           <RuntimeStatusCard status={runtimeStatus} usage={usageMetrics} />
           <InfrastructureMetricGrid>
@@ -442,7 +470,7 @@ export function NebiusControlPanelPage() {
         <InfrastructureSection
           step={2}
           title="AI Investigation"
-          description="Explain the current incident: mock AI in Local Demo, real Nebius Endpoint in Nebius Cloud when deployed."
+          description="Send detector incidents to Nebius AI Serverless for explanation, report generation, and analyst-ready findings."
         >
           <InfrastructureMetricGrid>
             <MetricBlock label="Inference calls" value={String(usageMetrics.aiEndpointCallsToday)} />
@@ -461,8 +489,8 @@ export function NebiusControlPanelPage() {
 
         <InfrastructureSection
           step={3}
-          title="Benchmark"
-          description="Improve the detector using AI by comparing models, prompts, detector settings, and scenario outcomes. Run Jobs in Nebius Cloud or deterministic mock benchmarks in Local Demo."
+          title="AI Detector Tournament"
+          description="Run local or Nebius Serverless detector tournaments over generated market workloads and compare detector outcomes."
         >
           <ExperimentLab
             busyAction={experimentBusyAction}
@@ -513,6 +541,26 @@ export function NebiusControlPanelPage() {
   );
 }
 
+function CommandCenterServiceCard({
+  detail,
+  status,
+  title
+}: {
+  detail: string;
+  status: string;
+  title: string;
+}) {
+  return (
+    <article className="command-center-service-card">
+      <div>
+        <h2>{title}</h2>
+        <p>{detail}</p>
+      </div>
+      <span className={`runtime-status ${status.toLowerCase().replace(/\s+/g, "-")}`}>{status}</span>
+    </article>
+  );
+}
+
 function DemoScenariosSection({
   deploymentRequired,
   onStart
@@ -524,7 +572,7 @@ function DemoScenariosSection({
     <details className="panel demo-scenarios-section">
       <summary>
         <span>Demo Scenarios</span>
-        <strong>Choose a guided path through Attack {"->"} Arena {"->"} AI Platform.</strong>
+        <strong>Choose a guided path through Scenario Setup {"->"} Workload Generator {"->"} Nebius AI Serverless.</strong>
       </summary>
       <div className="demo-scenario-grid">
         {demoScenarios.map((scenario) => {
@@ -682,7 +730,7 @@ function ExperimentLab({
     <section className="experiment-lab-panel">
       <div className="nebius-card-heading">
         <div>
-          <h2>Benchmark</h2>
+          <h2>AI Detector Tournament</h2>
         </div>
         <div className="nebius-button-row">
           <span className={`runtime-status ${experiment?.status ?? "missing"}`}>{experiment?.status.replaceAll("_", " ") ?? "no benchmark"}</span>
@@ -758,13 +806,13 @@ function ExperimentLab({
         <div className="experiment-progress-card">
           <div className="experiment-active-summary">
             <span>Current Benchmark</span>
-            <strong>{experiment?.name ?? "Create or refresh a benchmark"}</strong>
+            <strong>{experiment?.name ?? "Create or refresh a detector tournament"}</strong>
             <p>{experiment ? `${experiment.id} · ${experiment.attack_count} workloads · batch ${experiment.batch_size}` : "Local Demo benchmark runs deterministic mock results locally, then Nebius Cloud can run the same benchmark as Nebius Jobs."}</p>
           </div>
           <div className="experiment-flow-actions">
             <button disabled={!canRun || busyAction === "generate-manifest"} onClick={onGenerateManifest} type="button">Generate manifest</button>
-            <button disabled={!canRun || busyAction === "run-local-batch"} onClick={onRunLocalBatch} type="button">Run Local Demo benchmark</button>
-            <button disabled={!canRun || busyAction === "submit-nebius"} onClick={onSubmitNebius} type="button">Run Nebius job</button>
+            <button disabled={!canRun || busyAction === "run-local-batch"} onClick={onRunLocalBatch} type="button">Run Local Demo tournament</button>
+            <button disabled={!canRun || busyAction === "submit-nebius"} onClick={onSubmitNebius} type="button">Run Nebius Serverless job</button>
             <button disabled={!canRun || busyAction === "aggregate"} onClick={onAggregate} type="button">Aggregate</button>
             <button disabled={!canRun || busyAction === "run-investigations"} onClick={onRunInvestigations} type="button">Run AI Investigation</button>
           </div>

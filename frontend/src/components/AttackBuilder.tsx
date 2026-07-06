@@ -1,8 +1,11 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { launchAttackExperiment, saveAttackExperiment, type AttackExperimentRequest } from "@/api/client";
+import { featureFlags } from "@/featureFlags";
 import type { ArenaScenarioType } from "@/hooks/useArenaSource";
 
 type CancelStyle = "instant" | "gradual" | "partial";
+type Difficulty = "Easy" | "Medium" | "Hard";
 type NoiseCover = "none" | "low" | "high";
 
 const scenarioTypes = ["spoofing", "layering", "quote stuffing", "liquidity evaporation"];
@@ -11,6 +14,7 @@ const noiseCovers: NoiseCover[] = ["none", "low", "high"];
 
 export function AttackBuilder({ onLaunchScenario }: { onLaunchScenario?: (type: ArenaScenarioType) => void }) {
   const [cancelStyle, setCancelStyle] = useState<CancelStyle>("instant");
+  const [difficulty, setDifficulty] = useState<Difficulty>("Medium");
   const [distanceFromMidBps, setDistanceFromMidBps] = useState(12);
   const [lifetimeSeconds, setLifetimeSeconds] = useState(5);
   const [noiseCover, setNoiseCover] = useState<NoiseCover>("low");
@@ -58,6 +62,25 @@ export function AttackBuilder({ onLaunchScenario }: { onLaunchScenario?: (type: 
     }
   }
 
+  function handleDifficultyChange(nextDifficulty: Difficulty) {
+    setDifficulty(nextDifficulty);
+    if (nextDifficulty === "Easy") {
+      setWallSizeMultiplier(5);
+      setDistanceFromMidBps(24);
+      setNoiseCover("high");
+      return;
+    }
+    if (nextDifficulty === "Hard") {
+      setWallSizeMultiplier(12);
+      setDistanceFromMidBps(8);
+      setNoiseCover("none");
+      return;
+    }
+    setWallSizeMultiplier(8);
+    setDistanceFromMidBps(12);
+    setNoiseCover("low");
+  }
+
   async function handleSave() {
     setIsSubmitting(true);
     setStatusMessage("Saving experiment...");
@@ -76,33 +99,28 @@ export function AttackBuilder({ onLaunchScenario }: { onLaunchScenario?: (type: 
     <section className="attack-builder">
       <div className="section-heading-row">
         <div>
-          <h2>Attack Builder</h2>
+          <h2>Scenario Setup</h2>
         </div>
         <span className={`risk-chip ${risk.label.toLowerCase()}`}>{risk.label} risk</span>
       </div>
 
       <div className="attack-builder-grid">
         <label className="form-row">
-          Scenario type
+          Manipulation type
           <select value={scenarioType} onChange={(event) => setScenarioType(event.target.value)}>
             {scenarioTypes.map((scenario) => <option key={scenario}>{scenario}</option>)}
           </select>
         </label>
 
         <label className="form-row">
-          Wall size multiplier
-          <input
-            max={20}
-            min={1}
-            onChange={(event) => setWallSizeMultiplier(Number(event.target.value))}
-            type="range"
-            value={wallSizeMultiplier}
-          />
-          <strong>{wallSizeMultiplier.toFixed(1)}x</strong>
+          Difficulty
+          <select value={difficulty} onChange={(event) => handleDifficultyChange(event.target.value as Difficulty)}>
+            {["Easy", "Medium", "Hard"].map((value) => <option key={value}>{value}</option>)}
+          </select>
         </label>
 
         <label className="form-row">
-          Lifetime seconds
+          Duration
           <input
             max={15}
             min={1}
@@ -112,33 +130,52 @@ export function AttackBuilder({ onLaunchScenario }: { onLaunchScenario?: (type: 
           />
           <strong>{lifetimeSeconds}s</strong>
         </label>
-
-        <label className="form-row">
-          Distance from mid bps
-          <input
-            max={60}
-            min={1}
-            onChange={(event) => setDistanceFromMidBps(Number(event.target.value))}
-            type="range"
-            value={distanceFromMidBps}
-          />
-          <strong>{distanceFromMidBps} bps</strong>
-        </label>
-
-        <label className="form-row">
-          Cancel style
-          <select value={cancelStyle} onChange={(event) => setCancelStyle(event.target.value as CancelStyle)}>
-            {cancelStyles.map((style) => <option key={style}>{style}</option>)}
-          </select>
-        </label>
-
-        <label className="form-row">
-          Noise cover
-          <select value={noiseCover} onChange={(event) => setNoiseCover(event.target.value as NoiseCover)}>
-            {noiseCovers.map((cover) => <option key={cover}>{cover}</option>)}
-          </select>
-        </label>
       </div>
+
+      {featureFlags.enableAdvancedAttackControls ? (
+        <details className="scenario-advanced-panel">
+          <summary>Advanced attack tuning</summary>
+          <div className="attack-builder-grid">
+            <label className="form-row">
+              Wall size multiplier
+              <input
+                max={20}
+                min={1}
+                onChange={(event) => setWallSizeMultiplier(Number(event.target.value))}
+                type="range"
+                value={wallSizeMultiplier}
+              />
+              <strong>{wallSizeMultiplier.toFixed(1)}x</strong>
+            </label>
+
+            <label className="form-row">
+              Distance from mid bps
+              <input
+                max={60}
+                min={1}
+                onChange={(event) => setDistanceFromMidBps(Number(event.target.value))}
+                type="range"
+                value={distanceFromMidBps}
+              />
+              <strong>{distanceFromMidBps} bps</strong>
+            </label>
+
+            <label className="form-row">
+              Cancel style
+              <select value={cancelStyle} onChange={(event) => setCancelStyle(event.target.value as CancelStyle)}>
+                {cancelStyles.map((style) => <option key={style}>{style}</option>)}
+              </select>
+            </label>
+
+            <label className="form-row">
+              Noise cover
+              <select value={noiseCover} onChange={(event) => setNoiseCover(event.target.value as NoiseCover)}>
+                {noiseCovers.map((cover) => <option key={cover}>{cover}</option>)}
+              </select>
+            </label>
+          </div>
+        </details>
+      ) : null}
 
       <div className="attack-risk-panel">
         <div className="risk-meter-track">
@@ -149,12 +186,17 @@ export function AttackBuilder({ onLaunchScenario }: { onLaunchScenario?: (type: 
 
       <div className="attack-builder-actions">
         <button disabled={isSubmitting} type="button" onClick={() => void handleLaunch()}>
-          Launch in Arena
+          Run scenario
         </button>
-        <button disabled={isSubmitting} type="button" onClick={() => void handleSave()}>
-          Save as experiment
-        </button>
-        {savedCount > 0 ? <span>{savedCount} saved</span> : null}
+        <Link className="primary-link-button" to="/investigations">
+          Send to Nebius investigation
+        </Link>
+        {featureFlags.enableAdvancedAttackControls ? (
+          <button disabled={isSubmitting} type="button" onClick={() => void handleSave()}>
+            Save as experiment
+          </button>
+        ) : null}
+        {featureFlags.enableAdvancedAttackControls && savedCount > 0 ? <span>{savedCount} saved</span> : null}
         {statusMessage ? <span>{statusMessage}</span> : null}
       </div>
     </section>

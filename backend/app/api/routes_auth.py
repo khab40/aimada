@@ -65,7 +65,7 @@ class SessionSaveResponse(BaseModel):
 @router.get("/google/config", response_model=GoogleAuthConfig)
 def google_config(request: Request) -> GoogleAuthConfig:
     settings = _settings(request)
-    configured = bool(settings.google_client_id)
+    configured = _google_auth_enabled(settings)
     redirect_uri = settings.google_redirect_uri or "http://localhost:5173"
     authorization_url = None
     if configured:
@@ -185,7 +185,7 @@ def logout(
 
 
 def _google_identity(payload: GoogleCompleteRequest, settings: Any) -> GoogleIdentity:
-    if settings.google_client_id:
+    if _google_auth_enabled(settings):
         id_token = payload.id_token
         code = payload.authorization_code or payload.code
         if code:
@@ -240,3 +240,13 @@ def _settings(request: Request) -> Any:
     from app.config import get_settings
 
     return get_settings()
+
+
+def _google_auth_enabled(settings: Any) -> bool:
+    if hasattr(settings, "enable_google_auth"):
+        if not bool(getattr(settings, "enable_google_auth")):
+            return False
+        if not getattr(settings, "google_client_id", None):
+            raise HTTPException(status_code=500, detail="GOOGLE_CLIENT_ID is required when ENABLE_GOOGLE_AUTH=true")
+        return True
+    return bool(getattr(settings, "google_client_id", None))

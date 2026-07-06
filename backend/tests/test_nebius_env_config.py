@@ -31,6 +31,17 @@ def test_backend_settings_accepts_old_nebius_aliases(monkeypatch: Any) -> None:
     assert settings.nebius_model == "old-model"
 
 
+def test_demo_surface_flags_default_to_reduced_demo_mode(monkeypatch: Any) -> None:
+    monkeypatch.delenv("ENABLE_GOOGLE_AUTH", raising=False)
+    monkeypatch.delenv("ENABLE_ADVANCED_ATTACK_CONTROLS", raising=False)
+    monkeypatch.delenv("ENABLE_LEGACY_PAGES", raising=False)
+    settings = Settings(_env_file=None)
+
+    assert settings.enable_google_auth is False
+    assert settings.enable_advanced_attack_controls is False
+    assert settings.enable_legacy_pages is False
+
+
 def test_serverless_endpoint_prefers_new_nebius_env_names(monkeypatch: Any) -> None:
     endpoint = _load_endpoint_module()
     monkeypatch.setenv("NEBIUS_BASE_URL", "https://new.example/v1/")

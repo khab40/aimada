@@ -1,6 +1,6 @@
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { useEffect, useRef, useState } from "react";
-import { BrowserRouter, Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
+import { BrowserRouter, Link, Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
 import "./App.css";
 import { AboutPage } from "@/pages/AboutPage";
 import { useAuth } from "@/auth/useAuth";
@@ -8,6 +8,7 @@ import type { ArenaRole } from "@/api/client";
 import { ArenaPage } from "@/pages/ArenaPage";
 import { AttackScenarioGeneratorPage } from "@/pages/AttackScenarioGeneratorPage";
 import { NebiusControlPanelPage } from "@/pages/NebiusControlPanelPage";
+import { featureFlags } from "@/featureFlags";
 import { productRoleLabel } from "@/platform/identity";
 import {
   getStoredRuntimeMode,
@@ -39,7 +40,7 @@ export function App() {
   const [themePreference, setThemePreference] = useState<ThemePreference>(() => getStoredThemePreference());
   const [systemTheme, setSystemTheme] = useState<ResolvedTheme>(() => getSystemTheme());
   const resolvedTheme = themePreference === "system" ? systemTheme : themePreference;
-  const visibleSidebarItems = sidebarItems;
+  const visibleSidebarItems = sidebarItems.filter((item) => item.primary || featureFlags.enableLegacyPages);
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
@@ -101,6 +102,10 @@ export function App() {
       <main className={`app-shell ${sidebarCollapsed ? "sidebar-collapsed" : ""}`} style={shellStyle}>
         <aside className="app-sidebar" aria-label="Application navigation">
           <div className="sidebar-brand">
+            <div className="sidebar-wordmark">
+              <strong>AIMADA</strong>
+              <span>Nebius AI Serverless</span>
+            </div>
             <button
               aria-label={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}
               className="sidebar-toggle"
@@ -138,13 +143,14 @@ export function App() {
 
         <section className="app-workspace">
           <header className="global-workspace-header" aria-label="Global account controls">
+            <ConsoleTopbar />
             <ThemePanel
               collapsed={false}
               onPreferenceChange={setThemePreference}
               preference={themePreference}
               resolvedTheme={resolvedTheme}
             />
-            <IdentityPanel />
+            {featureFlags.enableGoogleAuth ? <IdentityPanel /> : null}
             <RuntimePanel />
           </header>
           <section className="disclaimer" aria-label="Project disclaimer">
@@ -153,12 +159,14 @@ export function App() {
           </section>
 
           <Routes>
-            <Route path="/" element={<Navigate to="/arena" replace />} />
+            <Route path="/" element={<Navigate to="/nebius" replace />} />
             <Route path="/demo" element={<Navigate to="/nebius" replace />} />
             <Route path="/arena" element={<ArenaPage />} />
             <Route path="/attack" element={<Navigate to="/attack-scenarios" replace />} />
             <Route path="/attack-scenarios" element={<AttackScenarioGeneratorPage />} />
             <Route path="/scenario-generator" element={<Navigate to="/attack-scenarios" replace />} />
+            <Route path="/benchmark" element={<NebiusControlPanelPage />} />
+            <Route path="/investigations" element={<NebiusControlPanelPage />} />
             <Route path="/detection" element={<Navigate to="/arena" replace />} />
             <Route path="/blue-team" element={<Navigate to="/arena" replace />} />
             <Route path="/lab" element={<Navigate to="/nebius" replace />} />
@@ -174,6 +182,23 @@ export function App() {
         </section>
       </main>
     </BrowserRouter>
+  );
+}
+
+function ConsoleTopbar() {
+  return (
+    <section className="console-topbar" aria-label="Nebius AI Serverless console">
+      <div className="console-project-selector">
+        <span>Project</span>
+        <strong>AIMADA Market Surveillance</strong>
+      </div>
+      <label className="console-search">
+        <span className="sr-only">Search</span>
+        <input placeholder="Search incidents, jobs, scenarios" type="search" />
+      </label>
+      <Link className="primary-link-button console-ai-button" to="/investigations">Ask Investigator</Link>
+      <span className="runtime-status connected">Serverless AI active</span>
+    </section>
   );
 }
 
@@ -293,6 +318,7 @@ type AppIconName = "arena" | "attack" | "demo" | "detection" | "tournament" | "r
 type SidebarItem = {
   icon: AppIconName;
   label: string;
+  primary?: boolean;
   shortLabel: string;
   team?: "red" | "blue";
   to: string;
@@ -301,10 +327,12 @@ type SidebarItem = {
 
 const allRoles: ArenaRole[] = ["observer", "attacker", "defender", "judge"];
 const sidebarItems: SidebarItem[] = [
-  { icon: "attack", label: "Attack", shortLabel: "AT", team: "red", to: "/attack-scenarios", visibleFor: allRoles },
-  { icon: "arena", label: "Arena", shortLabel: "AR", to: "/arena", visibleFor: allRoles },
-  { icon: "cloud", label: "AI Platform", shortLabel: "AI", to: "/nebius", visibleFor: allRoles },
-  { icon: "about", label: "About", shortLabel: "AB", to: "/about", visibleFor: allRoles }
+  { icon: "cloud", label: "Nebius Command Center", primary: true, shortLabel: "NC", to: "/nebius", visibleFor: allRoles },
+  { icon: "arena", label: "Arena / Workload Generator", primary: true, shortLabel: "WG", to: "/arena", visibleFor: allRoles },
+  { icon: "detection", label: "Incidents / Investigations", primary: true, shortLabel: "IN", to: "/investigations", visibleFor: allRoles },
+  { icon: "tournament", label: "Detector Benchmark", primary: true, shortLabel: "DB", to: "/benchmark", visibleFor: allRoles },
+  { icon: "about", label: "Docs / Demo", primary: true, shortLabel: "DD", to: "/about", visibleFor: allRoles },
+  { icon: "attack", label: "Scenario Setup", shortLabel: "SS", team: "red", to: "/attack-scenarios", visibleFor: allRoles }
 ];
 
 function AppIcon({ name }: { name: AppIconName }) {
