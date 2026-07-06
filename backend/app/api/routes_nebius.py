@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Any, Literal
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from app.nebius.adapters import MockNebiusCloudAdapter
@@ -18,6 +18,22 @@ from app.nebius.client import (
     RedTeamScenarioResponse,
 )
 from app.experiments.nebius_orchestrator import summarize_experiment_jobs
+from app.nebius.investigation_team import AIInvestigationTeamRequest, AIInvestigationTeamResponse, analyze_with_client
+from app.nebius.detector_tournament import (
+    DetectorTournamentArtifactsResponse,
+    DetectorTournamentResponse,
+    DetectorTournamentStartRequest,
+    complete_queued_tournament,
+    get_tournament,
+    queue_tournament,
+    tournament_artifacts,
+)
+from app.nebius.scenario_generator import (
+    CanonicalMarketAbuseScenario,
+    MarketAbuseScenarioGenerationRequest,
+    generate_with_client as generate_market_abuse_scenario_with_client,
+    project_attack_scenario,
+)
 from app.nebius.smart_batch_runner import read_metrics, run_local_smart_batch
 from app.storage.history import append_history_artifact
 
@@ -242,6 +258,124 @@ def investigation_report(payload: InvestigationReportRequest, request: Request) 
         source_path="nebius/investigation_reports.jsonl",
     )
     return report
+
+
+@router.post("/investigation-team/analyze", response_model=AIInvestigationTeamResponse)
+def analyze_investigation_team(payload: AIInvestigationTeamRequest, request: Request) -> AIInvestigationTeamResponse:
+    report = analyze_with_client(nebius_client, payload)
+    created_at = _now()
+    row = {
+        "created_at": created_at,
+        "request": payload.model_dump(mode="json"),
+        "response": report.model_dump(mode="json"),
+    }
+    request.app.state.store.append_jsonl("nebius/investigation_team_reports.jsonl", row)
+    append_history_artifact(
+        request.app.state.store,
+        kind="ai_explanation",
+        payload=row,
+        summary=report.executive_summary,
+        created_at=created_at,
+        source="nebius_investigation_team",
+        source_path="nebius/investigation_team_reports.jsonl",
+    )
+    return report
+
+
+@router.post("/scenario-generator/generate", response_model=CanonicalMarketAbuseScenario)
+def generate_ai_scenario(
+    payload: MarketAbuseScenarioGenerationRequest,
+    request: Request,
+) -> CanonicalMarketAbuseScenario:
+    scenario = generate_market_abuse_scenario_with_client(nebius_client, payload)
+    projected = AttackScenario.model_validate(project_attack_scenario(scenario))
+    created_at = _now()
+    row = {
+        "created_at": created_at,
+        "request": payload.model_dump(mode="json"),
+        "response": scenario.model_dump(mode="json"),
+        "attack_scenario_projection": projected.model_dump(mode="json"),
+    }
+    request.app.state.store.append_jsonl("nebius/generated_market_abuse_scenarios.jsonl", row)
+    request.app.state.store.append_jsonl("nebius/attack_scenarios.jsonl", projected.model_dump(mode="json"))
+    append_history_artifact(
+        request.app.state.store,
+        kind="attack_scenario",
+        payload=row,
+        summary=scenario.title,
+        scenario_id=scenario.scenario_id,
+        created_at=created_at,
+        source="ai_scenario_generator",
+        source_path="nebius/generated_market_abuse_scenarios.jsonl",
+    )
+    request.app.state.store.append_jsonl(
+        "events/significant_events.jsonl",
+        {
+            "type": "ai_scenario_generated",
+            "scenario_id": scenario.scenario_id,
+            "manipulation_type": scenario.manipulation_type,
+            "mode": scenario.mode,
+            "created_at": created_at,
+        },
+    )
+    return scenario
+
+
+@router.post("/tournament/start", response_model=DetectorTournamentResponse)
+def start_detector_tournament(
+    payload: DetectorTournamentStartRequest,
+    request: Request,
+    background_tasks: BackgroundTasks,
+) -> DetectorTournamentResponse:
+    store = request.app.state.store
+    repo_root = _repo_root()
+    response = queue_tournament(payload, store=store, repo_root=repo_root)
+    if response.status == "queued" and response.execution_mode in {"local", "local_mock"}:
+        background_tasks.add_task(
+            complete_queued_tournament,
+            payload,
+            tournament_id=response.tournament_id,
+            started_at=response.started_at,
+            store=store,
+            repo_root=repo_root,
+        )
+    append_history_artifact(
+        store,
+        kind="run",
+        payload=response.model_dump(mode="json"),
+        summary=response.summary,
+        run_id=response.tournament_id,
+        created_at=response.started_at,
+        source="ai_detector_tournament",
+        source_path=f"nebius/tournaments/{response.tournament_id}/tournament.json",
+    )
+    store.append_jsonl(
+        "events/significant_events.jsonl",
+        {
+            "type": "ai_detector_tournament_started",
+            "tournament_id": response.tournament_id,
+            "status": response.status,
+            "execution_mode": response.execution_mode,
+            "created_at": response.started_at,
+        },
+    )
+    return response
+
+
+@router.get("/tournament/{tournament_id}", response_model=DetectorTournamentResponse)
+def read_detector_tournament(tournament_id: str, request: Request) -> DetectorTournamentResponse:
+    response = get_tournament(tournament_id, store=request.app.state.store)
+    if response is None:
+        raise HTTPException(status_code=404, detail=f"unknown tournament: {tournament_id}")
+    return response
+
+
+@router.get("/tournament/{tournament_id}/artifacts", response_model=DetectorTournamentArtifactsResponse)
+def read_detector_tournament_artifacts(tournament_id: str, request: Request) -> DetectorTournamentArtifactsResponse:
+    response = tournament_artifacts(tournament_id, store=request.app.state.store)
+    if response is None:
+        raise HTTPException(status_code=404, detail=f"unknown tournament: {tournament_id}")
+    return response
 
 
 @router.post("/attack-scenario", response_model=AttackScenario)

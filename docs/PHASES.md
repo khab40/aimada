@@ -12,6 +12,27 @@ AI Market Abuse Detection Arena will be built as:
 
 This project is an educational simulation. The scenarios are synthetic abuse-like patterns for demonstrating order-book anomaly detection and AI Investigator explanations.
 
+## Nebius AI Serverless Build Challenge Overlay
+
+Status: `[done]`
+
+Current product narrative: AIMADA is a Nebius AI Serverless-powered market surveillance command center. The Arena generates suspicious market workloads; Nebius AI Serverless investigates, explains, generates scenarios, and runs detector benchmarks.
+
+Implementation phases:
+
+- `[done]` Phase 1, Nebius AI Investigation Team via Serverless Endpoint: `POST /api/nebius/investigation-team/analyze` forwards incident, detector, order-book, trade, and metric context to `/investigation-team`, with deterministic mock fallback.
+- `[done]` Phase 2, Nebius AI Scenario Generator via Serverless Endpoint: `POST /api/nebius/scenario-generator/generate` returns simulator-compatible scenario JSON with ground truth, replay metadata, expected detector behavior, and mock fallback.
+- `[done]` Phase 3, Nebius AI Detector Tournament via Serverless Jobs: `POST /api/nebius/tournament/start` queues detector benchmark work, submits configured Nebius jobs when available, or completes a local mock tournament with the same response schema.
+
+Primary docs:
+
+- `docs/nebius-serverless-build-plan.md`
+- `docs/architecture/ARD-001-nebius-ai-investigation-team.md`
+- `docs/architecture/ARD-002-ai-scenario-generator.md`
+- `docs/architecture/ARD-003-ai-detector-tournament.md`
+- `docs/use-cases/nebius-serverless-use-cases.md`
+- `docs/demo-script.md`
+
 ## Status Legend
 
 - `[done]` Implemented and committed.
@@ -223,7 +244,7 @@ Deliverables:
 - `[done]` `serverless/jobs/render_job_config.py` for experiment-specific Nebius job config rendering
 - `[done]` `serverless/endpoint/endpoint_config.yaml`
 - `[done]` reproducibility scripts under `scripts/`
-- `[done]` `Nebius AI` UI destination with model selection, inference, batch execution, GPU utilization, datasets, Managed Experiment operations, and artifact access to benchmark outputs
+- `[done]` `AI Command Center` UI destination with model selection, inference, batch execution, GPU utilization, datasets, Managed Experiment operations, and artifact access to benchmark outputs
 - `[done]` `docs/nebius-deployment.md`
 - `[todo]` screenshots under `assets/screenshots/` are still missing except for `.gitkeep`; real Nebius logs/metrics screenshots are still needed.
 

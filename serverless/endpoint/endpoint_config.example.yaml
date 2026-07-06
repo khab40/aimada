@@ -34,8 +34,10 @@ routes:
   - POST /generate-report
   - POST /generate-incident-report
   - POST /generate-scenario
+  - POST /investigation-team
 
 backend_wiring:
   NEBIUS_INCIDENT_EXPLAINER_URL: http://<endpoint-public-ip>/explain-event
   NEBIUS_SCENARIO_GENERATOR_URL: http://<endpoint-public-ip>/generate-scenario
+  NEBIUS_INVESTIGATION_TEAM_URL: http://<endpoint-public-ip>/investigation-team
   NEBIUS_API_KEY: <same endpoint auth token if auth=token>

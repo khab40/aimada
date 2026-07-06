@@ -1,8 +1,9 @@
 import json
 import os
 from dataclasses import dataclass
+from hashlib import sha256
 from time import perf_counter
-from typing import Any
+from typing import Any, Literal
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -71,6 +72,57 @@ class ScenarioGenerationResponse(BaseModel):
     safety_note: str = DISCLAIMER
 
 
+class MarketAbuseScenarioGenerationRequest(BaseModel):
+    manipulation_type: Literal["spoofing", "layering", "wash_trading", "quote_stuffing"] = "spoofing"
+    difficulty: Literal["easy", "medium", "hard", "adversarial"] = "medium"
+    symbol: str = Field(default="AIMD", min_length=1, max_length=16)
+    duration_ticks: int = Field(default=120, ge=30, le=600)
+    liquidity_regime: Literal["thin", "normal", "deep"] = "thin"
+    volatility_regime: Literal["low", "medium", "high"] = "high"
+    seed: int | None = None
+
+
+class ScenarioEvent(BaseModel):
+    event_id: str
+    tick: int = Field(ge=0)
+    event_type: Literal["place_order", "cancel_order", "trade", "quote_update"]
+    type: str
+    agent_id: str
+    symbol: str
+    scenario_id: str
+    scenario_name: str
+    scenario_family: str
+    stage: str
+    message: str
+    side: Literal["buy", "sell"] | None = None
+    price: float | None = None
+    quantity: float | None = None
+    order_id: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class MarketAbuseScenarioResponse(BaseModel):
+    scenario_id: str
+    title: str
+    description: str
+    manipulation_type: str
+    difficulty: str
+    symbol: str
+    duration_ticks: int
+    liquidity_regime: str
+    volatility_regime: str
+    ground_truth: dict[str, Any]
+    events: list[ScenarioEvent]
+    expected_detector_behavior: dict[str, Any]
+    explanation: str
+    replay: dict[str, Any]
+    source: dict[str, Any]
+    model_mode: str = "deterministic_fallback"
+    model: str = DEFAULT_NEBIUS_MODEL
+    latency_ms: float = 0.0
+    disclaimer: str = DISCLAIMER
+
+
 class L2Level(BaseModel):
     price: float
     quantity: float
@@ -114,6 +166,53 @@ class InvestigationReportResponse(BaseModel):
     detector_findings: list[str]
     limitations: list[str]
     recommended_next_steps: list[str]
+    model_mode: str = "deterministic_fallback"
+    model: str = DEFAULT_NEBIUS_MODEL
+    latency_ms: float = 0.0
+    disclaimer: str = DISCLAIMER
+
+
+class TeamEvidenceItem(BaseModel):
+    key: str
+    label: str
+    value: str | int | float | bool
+    source: str | None = None
+
+
+class EvidenceTimelineItem(BaseModel):
+    sequence: int
+    event: str
+    tick: int | str | None = None
+    source: str | None = None
+    significance: str | None = None
+
+
+class AgentFinding(BaseModel):
+    name: str
+    role: str
+    finding: str
+    confidence: float = Field(ge=0.0, le=1.0)
+    evidence: list[TeamEvidenceItem] = Field(default_factory=list)
+
+
+class AIInvestigationTeamRequest(BaseModel):
+    incident: dict[str, Any] = Field(default_factory=dict)
+    detector_outputs: list[dict[str, Any]] = Field(default_factory=list)
+    order_book_context: dict[str, Any] = Field(default_factory=dict)
+    trades: list[dict[str, Any]] = Field(default_factory=list)
+    market_metrics: dict[str, Any] = Field(default_factory=dict)
+
+
+class AIInvestigationTeamResponse(BaseModel):
+    investigation_id: str
+    manipulation_type: str
+    risk_score: float = Field(ge=0.0, le=1.0)
+    confidence: float = Field(ge=0.0, le=1.0)
+    agents: list[AgentFinding]
+    consensus: str
+    evidence_timeline: list[EvidenceTimelineItem]
+    recommended_action: str
+    executive_summary: str
     model_mode: str = "deterministic_fallback"
     model: str = DEFAULT_NEBIUS_MODEL
     latency_ms: float = 0.0
@@ -199,6 +298,39 @@ def investigation_report(request: InvestigationReportRequest) -> InvestigationRe
     if payload is None:
         return _with_model_metadata(fallback, _fallback_model_result(model_response))
     return _merge_report_response(fallback, payload, model_response)
+
+
+@app.post("/investigation-team", response_model=AIInvestigationTeamResponse)
+def investigation_team(request: AIInvestigationTeamRequest) -> AIInvestigationTeamResponse:
+    fallback = _deterministic_investigation_team(request)
+    model_response = _call_model_json(
+        system_prompt=(
+            "Return JSON for a synthetic AI market surveillance investigation team. Required keys: "
+            "investigation_id, manipulation_type, risk_score, confidence, agents, consensus, "
+            "evidence_timeline, recommended_action, executive_summary. agents must be a list of "
+            "objects with name, role, finding, confidence, evidence. Use these exact agent names: "
+            "OrderBookExpertAgent, TradePatternAgent, StatisticsAgent, ComplianceAgent, "
+            "LeadInvestigatorAgent. Never claim real market abuse detection."
+        ),
+        user_payload=request.model_dump(mode="json"),
+    )
+    payload = _validated_model_payload(
+        model_response,
+        {
+            "investigation_id": str,
+            "manipulation_type": str,
+            "risk_score": "number",
+            "confidence": "number",
+            "agents": list,
+            "consensus": str,
+            "evidence_timeline": list,
+            "recommended_action": str,
+            "executive_summary": str,
+        },
+    )
+    if payload is None:
+        return _with_model_metadata(fallback, _fallback_model_result(model_response))
+    return _merge_investigation_team_response(fallback, payload, model_response)
 
 
 @app.post("/explain-event", response_model=IncidentExplanationResponse)
@@ -291,6 +423,42 @@ def generate_scenario(request: ScenarioGenerationRequest) -> ScenarioGenerationR
     if payload is None:
         return _with_model_metadata(fallback, _fallback_model_result(model_response))
     return _merge_scenario_response(fallback, payload, model_response)
+
+
+@app.post("/generate-market-abuse-scenario", response_model=MarketAbuseScenarioResponse)
+def generate_market_abuse_scenario(request: MarketAbuseScenarioGenerationRequest) -> MarketAbuseScenarioResponse:
+    fallback = _deterministic_market_abuse_scenario(request)
+    model_response = _call_model_json(
+        system_prompt=(
+            "Return JSON for one bounded synthetic market-abuse scenario. Required keys: "
+            "scenario_id, title, description, manipulation_type, difficulty, symbol, duration_ticks, "
+            "liquidity_regime, volatility_regime, ground_truth, events, expected_detector_behavior, "
+            "explanation, replay, source. Events must use the arena AgentEvent-compatible fields: "
+            "event_id, tick, event_type, type, agent_id, symbol, scenario_id, scenario_name, "
+            "scenario_family, stage, message, side, price, quantity, order_id, metadata. "
+            "Use synthetic educational data only."
+        ),
+        user_payload=request.model_dump(mode="json"),
+    )
+    payload = _validated_model_payload(
+        model_response,
+        {
+            "scenario_id": str,
+            "title": str,
+            "description": str,
+            "manipulation_type": str,
+            "difficulty": str,
+            "symbol": str,
+            "duration_ticks": "number",
+            "ground_truth": dict,
+            "events": list,
+            "expected_detector_behavior": dict,
+            "explanation": str,
+        },
+    )
+    if payload is None:
+        return _with_model_metadata(fallback, _fallback_model_result(model_response))
+    return _merge_market_abuse_scenario_response(fallback, payload, model_response)
 
 
 @app.post("/generate-smart-scenario", response_model=ScenarioGenerationResponse)
@@ -659,6 +827,96 @@ def _merge_report_response(
     return _with_model_metadata(merged, model_result)
 
 
+def _deterministic_investigation_team(request: AIInvestigationTeamRequest) -> AIInvestigationTeamResponse:
+    incident = request.incident
+    metrics = request.market_metrics
+    detector_outputs = request.detector_outputs
+    manipulation_type = _manipulation_type(incident, detector_outputs)
+    risk_score = _investigation_risk_score(incident, detector_outputs, metrics)
+    confidence = _bounded_float(
+        max([_float_feature(row, "confidence") for row in detector_outputs] or [risk_score]),
+        risk_score,
+    )
+    evidence = _investigation_evidence(metrics, detector_outputs)
+    timeline = _investigation_timeline(incident, request.order_book_context, request.trades)
+    return AIInvestigationTeamResponse(
+        investigation_id=str(incident.get("incident_id") or incident.get("id") or "INV-MOCK-001"),
+        manipulation_type=manipulation_type,
+        risk_score=risk_score,
+        confidence=confidence,
+        agents=[
+            AgentFinding(
+                name="OrderBookExpertAgent",
+                role="Order book microstructure reviewer",
+                finding=f"Order-book state is consistent with {manipulation_type}.",
+                confidence=_bounded_float(risk_score + 0.04, risk_score),
+                evidence=evidence[:3],
+            ),
+            AgentFinding(
+                name="TradePatternAgent",
+                role="Trade and cancellation pattern reviewer",
+                finding="Trade/event cadence supports replay review.",
+                confidence=_bounded_float(confidence - 0.05, confidence),
+                evidence=[TeamEvidenceItem(key="trade_count", label="Trade count", value=len(request.trades)), *evidence[:2]],
+            ),
+            AgentFinding(
+                name="StatisticsAgent",
+                role="Metric anomaly reviewer",
+                finding="Submitted metrics crossed deterministic anomaly thresholds.",
+                confidence=risk_score,
+                evidence=evidence,
+            ),
+            AgentFinding(
+                name="ComplianceAgent",
+                role="Synthetic compliance framing reviewer",
+                finding="Escalate for demo review only; not real enforcement.",
+                confidence=0.89,
+                evidence=[
+                    TeamEvidenceItem(key="synthetic_simulation", label="Synthetic simulation", value=True),
+                    TeamEvidenceItem(key="real_market_data", label="Real market data", value=False),
+                ],
+            ),
+            AgentFinding(
+                name="LeadInvestigatorAgent",
+                role="Consensus owner",
+                finding=f"Consensus: {manipulation_type} risk is {risk_score:.2f}.",
+                confidence=_bounded_float((risk_score + confidence) / 2, risk_score),
+                evidence=[
+                    TeamEvidenceItem(key=f"timeline_{item.sequence}", label="Timeline", value=item.event, source=item.source)
+                    for item in timeline[:3]
+                ],
+            ),
+        ],
+        consensus=f"{manipulation_type} synthetic incident with risk {risk_score:.2f}.",
+        evidence_timeline=timeline,
+        recommended_action="Queue this synthetic interval for replay, artifact capture, and detector-threshold review.",
+        executive_summary=(
+            f"AI Investigation Team reviewed incident {incident.get('incident_id') or incident.get('id') or 'unknown'} "
+            f"and found {manipulation_type} evidence at risk {risk_score:.2f}."
+        ),
+    )
+
+
+def _merge_investigation_team_response(
+    fallback: AIInvestigationTeamResponse,
+    response: dict[str, Any],
+    model_result: ModelCallResult,
+) -> AIInvestigationTeamResponse:
+    merged = AIInvestigationTeamResponse(
+        investigation_id=str(response.get("investigation_id") or fallback.investigation_id),
+        manipulation_type=str(response.get("manipulation_type") or fallback.manipulation_type),
+        risk_score=_bounded_float(response.get("risk_score"), fallback.risk_score),
+        confidence=_bounded_float(response.get("confidence"), fallback.confidence),
+        agents=_agent_findings(response.get("agents"), fallback.agents),
+        consensus=str(response.get("consensus") or fallback.consensus),
+        evidence_timeline=_timeline_items(response.get("evidence_timeline"), fallback.evidence_timeline),
+        recommended_action=str(response.get("recommended_action") or fallback.recommended_action),
+        executive_summary=str(response.get("executive_summary") or fallback.executive_summary),
+        disclaimer=str(response.get("disclaimer") or DISCLAIMER),
+    )
+    return _with_model_metadata(merged, model_result)
+
+
 def _deterministic_scenario(request: ScenarioGenerationRequest) -> ScenarioGenerationResponse:
     constraints = request.constraints
     scenario_family = str(constraints.get("scenario_family") or constraints.get("scenario_type") or "spoofing_like_wall")
@@ -708,6 +966,215 @@ def _merge_scenario_response(
     return _with_model_metadata(merged, model_result)
 
 
+def _deterministic_market_abuse_scenario(
+    request: MarketAbuseScenarioGenerationRequest,
+) -> MarketAbuseScenarioResponse:
+    symbol = request.symbol.upper()
+    seed = request.seed if request.seed is not None else _stable_market_abuse_seed(request)
+    scenario_id = f"ai-{request.manipulation_type.replace('_', '-')}-{symbol.lower()}-{seed % 10000:04d}"
+    start_tick = max(10, request.duration_ticks // 6)
+    end_tick = min(request.duration_ticks, max(start_tick + 12, request.duration_ticks - request.duration_ticks // 5))
+    title = _market_abuse_title(request.manipulation_type, symbol)
+    events = _market_abuse_events(request, scenario_id=scenario_id, title=title, start_tick=start_tick)
+    signals = _market_abuse_signals(request.manipulation_type)
+    route = {
+        "spoofing": "spoofing-like",
+        "layering": "layering-like",
+        "quote_stuffing": "quote-stuffing",
+        "wash_trading": "spoofing-like",
+    }[request.manipulation_type]
+    return MarketAbuseScenarioResponse(
+        scenario_id=scenario_id,
+        title=title,
+        description=(
+            f"Synthetic {request.manipulation_type.replace('_', ' ')} workload for {symbol} "
+            f"over {request.duration_ticks} ticks."
+        ),
+        manipulation_type=request.manipulation_type,
+        difficulty=request.difficulty,
+        symbol=symbol,
+        duration_ticks=request.duration_ticks,
+        liquidity_regime=request.liquidity_regime,
+        volatility_regime=request.volatility_regime,
+        ground_truth={
+            "label": request.manipulation_type,
+            "manipulation_windows": [{"start_tick": start_tick, "end_tick": end_tick}],
+            "manipulator_agent_ids": [_market_abuse_agent(request.manipulation_type)],
+            "expected_detector_targets": signals,
+            "positive_event_ids": [event.event_id for event in events[:2]],
+        },
+        events=events,
+        expected_detector_behavior={
+            "primary_signals": signals,
+            "expected_risk_score": _market_abuse_risk(request.difficulty, request.volatility_regime),
+            "false_positive_risk": "high" if request.difficulty == "adversarial" else "medium" if request.difficulty == "hard" else "low",
+        },
+        explanation=(
+            "Deterministic template generated a bounded synthetic workload with preserved labels, "
+            "detector targets, and Arena replay projection."
+        ),
+        replay={
+            "mode": "attack_scenario_projection",
+            "route": route,
+            "supported": True,
+            "scenario_id": scenario_id,
+            "duration_ticks": request.duration_ticks,
+        },
+        source={
+            "mode": "mock",
+            "provider": "nebius_serverless",
+            "endpoint": "/generate-market-abuse-scenario",
+            "model": "deterministic-template",
+        },
+    )
+
+
+def _merge_market_abuse_scenario_response(
+    fallback: MarketAbuseScenarioResponse,
+    response: dict[str, Any],
+    model_result: ModelCallResult,
+) -> MarketAbuseScenarioResponse:
+    try:
+        events = [ScenarioEvent.model_validate(item) for item in response.get("events", []) if isinstance(item, dict)]
+    except ValueError:
+        events = []
+    merged = MarketAbuseScenarioResponse(
+        scenario_id=str(response.get("scenario_id") or fallback.scenario_id),
+        title=str(response.get("title") or fallback.title),
+        description=str(response.get("description") or fallback.description),
+        manipulation_type=str(response.get("manipulation_type") or fallback.manipulation_type),
+        difficulty=str(response.get("difficulty") or fallback.difficulty),
+        symbol=str(response.get("symbol") or fallback.symbol).upper(),
+        duration_ticks=int(response.get("duration_ticks") or fallback.duration_ticks),
+        liquidity_regime=str(response.get("liquidity_regime") or fallback.liquidity_regime),
+        volatility_regime=str(response.get("volatility_regime") or fallback.volatility_regime),
+        ground_truth=response.get("ground_truth") if isinstance(response.get("ground_truth"), dict) else fallback.ground_truth,
+        events=events or fallback.events,
+        expected_detector_behavior=(
+            response.get("expected_detector_behavior")
+            if isinstance(response.get("expected_detector_behavior"), dict)
+            else fallback.expected_detector_behavior
+        ),
+        explanation=str(response.get("explanation") or fallback.explanation),
+        replay=response.get("replay") if isinstance(response.get("replay"), dict) else fallback.replay,
+        source=response.get("source") if isinstance(response.get("source"), dict) else fallback.source,
+        disclaimer=str(response.get("disclaimer") or DISCLAIMER),
+    )
+    return _with_model_metadata(merged, model_result)
+
+
+def _market_abuse_events(
+    request: MarketAbuseScenarioGenerationRequest,
+    *,
+    scenario_id: str,
+    title: str,
+    start_tick: int,
+) -> list[ScenarioEvent]:
+    agent_id = _market_abuse_agent(request.manipulation_type)
+    side: Literal["buy", "sell"] = "buy" if request.manipulation_type in {"spoofing", "wash_trading"} else "sell"
+    price = 100.0 + (_stable_market_abuse_seed(request) % 250) / 100.0
+    size = 250.0 if request.liquidity_regime == "thin" else 500.0 if request.liquidity_regime == "normal" else 800.0
+    order_id = f"ord-{scenario_id}-{start_tick}"
+    templates = {
+        "spoofing": [
+            ("place_order", "wall_placed", "Place large visible synthetic liquidity wall.", order_id, side, size),
+            ("cancel_order", "wall_cancelled", "Cancel wall before execution.", order_id, side, size),
+            ("trade", "incident_confirmed", "Submit small opposite-side trade after book reaction.", None, "sell", size / 8),
+        ],
+        "layering": [
+            ("place_order", "pressure_phase", "Layer synthetic orders across adjacent price levels.", order_id, side, size / 2),
+            ("place_order", "pressure_phase", "Add second visible layer to deepen imbalance.", f"{order_id}-b", side, size / 3),
+            ("cancel_order", "cancelled", "Cancel layered orders as price pressure appears.", order_id, side, size / 2),
+        ],
+        "wash_trading": [
+            ("trade", "pressure_phase", "Cross synthetic accounts inside simulator labels.", None, "buy", size / 10),
+            ("trade", "pressure_phase", "Reverse synthetic cross-trade to preserve net position.", None, "sell", size / 10),
+            ("quote_update", "incident_confirmed", "Mark repeated self-crossing pattern for detector review.", None, None, None),
+        ],
+        "quote_stuffing": [
+            ("place_order", "pressure_phase", "Burst submit synthetic quotes at high message rate.", order_id, side, size / 10),
+            ("cancel_order", "cancelled", "Rapidly cancel burst quotes.", order_id, side, size / 10),
+            ("quote_update", "incident_confirmed", "Record temporary spread and message-rate distortion.", None, None, None),
+        ],
+    }
+    rows = templates[request.manipulation_type]
+    events: list[ScenarioEvent] = []
+    for index, (event_type, stage, message, oid, event_side, quantity) in enumerate(rows):
+        tick = start_tick + index * max(2, min(12, request.duration_ticks // 16))
+        events.append(
+            ScenarioEvent(
+                event_id=f"evt-{tick:04d}-{event_type.replace('_', '-')}",
+                tick=tick,
+                event_type=event_type,  # type: ignore[arg-type]
+                type=event_type,
+                agent_id=agent_id,
+                symbol=request.symbol.upper(),
+                scenario_id=scenario_id,
+                scenario_name=title,
+                scenario_family=request.manipulation_type,
+                stage=stage,
+                message=message,
+                side=event_side,  # type: ignore[arg-type]
+                price=round(price + (index * 0.05), 4) if event_side else None,
+                quantity=round(quantity, 4) if quantity else None,
+                order_id=oid,
+                metadata={
+                    "difficulty": request.difficulty,
+                    "liquidity_regime": request.liquidity_regime,
+                    "volatility_regime": request.volatility_regime,
+                },
+            )
+        )
+    return events
+
+
+def _market_abuse_signals(manipulation_type: str) -> list[str]:
+    return {
+        "spoofing": ["wall_size_ratio", "cancel_to_trade_ratio", "order_lifetime_ms"],
+        "layering": ["depth_imbalance", "rapid_cancel_cluster", "multi_level_pressure"],
+        "wash_trading": ["self_trade_ratio", "round_trip_volume", "matched_agent_pairs"],
+        "quote_stuffing": ["message_rate", "cancel_to_trade_ratio", "spread_widening"],
+    }.get(manipulation_type, ["cancel_to_trade_ratio"])
+
+
+def _market_abuse_agent(manipulation_type: str) -> str:
+    return {
+        "spoofing": "AI-SPOOF-001",
+        "layering": "AI-LAYER-001",
+        "wash_trading": "AI-WASH-001",
+        "quote_stuffing": "AI-STUFF-001",
+    }.get(manipulation_type, "AI-SCENARIO-001")
+
+
+def _market_abuse_title(manipulation_type: str, symbol: str) -> str:
+    return {
+        "spoofing": f"{symbol} Spoofing Pressure Near Mid",
+        "layering": f"{symbol} Layered Depth Pressure",
+        "wash_trading": f"{symbol} Wash Trading Loop",
+        "quote_stuffing": f"{symbol} Quote Stuffing Burst",
+    }.get(manipulation_type, f"{symbol} Synthetic Scenario")
+
+
+def _market_abuse_risk(difficulty: str, volatility: str) -> float:
+    base = {"easy": 0.52, "medium": 0.68, "hard": 0.82, "adversarial": 0.91}.get(difficulty, 0.68)
+    adjustment = {"low": -0.04, "medium": 0.0, "high": 0.04}.get(volatility, 0.0)
+    return round(max(0.0, min(0.97, base + adjustment)), 4)
+
+
+def _stable_market_abuse_seed(request: MarketAbuseScenarioGenerationRequest) -> int:
+    raw = "|".join(
+        [
+            request.manipulation_type,
+            request.difficulty,
+            request.symbol.upper(),
+            str(request.duration_ticks),
+            request.liquidity_regime,
+            request.volatility_regime,
+        ]
+    )
+    return int(sha256(raw.encode("utf-8")).hexdigest()[:8], 16)
+
+
 def _normalize_scenario_type(value: str) -> str:
     normalized = value.lower().replace("-", "_").replace(" ", "_")
     mapping = {
@@ -744,3 +1211,140 @@ def _string_list(value: Any, fallback: list[str]) -> list[str]:
     if isinstance(value, list):
         return [str(item) for item in value]
     return fallback
+
+
+def _agent_findings(value: Any, fallback: list[AgentFinding]) -> list[AgentFinding]:
+    if not isinstance(value, list):
+        return fallback
+    findings: list[AgentFinding] = []
+    for index, item in enumerate(value):
+        if not isinstance(item, dict):
+            continue
+        findings.append(
+            AgentFinding(
+                name=str(item.get("name") or f"InvestigationAgent{index + 1}"),
+                role=str(item.get("role") or "Investigation reviewer"),
+                finding=str(item.get("finding") or "No finding provided."),
+                confidence=_bounded_float(item.get("confidence"), 0.5),
+                evidence=_team_evidence_items(item.get("evidence")),
+            )
+        )
+    return findings or fallback
+
+
+def _team_evidence_items(value: Any) -> list[TeamEvidenceItem]:
+    if isinstance(value, str):
+        return [TeamEvidenceItem(key="evidence", label="Evidence", value=value)]
+    if not isinstance(value, list):
+        return []
+    items: list[TeamEvidenceItem] = []
+    for index, item in enumerate(value):
+        if isinstance(item, dict):
+            items.append(
+                TeamEvidenceItem(
+                    key=str(item.get("key") or f"evidence_{index + 1}"),
+                    label=str(item.get("label") or item.get("key") or "Evidence"),
+                    value=_evidence_value(item.get("value") if "value" in item else item.get("text") or item),
+                    source=str(item["source"]) if item.get("source") is not None else None,
+                )
+            )
+        else:
+            items.append(TeamEvidenceItem(key=f"evidence_{index + 1}", label="Evidence", value=str(item)))
+    return items
+
+
+def _timeline_items(value: Any, fallback: list[EvidenceTimelineItem]) -> list[EvidenceTimelineItem]:
+    if isinstance(value, str):
+        return [EvidenceTimelineItem(sequence=1, event=value)]
+    if not isinstance(value, list):
+        return fallback
+    items: list[EvidenceTimelineItem] = []
+    for index, item in enumerate(value):
+        sequence = index + 1
+        if isinstance(item, dict):
+            items.append(
+                EvidenceTimelineItem(
+                    sequence=int(item.get("sequence") or sequence),
+                    event=str(item.get("event") or item.get("description") or item),
+                    tick=item.get("tick"),
+                    source=str(item["source"]) if item.get("source") is not None else None,
+                    significance=str(item["significance"]) if item.get("significance") is not None else None,
+                )
+            )
+        else:
+            items.append(EvidenceTimelineItem(sequence=sequence, event=str(item)))
+    return items or fallback
+
+
+def _manipulation_type(incident: dict[str, Any], detector_outputs: list[dict[str, Any]]) -> str:
+    candidates = [
+        incident.get("manipulation_type"),
+        incident.get("type"),
+        incident.get("scenario"),
+        incident.get("scenario_family"),
+    ]
+    candidates.extend(row.get("detected_pattern") or row.get("detector") for row in detector_outputs)
+    for candidate in candidates:
+        if candidate:
+            return str(candidate).lower().replace("-", "_").replace(" ", "_")
+    return "unknown"
+
+
+def _investigation_risk_score(
+    incident: dict[str, Any],
+    detector_outputs: list[dict[str, Any]],
+    metrics: dict[str, Any],
+) -> float:
+    confidence_values = [_float_feature(row, "confidence") for row in detector_outputs]
+    suspicion_values = [_float_feature(row, "suspicion_score") for row in detector_outputs]
+    metric_values = [
+        _float_feature(metrics, "wall_size_ratio") / 10,
+        _float_feature(metrics, "cancel_to_trade_ratio") / 12,
+        _float_feature(metrics, "message_rate") / 40,
+        _float_feature(metrics, "depth_change_pct"),
+        _float_feature(metrics, "imbalance"),
+    ]
+    incident_confidence = _float_feature(incident, "confidence")
+    return _bounded_float(max([incident_confidence, *confidence_values, *suspicion_values, *metric_values, 0.42]), 0.42)
+
+
+def _investigation_evidence(metrics: dict[str, Any], detector_outputs: list[dict[str, Any]]) -> list[TeamEvidenceItem]:
+    evidence = [
+        TeamEvidenceItem(key=key, label=key.replace("_", " "), value=_evidence_value(value), source="market_metrics")
+        for key, value in sorted(metrics.items())
+        if key in {"wall_size_ratio", "cancel_to_trade_ratio", "message_rate", "depth_change_pct", "imbalance"}
+    ]
+    for row in detector_outputs[:3]:
+        detector = row.get("detector") or row.get("detected_pattern") or "detector"
+        confidence = row.get("confidence") or row.get("suspicion_score")
+        evidence.append(
+            TeamEvidenceItem(
+                key=str(detector),
+                label=str(detector),
+                value=_evidence_value(confidence),
+                source="detector_outputs",
+            )
+        )
+    return evidence or [TeamEvidenceItem(key="detector_evidence", label="Detector evidence", value="available")]
+
+
+def _investigation_timeline(
+    incident: dict[str, Any],
+    order_book_context: dict[str, Any],
+    trades: list[dict[str, Any]],
+) -> list[EvidenceTimelineItem]:
+    tick = incident.get("tick") or incident.get("created_at") or "unknown"
+    events = order_book_context.get("events")
+    event_count = len(events) if isinstance(events, list) else 0
+    return [
+        EvidenceTimelineItem(sequence=1, event=f"Incident observed at tick/time {tick}.", tick=tick, source="incident"),
+        EvidenceTimelineItem(sequence=2, event=f"Order-book context supplied with {event_count} event(s).", source="order_book_context"),
+        EvidenceTimelineItem(sequence=3, event=f"Trade context supplied with {len(trades)} trade(s).", source="trades"),
+        EvidenceTimelineItem(sequence=4, event="AI Investigation Team produced consensus from specialist findings.", source="investigation_team"),
+    ]
+
+
+def _evidence_value(value: Any) -> str | int | float | bool:
+    if isinstance(value, (str, int, float, bool)):
+        return value
+    return str(value)

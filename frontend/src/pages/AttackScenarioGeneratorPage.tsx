@@ -290,7 +290,7 @@ export function AttackScenarioGeneratorPage() {
       <div className="panel lab-hero-panel team-hero red">
         <TeamMark team="red" />
         <div>
-          <h2>AI Scenario Generator</h2>
+          <h2>Nebius AI Scenario Generator</h2>
         </div>
       </div>
 
@@ -301,7 +301,7 @@ export function AttackScenarioGeneratorPage() {
           <div>
             <h2>Scenario Setup</h2>
           </div>
-          {busy ? <span className="endpoint-badge">Working with Nebius AI...</span> : null}
+          {busy ? <span className="endpoint-badge">Powered by Nebius AI Serverless Endpoint</span> : null}
         </div>
 
         <section className="scenario-wizard-step">

@@ -4,13 +4,17 @@ import pytest
 
 import app as endpoint_app
 from app import (
+    AIInvestigationTeamRequest,
     IncidentExplanationRequest,
     InvestigationReportRequest,
+    MarketAbuseScenarioGenerationRequest,
     OrderBookWindow,
     ScenarioGenerationRequest,
     explain_event,
+    generate_market_abuse_scenario,
     generate_scenario,
     health,
+    investigation_team,
     investigation_report,
     orderbook_alert,
     ready,
@@ -111,6 +115,26 @@ def test_generate_scenario_returns_backend_compatible_json() -> None:
     assert response.model_mode == "deterministic_fallback"
 
 
+def test_generate_market_abuse_scenario_returns_ground_truth_contract() -> None:
+    response = generate_market_abuse_scenario(
+        MarketAbuseScenarioGenerationRequest(
+            manipulation_type="quote_stuffing",
+            difficulty="hard",
+            symbol="NBS",
+            duration_ticks=150,
+            liquidity_regime="thin",
+            volatility_regime="high",
+        )
+    )
+
+    assert response.manipulation_type == "quote_stuffing"
+    assert response.ground_truth["label"] == "quote_stuffing"
+    assert response.events
+    assert response.replay["route"] == "quote-stuffing"
+    assert response.model_mode == "deterministic_fallback"
+    assert response.source["endpoint"] == "/generate-market-abuse-scenario"
+
+
 def test_orderbook_alert_returns_detector_contract() -> None:
     response = orderbook_alert(
         OrderBookWindow(
@@ -146,6 +170,31 @@ def test_investigation_report_returns_case_report_contract() -> None:
     assert response.timeline
     assert response.detector_findings
     assert response.model_mode == "deterministic_fallback"
+
+
+def test_investigation_team_returns_agent_contract() -> None:
+    response = investigation_team(
+        AIInvestigationTeamRequest(
+            incident={"incident_id": "INC-1", "type": "spoofing", "confidence": 0.88, "tick": 12},
+            detector_outputs=[{"detected_pattern": "spoofing_like_wall", "confidence": 0.91}],
+            order_book_context={"events": [{"type": "quote"}]},
+            trades=[{"price": 100.0}],
+            market_metrics={"wall_size_ratio": 8.2, "cancel_to_trade_ratio": 5.4},
+        )
+    )
+
+    assert response.investigation_id == "INC-1"
+    assert response.manipulation_type == "spoofing"
+    assert response.risk_score == 0.91
+    assert response.model_mode == "deterministic_fallback"
+    assert [agent.name for agent in response.agents] == [
+        "OrderBookExpertAgent",
+        "TradePatternAgent",
+        "StatisticsAgent",
+        "ComplianceAgent",
+        "LeadInvestigatorAgent",
+    ]
+    assert response.evidence_timeline
 
 
 def test_ai_mode_uses_mocked_http_response(monkeypatch: pytest.MonkeyPatch) -> None:

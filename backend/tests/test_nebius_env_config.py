@@ -42,6 +42,14 @@ def test_demo_surface_flags_default_to_reduced_demo_mode(monkeypatch: Any) -> No
     assert settings.enable_legacy_pages is False
 
 
+def test_backend_settings_derives_investigation_team_endpoint_from_base_url(monkeypatch: Any) -> None:
+    monkeypatch.setenv("NEBIUS_ENDPOINT_BASE_URL", "https://endpoint.example")
+    monkeypatch.delenv("NEBIUS_INVESTIGATION_TEAM_URL", raising=False)
+    settings = Settings(_env_file=None)
+
+    assert settings.nebius_investigation_team_endpoint_url == "https://endpoint.example/investigation-team"
+
+
 def test_serverless_endpoint_prefers_new_nebius_env_names(monkeypatch: Any) -> None:
     endpoint = _load_endpoint_module()
     monkeypatch.setenv("NEBIUS_BASE_URL", "https://new.example/v1/")

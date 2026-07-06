@@ -27,8 +27,13 @@ routes:
     path: /investigation-report
     input: scenario trace, alerts, metrics
     output: human-readable synthetic market abuse case report
+  investigation_team_endpoint:
+    path: /investigation-team
+    input: incident, detector outputs, order-book context, trades, market metrics
+    output: five-agent synthetic investigation verdict and evidence timeline
   compatibility:
     - /health
     - /explain-event
     - /generate-scenario
     - /generate-smart-scenario
+    - /investigation-team

@@ -7,8 +7,8 @@ AIMADA is now positioned as a Nebius AI Serverless-powered market surveillance c
 1. Generate or select a suspicious market scenario.
 2. Replay it in the Arena / Market Workload Generator.
 3. Create detector output and an incident.
-4. Send the incident to Nebius AI Serverless.
-5. Show the AI investigation and report output.
+4. Run the AI Investigation Team through Nebius AI Serverless.
+5. Show final verdict, confidence, specialist agent findings, evidence timeline, and recommended action.
 6. Optionally run an AI Detector Tournament.
 
 ## Default Navigation
@@ -18,6 +18,12 @@ AIMADA is now positioned as a Nebius AI Serverless-powered market surveillance c
 - Docs / Demo
 
 Secondary pages and advanced setup remain in the codebase but are not prominent in the default demo.
+
+Primary endpoint feature:
+
+- `POST /api/nebius/investigation-team/analyze` in the backend.
+- `POST /investigation-team` in the serverless endpoint.
+- Deterministic five-agent mock response when Nebius credentials are absent.
 
 ## Feature Flags
 

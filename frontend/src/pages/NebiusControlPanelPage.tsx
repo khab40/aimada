@@ -4,6 +4,7 @@ import {
   aggregateManagedExperiment,
   artifactDownloadUrl,
   createManagedExperiment,
+  generateMarketAbuseScenario,
   generateManagedExperimentManifest,
   getManagedExperiment,
   getManagedExperimentLeaderboard,
@@ -12,17 +13,26 @@ import {
   getNebiusObservatory,
   getNebiusStatus,
   getReportsSummary,
+  getDetectorTournament,
+  injectNebiusAttackScenario,
   listManagedExperimentJobs,
   listManagedExperiments,
   collectManagedExperimentNebiusArtifacts,
   refreshManagedExperimentJobs,
   renderManagedExperimentNebiusJobConfig,
+  runAIInvestigationTeam,
   runManagedExperimentInvestigations,
   runManagedExperimentLocalBatch,
+  startDetectorTournament,
   submitManagedExperimentNebius,
+  type AIInvestigationTeamResponse,
+  type DetectorTournamentResponse,
+  type DetectorTournamentStartRequest,
   type ExperimentJobRecord,
   type ExperimentLeaderboardRow,
   type ExperimentSummary,
+  type MarketAbuseScenarioGenerationRequest,
+  type MarketAbuseScenarioResponse,
   type ManagedExperiment,
   type ManagedExperimentCreateRequest,
   type NebiusObservatory,
@@ -81,6 +91,7 @@ type DemoScenario = {
 };
 type ExperimentAction =
   | "create-experiment"
+  | "generate-ai-scenario"
   | "generate-manifest"
   | "run-local-batch"
   | "submit-nebius"
@@ -89,7 +100,19 @@ type ExperimentAction =
   | "render-job-config"
   | "test-endpoint-health"
   | "aggregate"
-  | "run-investigations";
+  | "run-investigations"
+  | "run-investigation-team"
+  | "run-ai-tournament"
+  | "replay-ai-scenario";
+
+const TOURNAMENT_POLL_INTERVAL_MS = 1000;
+const TOURNAMENT_POLL_ATTEMPTS = 12;
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
 
 const experimentScenarioOptions = [
   "normal_market",
@@ -105,6 +128,25 @@ const initialExperimentForm: ExperimentFormState = {
   name: "AI-MADA detector tournament",
   scenarios: ["normal_market", "spoofing", "layering", "quote_stuffing", "pump_and_cancel"],
   seed: 42
+};
+
+const initialScenarioForm: MarketAbuseScenarioGenerationRequest = {
+  difficulty: "medium",
+  duration_ticks: 120,
+  liquidity_regime: "thin",
+  manipulation_type: "spoofing",
+  seed: 42,
+  symbol: "AIMD",
+  volatility_regime: "high"
+};
+
+const initialTournamentForm: DetectorTournamentStartRequest = {
+  detector_set: ["spoofing_like", "layering_like", "quote_stuffing"],
+  difficulty_mix: { adversarial: 0.1, easy: 0.2, hard: 0.2, medium: 0.5 },
+  execution_mode: "local_mock",
+  manipulation_types: ["spoofing", "layering", "quote_stuffing"],
+  number_of_scenarios: 100,
+  random_seed: 42
 };
 
 const demoScenarios: DemoScenario[] = [
@@ -151,6 +193,13 @@ export function NebiusControlPanelPage() {
   const [experimentJobs, setExperimentJobs] = useState<ExperimentJobRecord[]>([]);
   const [experimentLeaderboard, setExperimentLeaderboard] = useState<ExperimentLeaderboardRow[]>([]);
   const [experimentSummary, setExperimentSummary] = useState<ExperimentSummary | null>(null);
+  const [scenarioForm, setScenarioForm] = useState<MarketAbuseScenarioGenerationRequest>(initialScenarioForm);
+  const [generatedScenario, setGeneratedScenario] = useState<MarketAbuseScenarioResponse | null>(null);
+  const [scenarioMessage, setScenarioMessage] = useState<string | null>(null);
+  const [tournamentForm, setTournamentForm] = useState<DetectorTournamentStartRequest>(initialTournamentForm);
+  const [detectorTournament, setDetectorTournament] = useState<DetectorTournamentResponse | null>(null);
+  const [tournamentMessage, setTournamentMessage] = useState<string | null>(null);
+  const [investigationTeamReport, setInvestigationTeamReport] = useState<AIInvestigationTeamResponse | null>(null);
   const [experimentMessage, setExperimentMessage] = useState<string | null>(null);
   const [experimentBusyAction, setExperimentBusyAction] = useState<ExperimentAction | null>(null);
   const [nebiusStatus, setNebiusStatus] = useState<NebiusStatus | null>(null);
@@ -232,14 +281,16 @@ export function NebiusControlPanelPage() {
     setExperimentLeaderboard(leaderboard);
   }
 
-  async function runExperimentAction(action: ExperimentAction, fn: () => Promise<void>) {
+  async function runExperimentAction(action: ExperimentAction, fn: () => Promise<void>, onError?: (message: string) => void) {
     setExperimentBusyAction(action);
     setExperimentMessage(null);
     try {
       await fn();
       await refreshControlPlane();
     } catch (error) {
-      setExperimentMessage(error instanceof Error ? error.message : "Benchmark action failed.");
+      const message = error instanceof Error ? error.message : "Benchmark action failed.";
+      setExperimentMessage(message);
+      onError?.(message);
     } finally {
       setExperimentBusyAction(null);
     }
@@ -261,6 +312,44 @@ export function NebiusControlPanelPage() {
         ...current,
         scenarios: next.length ? next : [scenario]
       };
+    });
+  }
+
+  function updateScenarioForm<K extends keyof MarketAbuseScenarioGenerationRequest>(
+    key: K,
+    value: MarketAbuseScenarioGenerationRequest[K]
+  ) {
+    setScenarioForm((current) => ({
+      ...current,
+      [key]: value
+    }));
+  }
+
+  function updateTournamentForm<K extends keyof DetectorTournamentStartRequest>(
+    key: K,
+    value: DetectorTournamentStartRequest[K]
+  ) {
+    setTournamentForm((current) => ({
+      ...current,
+      [key]: value
+    }));
+  }
+
+  function toggleTournamentManipulation(value: DetectorTournamentStartRequest["manipulation_types"][number]) {
+    setTournamentForm((current) => {
+      const selected = current.manipulation_types.includes(value)
+        ? current.manipulation_types.filter((item) => item !== value)
+        : [...current.manipulation_types, value];
+      return { ...current, manipulation_types: selected.length ? selected : [value] };
+    });
+  }
+
+  function toggleTournamentDetector(value: DetectorTournamentStartRequest["detector_set"][number]) {
+    setTournamentForm((current) => {
+      const selected = current.detector_set.includes(value)
+        ? current.detector_set.filter((item) => item !== value)
+        : [...current.detector_set, value];
+      return { ...current, detector_set: selected.length ? selected : [value] };
     });
   }
 
@@ -361,9 +450,55 @@ export function NebiusControlPanelPage() {
     if (!experiment) return;
     await runExperimentAction("run-investigations", async () => {
       const result = await runManagedExperimentInvestigations(experiment.id);
-      setExperimentMessage(`Produced ${result.investigation_count} AI Investigation summaries in ${result.investigation_mode} mode.`);
+          setExperimentMessage(`Produced ${result.investigation_count} Nebius AI Investigation summaries in ${result.investigation_mode} mode.`);
       await refreshExperimentDetails(experiment.id);
     });
+  }
+
+  async function runInvestigationTeam() {
+    await runExperimentAction("run-investigation-team", async () => {
+      const report = await runAIInvestigationTeam();
+      setInvestigationTeamReport(report);
+      setExperimentMessage(`Nebius AI Investigation Team consensus: ${report.consensus}`);
+    });
+  }
+
+  async function generateAiScenario() {
+    await runExperimentAction("generate-ai-scenario", async () => {
+      const scenario = await generateMarketAbuseScenario(scenarioForm);
+      setGeneratedScenario(scenario);
+      setScenarioMessage(`Generated ${scenario.title} with ${scenario.events.length} simulator-compatible events.`);
+    }, setScenarioMessage);
+  }
+
+  async function replayGeneratedScenario() {
+    if (!generatedScenario) return;
+    await runExperimentAction("replay-ai-scenario", async () => {
+      const response = await injectNebiusAttackScenario(generatedScenario.scenario_id);
+      setScenarioMessage(response.message);
+      await refreshControlPlane();
+    }, setScenarioMessage);
+  }
+
+  async function runAiDetectorTournament() {
+    await runExperimentAction("run-ai-tournament", async () => {
+      let tournament = await startDetectorTournament(tournamentForm);
+      setDetectorTournament(tournament);
+      setTournamentMessage(`${tournament.status.replaceAll("_", " ")}: ${tournament.summary}`);
+      if (tournament.status === "queued" || tournament.status === "running") {
+        for (
+          let attempt = 0;
+          attempt < TOURNAMENT_POLL_ATTEMPTS && tournament.status !== "completed" && tournament.status !== "failed";
+          attempt += 1
+        ) {
+          await wait(TOURNAMENT_POLL_INTERVAL_MS);
+          tournament = await getDetectorTournament(tournament.tournament_id);
+          setDetectorTournament(tournament);
+          setTournamentMessage(`${tournament.status.replaceAll("_", " ")}: ${tournament.summary}`);
+        }
+      }
+      await refreshControlPlane();
+    }, setTournamentMessage);
   }
 
   function switchRuntimeMode(nextMode: RuntimeMode) {
@@ -394,34 +529,34 @@ export function NebiusControlPanelPage() {
       <header className="ai-platform-header">
         <div>
           <h1>AI Command Center</h1>
-          <p>Generate suspicious workload, detect incidents, investigate with AI, and run detector tournaments from one focused cockpit.</p>
+          <p>Generate suspicious workload, detect incidents with Nebius AI, and run detector tournaments on Nebius Serverless Jobs.</p>
         </div>
-        <span className="ai-platform-badge">Powered by Nebius AI Serverless</span>
+        <span className="ai-platform-badge">Powered by Nebius AI Serverless Endpoint</span>
       </header>
 
       <section className="command-center-service-grid" aria-label="AI command center capabilities">
         <CommandCenterServiceCard
-          title="Serverless Endpoint"
+          title="Nebius AI Serverless Endpoint"
           detail={nebiusStatus?.endpoint_base_url || "Mock endpoint active for local demo"}
           status={endpointWillUseNebius ? "configured" : runtimeMode === "nebius-cloud" ? "pending" : "mock mode"}
         />
         <CommandCenterServiceCard
-          title="Investigation Team"
+          title="Nebius AI Investigation Team"
           detail={endpointWillUseNebius ? nebiusStatus?.model || "Model configured" : "Deterministic investigator fallback"}
           status={endpointWillUseNebius ? "active" : "mock mode"}
         />
         <CommandCenterServiceCard
-          title="Scenario Generator"
+          title="Nebius AI Scenario Generator"
           detail={nebiusStatus?.scenario_generator_configured ? "Scenario endpoint configured" : "Local scenario templates enabled"}
           status={nebiusStatus?.scenario_generator_configured ? "configured" : "mock mode"}
         />
         <CommandCenterServiceCard
-          title="Jobs & Artifacts"
+          title="Nebius Serverless Jobs"
           detail={jobConfigured ? nebiusStatus?.job_image || "Job image configured" : "Local smart batch runner ready"}
           status={jobConfigured ? "configured" : runtimeMode === "nebius-cloud" ? "pending" : "mock mode"}
         />
         <CommandCenterServiceCard
-          title="Detector Tournament"
+          title="Nebius AI Detector Tournament"
           detail={experiment ? `${experiment.attack_count} workloads · batch ${experiment.batch_size}` : "Create a detector tournament"}
           status={experiment ? experiment.status.replaceAll("_", " ") : "pending"}
         />
@@ -469,8 +604,24 @@ export function NebiusControlPanelPage() {
 
         <InfrastructureSection
           step={2}
-          title="AI Investigation"
-          description="Send detector incidents to the AI endpoint for explanation, report generation, and analyst-ready findings."
+          title="Nebius AI Scenario Generator"
+          description="Powered by Nebius AI Serverless Endpoint. Generate synthetic market-abuse workloads with ground truth, then replay them through the existing Arena scenario path."
+        >
+          <AIScenarioGeneratorPanel
+            busyAction={experimentBusyAction}
+            form={scenarioForm}
+            generatedScenario={generatedScenario}
+            message={scenarioMessage}
+            onGenerate={() => void generateAiScenario()}
+            onReplay={() => void replayGeneratedScenario()}
+            onUpdate={updateScenarioForm}
+          />
+        </InfrastructureSection>
+
+        <InfrastructureSection
+          step={3}
+          title="Nebius AI Investigation Team"
+          description="Powered by Nebius AI Serverless Endpoint. Send detector incidents for explanation, report generation, and analyst-ready findings."
         >
           <InfrastructureMetricGrid>
             <MetricBlock label="Inference calls" value={String(usageMetrics.aiEndpointCallsToday)} />
@@ -482,16 +633,30 @@ export function NebiusControlPanelPage() {
           </InfrastructureMetricGrid>
           <p className="fallback-note">{runtimeMode === "nebius-cloud" ? "Cloud mode calls a real endpoint when configured. If it fails, the response falls back to deterministic mock AI and is labeled clearly." : "Local Demo uses a deterministic mock response. Switch to Cloud to run this explanation on a real endpoint."}</p>
           <div className="nebius-button-row">
+            <button className="primary-button" disabled={experimentBusyAction === "run-investigation-team"} onClick={() => void runInvestigationTeam()} type="button">
+              {experimentBusyAction === "run-investigation-team" ? "Running..." : "Run Nebius AI Investigation Team"}
+            </button>
             <button className="secondary-button" disabled={!experiment || experimentBusyAction === "run-investigations"} onClick={() => void runExperimentInvestigations()} type="button">Explain current incident</button>
           </div>
+          {investigationTeamReport ? <InvestigationTeamReport report={investigationTeamReport} /> : null}
           {experimentMessage ? <p className="experiment-message">{experimentMessage}</p> : null}
         </InfrastructureSection>
 
         <InfrastructureSection
-          step={3}
-          title="AI Detector Tournament"
-          description="Run local or serverless detector tournaments over generated market workloads and compare detector outcomes."
+          step={4}
+          title="Nebius AI Detector Tournament"
+          description="Powered by Nebius Serverless Jobs. Run local or serverless detector tournaments over generated market workloads and compare detector outcomes."
         >
+          <DetectorTournamentPanel
+            busyAction={experimentBusyAction}
+            form={tournamentForm}
+            message={tournamentMessage}
+            onRun={() => void runAiDetectorTournament()}
+            onToggleDetector={toggleTournamentDetector}
+            onToggleManipulation={toggleTournamentManipulation}
+            onUpdate={updateTournamentForm}
+            tournament={detectorTournament}
+          />
           <ExperimentLab
             busyAction={experimentBusyAction}
             experiment={experiment}
@@ -513,7 +678,7 @@ export function NebiusControlPanelPage() {
         </InfrastructureSection>
 
         <InfrastructureSection
-          step={4}
+          step={5}
           title="Execution Trace"
           description="Compact execution graph plus endpoint, jobs, latency, tokens, GPU, cost, artifacts, and real versus simulated status."
         >
@@ -558,6 +723,209 @@ function CommandCenterServiceCard({
       </div>
       <span className={`runtime-status ${status.toLowerCase().replace(/\s+/g, "-")}`}>{status}</span>
     </article>
+  );
+}
+
+function InvestigationTeamReport({ report }: { report: AIInvestigationTeamResponse }) {
+  return (
+    <section className="nebius-result-block investigation-team-report" aria-label="AI Investigation Team result">
+      <div className="nebius-card-heading">
+        <div>
+          <span>Final verdict</span>
+          <h2>{report.manipulation_type.replaceAll("_", " ")}</h2>
+          <p className="nebius-card-purpose">{report.executive_summary}</p>
+        </div>
+        <span className={`runtime-status ${report.mode}`}>{report.mode}</span>
+      </div>
+      <InfrastructureMetricGrid>
+        <MetricBlock label="Investigation" value={report.investigation_id} />
+        <MetricBlock label="Risk score" value={report.risk_score.toFixed(2)} />
+        <MetricBlock label="Confidence" value={report.confidence.toFixed(2)} />
+        <MetricBlock label="Consensus" value={report.consensus} />
+      </InfrastructureMetricGrid>
+      <div className="experiment-output-grid">
+        <div className="nebius-result-block">
+          <span>Agent findings</span>
+          <div className="generated-scenario-list">
+            {report.agents.map((agent) => (
+              <article className="generated-scenario-card" key={agent.name}>
+                <strong>{agent.name}</strong>
+                <p>{agent.role}</p>
+                <p>{agent.finding}</p>
+                <span className="runtime-status configured">{agent.confidence.toFixed(2)}</span>
+                <ul>
+                  {agent.evidence.map((item) => (
+                    <li key={`${agent.name}-${item.key}-${String(item.value)}`}>
+                      {item.label}: {String(item.value)}
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            ))}
+          </div>
+        </div>
+        <div className="nebius-result-block">
+          <span>Evidence timeline</span>
+          <ol>
+            {report.evidence_timeline.map((item) => (
+              <li key={`${item.sequence}-${item.event}`}>
+                {item.event}
+              </li>
+            ))}
+          </ol>
+          <p><strong>Recommended action</strong> {report.recommended_action}</p>
+          {report.fallback_reason ? <p className="fallback-note">{report.fallback_reason}</p> : null}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function AIScenarioGeneratorPanel({
+  busyAction,
+  form,
+  generatedScenario,
+  message,
+  onGenerate,
+  onReplay,
+  onUpdate
+}: {
+  busyAction: ExperimentAction | null;
+  form: MarketAbuseScenarioGenerationRequest;
+  generatedScenario: MarketAbuseScenarioResponse | null;
+  message: string | null;
+  onGenerate: () => void;
+  onReplay: () => void;
+  onUpdate: <K extends keyof MarketAbuseScenarioGenerationRequest>(
+    key: K,
+    value: MarketAbuseScenarioGenerationRequest[K]
+  ) => void;
+}) {
+  const replaySupported = Boolean(generatedScenario?.replay?.supported ?? generatedScenario);
+  return (
+    <div className="experiment-output-grid ai-scenario-generator-panel">
+      <div className="nebius-result-block">
+        <span>Nebius AI Scenario Generator</span>
+        <div className="experiment-form-grid">
+          <label>
+            Manipulation type
+            <select
+              value={form.manipulation_type}
+              onChange={(event) => onUpdate("manipulation_type", event.target.value as MarketAbuseScenarioGenerationRequest["manipulation_type"])}
+            >
+              <option value="spoofing">Spoofing</option>
+              <option value="layering">Layering</option>
+              <option value="wash_trading">Wash trading</option>
+              <option value="quote_stuffing">Quote stuffing</option>
+            </select>
+          </label>
+          <label>
+            Difficulty
+            <select
+              value={form.difficulty}
+              onChange={(event) => onUpdate("difficulty", event.target.value as MarketAbuseScenarioGenerationRequest["difficulty"])}
+            >
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+              <option value="adversarial">Adversarial</option>
+            </select>
+          </label>
+          <label>
+            Symbol
+            <input
+              maxLength={16}
+              value={form.symbol}
+              onChange={(event) => onUpdate("symbol", event.target.value.toUpperCase())}
+            />
+          </label>
+          <label>
+            Duration
+            <input
+              max={600}
+              min={30}
+              type="number"
+              value={form.duration_ticks}
+              onChange={(event) => onUpdate("duration_ticks", Number(event.target.value))}
+            />
+          </label>
+          <label>
+            Liquidity
+            <select
+              value={form.liquidity_regime}
+              onChange={(event) => onUpdate("liquidity_regime", event.target.value as MarketAbuseScenarioGenerationRequest["liquidity_regime"])}
+            >
+              <option value="thin">Thin</option>
+              <option value="normal">Normal</option>
+              <option value="deep">Deep</option>
+            </select>
+          </label>
+          <label>
+            Volatility
+            <select
+              value={form.volatility_regime}
+              onChange={(event) => onUpdate("volatility_regime", event.target.value as MarketAbuseScenarioGenerationRequest["volatility_regime"])}
+            >
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </label>
+        </div>
+        <div className="nebius-button-row">
+          <button className="primary-button" disabled={busyAction === "generate-ai-scenario"} onClick={onGenerate} type="button">
+            {busyAction === "generate-ai-scenario" ? "Generating..." : "Generate Nebius AI Scenario"}
+          </button>
+          <button className="secondary-button" disabled={!generatedScenario || !replaySupported || busyAction === "replay-ai-scenario"} onClick={onReplay} type="button">
+            {busyAction === "replay-ai-scenario" ? "Replaying..." : "Replay in Arena"}
+          </button>
+        </div>
+        {message ? <p className="experiment-message">{message}</p> : null}
+      </div>
+
+      <div className="nebius-result-block">
+        <span>Generated scenario preview</span>
+        {generatedScenario ? (
+          <div className="generated-scenario-card">
+            <div className="nebius-card-heading">
+              <div>
+                <h3>{generatedScenario.title}</h3>
+                <p className="nebius-card-purpose">{generatedScenario.description}</p>
+              </div>
+              <span className={`runtime-status ${generatedScenario.mode}`}>{generatedScenario.mode}</span>
+            </div>
+            <span className="runtime-status configured">Powered by Nebius AI Serverless Endpoint</span>
+            <InfrastructureMetricGrid>
+              <MetricBlock label="Scenario" value={generatedScenario.scenario_id} />
+              <MetricBlock label="Risk" value={generatedScenario.expected_detector_behavior.expected_risk_score.toFixed(2)} />
+              <MetricBlock label="Events" value={String(generatedScenario.events.length)} />
+              <MetricBlock label="Replay route" value={String(generatedScenario.replay.route ?? "projection")} />
+            </InfrastructureMetricGrid>
+            <div>
+              <strong>Ground truth</strong>
+              <ul>
+                <li>Label: {generatedScenario.ground_truth.label.replaceAll("_", " ")}</li>
+                <li>Agents: {generatedScenario.ground_truth.manipulator_agent_ids.join(", ")}</li>
+                <li>Signals: {generatedScenario.ground_truth.expected_detector_targets.join(", ")}</li>
+              </ul>
+            </div>
+            <div>
+              <strong>Timeline</strong>
+              <ol>
+                {generatedScenario.events.slice(0, 4).map((event) => (
+                  <li key={event.event_id}>
+                    tick {event.tick}: {event.message}
+                  </li>
+                ))}
+              </ol>
+            </div>
+            {generatedScenario.fallback_reason ? <p className="fallback-note">{generatedScenario.fallback_reason}</p> : null}
+          </div>
+        ) : (
+          <p className="fallback-note">Generate a scenario to preview ground truth, event timeline, and replay projection.</p>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -685,6 +1053,133 @@ function runtimeFrom(status: NebiusStatus, observatory: NebiusObservatory): Nebi
     ticksProcessed: latest ? Number(latest.runs ?? 18420) * 240 : 18420,
     websocketStatus: "live"
   };
+}
+
+function DetectorTournamentPanel({
+  busyAction,
+  form,
+  message,
+  onRun,
+  onToggleDetector,
+  onToggleManipulation,
+  onUpdate,
+  tournament
+}: {
+  busyAction: ExperimentAction | null;
+  form: DetectorTournamentStartRequest;
+  message: string | null;
+  onRun: () => void;
+  onToggleDetector: (value: DetectorTournamentStartRequest["detector_set"][number]) => void;
+  onToggleManipulation: (value: DetectorTournamentStartRequest["manipulation_types"][number]) => void;
+  onUpdate: <K extends keyof DetectorTournamentStartRequest>(key: K, value: DetectorTournamentStartRequest[K]) => void;
+  tournament: DetectorTournamentResponse | null;
+}) {
+  const manipulationOptions: DetectorTournamentStartRequest["manipulation_types"] = ["spoofing", "layering", "wash_trading", "quote_stuffing"];
+  const detectorOptions: DetectorTournamentStartRequest["detector_set"] = ["spoofing_like", "layering_like", "quote_stuffing", "liquidity_shock"];
+  return (
+    <section className="nebius-result-block detector-tournament-panel" aria-label="AI Detector Tournament">
+      <div className="nebius-card-heading">
+        <div>
+          <span>Powered by Nebius Serverless Jobs</span>
+          <h2>Run Nebius AI Detector Tournament</h2>
+          <p className="nebius-card-purpose">Compare detectors against synthetic ground truth with local fallback or a Nebius Serverless Job path.</p>
+        </div>
+        <span className={`runtime-status ${tournament?.execution_mode ?? "local_mock"}`}>{tournament?.execution_mode.replaceAll("_", " ") ?? "local mock"}</span>
+      </div>
+      <div className="experiment-lab-layout">
+        <div className="experiment-form-card">
+          <div className="experiment-number-grid">
+            <label>
+              <span>Scenarios</span>
+              <input
+                min={1}
+                max={1000}
+                type="number"
+                value={form.number_of_scenarios}
+                onChange={(event) => onUpdate("number_of_scenarios", Number(event.target.value))}
+              />
+            </label>
+            <label>
+              <span>Seed</span>
+              <input
+                type="number"
+                value={form.random_seed}
+                onChange={(event) => onUpdate("random_seed", Number(event.target.value))}
+              />
+            </label>
+            <label>
+              <span>Execution</span>
+              <select
+                value={form.execution_mode}
+                onChange={(event) => onUpdate("execution_mode", event.target.value as DetectorTournamentStartRequest["execution_mode"])}
+              >
+                <option value="local_mock">Local Mock</option>
+                <option value="local">Local Job Runner</option>
+                <option value="nebius">Nebius Job</option>
+              </select>
+            </label>
+          </div>
+          <div className="experiment-scenario-picker" aria-label="Tournament manipulation types">
+            {manipulationOptions.map((option) => (
+              <button
+                className={form.manipulation_types.includes(option) ? "scenario-pill selected" : "scenario-pill"}
+                key={option}
+                onClick={() => onToggleManipulation(option)}
+                type="button"
+              >
+                {option.replaceAll("_", " ")}
+              </button>
+            ))}
+          </div>
+          <div className="experiment-scenario-picker" aria-label="Tournament detectors">
+            {detectorOptions.map((option) => (
+              <button
+                className={form.detector_set.includes(option) ? "scenario-pill selected" : "scenario-pill"}
+                key={option}
+                onClick={() => onToggleDetector(option)}
+                type="button"
+              >
+                {option.replaceAll("_", " ")}
+              </button>
+            ))}
+          </div>
+          <button className="primary-button" disabled={busyAction === "run-ai-tournament"} onClick={onRun} type="button">
+            {busyAction === "run-ai-tournament" ? "Running..." : "Run Nebius AI Detector Tournament"}
+          </button>
+          {message ? <p className="experiment-message">{message}</p> : null}
+        </div>
+        <div className="experiment-progress-card">
+          <div className="experiment-active-summary">
+            <span>Latest Tournament</span>
+            <strong>{tournament?.tournament_id ?? "No tournament run yet"}</strong>
+            <p>{tournament?.summary ?? "Local Mock mode runs fully without Nebius credentials. Nebius Job mode keeps the cloud path visible and isolated."}</p>
+          </div>
+          {tournament ? (
+            <>
+              <InfrastructureMetricGrid>
+                <MetricBlock label="Status" value={tournament.status.replaceAll("_", " ")} />
+                <MetricBlock label="Macro F1" value={metricDisplay(tournament.metrics.macro_f1)} />
+                <MetricBlock label="False positives" value={metricDisplay(tournament.metrics.false_positives)} />
+                <MetricBlock label="False negatives" value={metricDisplay(tournament.metrics.false_negatives)} />
+              </InfrastructureMetricGrid>
+              <ExperimentLeaderboardTable
+                leaderboard={tournament.leaderboard.slice(0, 8).map((row) => ({
+                  alert_count: row.false_positives + row.false_negatives,
+                  avg_detection_latency_ms: row.avg_detection_latency_ms,
+                  f1: row.f1,
+                  precision: row.precision,
+                  recall: row.recall,
+                  scenario: `${row.scenario} / ${row.detector}`
+                }))}
+              />
+              <ExperimentArtifactLinks artifacts={artifactLinksFromTournament(tournament)} />
+              {tournament.fallback_reason ? <p className="fallback-note">{tournament.fallback_reason}</p> : null}
+            </>
+          ) : null}
+        </div>
+      </div>
+    </section>
+  );
 }
 
 function ExperimentLab({
@@ -1081,6 +1576,10 @@ function experimentArtifactsFrom(experiment: ManagedExperiment, summary: Experim
   });
 }
 
+function artifactLinksFromTournament(tournament: DetectorTournamentResponse): Array<[string, string]> {
+  return Object.entries(tournament.artifacts).filter(([, path]) => typeof path === "string" && path.length > 0);
+}
+
 function metricValue(experiment: ManagedExperiment | null, key: string): number | null {
   if (!experiment) return null;
   for (const row of experiment.metrics) {
@@ -1088,6 +1587,14 @@ function metricValue(experiment: ManagedExperiment | null, key: string): number 
     if (typeof value === "number" && Number.isFinite(value)) return value;
   }
   return null;
+}
+
+function metricDisplay(value: unknown): string {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return Number.isInteger(value) ? String(value) : value.toFixed(3);
+  }
+  if (typeof value === "string") return value;
+  return "n/a";
 }
 
 function formatScore(value: number) {

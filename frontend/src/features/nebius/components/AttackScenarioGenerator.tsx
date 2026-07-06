@@ -41,7 +41,7 @@ export function AttackScenarioGenerator({
     <section className="panel attack-scenario-generator-card">
       <div className="nebius-card-heading">
         <div>
-          <h2>Attack Scenario Generator</h2>
+          <h2>Nebius AI Scenario Generator</h2>
         </div>
       </div>
 

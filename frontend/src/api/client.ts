@@ -394,6 +394,8 @@ export type NebiusStatus = {
   scenario_generator_configured: boolean;
   orderbook_alert_configured: boolean;
   investigation_report_configured: boolean;
+  investigation_team_configured: boolean;
+  market_abuse_scenario_configured?: boolean;
   api_key_configured: boolean;
   endpoint_mode?: string;
   endpoint_base_url?: string | null;
@@ -443,6 +445,148 @@ export type InvestigationReportResponse = {
   recommended_next_steps: string[];
   fallback_reason?: string | null;
   raw_response?: Record<string, unknown> | null;
+};
+
+export type AIInvestigationEvidenceItem = {
+  key: string;
+  label: string;
+  value: string | number | boolean;
+  source?: string | null;
+};
+
+export type AIInvestigationEvidenceTimelineItem = {
+  sequence: number;
+  event: string;
+  tick?: number | string | null;
+  source?: string | null;
+  significance?: string | null;
+};
+
+export type AIInvestigationAgentFinding = {
+  name: string;
+  role: string;
+  finding: string;
+  confidence: number;
+  evidence: AIInvestigationEvidenceItem[];
+};
+
+export type AIInvestigationTeamRequest = {
+  incident: Record<string, unknown>;
+  detector_outputs: Record<string, unknown>[];
+  order_book_context: Record<string, unknown>;
+  trades: Record<string, unknown>[];
+  market_metrics: Record<string, unknown>;
+};
+
+export type AIInvestigationTeamResponse = {
+  mode: "nebius" | "mock";
+  endpoint: string;
+  investigation_id: string;
+  manipulation_type: string;
+  risk_score: number;
+  confidence: number;
+  agents: AIInvestigationAgentFinding[];
+  consensus: string;
+  evidence_timeline: AIInvestigationEvidenceTimelineItem[];
+  recommended_action: string;
+  executive_summary: string;
+  fallback_reason?: string | null;
+  raw_response?: Record<string, unknown> | null;
+};
+
+export type MarketAbuseScenarioGenerationRequest = {
+  manipulation_type: "spoofing" | "layering" | "wash_trading" | "quote_stuffing";
+  difficulty: "easy" | "medium" | "hard" | "adversarial";
+  symbol: string;
+  duration_ticks: number;
+  liquidity_regime: "thin" | "normal" | "deep";
+  volatility_regime: "low" | "medium" | "high";
+  seed?: number | null;
+};
+
+export type MarketAbuseScenarioEvent = {
+  event_id: string;
+  tick: number;
+  event_type: "place_order" | "cancel_order" | "trade" | "quote_update";
+  type: string;
+  agent_id: string;
+  symbol: string;
+  scenario_id: string;
+  scenario_name: string;
+  scenario_family: string;
+  stage: string;
+  message: string;
+  side?: "buy" | "sell" | null;
+  price?: number | null;
+  quantity?: number | null;
+  order_id?: string | null;
+  metadata?: Record<string, unknown>;
+};
+
+export type MarketAbuseScenarioResponse = {
+  mode: "nebius" | "mock";
+  endpoint: string;
+  scenario_id: string;
+  title: string;
+  description: string;
+  manipulation_type: MarketAbuseScenarioGenerationRequest["manipulation_type"];
+  difficulty: MarketAbuseScenarioGenerationRequest["difficulty"];
+  symbol: string;
+  duration_ticks: number;
+  liquidity_regime: MarketAbuseScenarioGenerationRequest["liquidity_regime"];
+  volatility_regime: MarketAbuseScenarioGenerationRequest["volatility_regime"];
+  ground_truth: {
+    label: string;
+    manipulation_windows: { start_tick: number; end_tick: number }[];
+    manipulator_agent_ids: string[];
+    expected_detector_targets: string[];
+    positive_event_ids: string[];
+  };
+  events: MarketAbuseScenarioEvent[];
+  expected_detector_behavior: {
+    primary_signals: string[];
+    expected_risk_score: number;
+    false_positive_risk: "low" | "medium" | "high";
+  };
+  explanation: string;
+  replay: Record<string, unknown>;
+  source: Record<string, unknown>;
+  fallback_reason?: string | null;
+  raw_response?: Record<string, unknown> | null;
+};
+
+export type DetectorTournamentStartRequest = {
+  number_of_scenarios: number;
+  manipulation_types: ("spoofing" | "layering" | "wash_trading" | "quote_stuffing")[];
+  difficulty_mix: Record<string, number>;
+  detector_set: ("spoofing_like" | "layering_like" | "quote_stuffing" | "liquidity_shock")[];
+  random_seed: number;
+  execution_mode: "local" | "local_mock" | "nebius";
+};
+
+export type DetectorTournamentLeaderboardRow = {
+  detector: string;
+  scenario: string;
+  precision: number;
+  recall: number;
+  f1: number;
+  false_positives: number;
+  false_negatives: number;
+  avg_detection_latency_ms?: number | null;
+};
+
+export type DetectorTournamentResponse = {
+  tournament_id: string;
+  status: "queued" | "running" | "completed" | "failed" | "real_nebius_pending";
+  execution_mode: "local_mock" | "local" | "nebius_serverless_job";
+  started_at: string;
+  completed_at?: string | null;
+  detectors: string[];
+  leaderboard: DetectorTournamentLeaderboardRow[];
+  metrics: Record<string, unknown>;
+  artifacts: Record<string, string>;
+  summary: string;
+  fallback_reason?: string | null;
 };
 
 export type ScenarioActionResponse = {
@@ -1007,6 +1151,97 @@ export async function createInvestigationReport(): Promise<InvestigationReportRe
     throw new Error(`Detection report failed: ${response.status}`);
   }
   return response.json();
+}
+
+export async function runAIInvestigationTeam(
+  request: AIInvestigationTeamRequest = defaultAIInvestigationTeamRequest()
+): Promise<AIInvestigationTeamResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/nebius/investigation-team/analyze`, {
+    body: JSON.stringify(request),
+    headers: { "Content-Type": "application/json" },
+    method: "POST"
+  });
+  if (!response.ok) {
+    throw new Error(`AI investigation team failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function generateMarketAbuseScenario(
+  request: MarketAbuseScenarioGenerationRequest
+): Promise<MarketAbuseScenarioResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/nebius/scenario-generator/generate`, {
+    body: JSON.stringify(request),
+    headers: { "Content-Type": "application/json" },
+    method: "POST"
+  });
+  if (!response.ok) {
+    throw new Error(`AI scenario generation failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function startDetectorTournament(
+  request: DetectorTournamentStartRequest
+): Promise<DetectorTournamentResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/nebius/tournament/start`, {
+    body: JSON.stringify(request),
+    headers: { "Content-Type": "application/json" },
+    method: "POST"
+  });
+  if (!response.ok) {
+    throw new Error(`AI detector tournament failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function getDetectorTournament(tournamentId: string): Promise<DetectorTournamentResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/nebius/tournament/${encodeURIComponent(tournamentId)}`);
+  if (!response.ok) {
+    throw new Error(`AI detector tournament status failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+function defaultAIInvestigationTeamRequest(): AIInvestigationTeamRequest {
+  return {
+    detector_outputs: [
+      {
+        confidence: 0.91,
+        detected_pattern: "spoofing_like_wall",
+        detector: "SpoofingWallDetector",
+        evidence: ["large visible wall", "rapid cancel before execution"],
+        suspicion_score: 0.88
+      }
+    ],
+    incident: {
+      confidence: 0.91,
+      incident_id: "INC-DEMO-042",
+      scenario_family: "spoofing",
+      severity: "high",
+      tick: 42,
+      title: "Synthetic spoofing wall detected",
+      type: "spoofing"
+    },
+    market_metrics: {
+      cancel_to_trade_ratio: 5.4,
+      depth_change_pct: 0.38,
+      imbalance: 0.72,
+      message_rate: 21,
+      wall_size_ratio: 8.2
+    },
+    order_book_context: {
+      asks: [{ owner: "normal", price: 68130, quantity: 1.8 }],
+      bids: [{ owner: "abuser", price: 68120, quantity: 12.4 }],
+      events: [
+        { agent_id: "ABUSER_01", stage: "place_wall", tick: 40, type: "quote" },
+        { agent_id: "ABUSER_01", stage: "cancel_wall", tick: 42, type: "cancel" }
+      ]
+    },
+    trades: [
+      { agent_id: "TAKER_01", price: 68125, quantity: 0.4, side: "buy", tick: 41 }
+    ]
+  };
 }
 
 export async function generateNebiusAttackScenario(input: AttackScenarioInput): Promise<AttackScenario> {

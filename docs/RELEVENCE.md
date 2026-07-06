@@ -119,7 +119,7 @@ The Nebius AI page should communicate the cloud-native story clearly. It should 
 
 1. Cloud Runtime Status
 2. Nebius AI inference
-3. Attack Scenario Generator integration
+3. Nebius AI Scenario Generator integration
 4. Managed Experiment runner
 5. Scenario Batch Generator
 6. Experiment Artifacts / Replay Storage

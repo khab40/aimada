@@ -1,10 +1,37 @@
 # AI Market Abuse Detection Arena
 
+## Built on Nebius AI Serverless
+
 ![AI Market Abuse Detection Arena GitHub banner](assets/img/ai-mada.jpg)
 
-A Nebius AI Serverless-powered market surveillance command center. The Arena generates suspicious market workloads; Nebius AI Serverless investigates, explains, generates scenarios, and runs detector tournaments.
+AIMADA is a Nebius AI Serverless-first market surveillance command center for synthetic market-abuse workloads. The Arena generates suspicious market activity; Nebius AI Serverless investigates incidents, generates scenarios, and runs detector tournaments.
 
-**🚀 Quick Start**: Get running in 5 minutes — see [Quick Start](#quick-start) section below, or read [docs/QUICKSTART.md](docs/QUICKSTART.md) for detailed walkthrough.
+Nebius value is visible in the first demo minute:
+
+- **Nebius AI Serverless Endpoint** powers the interactive path: AI Investigation Team, AI Scenario Generator, incident explanations, and structured reports.
+- **Nebius Serverless Jobs** power the batch path: AI Detector Tournament, scenario replay at scale, detector metrics, leaderboards, and artifacts.
+- **Local mock fallback** keeps the challenge demo reliable without credentials while preserving the same response schemas and UI labels used by the real Nebius path.
+
+```mermaid
+flowchart LR
+    UI["AI Command Center<br/>React"]
+    API["FastAPI Control Plane"]
+    Arena["Market Workload Generator<br/>Simulator + Detectors"]
+    Endpoint["Nebius AI Serverless Endpoint<br/>Investigation + Scenario Generation"]
+    Jobs["Nebius Serverless Jobs<br/>Detector Tournament"]
+    Store["Artifacts<br/>Ground truth, metrics, reports"]
+
+    UI --> API
+    API --> Arena
+    API --> Endpoint
+    API --> Jobs
+    Arena --> Store
+    Endpoint --> Store
+    Jobs --> Store
+    Store --> UI
+```
+
+Quick Start: Get running in 5 minutes with local mock fallback. See [Quick Start](#quick-start) below, [docs/QUICKSTART.md](docs/QUICKSTART.md), or the challenge-focused [demo script](docs/demo-script.md).
 
 ## ⚠️ Disclaimer
 
@@ -15,6 +42,9 @@ This project is an educational simulation. It does not detect real market manipu
 Implemented:
 
 - AI Command Center as the primary UI entry point for AI investigation, scenario generation, detector tournaments, runtime status, and execution traces.
+- Nebius AI Investigation Team as the primary Serverless Endpoint feature: `POST /api/nebius/investigation-team/analyze` calls `/investigation-team` and returns specialist agent findings, consensus, timeline, and recommended action.
+- Nebius AI Scenario Generator: `POST /api/nebius/scenario-generator/generate` calls `/generate-market-abuse-scenario`, preserves ground truth, and projects generated scenarios into the existing Arena replay path.
+- Nebius AI Detector Tournament: `POST /api/nebius/tournament/start` runs the Serverless Job-compatible tournament runner locally by default and returns leaderboard, precision, recall, F1, false positives, false negatives, latency, summary, and artifacts.
 - Live React/FastAPI Market Workload Generator with WebSocket state, order-book visualization, scenario launch, detector scores, incidents, and report/replay workflows.
 - In-process `AgentManager` for hundreds of lightweight normal agents with per-tick deadlines and single-writer exchange application.
 - Separate `agent-runner` service for out-of-process agents over HTTP, while the backend keeps the exchange/order book authoritative.
@@ -22,7 +52,7 @@ Implemented:
 - Optional Google authentication behind `ENABLE_GOOGLE_AUTH=false` by default; local demo flows require no login.
 - Multiuser platform foundation with demo fallback identity, workspace metadata, case ownership, reviewer metadata, report attribution, and audit trail records for investigation actions.
 - Deterministic detector evidence model for synthetic spoofing-like, layering-like, quote-stuffing-like, and liquidity-shock patterns.
-- Nebius endpoint and job scaffolds with local typed fallbacks, Docker/config files, scripts, and UI control surfaces.
+- Nebius endpoint and job scaffolds with local typed fallbacks, Docker/config files, scripts, and UI control surfaces, including `/investigation-team`, `/generate-market-abuse-scenario`, `/investigation-report`, `/orderbook-alert`, and `/generate-smart-scenario`.
 - Phase 4.5 Managed Experiments with deterministic attack manifests, local smart-batch execution, artifact normalization, aggregation, bounded AI Investigator reports, and Detection review of summaries, leaderboards, markdown reports, artifact indexes, and original local-batch files.
 - Reduced demo navigation around AI Command Center, Workload Generator, and Docs / Demo.
 - Demo page for three deterministic 3-minute product demo paths: Real Nebius AI Run, Two-Model Pipeline, and Streaming Explanation.
@@ -78,14 +108,30 @@ Open http://localhost:5173 to land directly in the AI Command Center.
 
 Default demo flow:
 
-1. Generate or select a suspicious market scenario.
+1. Generate a Nebius AI scenario.
 2. Replay it in the Arena / Market Workload Generator.
 3. Create detector output and an incident.
-4. Send the incident to Nebius AI Serverless.
-5. Review the AI investigation/report.
-6. Optionally run an AI Detector Tournament.
+4. Run the Nebius AI Investigation Team.
+5. Run the Nebius AI Detector Tournament.
+6. Show leaderboard, metrics, and artifacts.
 
 For guided next steps, see [docs/QUICKSTART.md](docs/QUICKSTART.md), [docs/demo-surface-reduction.md](docs/demo-surface-reduction.md), and [docs/ui-theme.md](docs/ui-theme.md).
+
+## Architecture Decisions
+
+- **Serverless Endpoint for interactive AI**: AI investigation and scenario generation are latency-sensitive user actions. The backend shapes evidence, calls the Nebius AI Serverless Endpoint, validates structured JSON, persists the result, and falls back to deterministic local responses when credentials are absent.
+- **Serverless Jobs for batch benchmarks**: detector tournaments are embarrassingly parallel. Nebius Serverless Jobs run many synthetic scenario replays, compare detector predictions to ground truth, and write metrics, leaderboards, reports, and chart artifacts.
+- **Fallback mode for reliable judging**: local mock mode is deliberate, not a second-class path. It keeps the demo runnable offline while preserving the same API contracts, UI surfaces, and artifact schema used by the Nebius path.
+
+## Screenshot Checklist
+
+Capture these screens for submission:
+
+- AI Command Center with `Powered by Nebius AI Serverless Endpoint`.
+- Nebius AI Scenario Generator result with ground truth and replay route.
+- Nebius AI Investigation Team result with agent findings and evidence timeline.
+- Nebius AI Detector Tournament leaderboard with `Powered by Nebius Serverless Jobs`.
+- Artifact links for metrics, results, benchmark report, and charts.
 
 ## Development
 
@@ -195,15 +241,55 @@ The local experiment path writes synthetic benchmark evidence under `outputs/exp
 
 ## Environment Configuration
 
-Nebius endpoint wiring is configured only through environment variables. Leave the URLs unset for local mock fallback mode:
+Nebius endpoint and job wiring is configured through environment variables. Leave URLs and submit templates unset for local mock mode; the app still runs and labels fallback responses clearly.
 
 ```bash
-NEBIUS_TENANT_ID=your-tenant-id
+NEBIUS_API_KEY=optional-token-for-endpoint-or-model-calls
+NEBIUS_ENDPOINT_MODE=mock              # mock | ai
+NEBIUS_MODEL=meta-llama/Meta-Llama-3.1-8B-Instruct
 NEBIUS_ENDPOINT_BASE_URL=https://your-nebius-endpoint
-NEBIUS_API_KEY=optional-token
 ```
 
-The backend derives `POST /explain-event`, `POST /generate-scenario`, `POST /orderbook-alert`, and `POST /investigation-report` from `NEBIUS_ENDPOINT_BASE_URL`. Set `NEBIUS_INCIDENT_EXPLAINER_URL` and `NEBIUS_SCENARIO_GENERATOR_URL` only if you need explicit per-route overrides.
+The backend derives Endpoint routes from `NEBIUS_ENDPOINT_BASE_URL`. Set explicit `NEBIUS_*_URL` overrides only when a deployed endpoint uses different route URLs:
+
+- `NEBIUS_INCIDENT_EXPLAINER_URL`
+- `NEBIUS_SCENARIO_GENERATOR_URL`
+- `NEBIUS_MARKET_ABUSE_SCENARIO_URL`
+- `NEBIUS_ORDERBOOK_ALERT_URL`
+- `NEBIUS_INVESTIGATION_REPORT_URL`
+- `NEBIUS_INVESTIGATION_TEAM_URL`
+
+Local mock mode:
+
+- `NEBIUS_ENDPOINT_MODE=mock`
+- no `NEBIUS_API_KEY` required
+- no Google login required
+- all primary demo actions return deterministic structured responses
+
+Real Nebius integration path:
+
+- deploy `serverless/endpoint/app.py` as the Nebius AI Serverless Endpoint
+- set `NEBIUS_ENDPOINT_BASE_URL` or the route-specific `NEBIUS_*_URL` variables
+- set `NEBIUS_API_KEY` when the endpoint/model gateway requires auth
+- configure `NEBIUS_JOB_IMAGE` and `NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE` for real Nebius Serverless Jobs
+
+Nebius AI Scenario Generator:
+
+```bash
+curl -X POST http://localhost:8000/api/nebius/scenario-generator/generate \
+  -H 'Content-Type: application/json' \
+  -d '{"manipulation_type":"spoofing","difficulty":"medium","symbol":"AIMD","duration_ticks":120,"liquidity_regime":"thin","volatility_regime":"high","seed":42}'
+```
+
+The response includes `ground_truth`, simulator-compatible `events`, `expected_detector_behavior`, and replay projection metadata. With no Nebius credentials, deterministic mock generation remains enabled.
+
+Nebius AI Detector Tournament:
+
+```bash
+curl -X POST http://localhost:8000/api/nebius/tournament/start \
+  -H 'Content-Type: application/json' \
+  -d '{"number_of_scenarios":100,"manipulation_types":["spoofing","layering","quote_stuffing"],"difficulty_mix":{"easy":0.2,"medium":0.5,"hard":0.2,"adversarial":0.1},"detector_set":["spoofing_like","layering_like","quote_stuffing"],"random_seed":42,"execution_mode":"local_mock"}'
+```
 
 Phase 4 reproducibility:
 

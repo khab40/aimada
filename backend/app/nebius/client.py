@@ -8,6 +8,24 @@ from urllib.request import Request, urlopen
 from pydantic import BaseModel, Field
 
 from app.config import get_settings
+from app.nebius.investigation_team import (
+    AIInvestigationAgentFinding,
+    AIInvestigationTeamRequest,
+    AIInvestigationTeamResponse,
+    AgentFinding,
+    EvidenceItem,
+    EvidenceTimelineItem,
+    mock_response as mock_investigation_team_response,
+    normalize_response as normalize_investigation_team_response,
+    prepare_payload as prepare_investigation_team_payload,
+)
+from app.nebius.scenario_generator import (
+    CanonicalMarketAbuseScenario,
+    MarketAbuseScenarioGenerationRequest,
+    mock_response as mock_market_abuse_scenario_response,
+    normalize_response as normalize_market_abuse_scenario_response,
+    prepare_payload as prepare_market_abuse_scenario_payload,
+)
 from app.schemas.arena import Incident
 
 
@@ -111,6 +129,8 @@ class NebiusIntegrationStatus(BaseModel):
     scenario_generator_configured: bool
     orderbook_alert_configured: bool
     investigation_report_configured: bool
+    investigation_team_configured: bool
+    market_abuse_scenario_configured: bool
     api_key_configured: bool
     endpoint_mode: str
     endpoint_base_url: str | None = None
@@ -133,6 +153,8 @@ class NebiusClient:
         scenario_generator_url: str | None = None,
         orderbook_alert_url: str | None = None,
         investigation_report_url: str | None = None,
+        investigation_team_url: str | None = None,
+        market_abuse_scenario_url: str | None = None,
         api_key: str | None = None,
         timeout_seconds: float = 5.0,
     ) -> None:
@@ -156,6 +178,16 @@ class NebiusClient:
             investigation_report_url
             if investigation_report_url is not None
             else settings.nebius_investigation_report_endpoint_url
+        )
+        self.investigation_team_url = (
+            investigation_team_url
+            if investigation_team_url is not None
+            else settings.nebius_investigation_team_endpoint_url
+        )
+        self.market_abuse_scenario_url = (
+            market_abuse_scenario_url
+            if market_abuse_scenario_url is not None
+            else settings.nebius_market_abuse_scenario_endpoint_url
         )
         self.api_key = api_key if api_key is not None else settings.nebius_api_key
         self.timeout_seconds = timeout_seconds
@@ -229,6 +261,45 @@ class NebiusClient:
                 reason=f"Nebius investigation report fallback: {exc}",
             )
 
+    def analyze_investigation_team(self, request: AIInvestigationTeamRequest) -> AIInvestigationTeamResponse:
+        payload = prepare_investigation_team_payload(request)
+        if not self.investigation_team_url:
+            return self._mock_investigation_team(
+                payload,
+                reason="NEBIUS_INVESTIGATION_TEAM_URL or NEBIUS_ENDPOINT_BASE_URL is not configured",
+            )
+        try:
+            response = self._post_json(self.investigation_team_url, payload.model_dump(mode="json"))
+            return self._parse_investigation_team_response(response, endpoint=self.investigation_team_url)
+        except (HTTPError, URLError, TimeoutError, json.JSONDecodeError, ValueError) as exc:
+            return self._mock_investigation_team(
+                payload,
+                reason=f"Nebius investigation team fallback: {exc}",
+            )
+
+    def generate_market_abuse_scenario(
+        self,
+        request: MarketAbuseScenarioGenerationRequest,
+    ) -> CanonicalMarketAbuseScenario:
+        payload = prepare_market_abuse_scenario_payload(request)
+        if not self.market_abuse_scenario_url:
+            return self._mock_market_abuse_scenario(
+                payload,
+                reason="NEBIUS_MARKET_ABUSE_SCENARIO_URL or NEBIUS_ENDPOINT_BASE_URL is not configured",
+            )
+        try:
+            response = self._post_json(self.market_abuse_scenario_url, payload.model_dump(mode="json"))
+            return self._parse_market_abuse_scenario_response(
+                response,
+                request=payload,
+                endpoint=self.market_abuse_scenario_url,
+            )
+        except (HTTPError, URLError, TimeoutError, json.JSONDecodeError, ValueError) as exc:
+            return self._mock_market_abuse_scenario(
+                payload,
+                reason=f"Nebius market-abuse scenario generator fallback: {exc}",
+            )
+
     def integration_status(self) -> NebiusIntegrationStatus:
         settings = get_settings()
         cli_path = shutil.which("nebius")
@@ -252,6 +323,8 @@ class NebiusClient:
             scenario_generator_configured=bool(settings.nebius_scenario_endpoint_url),
             orderbook_alert_configured=bool(settings.nebius_orderbook_alert_endpoint_url),
             investigation_report_configured=bool(settings.nebius_investigation_report_endpoint_url),
+            investigation_team_configured=bool(settings.nebius_investigation_team_endpoint_url),
+            market_abuse_scenario_configured=bool(settings.nebius_market_abuse_scenario_endpoint_url),
             api_key_configured=bool(settings.nebius_api_key),
             endpoint_mode=settings.nebius_endpoint_mode,
             endpoint_base_url=settings.nebius_endpoint_base_url,
@@ -437,6 +510,25 @@ class NebiusClient:
             raw_response=response,
         )
 
+    def _parse_investigation_team_response(
+        self,
+        response: dict[str, Any],
+        *,
+        endpoint: str,
+    ) -> AIInvestigationTeamResponse:
+        return normalize_investigation_team_response(response, endpoint=endpoint, mode="nebius")
+
+    def _parse_market_abuse_scenario_response(
+        self,
+        response: dict[str, Any],
+        *,
+        request: MarketAbuseScenarioGenerationRequest,
+        endpoint: str,
+    ) -> CanonicalMarketAbuseScenario:
+        source = response.get("source") if isinstance(response.get("source"), dict) else {}
+        mode = "mock" if source.get("mode") == "mock" or response.get("model_mode") == "deterministic_fallback" else "nebius"
+        return normalize_market_abuse_scenario_response(response, request=request, endpoint=endpoint, mode=mode)
+
     def _mock_explanation(self, incident: Incident, *, reason: str) -> IncidentExplanationResponse:
         return IncidentExplanationResponse(
             mode="mock",
@@ -547,6 +639,22 @@ class NebiusClient:
                 "Archive benchmark artifacts with the submission.",
             ],
         )
+
+    def _mock_investigation_team(
+        self,
+        request: AIInvestigationTeamRequest,
+        *,
+        reason: str,
+    ) -> AIInvestigationTeamResponse:
+        return mock_investigation_team_response(request, reason=reason)
+
+    def _mock_market_abuse_scenario(
+        self,
+        request: MarketAbuseScenarioGenerationRequest,
+        *,
+        reason: str,
+    ) -> CanonicalMarketAbuseScenario:
+        return mock_market_abuse_scenario_response(request, reason=reason)
 
 
 NebiusAIClient = NebiusClient

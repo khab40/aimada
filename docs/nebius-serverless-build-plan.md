@@ -160,7 +160,7 @@ Response:
 
 ### Objective
 
-Make scenario setup AI-assisted. Nebius AI Serverless generates bounded synthetic attack scenarios that can be injected into Arena and benchmark jobs.
+Make scenario setup AI-assisted. Nebius AI Serverless generates bounded synthetic market-abuse scenarios that can be replayed in Arena and reused by benchmark jobs.
 
 ### Current Code To Reuse
 
@@ -169,22 +169,41 @@ Make scenario setup AI-assisted. Nebius AI Serverless generates bounded syntheti
 - `POST /api/nebius/attack-scenario`
 - `POST /api/nebius/attack-scenario/variants`
 - `POST /api/nebius/attack-scenario/{scenario_id}/inject`
-- `POST /generate-smart-scenario` in `serverless/endpoint/app.py`
+- `POST /generate-scenario` and `POST /generate-smart-scenario` in `serverless/endpoint/app.py`
 - `AttackScenarioGeneratorPage.tsx`
 - `AttackBuilder.tsx`
+- `SimulationEngine.launch_scenario()` in `backend/app/arena/engine.py`
 
 ### Backend Changes
 
 - Keep existing `AttackScenarioInput`, `AttackScenario`, and `ScenarioGridRequest` models in `routes_nebius.py`.
-- Add a promoted route alias only if product copy needs it; do not break current `/api/nebius/*` routes.
-- Persist generated scenarios to `nebius/attack_scenarios.jsonl`.
-- Keep `inject` path as bridge into Arena workload generation.
+- Add `backend/app/nebius/scenario_generator.py` for the canonical Phase 2 schema:
+  - `MarketAbuseScenarioGenerationRequest`
+  - `ScenarioEvent`
+  - `ScenarioGroundTruth`
+  - `ExpectedDetectorBehavior`
+  - `CanonicalMarketAbuseScenario`
+- Add promoted route:
+
+```http
+POST /api/nebius/scenario-generator/generate
+```
+
+- Keep current `/api/nebius/attack-scenario*` routes as compatibility paths.
+- Persist canonical scenarios to `nebius/generated_market_abuse_scenarios.jsonl`.
+- Also persist an `AttackScenario` projection to `nebius/attack_scenarios.jsonl` so the existing inject path remains the replay bridge.
 
 ### Serverless Endpoint / Job Changes
 
-- Reuse `POST /generate-smart-scenario`.
-- Keep model prompt in `serverless/endpoint/prompts.py`.
-- Validate generated values against the current bounded enum contract before returning to backend.
+- Add endpoint:
+
+```http
+POST /generate-market-abuse-scenario
+```
+
+- Keep `/generate-scenario` and `/generate-smart-scenario` as aliases/compatibility routes.
+- Keep model prompts in `serverless/endpoint/prompts.py`.
+- Validate generated values against the canonical enum contract before returning to backend.
 - No Serverless Job dependency in Phase 2; jobs consume generated scenario ids later.
 
 ### Frontend Changes
@@ -194,10 +213,15 @@ Make scenario setup AI-assisted. Nebius AI Serverless generates bounded syntheti
 - `AttackScenarioGeneratorPage.tsx` should show only demo-relevant controls by default:
   - manipulation type
   - difficulty
+  - symbol
   - duration
+  - liquidity regime
+  - volatility regime
   - generate
   - run in Arena
   - send to AI Investigation
+- Primary button label: `Generate AI Scenario`.
+- Generated result should show badge text: `Powered by Nebius AI Serverless Endpoint`.
 - Advanced controls stay behind `VITE_ENABLE_ADVANCED_ATTACK_CONTROLS`.
 
 ### Data Contracts
@@ -205,19 +229,19 @@ Make scenario setup AI-assisted. Nebius AI Serverless generates bounded syntheti
 Generate:
 
 ```http
-POST /api/nebius/attack-scenario
+POST /api/nebius/scenario-generator/generate
 Content-Type: application/json
 ```
 
 ```json
 {
-  "attackType": "Spoofing",
-  "marketCondition": "Thin liquidity",
-  "objective": "Buy cheaper",
-  "stealthLevel": "Medium",
-  "attackDuration": "Medium",
-  "redTeamAgentCount": 1,
-  "detectorDifficulty": "Medium"
+  "manipulation_type": "spoofing",
+  "difficulty": "medium",
+  "symbol": "AIMD",
+  "duration_ticks": 120,
+  "liquidity_regime": "thin",
+  "volatility_regime": "high",
+  "seed": 42
 }
 ```
 
@@ -225,22 +249,45 @@ Response:
 
 ```json
 {
-  "id": "scenario-20260706-001",
-  "name": "Spoofing pressure near mid",
-  "attackType": "spoofing",
-  "targetSide": "buy",
-  "objective": "Buy cheaper",
-  "marketRegime": "Thin liquidity",
-  "redTeamAgents": ["R-17"],
-  "startTick": 20,
-  "durationTicks": 80,
-  "stealthLevel": "medium",
-  "expectedDetectorDifficulty": "medium",
-  "expectedSignals": ["wall_size_ratio", "cancel_to_trade_ratio"],
-  "planSteps": ["place large visible bid", "cancel before execution"],
+  "scenario_id": "ai-spoofing-aimd-120-001",
+  "title": "Spoofing Pressure Near Mid",
+  "description": "Synthetic spoofing workload with visible bid-side depth that cancels before execution.",
+  "manipulation_type": "spoofing",
+  "difficulty": "medium",
+  "symbol": "AIMD",
+  "duration_ticks": 120,
+  "ground_truth": {
+    "label": "spoofing",
+    "manipulation_windows": [{"start_tick": 20, "end_tick": 96}],
+    "manipulator_agent_ids": ["AI-SPOOF-001"],
+    "expected_detector_targets": ["wall_size_ratio", "cancel_to_trade_ratio"],
+    "positive_event_ids": ["evt-0020-place", "evt-0024-cancel"]
+  },
+  "events": [
+    {
+      "event_id": "evt-0020-place",
+      "tick": 20,
+      "event_type": "place_order",
+      "agent_id": "AI-SPOOF-001",
+      "symbol": "AIMD",
+      "side": "buy",
+      "price": 99.75,
+      "quantity": 750,
+      "order_id": "ord-0020-a",
+      "metadata": {"intent": "visible_depth_pressure"}
+    }
+  ],
+  "expected_detector_behavior": {
+    "primary_signals": ["wall_size_ratio", "cancel_to_trade_ratio"],
+    "expected_risk_score": 0.76,
+    "false_positive_risk": "medium"
+  },
+  "explanation": "The workload creates transient visible depth and rapid cancellation without real execution.",
   "source": {
-    "mode": "nebius",
-    "endpoint": "https://<endpoint>/generate-smart-scenario"
+    "mode": "mock",
+    "provider": "nebius_serverless",
+    "endpoint": "/generate-market-abuse-scenario",
+    "model": "deterministic-template"
   }
 }
 ```
@@ -251,32 +298,47 @@ Inject:
 POST /api/nebius/attack-scenario/{scenario_id}/inject
 ```
 
+Replay mapping:
+
+| Generated type | Existing Arena route |
+| --- | --- |
+| `spoofing` | `spoofing-like` |
+| `layering` | `layering-like` |
+| `quote_stuffing` | `quote-stuffing` |
+| `wash_trading` | `mixed` projection until direct event replay exists |
+
 ### Fallback / Mock Behavior
 
-- Missing `NEBIUS_SCENARIO_GENERATOR_URL` returns deterministic scenario with `mode: "mock"`.
-- Generated scenario still stays launchable because backend builds `AttackScenario` before attaching source metadata.
-- UI must show local template mode when response source is mock.
+- Missing endpoint URL, API key, or invalid model JSON returns deterministic scenario with `source.mode: "mock"`.
+- Deterministic templates are keyed by manipulation type, difficulty, symbol, duration, liquidity regime, volatility regime, and seed.
+- Generated scenario stays launchable because backend writes the compatibility `AttackScenario` projection before returning.
+- Ground truth is never dropped in fallback.
+- UI must show local template mode when response source is mock or fallback.
 
 ### Demo Script
 
 1. Open `/nebius`.
 2. Choose `Scenario Generator`.
-3. Select `Spoofing`, `Medium`, `Medium`.
+3. Select `Spoofing`, `Medium`, `AIMD`, `120 ticks`, `Thin`, `High`.
 4. Generate scenario.
-5. Run in Arena.
-6. Send resulting incident to AI Investigation.
+5. Confirm `Powered by Nebius AI Serverless Endpoint` and source mode.
+6. Run in Arena.
+7. Send resulting incident to AI Investigation.
 
 ### Acceptance Criteria
 
 - Scenario generation works without credentials.
-- Generated scenario can be injected into Arena.
-- Response stores source mode.
+- Generated scenario can be injected into Arena through existing replay path.
+- Response stores source mode and ground truth.
+- UI shows `Powered by Nebius AI Serverless Endpoint`.
 - Advanced controls hidden by default.
-- No route removes existing `/api/nebius/attack-scenario*` behavior.
+- Existing `/api/nebius/attack-scenario*` and `/generate-smart-scenario` behavior remains.
 
 ### Risks And Shortcuts
 
-- Risk: generated scenario contains unsupported enum. Shortcut: backend maps to current `AttackScenario` contract and stores raw source separately.
+- Risk: generated scenario contains unsupported enum. Shortcut: backend validates canonical schema and falls back to deterministic templates.
+- Risk: canonical events are richer than current Arena replay. Shortcut: store events now and project to existing scenario names for replay.
+- Risk: `wash_trading` has no dedicated Arena route. Shortcut: replay through `mixed` projection until a direct event replay adapter exists.
 - Risk: scenario generator over-promises harm. Shortcut: endpoint prompt and safety note keep synthetic educational scope.
 - Risk: too many controls in demo. Shortcut: keep advanced panel feature-flagged.
 
@@ -284,16 +346,18 @@ POST /api/nebius/attack-scenario/{scenario_id}/inject
 
 ### Objective
 
-Run repeatable detector tournaments as Nebius Serverless Jobs. Jobs generate synthetic workloads, run detectors, write artifacts, and return metrics to the command center.
+Run repeatable detector tournaments as Nebius Serverless Jobs. Jobs generate or replay synthetic workloads, run detectors, compare predictions to synthetic ground truth, write artifacts, and return metrics to the command center.
 
 ### Current Code To Reuse
 
+- `serverless/jobs/detector_tournament.py`
 - `serverless/jobs/run_batch_experiments.py`
 - `serverless/jobs/render_job_config.py`
 - `serverless/jobs/nebius_job_config.yaml`
 - `backend/app/nebius/smart_batch_runner.py`
 - `backend/app/experiments/manager.py`
 - `backend/app/experiments/nebius_orchestrator.py`
+- `POST /api/experiments/benchmark-runs`
 - `POST /api/experiments`
 - `POST /api/experiments/{id}/run-local-batch`
 - `POST /api/experiments/{id}/render-nebius-job-config`
@@ -304,15 +368,32 @@ Run repeatable detector tournaments as Nebius Serverless Jobs. Jobs generate syn
 
 ### Backend Changes
 
-- Keep local batch as exact fallback path.
-- Use Managed Experiment ids as job correlation ids.
+- Add Nebius facade routes:
+
+```http
+POST /api/nebius/tournament/start
+GET /api/nebius/tournament/{id}
+GET /api/nebius/tournament/{id}/artifacts
+```
+
+- Keep existing experiment APIs working; facade wraps them instead of replacing them.
+- Use local `detector_tournament.py` as lightweight mock/local fallback.
+- Use Managed Experiment ids as job correlation ids for real Nebius Serverless Jobs.
 - Render job config into `experiments/{experiment_id}/nebius_job_config.rendered.yaml`.
 - Record job state in `experiments/{experiment_id}/jobs.jsonl`.
 - Normalize collected artifacts into `experiments/{experiment_id}/artifacts/`.
+- Persist facade state under `nebius/tournaments/{tournament_id}/` and append compact rows to `nebius/tournaments.jsonl`.
 
 ### Serverless Job Changes
 
-- Keep `run_batch_experiments.py` artifact contract:
+- Use `serverless/jobs/detector_tournament.py` for detector-set comparison:
+  - `metrics.csv`
+  - `results.json`
+  - `benchmark_report.md`
+  - `charts/f1_by_scenario.png`
+  - `charts/confidence_distribution.png`
+  - `charts/detection_latency.png`
+- Keep `run_batch_experiments.py` for artifact-heavy managed tournaments:
   - `order_book_events.jsonl`
   - `trades.jsonl`
   - `attack_labels.jsonl`
@@ -320,13 +401,22 @@ Run repeatable detector tournaments as Nebius Serverless Jobs. Jobs generate syn
   - `detector_metrics.csv`
   - `generated_report.md`
   - `manifest.json`
-- Keep `--runs`, `--batch-size`, `--scenarios`, and `--output` CLI args.
+- Keep `--runs`, `--scenarios`, `--detectors`, and `--output` CLI args for `detector_tournament.py`.
+- Keep `--runs`, `--batch-size`, `--scenarios`, and `--output` CLI args for `run_batch_experiments.py`.
 - Use `serverless/jobs/nebius_job_config.yaml` as base config.
 
 ### Frontend Changes
 
 - Keep Detector Tournament inside `NebiusControlPanelPage.tsx`.
-- Primary actions:
+- Add a simple `Start Tournament` flow over existing advanced controls.
+- Visible controls:
+  - number of scenarios
+  - manipulation types
+  - difficulty mix preset
+  - detector set
+  - random seed
+  - execution mode
+- Keep advanced actions available:
   - create benchmark
   - generate manifest
   - run local demo tournament
@@ -339,72 +429,86 @@ Run repeatable detector tournaments as Nebius Serverless Jobs. Jobs generate syn
 
 ### Data Contracts
 
-Create experiment:
+Start tournament:
 
 ```http
-POST /api/experiments
+POST /api/nebius/tournament/start
 Content-Type: application/json
 ```
 
 ```json
 {
-  "name": "AI-MADA detector tournament",
-  "attack_count": 100,
-  "batch_size": 20,
-  "scenarios": ["normal_market", "spoofing", "layering", "quote_stuffing", "pump_and_cancel"],
-  "seed": 42
+  "number_of_scenarios": 100,
+  "manipulation_types": ["spoofing", "layering", "quote_stuffing"],
+  "difficulty_mix": {
+    "easy": 0.2,
+    "medium": 0.5,
+    "hard": 0.2,
+    "adversarial": 0.1
+  },
+  "detector_set": ["spoofing_like", "layering_like", "quote_stuffing"],
+  "random_seed": 42,
+  "execution_mode": "local"
 }
 ```
 
-Run local fallback:
-
-```http
-POST /api/experiments/{experiment_id}/run-local-batch
-```
-
-Submit serverless job:
-
-```http
-POST /api/experiments/{experiment_id}/submit-nebius
-```
-
-Artifact manifest:
+Response:
 
 ```json
 {
-  "runs": 100,
-  "batch_size": 20,
-  "scenarios": ["normal_market", "spoofing"],
+  "tournament_id": "TRN-20260706-0001",
+  "status": "completed",
+  "started_at": "2026-07-06T10:00:00Z",
+  "completed_at": "2026-07-06T10:01:12Z",
+  "detectors": ["spoofing_like", "layering_like", "quote_stuffing"],
+  "leaderboard": [
+    {
+      "detector": "spoofing_like",
+      "scenario": "spoofing",
+      "precision": 1.0,
+      "recall": 0.75,
+      "f1": 0.8571,
+      "avg_detection_latency_ms": 1200
+    }
+  ],
+  "metrics": {
+    "total_scenarios": 100,
+    "total_alerts": 87,
+    "macro_f1": 0.81
+  },
   "artifacts": {
-    "order_book_event_logs": "outputs/.../order_book_events.jsonl",
-    "attack_labels": "outputs/.../attack_labels.jsonl",
-    "blue_team_alerts": "outputs/.../blue_team_alerts.jsonl",
-    "detector_metrics": "outputs/.../detector_metrics.csv",
-    "generated_report": "outputs/.../generated_report.md"
-  }
+    "results": "outputs/benchmark/TRN-20260706-0001/results.json",
+    "metrics": "outputs/benchmark/TRN-20260706-0001/metrics.csv",
+    "report": "outputs/benchmark/TRN-20260706-0001/benchmark_report.md"
+  },
+  "summary": "Local detector tournament completed with deterministic synthetic ground truth."
 }
 ```
 
 ### Fallback / Mock Behavior
 
 - If job submit template is missing, `submit-nebius` records `real_nebius_pending`.
-- Local path runs `run_local_smart_batch()` and writes the same artifact names.
+- Local facade path runs `detector_tournament.py` and returns local leaderboard/artifacts.
+- Managed local batch path runs `run_local_smart_batch()` and writes canonical experiment artifact names.
 - Aggregation reads local and collected cloud artifacts through the same experiment artifact paths.
 
 ### Demo Script
 
 1. Open `/nebius`.
-2. Create detector tournament.
-3. Generate manifest.
-4. Run Local Demo tournament.
-5. Aggregate and show leaderboard.
-6. Render job config.
-7. Submit serverless job or show pending template status.
-8. Collect artifacts when job outputs are available.
+2. Start Detector Tournament.
+3. Set `number_of_scenarios=100`.
+4. Select `spoofing`, `layering`, `quote_stuffing`.
+5. Choose balanced difficulty mix and detector set.
+6. Run Local Demo tournament.
+7. Show leaderboard, macro F1, latency, and artifacts.
+8. Switch to Cloud.
+9. Render or submit serverless job.
+10. Show pending template status or collect artifacts when job outputs are available.
 
 ### Acceptance Criteria
 
-- Local tournament produces canonical artifacts.
+- UI can start a tournament.
+- Local/mock tournament produces leaderboard and artifacts.
 - Serverless job config renders from experiment settings.
 - Missing Nebius submit config does not break demo.
 - Aggregation produces summary and leaderboard.
@@ -414,6 +518,8 @@ Artifact manifest:
 
 - Risk: remote job setup unavailable during demo. Shortcut: show rendered config and pending job record.
 - Risk: artifact paths differ between local and remote. Shortcut: normalize into experiment artifact contract.
+- Risk: `wash_trading` is not a native simulator scenario. Shortcut: map to `pump_and_cancel` or manifest metadata until direct replay exists.
+- Risk: difficulty mix is not native simulator physics. Shortcut: store it in manifest and use it to weight scenario selection first.
 - Risk: large runs cost too much. Shortcut: default demo uses `attack_count=100`, `batch_size=20`; hard cap existing APIs.
 
 ## Cross-Phase API Map
@@ -422,7 +528,7 @@ Artifact manifest:
 | --- | --- | --- | --- | --- |
 | Investigation | Run AI Investigation | `POST /api/nebius/investigation-report` or `POST /api/experiments/{id}/run-investigations` | Endpoint `/investigation-report` | `nebius/investigation_reports.jsonl`, `experiments/{id}/investigations/` |
 | Scenario Generator | Generate scenario | `POST /api/nebius/attack-scenario` | Endpoint `/generate-smart-scenario` | `nebius/attack_scenarios.jsonl` |
-| Detector Tournament | Submit job | `POST /api/experiments/{id}/submit-nebius` | Serverless Job `run_batch_experiments.py` | `experiments/{id}/jobs.jsonl`, artifact paths |
+| Detector Tournament | Start tournament | `POST /api/nebius/tournament/start` | Serverless Job `detector_tournament.py` or `run_batch_experiments.py` | `nebius/tournaments/{id}/`, experiment artifact paths |
 
 ## Environment Variables
 

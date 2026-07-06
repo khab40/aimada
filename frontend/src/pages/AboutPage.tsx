@@ -105,10 +105,10 @@ export function AboutPage() {
             calls the FastAPI backend, and the backend calls Nebius.
           </p>
           <ul>
-            <li><strong>Nebius AI:</strong> scores order-book windows at <code>/orderbook-alert</code>.</li>
-            <li><strong>AI Investigator:</strong> generates reports through the backend report adapter.</li>
-            <li><strong>Scenario Generator:</strong> drafts bounded red-team scenarios through the backend adapter.</li>
-            <li><strong>Experiment jobs:</strong> run batches and generate labeled event/snapshot datasets.</li>
+            <li><strong>Nebius AI Serverless Endpoint:</strong> scores order-book windows and powers interactive AI calls.</li>
+            <li><strong>Nebius AI Investigation Team:</strong> generates reports through the backend report adapter.</li>
+            <li><strong>Nebius AI Scenario Generator:</strong> drafts bounded red-team scenarios through the backend adapter.</li>
+            <li><strong>Nebius Serverless Jobs:</strong> run detector tournaments and generate labeled benchmark artifacts.</li>
           </ul>
         </section>
 
@@ -129,10 +129,10 @@ export function AboutPage() {
             <li>Build and run the full local stack: <code>docker compose up --build</code>.</li>
             <li>Open the UI at <code>http://localhost:5173/arena</code>.</li>
             <li>Click <code>Start</code>, then launch a red-team scenario.</li>
-            <li>When an incident appears, open Incident Details and run AI Investigator.</li>
-            <li>Use Attack Scenario Generator for concrete red-team plans that can be injected, expanded into grids, or submitted to Nebius batches.</li>
-            <li>Use Detection for detector scores, suspicious agents, evidence, reports, replay windows, and AI Investigator review.</li>
-            <li>Use Nebius AI for the full cloud workflow: scenario creation, cloud batch runs, detector scoring, explanations, and artifact storage.</li>
+            <li>When an incident appears, open Incident Details and run Nebius AI Investigation Team.</li>
+            <li>Use Nebius AI Scenario Generator for concrete red-team plans that can be injected, expanded into grids, or submitted to Nebius batches.</li>
+            <li>Use Detection for detector scores, suspicious agents, evidence, reports, replay windows, and Nebius AI Investigation Team review.</li>
+            <li>Use Nebius AI for the full cloud workflow: scenario creation, Nebius Serverless Jobs, detector scoring, explanations, and artifact storage.</li>
           </ol>
           <p>
             In mock endpoint mode, Docker Compose runs the local serverless endpoint and the backend calls

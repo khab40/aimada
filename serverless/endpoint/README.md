@@ -6,6 +6,7 @@ It exposes the AI surfaces used by the backend:
 
 - `GET /health`
 - `POST /orderbook-alert`
+- `POST /investigation-team`
 - `POST /investigation-report`
 - `POST /explain-event`
 - `POST /explain-simulation`
@@ -13,6 +14,7 @@ It exposes the AI surfaces used by the backend:
 - `POST /generate-incident-report`
 - `POST /generate-scenario`
 - `POST /generate-smart-scenario`
+- `POST /generate-market-abuse-scenario`
 
 ## Modes
 
@@ -76,6 +78,22 @@ curl -X POST http://localhost:9000/generate-scenario \
   }'
 ```
 
+Generate canonical market-abuse scenario:
+
+```bash
+curl -X POST http://localhost:9000/generate-market-abuse-scenario \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "manipulation_type":"spoofing",
+    "difficulty":"medium",
+    "symbol":"AIMD",
+    "duration_ticks":120,
+    "liquidity_regime":"thin",
+    "volatility_regime":"high",
+    "seed":42
+  }'
+```
+
 Score an order-book window:
 
 ```bash
@@ -98,6 +116,7 @@ NEBIUS_ENDPOINT_BASE_URL=http://<endpoint>
 # Optional per-route overrides:
 NEBIUS_INCIDENT_EXPLAINER_URL=http://<endpoint>/explain-event
 NEBIUS_SCENARIO_GENERATOR_URL=http://<endpoint>/generate-scenario
+NEBIUS_MARKET_ABUSE_SCENARIO_URL=http://<endpoint>/generate-market-abuse-scenario
 NEBIUS_ORDERBOOK_ALERT_URL=http://<endpoint>/orderbook-alert
 NEBIUS_INVESTIGATION_REPORT_URL=http://<endpoint>/investigation-report
 NEBIUS_API_KEY=<optional endpoint token>

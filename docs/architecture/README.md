@@ -24,9 +24,9 @@ Status as of 2026-07-04:
 | [ARD-0012](ARD-0012-google-authentication.md) | `[done]` | Refresh tokens, revocation, asymmetric signing, and external secret management are future work |
 | [ARD-0013](ARD-0013-ui-shell-preferences.md) | `[done]` | Screenshot capture and broader light-mode chart tuning are future work |
 | [ARD-0014](ARD-0014-multiuser-platform-foundation.md) | `[partial]` | Durable backend workspace/case/audit tables and assignment APIs are future work |
-| [ARD-001](ARD-001-nebius-ai-investigation-team.md) | `[proposed]` | Promote investigation endpoint as primary Nebius AI Serverless workflow |
-| [ARD-002](ARD-002-ai-scenario-generator.md) | `[proposed]` | Promote scenario generation endpoint as AI Scenario Generator workflow |
-| [ARD-003](ARD-003-ai-detector-tournament.md) | `[proposed]` | Promote serverless jobs as AI Detector Tournament workflow |
+| [ARD-001](ARD-001-nebius-ai-investigation-team.md) | `[done]` | Investigation endpoint is the primary interactive Nebius AI Serverless workflow |
+| [ARD-002](ARD-002-ai-scenario-generator.md) | `[done]` | Scenario generation endpoint produces simulator-compatible AI Scenario Generator workloads |
+| [ARD-003](ARD-003-ai-detector-tournament.md) | `[done]` | Serverless Jobs contract and local fallback power the AI Detector Tournament workflow |
 
 Current UI architecture note: the product shell now exposes AI Command Center, Arena / Workload Generator, and Docs / Demo as the primary demo destinations. Scenario setup, incidents, investigations, detector tournaments, deployment status, and experiment artifacts are folded into the AI Command Center or linked from the active workflow. The About and ARD-0001 diagrams document the four execution areas: Front, Back, Agent Runners Workspace, and Nebius Serverless Cloud.
 

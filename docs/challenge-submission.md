@@ -8,13 +8,15 @@ AI Market Abuse Detection Arena is a visual, synthetic, serverless learning aren
 - Detector outputs for spoofing-like, layering-like, quote-stuffing-like, and liquidity-shock patterns.
 - A React arena UI showing order-book state, charts, agent activity, alerts, and incident details.
 - Nebius AI endpoints that explain events, summarize simulations, and generate incident reports.
-- A batch benchmark path that runs many labeled synthetic scenarios and reports precision, recall, and F1.
+- AI Detector Tournament using Nebius Serverless Jobs as the batch compute layer.
+- A local fallback benchmark path that runs labeled synthetic scenarios and reports precision, recall, F1, false positives, false negatives, and latency.
 
 ## Intended Submission Assets
 
 - Demo video showing live scenario launch, alert generation, and explanation flow.
 - Screenshots for the arena view, benchmark view, and Incident Details.
 - Benchmark report generated from synthetic scenarios.
+- Detector tournament artifacts from `POST /api/nebius/tournament/start`, including `metrics.csv`, `results.json`, charts, and `benchmark_report.md`.
 - Architecture diagram and deployment notes.
 
 ## Evaluation Framing

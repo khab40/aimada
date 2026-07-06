@@ -6,7 +6,8 @@ from urllib.error import URLError
 from app.api.routes_incidents import build_compact_replay_payload, persist_explanation_result
 from app.arena.engine import SimulationEngine
 from app.config import get_settings
-from app.nebius.client import InvestigationReportRequest, NebiusClient, OrderBookAlertRequest
+from app.nebius.client import AIInvestigationTeamRequest, InvestigationReportRequest, NebiusClient, OrderBookAlertRequest
+from app.nebius.scenario_generator import MarketAbuseScenarioGenerationRequest, project_attack_scenario
 from app.storage.local_store import LocalStore
 
 
@@ -196,6 +197,30 @@ def test_nebius_client_generates_mock_red_team_scenario_without_endpoint() -> No
     assert scenario.fallback_reason == "NEBIUS_SCENARIO_GENERATOR_URL is not configured"
 
 
+def test_nebius_client_generates_mock_market_abuse_scenario_without_endpoint() -> None:
+    scenario = NebiusClient(market_abuse_scenario_url="").generate_market_abuse_scenario(
+        MarketAbuseScenarioGenerationRequest(
+            manipulation_type="layering",
+            difficulty="hard",
+            symbol="NBS",
+            duration_ticks=180,
+            liquidity_regime="thin",
+            volatility_regime="high",
+            seed=7,
+        )
+    )
+    projection = project_attack_scenario(scenario)
+
+    assert scenario.mode == "mock"
+    assert scenario.manipulation_type == "layering"
+    assert scenario.ground_truth.label == "layering"
+    assert scenario.events
+    assert scenario.replay["route"] == "layering-like"
+    assert projection["id"] == scenario.scenario_id
+    assert projection["attackType"] == "layering"
+    assert projection["source"]["ground_truth"]["label"] == "layering"
+
+
 def test_nebius_client_status_reports_cli_shape(monkeypatch: Any) -> None:
     monkeypatch.setenv("NEBIUS_ENDPOINT_BASE_URL", "")
     get_settings.cache_clear()
@@ -210,6 +235,7 @@ def test_nebius_client_status_reports_cli_shape(monkeypatch: Any) -> None:
     assert isinstance(status.incident_explainer_configured, bool)
     assert isinstance(status.orderbook_alert_configured, bool)
     assert isinstance(status.investigation_report_configured, bool)
+    assert isinstance(status.investigation_team_configured, bool)
 
 
 def test_nebius_endpoint_base_url_derives_backend_routes(monkeypatch: Any) -> None:
@@ -247,12 +273,14 @@ def test_nebius_endpoint_base_url_derives_backend_routes(monkeypatch: Any) -> No
 
         assert client.incident_explainer_url == "https://nebius-endpoint.example/explain-event"
         assert client.scenario_generator_url == "https://nebius-endpoint.example/generate-scenario"
+        assert client.market_abuse_scenario_url == "https://nebius-endpoint.example/generate-market-abuse-scenario"
         assert client.orderbook_alert_url == "https://nebius-endpoint.example/orderbook-alert"
         assert client.investigation_report_url == "https://nebius-endpoint.example/investigation-report"
         assert status.incident_explainer_configured is True
         assert status.scenario_generator_configured is True
         assert status.orderbook_alert_configured is True
         assert status.investigation_report_configured is True
+        assert status.investigation_team_configured is True
         assert status.endpoint_base_url_configured is True
         assert status.endpoint_health == {"status": "ok", "endpoint_mode": "ai"}
         assert captured["url"] == "https://nebius-endpoint.example/health"
@@ -384,6 +412,93 @@ def test_nebius_client_posts_investigation_report_to_deployed_endpoint(monkeypat
     assert response.mode == "nebius"
     assert response.endpoint == "https://endpoint.example/investigation-report"
     assert response.title == "Endpoint report"
+
+
+def test_nebius_client_posts_investigation_team_to_deployed_endpoint(monkeypatch: Any) -> None:
+    captured: dict[str, Any] = {}
+
+    class FakeResponse:
+        def __enter__(self) -> "FakeResponse":
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+        def read(self) -> bytes:
+            return json.dumps(
+                {
+                    "investigation_id": "INV-1",
+                    "manipulation_type": "spoofing",
+                    "risk_score": 0.88,
+                    "confidence": 0.91,
+                    "agents": [
+                        {
+                            "name": "OrderBookExpertAgent",
+                            "role": "Order book reviewer",
+                            "finding": "wall detected",
+                            "confidence": 0.9,
+                            "evidence": ["wall_size_ratio=8.2"],
+                        }
+                    ],
+                    "consensus": "spoofing likely",
+                    "evidence_timeline": ["wall placed", "wall canceled"],
+                    "recommended_action": "review replay",
+                    "executive_summary": "team summary",
+                }
+            ).encode("utf-8")
+
+    def fake_urlopen(request: Any, timeout: float) -> FakeResponse:
+        captured["url"] = request.full_url
+        captured["method"] = request.get_method()
+        captured["authorization"] = request.get_header("Authorization")
+        captured["payload"] = json.loads(request.data.decode("utf-8"))
+        return FakeResponse()
+
+    monkeypatch.setattr("app.nebius.client.urlopen", fake_urlopen)
+
+    response = NebiusClient(
+        investigation_team_url="https://endpoint.example/investigation-team",
+        api_key="test-token",
+    ).analyze_investigation_team(
+        AIInvestigationTeamRequest(
+            incident={"incident_id": "INC-1", "type": "spoofing", "confidence": 0.9},
+            detector_outputs=[{"detector": "wall", "confidence": 0.91}],
+            market_metrics={"wall_size_ratio": 8.2},
+        )
+    )
+
+    assert captured["url"] == "https://endpoint.example/investigation-team"
+    assert captured["method"] == "POST"
+    assert captured["authorization"] == "Bearer test-token"
+    assert captured["payload"]["incident"]["incident_id"] == "INC-1"
+    assert response.mode == "nebius"
+    assert response.investigation_id == "INV-1"
+    assert response.agents[0].name == "OrderBookExpertAgent"
+
+
+def test_nebius_client_investigation_team_mock_is_deterministic() -> None:
+    response = NebiusClient(investigation_team_url="").analyze_investigation_team(
+        AIInvestigationTeamRequest(
+            incident={"incident_id": "INC-1", "type": "spoofing", "confidence": 0.88, "tick": 12},
+            detector_outputs=[{"detected_pattern": "spoofing_like_wall", "confidence": 0.91}],
+            order_book_context={"events": [{"type": "quote"}]},
+            trades=[{"price": 100.0}],
+            market_metrics={"wall_size_ratio": 8.2, "cancel_to_trade_ratio": 5.4},
+        )
+    )
+
+    assert response.mode == "mock"
+    assert response.investigation_id == "INC-1"
+    assert response.manipulation_type == "spoofing"
+    assert response.risk_score == 0.91
+    assert [agent.name for agent in response.agents] == [
+        "OrderBookExpertAgent",
+        "TradePatternAgent",
+        "StatisticsAgent",
+        "ComplianceAgent",
+        "LeadInvestigatorAgent",
+    ]
+    assert response.evidence_timeline
 
 
 def test_nebius_client_falls_back_when_deployed_endpoint_fails(monkeypatch: Any) -> None:

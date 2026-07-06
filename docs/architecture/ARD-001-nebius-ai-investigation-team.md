@@ -1,6 +1,6 @@
 # ARD-001: Nebius AI Investigation Team
 
-Status: Proposed
+Status: Done
 
 Date: 2026-07-06
 

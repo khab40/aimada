@@ -149,12 +149,12 @@ describe("Core UI navigation and workflow contracts", () => {
   it("keeps the AI command center focused on runtime, investigation, benchmark, and trace", () => {
     expectIncludes(nebius, [
       "AI Command Center",
-      "Powered by Nebius AI Serverless",
-      "Serverless Endpoint",
-      "Investigation Team",
-      "Scenario Generator",
-      "Jobs & Artifacts",
-      "Detector Tournament",
+      "Powered by Nebius AI Serverless Endpoint",
+      "Nebius AI Serverless Endpoint",
+      "Nebius AI Investigation Team",
+      "Nebius AI Scenario Generator",
+      "Nebius Serverless Jobs",
+      "Nebius AI Detector Tournament",
       "title=\"Runtime\"",
       "Demo Scenarios",
       "Local Lightweight Demo",
@@ -163,12 +163,28 @@ describe("Core UI navigation and workflow contracts", () => {
       "Full Platform Demo",
       "demoScenario",
       "navigate(`/attack-scenarios?",
-      "title=\"AI Investigation\"",
-      "title=\"AI Detector Tournament\"",
+      "title=\"Nebius AI Scenario Generator\"",
+      "Generate Nebius AI Scenario",
+      "Powered by Nebius AI Serverless Endpoint",
+      "Replay in Arena",
+      "Ground truth",
+      "generateMarketAbuseScenario",
+      "injectNebiusAttackScenario",
+      "title=\"Nebius AI Investigation Team\"",
+      "title=\"Nebius AI Detector Tournament\"",
+      "Run Nebius AI Detector Tournament",
+      "Powered by Nebius Serverless Jobs",
+      "startDetectorTournament",
       "Run local or serverless detector tournaments",
       "title=\"Execution Trace\"",
       "Scenario Setup",
       "Workload Generator",
+      "Run Nebius AI Investigation Team",
+      "Final verdict",
+      "Agent findings",
+      "Evidence timeline",
+      "Recommended action",
+      "runAIInvestigationTeam",
       "Explain current incident",
       "Switch to Cloud to run this explanation on a real endpoint.",
       "Compare models",
@@ -199,7 +215,7 @@ describe("Core UI navigation and workflow contracts", () => {
       "No credentials, Google login, or deployment are required in Local Demo",
       "deterministic mock results"
     ]);
-    assert.equal((nebius.match(/<InfrastructureSection/g) ?? []).length, 4);
+    assert.equal((nebius.match(/<InfrastructureSection/g) ?? []).length, 5);
     assert.doesNotMatch(nebius, /title="Models"/);
     assert.doesNotMatch(nebius, /title="Inference"/);
     assert.doesNotMatch(nebius, /title="Batch Jobs"/);
