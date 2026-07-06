@@ -1,6 +1,6 @@
 # Demo Surface Reduction
 
-AIMADA is now positioned as a Nebius AI Serverless-powered market surveillance command center. The default product surface prioritizes the Nebius AI Command Center, with the Arena serving as a Market Workload Generator.
+AIMADA is now positioned as a Nebius AI Serverless-powered market surveillance command center. The default product surface prioritizes the AI Command Center, with the Arena serving as a Market Workload Generator.
 
 ## Default Demo Flow
 
@@ -13,10 +13,8 @@ AIMADA is now positioned as a Nebius AI Serverless-powered market surveillance c
 
 ## Default Navigation
 
-- Nebius Command Center
+- AI Command Center
 - Arena / Workload Generator
-- Incidents / Investigations
-- Detector Benchmark
 - Docs / Demo
 
 Secondary pages and advanced setup remain in the codebase but are not prominent in the default demo.

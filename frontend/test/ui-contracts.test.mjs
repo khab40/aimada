@@ -75,19 +75,17 @@ describe("Core UI navigation and workflow contracts", () => {
 
   it("keeps product navigation focused and removes implementation destinations", () => {
     expectIncludes(app, [
-      "label: \"Nebius Command Center\"",
+      "label: \"AI Command Center\"",
       "label: \"Arena / Workload Generator\"",
-      "label: \"Incidents / Investigations\"",
-      "label: \"Detector Benchmark\"",
       "label: \"Docs / Demo\"",
       "AIMADA",
       "Nebius AI Serverless",
-      "Ask Investigator",
-      "Serverless AI active",
+      "Investigator ready",
+      "AI active",
       "<Route path=\"/\" element={<Navigate to=\"/nebius\" replace />} />",
       "<Route path=\"/demo\" element={<Navigate to=\"/nebius\" replace />} />",
-      "<Route path=\"/benchmark\" element={<NebiusControlPanelPage />} />",
-      "<Route path=\"/investigations\" element={<NebiusControlPanelPage />} />",
+      "<Route path=\"/benchmark\" element={<Navigate to=\"/nebius\" replace />} />",
+      "<Route path=\"/investigations\" element={<Navigate to=\"/nebius\" replace />} />",
       "<Route path=\"/lab\" element={<Navigate to=\"/nebius\" replace />} />",
       "<Route path=\"/experiments\" element={<Navigate to=\"/nebius\" replace />} />",
       "<Route path=\"/deployment\" element={<Navigate to=\"/nebius\" replace />} />",
@@ -102,6 +100,8 @@ describe("Core UI navigation and workflow contracts", () => {
     assert.doesNotMatch(app, /label: "Experiments"/);
     assert.doesNotMatch(app, /label: "Reports"/);
     assert.doesNotMatch(app, /label: "Blue Team"/);
+    assert.doesNotMatch(app, /label: "Incidents \/ Investigations", primary: true/);
+    assert.doesNotMatch(app, /label: "Detector Benchmark", primary: true/);
   });
 
   it("keeps Arena status, controls, tabs, and standard market visible", () => {
@@ -146,37 +146,37 @@ describe("Core UI navigation and workflow contracts", () => {
     ]);
   });
 
-  it("keeps Nebius AI focused on runtime, investigation, benchmark, and trace", () => {
+  it("keeps the AI command center focused on runtime, investigation, benchmark, and trace", () => {
     expectIncludes(nebius, [
-      "Nebius AI Serverless Command Center",
+      "AI Command Center",
       "Powered by Nebius AI Serverless",
       "Serverless Endpoint",
-      "AI Investigation Team",
-      "AI Scenario Generator",
-      "Serverless Jobs",
+      "Investigation Team",
+      "Scenario Generator",
+      "Jobs & Artifacts",
       "Detector Tournament",
       "title=\"Runtime\"",
       "Demo Scenarios",
       "Local Lightweight Demo",
       "Local AI Pipeline Demo",
-      "Nebius Endpoint Demo",
-      "Nebius Platform Demo",
+      "Endpoint Demo",
+      "Full Platform Demo",
       "demoScenario",
       "navigate(`/attack-scenarios?",
       "title=\"AI Investigation\"",
       "title=\"AI Detector Tournament\"",
-      "Run local or Nebius Serverless detector tournaments",
+      "Run local or serverless detector tournaments",
       "title=\"Execution Trace\"",
       "Scenario Setup",
       "Workload Generator",
       "Explain current incident",
-      "Switch to Nebius Cloud to run this explanation on a real Nebius endpoint.",
+      "Switch to Cloud to run this explanation on a real endpoint.",
       "Compare models",
       "Run Jobs",
       "Detector comparison",
       "Model comparison",
       "Run Local Demo tournament",
-      "Run Nebius Serverless job",
+      "Run serverless job",
       "Execution graph",
       "Scenario",
       "Detector",
@@ -184,10 +184,10 @@ describe("Core UI navigation and workflow contracts", () => {
       "Job",
       "Result",
       "real endpoint used",
-      "real Nebius execution",
+      "real cloud execution",
       "fallback to deterministic mock",
       "Deployment required",
-      "Nebius endpoint unavailable",
+      "endpoint unavailable",
       "Model name",
       "GPU",
       "Cost",

@@ -14,7 +14,7 @@ This project is an educational simulation. It does not detect real market manipu
 
 Implemented:
 
-- Nebius AI Command Center as the primary UI entry point for AI investigation, scenario generation, detector tournaments, runtime status, and execution traces.
+- AI Command Center as the primary UI entry point for AI investigation, scenario generation, detector tournaments, runtime status, and execution traces.
 - Live React/FastAPI Market Workload Generator with WebSocket state, order-book visualization, scenario launch, detector scores, incidents, and report/replay workflows.
 - In-process `AgentManager` for hundreds of lightweight normal agents with per-tick deadlines and single-writer exchange application.
 - Separate `agent-runner` service for out-of-process agents over HTTP, while the backend keeps the exchange/order book authoritative.
@@ -24,7 +24,7 @@ Implemented:
 - Deterministic detector evidence model for synthetic spoofing-like, layering-like, quote-stuffing-like, and liquidity-shock patterns.
 - Nebius endpoint and job scaffolds with local typed fallbacks, Docker/config files, scripts, and UI control surfaces.
 - Phase 4.5 Managed Experiments with deterministic attack manifests, local smart-batch execution, artifact normalization, aggregation, bounded AI Investigator reports, and Detection review of summaries, leaderboards, markdown reports, artifact indexes, and original local-batch files.
-- Reduced demo navigation around Nebius Command Center, Workload Generator, Incidents / Investigations, Detector Benchmark, and Docs / Demo.
+- Reduced demo navigation around AI Command Center, Workload Generator, and Docs / Demo.
 - Demo page for three deterministic 3-minute product demo paths: Real Nebius AI Run, Two-Model Pipeline, and Streaming Explanation.
 - Arena split into Scenario / Attack Configuration, Market, and Detection sections, with Standard and Battlefield market visualization modes.
 - Detection owns live detector output, incident replay, evidence, AI Investigator reports, and report artifacts; Reports is no longer a primary navigation destination.
@@ -74,7 +74,7 @@ docker compose up --build
 
 ### 3. Explore
 
-Open http://localhost:5173 to land directly in the Nebius AI Command Center.
+Open http://localhost:5173 to land directly in the AI Command Center.
 
 Default demo flow:
 

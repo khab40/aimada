@@ -24,8 +24,11 @@ Status as of 2026-07-04:
 | [ARD-0012](ARD-0012-google-authentication.md) | `[done]` | Refresh tokens, revocation, asymmetric signing, and external secret management are future work |
 | [ARD-0013](ARD-0013-ui-shell-preferences.md) | `[done]` | Screenshot capture and broader light-mode chart tuning are future work |
 | [ARD-0014](ARD-0014-multiuser-platform-foundation.md) | `[partial]` | Durable backend workspace/case/audit tables and assignment APIs are future work |
+| [ARD-001](ARD-001-nebius-ai-investigation-team.md) | `[proposed]` | Promote investigation endpoint as primary Nebius AI Serverless workflow |
+| [ARD-002](ARD-002-ai-scenario-generator.md) | `[proposed]` | Promote scenario generation endpoint as AI Scenario Generator workflow |
+| [ARD-003](ARD-003-ai-detector-tournament.md) | `[proposed]` | Promote serverless jobs as AI Detector Tournament workflow |
 
-Current UI architecture note: the product shell now exposes four workflow destinations: Attack, Arena, AI Platform, and About. Experiments, deployment status, and demo scenarios are folded into AI Platform. Reports and Detection are Arena/AI Platform outputs, not independent destinations. The About and ARD-0001 diagrams document the four execution areas: Front, Back, Agent Runners Workspace, and Nebius Serverless Cloud.
+Current UI architecture note: the product shell now exposes AI Command Center, Arena / Workload Generator, and Docs / Demo as the primary demo destinations. Scenario setup, incidents, investigations, detector tournaments, deployment status, and experiment artifacts are folded into the AI Command Center or linked from the active workflow. The About and ARD-0001 diagrams document the four execution areas: Front, Back, Agent Runners Workspace, and Nebius Serverless Cloud.
 
 ## Records
 
@@ -63,6 +66,14 @@ Current UI architecture note: the product shell now exposes four workflow destin
 - [ARD-0007: Nebius Serverless AI Jobs](ARD-0007-nebius-serverless-ai-jobs.md) — Batch job execution for benchmarks and dataset generation
 - [ARD-0008: Nebius Serverless AI Endpoints](ARD-0008-nebius-serverless-ai-endpoints.md) — Interactive serverless AI endpoint integration
 - [ARD-0009: Judge Mode Investigation Reports](ARD-0009-judge-mode-investigation-reports.md) — Investigation and report generation workflows
+- [ARD-001: Nebius AI Investigation Team](ARD-001-nebius-ai-investigation-team.md) — Phase 1 build plan for AI investigation via Nebius AI Serverless Endpoint
+- [ARD-002: AI Scenario Generator](ARD-002-ai-scenario-generator.md) — Phase 2 build plan for scenario generation via Nebius AI Serverless Endpoint
+- [ARD-003: AI Detector Tournament](ARD-003-ai-detector-tournament.md) — Phase 3 build plan for detector tournaments via Nebius Serverless Jobs
+
+### Build Plan And Use Cases
+
+- [Nebius AI Serverless Build Plan](../nebius-serverless-build-plan.md) — Three-phase implementation plan centered on Nebius execution
+- [Nebius Serverless Use Cases](../use-cases/nebius-serverless-use-cases.md) — Product use cases and concrete API flows
 
 ## ARD Format
 

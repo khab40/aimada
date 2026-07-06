@@ -1,6 +1,6 @@
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { useEffect, useRef, useState } from "react";
-import { BrowserRouter, Link, Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
+import { BrowserRouter, Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
 import "./App.css";
 import { AboutPage } from "@/pages/AboutPage";
 import { useAuth } from "@/auth/useAuth";
@@ -165,8 +165,8 @@ export function App() {
             <Route path="/attack" element={<Navigate to="/attack-scenarios" replace />} />
             <Route path="/attack-scenarios" element={<AttackScenarioGeneratorPage />} />
             <Route path="/scenario-generator" element={<Navigate to="/attack-scenarios" replace />} />
-            <Route path="/benchmark" element={<NebiusControlPanelPage />} />
-            <Route path="/investigations" element={<NebiusControlPanelPage />} />
+            <Route path="/benchmark" element={<Navigate to="/nebius" replace />} />
+            <Route path="/investigations" element={<Navigate to="/nebius" replace />} />
             <Route path="/detection" element={<Navigate to="/arena" replace />} />
             <Route path="/blue-team" element={<Navigate to="/arena" replace />} />
             <Route path="/lab" element={<Navigate to="/nebius" replace />} />
@@ -187,7 +187,7 @@ export function App() {
 
 function ConsoleTopbar() {
   return (
-    <section className="console-topbar" aria-label="Nebius AI Serverless console">
+    <section className="console-topbar" aria-label="AI command console">
       <div className="console-project-selector">
         <span>Project</span>
         <strong>AIMADA Market Surveillance</strong>
@@ -196,8 +196,8 @@ function ConsoleTopbar() {
         <span className="sr-only">Search</span>
         <input placeholder="Search incidents, jobs, scenarios" type="search" />
       </label>
-      <Link className="primary-link-button console-ai-button" to="/investigations">Ask Investigator</Link>
-      <span className="runtime-status connected">Serverless AI active</span>
+      <span className="runtime-status active console-ai-button">Investigator ready</span>
+      <span className="runtime-status connected">AI active</span>
     </section>
   );
 }
@@ -327,10 +327,10 @@ type SidebarItem = {
 
 const allRoles: ArenaRole[] = ["observer", "attacker", "defender", "judge"];
 const sidebarItems: SidebarItem[] = [
-  { icon: "cloud", label: "Nebius Command Center", primary: true, shortLabel: "NC", to: "/nebius", visibleFor: allRoles },
+  { icon: "cloud", label: "AI Command Center", primary: true, shortLabel: "AI", to: "/nebius", visibleFor: allRoles },
   { icon: "arena", label: "Arena / Workload Generator", primary: true, shortLabel: "WG", to: "/arena", visibleFor: allRoles },
-  { icon: "detection", label: "Incidents / Investigations", primary: true, shortLabel: "IN", to: "/investigations", visibleFor: allRoles },
-  { icon: "tournament", label: "Detector Benchmark", primary: true, shortLabel: "DB", to: "/benchmark", visibleFor: allRoles },
+  { icon: "detection", label: "Incidents / Investigations", shortLabel: "IN", to: "/investigations", visibleFor: allRoles },
+  { icon: "tournament", label: "Detector Benchmark", shortLabel: "DB", to: "/benchmark", visibleFor: allRoles },
   { icon: "about", label: "Docs / Demo", primary: true, shortLabel: "DD", to: "/about", visibleFor: allRoles },
   { icon: "attack", label: "Scenario Setup", shortLabel: "SS", team: "red", to: "/attack-scenarios", visibleFor: allRoles }
 ];
