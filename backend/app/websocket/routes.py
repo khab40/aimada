@@ -23,28 +23,20 @@ async def arena_websocket(websocket: WebSocket) -> None:
             state = await simulation.get_state()
             await manager.send_state(websocket, state)
 
-            sleep_task = asyncio.create_task(asyncio.sleep(manager.stream_interval_seconds))
-            done, pending = await asyncio.wait(
-                {receive_task, sleep_task},
-                return_when=asyncio.FIRST_COMPLETED,
-            )
+            try:
+                message = await asyncio.wait_for(
+                    asyncio.shield(receive_task),
+                    timeout=manager.stream_interval_seconds,
+                )
+            except TimeoutError:
+                continue
+            except (asyncio.CancelledError, WebSocketDisconnect, RuntimeError):
+                break
 
-            if receive_task in done:
-                if receive_task.cancelled():
-                    break
-                try:
-                    message = receive_task.result()
-                except (asyncio.CancelledError, WebSocketDisconnect, RuntimeError):
-                    break
-                updated_state = await _handle_client_message(message, simulation)
-                if updated_state is not None:
-                    await manager.broadcast_state(updated_state)
-                receive_task = asyncio.create_task(websocket.receive_json())
-
-            if sleep_task in pending:
-                sleep_task.cancel()
-                with suppress(asyncio.CancelledError):
-                    await sleep_task
+            updated_state = await _handle_client_message(message, simulation)
+            if updated_state is not None:
+                await manager.broadcast_state(updated_state)
+            receive_task = asyncio.create_task(websocket.receive_json())
     except WebSocketDisconnect:
         pass
     except RuntimeError:

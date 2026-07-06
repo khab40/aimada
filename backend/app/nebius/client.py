@@ -348,7 +348,7 @@ class NebiusClient:
         if not health_url:
             return None
         try:
-            return self._get_json(health_url)
+            return self._get_json(health_url, timeout_seconds=settings.nebius_health_timeout_seconds)
         except (HTTPError, URLError, TimeoutError, json.JSONDecodeError, ValueError) as exc:
             return {
                 "status": "unreachable",
@@ -356,12 +356,12 @@ class NebiusClient:
                 "fallback_reason": f"endpoint health probe failed: {exc}",
             }
 
-    def _get_json(self, url: str) -> dict[str, Any]:
+    def _get_json(self, url: str, *, timeout_seconds: float | None = None) -> dict[str, Any]:
         headers: dict[str, str] = {}
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
         request = Request(url, headers=headers, method="GET")
-        with urlopen(request, timeout=self.timeout_seconds) as response:
+        with urlopen(request, timeout=timeout_seconds or self.timeout_seconds) as response:
             body = response.read().decode("utf-8")
             decoded = json.loads(body)
             if not isinstance(decoded, dict):

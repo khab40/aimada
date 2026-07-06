@@ -71,6 +71,12 @@ class Settings(BaseSettings):
         default=None,
         alias="NEBIUS_JOB_ARTIFACTS_COMMAND_TEMPLATE",
     )
+    nebius_health_timeout_seconds: float = Field(
+        default=0.5,
+        ge=0.05,
+        le=5.0,
+        alias="NEBIUS_HEALTH_TIMEOUT_SECONDS",
+    )
     arena_output_dir: Path = Field(default=Path("../outputs"), alias="ARENA_OUTPUT_DIR")
     arena_sample_data_dir: Path = Field(default=Path("../data/sample"), alias="ARENA_SAMPLE_DATA_DIR")
     google_client_id: str | None = Field(default=None, alias="GOOGLE_CLIENT_ID")
