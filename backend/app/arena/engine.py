@@ -32,6 +32,8 @@ class SimulationEngine:
         baseline_liquidity_tick_size: float = 1.0,
         baseline_liquidity_reference_price: float = 68_125.0,
         max_agent_quote_size: float = 25.0,
+        tick_history_interval: int = 1,
+        persist_all_events: bool = True,
     ) -> None:
         self.tick_interval_seconds = tick_interval_seconds
         self.seed = seed
@@ -42,6 +44,8 @@ class SimulationEngine:
         self.baseline_liquidity_tick_size = max(0.01, baseline_liquidity_tick_size)
         self.baseline_liquidity_reference_price = baseline_liquidity_reference_price
         self.max_agent_quote_size = max(0.0, max_agent_quote_size)
+        self.tick_history_interval = max(1, tick_history_interval)
+        self.persist_all_events = persist_all_events
         self.normal_agent_count = normal_agent_count
         self.agent_decision_timeout_seconds = agent_decision_timeout_seconds
         self.remote_agent_urls = remote_agent_urls or []
@@ -419,7 +423,8 @@ class SimulationEngine:
             return
         payload = event.model_dump(mode="json", exclude_none=True)
         payload.setdefault("tick", self.clock.tick)
-        self.store.append_jsonl("events/events.jsonl", payload)
+        if self.persist_all_events or significant:
+            self.store.append_jsonl("events/events.jsonl", payload)
         if significant:
             self.store.append_jsonl("events/significant_events.jsonl", payload)
             append_history_artifact(
@@ -495,6 +500,12 @@ class SimulationEngine:
 
     def _persist_tick_snapshot(self, tick_events: list[AgentEvent]) -> None:
         if self.store is None:
+            return
+        has_significant_event = any(
+            event.type in {"red_team", "detector", "nebius"} or event.scenario_id is not None
+            for event in tick_events
+        )
+        if self.clock.tick % self.tick_history_interval != 0 and not has_significant_event:
             return
         append_tick_snapshot(
             self.store,

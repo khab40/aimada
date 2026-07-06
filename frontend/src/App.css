@@ -451,7 +451,8 @@ button.active {
   box-shadow: var(--shadow-card);
   display: grid;
   gap: 10px;
-  grid-template-columns: auto minmax(180px, 1fr) auto auto;
+  grid-template-columns: auto auto auto;
+  justify-content: start;
   min-height: var(--layout-topbar-height);
   min-width: 0;
   padding: 8px 10px;
@@ -496,6 +497,37 @@ button.active {
 .console-ai-button {
   min-height: 34px;
   white-space: nowrap;
+}
+
+.disclaimer-popover {
+  position: relative;
+}
+
+.disclaimer-popover-button {
+  min-height: 34px;
+  white-space: nowrap;
+}
+
+.disclaimer-popover-panel {
+  border: 1px solid var(--warning-border);
+  border-radius: 8px;
+  background: var(--warning-bg);
+  box-shadow: var(--shadow-card);
+  color: var(--warning-text);
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  padding: 10px;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: min(420px, calc(100vw - 40px));
+  z-index: 30;
+}
+
+.disclaimer-popover-panel p {
+  margin: 0;
 }
 
 .app-header,
@@ -1944,6 +1976,83 @@ body[data-sidebar-resizing="true"] {
   gap: 14px;
 }
 
+.command-center-wizard {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.command-center-wizard-header {
+  align-items: center;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.command-center-wizard-header div {
+  display: grid;
+  gap: 2px;
+  text-align: center;
+}
+
+.command-center-wizard-header span {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.command-center-wizard-header strong {
+  color: var(--heading);
+  font-size: 16px;
+}
+
+.wizard-arrow-button {
+  min-width: 46px;
+}
+
+.command-center-step-tabs {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.command-center-step-tabs button {
+  align-items: center;
+  background: var(--color-bg-muted);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  color: var(--color-text-muted);
+  display: flex;
+  font-size: 12px;
+  font-weight: 800;
+  gap: 7px;
+  justify-content: center;
+  min-height: 36px;
+  padding: 6px 8px;
+}
+
+.command-center-step-tabs button.active,
+.command-center-step-tabs button[aria-selected="true"] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--heading);
+}
+
+.command-center-step-tabs span {
+  align-items: center;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  display: inline-flex;
+  height: 20px;
+  justify-content: center;
+  width: 20px;
+}
+
 .nebius-infra-section {
   border-color: var(--color-border);
   display: grid;
@@ -1952,8 +2061,12 @@ body[data-sidebar-resizing="true"] {
 
 .demo-scenarios-section {
   border-color: rgba(167, 139, 250, 0.24);
+  border: 1px solid rgba(167, 139, 250, 0.24);
+  border-radius: 8px;
+  background: rgba(2, 6, 23, 0.2);
   display: grid;
   gap: 12px;
+  padding: 12px;
 }
 
 .demo-scenarios-section summary {
@@ -3588,12 +3701,19 @@ body[data-sidebar-resizing="true"] {
   color: var(--info-text);
 }
 
-.research-link-grid {
+.research-link-list {
   display: grid;
-  grid-template-columns: repeat(2, minmax(260px, 1fr));
-  gap: 10px;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
+.research-link-list li {
+  margin: 0;
+}
+
+.research-link-list a,
 .research-link-grid a {
   border: 1px solid var(--widget-border);
   border-radius: 8px;
@@ -3605,11 +3725,25 @@ body[data-sidebar-resizing="true"] {
   text-decoration: none;
 }
 
+.research-link-list a {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.research-link-list strong {
+  min-width: 0;
+}
+
+.research-link-list span {
+  white-space: nowrap;
+}
+
+.research-link-list a:hover,
 .research-link-grid a:hover {
   border-color: var(--accent);
   background: var(--accent-soft);
 }
 
+.research-link-list span,
 .research-link-grid span {
   color: var(--text-muted);
   font-size: 13px;
@@ -4037,7 +4171,10 @@ body[data-sidebar-resizing="true"] {
 .shortcut-help {
   display: flex;
   justify-content: flex-end;
-  position: relative;
+  position: fixed;
+  right: 18px;
+  top: 84px;
+  z-index: 25;
 }
 
 .shortcut-help-button {
@@ -4061,7 +4198,7 @@ body[data-sidebar-resizing="true"] {
   position: absolute;
   right: 0;
   top: calc(100% + 6px);
-  z-index: 20;
+  z-index: 26;
 }
 
 .shortcut-popover span,
@@ -6435,6 +6572,7 @@ kbd,
   .lab-grid,
   .nebius-control-grid,
   .command-center-service-grid,
+  .command-center-step-tabs,
   .why-nebius-grid,
   .demo-scenario-grid,
   .benchmark-capability-strip,
@@ -6581,6 +6719,7 @@ kbd,
 
   .console-topbar {
     grid-template-columns: 1fr;
+    justify-content: stretch;
   }
 
   .console-project-selector {
@@ -6775,11 +6914,25 @@ kbd,
 
   .runtime-control,
   .auth-panel,
+  .disclaimer-popover,
   .shortcut-help,
   .cockpit-controls,
   .attack-builder-actions,
   .incident-replay-controls {
     width: 100%;
+  }
+
+  .shortcut-help {
+    justify-content: flex-end;
+    position: sticky;
+    right: auto;
+    top: 72px;
+  }
+
+  .disclaimer-popover-panel {
+    left: 0;
+    right: auto;
+    width: min(420px, calc(100vw - 24px));
   }
 
   .auth-panel {

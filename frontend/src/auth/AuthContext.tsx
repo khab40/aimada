@@ -240,7 +240,6 @@ function isFetchFailure(error: unknown) {
 function requestGoogleAuthorizationCode(clientId: string, redirectUri: string): Promise<string> {
   return new Promise((resolve, reject) => {
     let settled = false;
-    let timeoutId: number | undefined;
     const finish = (code: string | null, nextError?: Error) => {
       if (settled) {
         return;
@@ -258,7 +257,7 @@ function requestGoogleAuthorizationCode(clientId: string, redirectUri: string): 
       }
     };
 
-    timeoutId = window.setTimeout(
+    const timeoutId = window.setTimeout(
       () => finish(null, new Error("Google sign-in timed out. Check popup blockers and try again.")),
       GOOGLE_AUTH_TIMEOUT_MS
     );
@@ -321,8 +320,6 @@ function loadGoogleIdentityServices(): Promise<void> {
 function waitForGoogleIdentityServices(script: HTMLScriptElement): Promise<void> {
   return new Promise((resolve, reject) => {
     let settled = false;
-    let intervalId: number | undefined;
-    let timeoutId: number | undefined;
     let onError: () => void = () => undefined;
     const finish = (nextError?: Error) => {
       if (settled) {
@@ -343,12 +340,12 @@ function waitForGoogleIdentityServices(script: HTMLScriptElement): Promise<void>
       }
     };
     onError = () => finish(new Error("Failed to load Google Identity Services."));
-    intervalId = window.setInterval(() => {
+    const intervalId = window.setInterval(() => {
       if (window.google?.accounts?.oauth2) {
         finish();
       }
     }, 50);
-    timeoutId = window.setTimeout(
+    const timeoutId = window.setTimeout(
       () => finish(new Error("Timed out loading Google Identity Services.")),
       GOOGLE_SCRIPT_TIMEOUT_MS
     );

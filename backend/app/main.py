@@ -15,12 +15,14 @@ from app.arena.engine import SimulationEngine
 from app.auth.store import AuthStore
 from app.config import get_settings
 from app.storage.local_store import LocalStore
+from app.storage.retention import cleanup_output_data
 from app.websocket.manager import WebSocketManager
 from app.websocket.routes import router as websocket_router
 
 app = FastAPI(title="AI Market Abuse Detection Arena")
 settings = get_settings()
 app.state.store = LocalStore(settings.arena_output_dir)
+app.state.retention_cleanup = cleanup_output_data(app.state.store.output_dir, settings.arena_data_retention_days)
 app.state.auth_store = AuthStore(settings.arena_output_dir / "auth" / "auth.db")
 app.state.settings = settings
 app.state.simulation = SimulationEngine(
@@ -34,6 +36,8 @@ app.state.simulation = SimulationEngine(
     baseline_liquidity_tick_size=settings.arena_baseline_liquidity_tick_size,
     baseline_liquidity_reference_price=settings.arena_baseline_liquidity_reference_price,
     max_agent_quote_size=settings.arena_max_agent_quote_size,
+    tick_history_interval=settings.arena_tick_history_interval,
+    persist_all_events=settings.arena_persist_all_events,
 )
 app.state.websocket_manager = WebSocketManager()
 

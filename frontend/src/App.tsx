@@ -104,7 +104,6 @@ export function App() {
           <div className="sidebar-brand">
             <div className="sidebar-wordmark">
               <strong>AIMADA</strong>
-              <span>Nebius AI Serverless</span>
             </div>
             <button
               aria-label={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}
@@ -153,10 +152,6 @@ export function App() {
             {featureFlags.enableGoogleAuth ? <IdentityPanel /> : null}
             <RuntimePanel />
           </header>
-          <section className="disclaimer" aria-label="Project disclaimer">
-            <strong>Disclaimer: </strong>
-            {disclaimer}
-          </section>
 
           <Routes>
             <Route path="/" element={<Navigate to="/nebius" replace />} />
@@ -188,17 +183,32 @@ export function App() {
 function ConsoleTopbar() {
   return (
     <section className="console-topbar" aria-label="AI command console">
-      <div className="console-project-selector">
-        <span>Project</span>
-        <strong>AIMADA Market Surveillance</strong>
-      </div>
-      <label className="console-search">
-        <span className="sr-only">Search</span>
-        <input placeholder="Search incidents, jobs, scenarios" type="search" />
-      </label>
       <span className="runtime-status active console-ai-button">Investigator ready</span>
       <span className="runtime-status connected">AI active</span>
+      <DisclaimerPopover />
     </section>
+  );
+}
+
+function DisclaimerPopover() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="disclaimer-popover">
+      <button
+        aria-expanded={open}
+        className="secondary-button disclaimer-popover-button"
+        onClick={() => setOpen((value) => !value)}
+        type="button"
+      >
+        Disclaimer
+      </button>
+      {open ? (
+        <div className="disclaimer-popover-panel" role="dialog" aria-label="Project disclaimer">
+          <strong>Disclaimer</strong>
+          <p>{disclaimer}</p>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -327,11 +337,11 @@ type SidebarItem = {
 
 const allRoles: ArenaRole[] = ["observer", "attacker", "defender", "judge"];
 const sidebarItems: SidebarItem[] = [
-  { icon: "cloud", label: "AI Command Center", primary: true, shortLabel: "AI", to: "/nebius", visibleFor: allRoles },
+  { icon: "cloud", label: "Command Center", primary: true, shortLabel: "CC", to: "/nebius", visibleFor: allRoles },
   { icon: "arena", label: "Arena / Workload Generator", primary: true, shortLabel: "WG", to: "/arena", visibleFor: allRoles },
   { icon: "detection", label: "Incidents / Investigations", shortLabel: "IN", to: "/investigations", visibleFor: allRoles },
   { icon: "tournament", label: "Detector Benchmark", shortLabel: "DB", to: "/benchmark", visibleFor: allRoles },
-  { icon: "about", label: "Docs / Demo", primary: true, shortLabel: "DD", to: "/about", visibleFor: allRoles },
+  { icon: "about", label: "About / Docs / Demo", primary: true, shortLabel: "ADD", to: "/about", visibleFor: allRoles },
   { icon: "attack", label: "Scenario Setup", shortLabel: "SS", team: "red", to: "/attack-scenarios", visibleFor: allRoles }
 ];
 

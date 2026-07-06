@@ -323,6 +323,7 @@ Agent scheduler:
 
 ```bash
 ARENA_AGENT_COUNT=3
+ARENA_DATA_RETENTION_DAYS=1
 ARENA_AGENT_DECISION_TIMEOUT_SECONDS=0.05
 ARENA_REMOTE_AGENT_URLS=
 ARENA_REMOTE_AGENT_TIMEOUT_SECONDS=0.05
@@ -331,6 +332,8 @@ ARENA_BASELINE_LIQUIDITY_BASE_SIZE=1.5
 ARENA_BASELINE_LIQUIDITY_TICK_SIZE=1.0
 ARENA_BASELINE_LIQUIDITY_REFERENCE_PRICE=68125.0
 ARENA_MAX_AGENT_QUOTE_SIZE=25.0
+ARENA_TICK_HISTORY_INTERVAL=10
+ARENA_PERSIST_ALL_EVENTS=false
 AGENT_RUNNER_AGENT_COUNT=24
 AGENT_RUNNER_MAX_AGENT_COUNT=48
 AGENT_RUNNER_HEAVY_AGENT_COUNT=0
@@ -342,7 +345,7 @@ AGENT_RUNNER_MAX_LANGGRAPH_AGENT_COUNT=4
 AGENT_RUNNER_LANGGRAPH_STRATEGY=liquidity_rebalancer
 ```
 
-Local demo leaves `ARENA_REMOTE_AGENT_URLS` empty so live Arena ticks stay fast and backend memory stays small. To test remote agents, start the runner with `docker compose --profile remote-agents up agent-runner` and set `ARENA_REMOTE_AGENT_URLS=http://agent-runner:9100`. Worker env values are clamped by `AGENT_RUNNER_MAX_*` caps so stale `.env` values cannot spawn hundreds of agents by accident. The backend receives only `AgentIntent` objects; LangGraph and heavy-agent execution stay inside the runner. The `ARENA_BASELINE_LIQUIDITY_*` settings maintain a minimum bid/ask ladder around the reference price so market orders and scenarios cannot leave one side permanently empty. Agent `set_level` intents are additive per agent at a price level and capped by `ARENA_MAX_AGENT_QUOTE_SIZE`; scenarios can still replace whole levels when they need scripted walls or cancellations.
+Local demo leaves `ARENA_REMOTE_AGENT_URLS` empty so live Arena ticks stay fast and backend memory stays small. To test remote agents, start the runner with `docker compose --profile remote-agents up agent-runner` and set `ARENA_REMOTE_AGENT_URLS=http://agent-runner:9100`. Worker env values are clamped by `AGENT_RUNNER_MAX_*` caps so stale `.env` values cannot spawn hundreds of agents by accident. The backend receives only `AgentIntent` objects; LangGraph and heavy-agent execution stay inside the runner. The `ARENA_BASELINE_LIQUIDITY_*` settings maintain a minimum bid/ask ladder around the reference price so market orders and scenarios cannot leave one side permanently empty. Agent `set_level` intents are additive per agent at a price level and capped by `ARENA_MAX_AGENT_QUOTE_SIZE`; scenarios can still replace whole levels when they need scripted walls or cancellations. `ARENA_DATA_RETENTION_DAYS=1` removes generated output files older than one day on backend startup. `ARENA_TICK_HISTORY_INTERVAL` and `ARENA_PERSIST_ALL_EVENTS=false` keep local JSONL history bounded enough for long demos while preserving significant scenario and detector evidence.
 
 Google authentication:
 

@@ -3,6 +3,7 @@ import json
 import shutil
 import subprocess
 import sys
+from collections import deque
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal
@@ -647,24 +648,28 @@ def compare_benchmark_runs(payload: BenchmarkCompareRequest, request: Request) -
 @router.get("/incidents/{incident_id}/replay", response_model=IncidentReplayResponse)
 def replay_incident_window(incident_id: str, request: Request) -> IncidentReplayResponse:
     store = _store(request)
-    incidents = store.read_jsonl("incidents/incidents.jsonl", limit=None)
+    incidents = store.read_jsonl("incidents/incidents.jsonl", limit=1000)
     incident = next((row for row in incidents if str(row.get("id")) == incident_id), None)
     scenario_id = str(incident.get("scenario_id")) if incident else ""
-    events = [
-        row
-        for row in store.read_jsonl("events/events.jsonl", limit=None)
-        if str(row.get("incident_id")) == incident_id or (scenario_id and str(row.get("scenario_id")) == scenario_id)
-    ][-80:]
+    events = _matching_jsonl_tail(
+        store,
+        "events/events.jsonl",
+        limit=80,
+        incident_id=incident_id,
+        scenario_id=scenario_id,
+    )
     labels = [
         row
-        for row in store.read_jsonl("labels/scenario_labels.jsonl", limit=None)
+        for row in store.read_jsonl("labels/scenario_labels.jsonl", limit=1000)
         if scenario_id and str(row.get("scenario_id")) == scenario_id
     ]
-    ticks = [
-        row
-        for row in store.read_jsonl("history/ticks.jsonl", limit=None)
-        if str(row.get("incident_id")) == incident_id or (scenario_id and str(row.get("scenario_id")) == scenario_id)
-    ][-240:]
+    ticks = _matching_jsonl_tail(
+        store,
+        "history/ticks.jsonl",
+        limit=240,
+        incident_id=incident_id,
+        scenario_id=scenario_id,
+    )
     return IncidentReplayResponse(incident_id=incident_id, incident=incident, events=events, labels=labels, ticks=ticks)
 
 
@@ -888,6 +893,21 @@ def _report_artifact_dirs() -> list[str]:
         "evidence",
         "datasets",
     ]
+
+
+def _matching_jsonl_tail(
+    store: LocalStore,
+    path: str,
+    *,
+    limit: int,
+    incident_id: str,
+    scenario_id: str,
+) -> list[dict[str, Any]]:
+    rows: deque[dict[str, Any]] = deque(maxlen=max(1, limit))
+    for row in store.iter_jsonl(path):
+        if str(row.get("incident_id")) == incident_id or (scenario_id and str(row.get("scenario_id")) == scenario_id):
+            rows.append(row)
+    return list(rows)
 
 
 def _scenario_to_route_name(value: str) -> str:

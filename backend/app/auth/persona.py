@@ -11,6 +11,8 @@ ArenaRole = Literal["attacker", "defender", "observer", "judge"]
 
 SESSION_HEADER = "X-AIMADA-Session-ID"
 AUTH_PROVIDER_GOOGLE = "google"
+MAX_SESSION_HISTORY_ROWS = 1_000
+MAX_RESTORE_HISTORY_BYTES = 25 * 1024 * 1024
 
 
 def user_id_for_google_identity(subject: str | None, email: str | None) -> str:
@@ -159,7 +161,7 @@ def save_session_history(store: LocalStore, *, session_id: str, window_hours: fl
         return None
     user = current["user"]
     session = {**current["session"], "last_seen_at": utc_now()}
-    replay = history_window(store, window_hours=window_hours, limit=20_000)
+    replay = history_window(store, window_hours=window_hours, limit=MAX_SESSION_HISTORY_ROWS)
     snapshot = {
         "snapshot_id": f"SNAP-{uuid4().hex[:12].upper()}",
         "created_at": utc_now(),
@@ -190,15 +192,24 @@ def save_session_history(store: LocalStore, *, session_id: str, window_hours: fl
 
 
 def restore_latest_history(store: LocalStore, *, user_id: str, session_id: str) -> dict[str, Any] | None:
-    latest = store.read_json(f"{_user_history_path(user_id)}/latest_history.json")
+    latest_path = f"{_user_history_path(user_id)}/latest_history.json"
+    absolute_latest_path = store.output_dir / latest_path
+    if absolute_latest_path.exists() and absolute_latest_path.stat().st_size > MAX_RESTORE_HISTORY_BYTES:
+        return {
+            "restored_artifacts": 0,
+            "restored_ticks": 0,
+            "source_snapshot": None,
+            "skipped": "history snapshot is too large to restore into backend memory",
+        }
+    latest = store.read_json(latest_path)
     if not isinstance(latest, dict):
         return None
     history = latest.get("history")
     if not isinstance(history, dict):
         return latest
 
-    current_artifact_ids = {str(row.get("history_id")) for row in store.read_jsonl("history/artifacts.jsonl", limit=None)}
-    current_tick_ids = {str(row.get("history_id")) for row in store.read_jsonl("history/ticks.jsonl", limit=None)}
+    current_artifact_ids = {str(row.get("history_id")) for row in store.read_jsonl("history/artifacts.jsonl", limit=5_000)}
+    current_tick_ids = {str(row.get("history_id")) for row in store.read_jsonl("history/ticks.jsonl", limit=5_000)}
     restored_artifacts = 0
     restored_ticks = 0
     for row in history.get("artifacts", []):

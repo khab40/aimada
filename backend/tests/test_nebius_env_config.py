@@ -44,13 +44,19 @@ def test_demo_surface_flags_default_to_reduced_demo_mode(monkeypatch: Any) -> No
 
 def test_backend_settings_default_to_lean_local_runtime(monkeypatch: Any) -> None:
     monkeypatch.delenv("ARENA_REMOTE_AGENT_URLS", raising=False)
+    monkeypatch.delenv("ARENA_DATA_RETENTION_DAYS", raising=False)
     monkeypatch.delenv("NEBIUS_HEALTH_TIMEOUT_SECONDS", raising=False)
     monkeypatch.delenv("NEBIUS_LOCAL_TOURNAMENT_SCENARIO_LIMIT", raising=False)
+    monkeypatch.delenv("ARENA_TICK_HISTORY_INTERVAL", raising=False)
+    monkeypatch.delenv("ARENA_PERSIST_ALL_EVENTS", raising=False)
     settings = Settings(_env_file=None)
 
     assert settings.arena_remote_agent_urls == ""
+    assert settings.arena_data_retention_days == 1
     assert settings.nebius_health_timeout_seconds == 0.5
     assert settings.nebius_local_tournament_scenario_limit == 24
+    assert settings.arena_tick_history_interval == 10
+    assert settings.arena_persist_all_events is False
 
 
 def test_backend_settings_derives_investigation_team_endpoint_from_base_url(monkeypatch: Any) -> None:

@@ -301,7 +301,6 @@ export function AttackScenarioGeneratorPage() {
           <div>
             <h2>Scenario Setup</h2>
           </div>
-          {busy ? <span className="endpoint-badge">Powered by Nebius AI Serverless Endpoint</span> : null}
         </div>
 
         <section className="scenario-wizard-step">

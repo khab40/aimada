@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from collections import deque
 from typing import Any, Literal
 from uuid import uuid4
 
@@ -87,16 +88,22 @@ def history_window(
 ) -> dict[str, Any]:
     bounded_hours = max(0.01, min(window_hours, 24.0))
     since = datetime.now(timezone.utc) - timedelta(hours=bounded_hours)
-    ticks = [
-        row
-        for row in store.read_jsonl(HISTORY_TICKS_FILE, limit=None)
-        if _inside_window(row, since) and _matches(row, scenario_id=scenario_id, incident_id=incident_id)
-    ][-limit:]
-    artifacts = [
-        row
-        for row in store.read_jsonl(HISTORY_ARTIFACTS_FILE, limit=None)
-        if _inside_window(row, since) and _matches(row, scenario_id=scenario_id, incident_id=incident_id)
-    ][-limit:]
+    ticks = _matching_tail(
+        store,
+        HISTORY_TICKS_FILE,
+        limit=limit,
+        since=since,
+        scenario_id=scenario_id,
+        incident_id=incident_id,
+    )
+    artifacts = _matching_tail(
+        store,
+        HISTORY_ARTIFACTS_FILE,
+        limit=limit,
+        since=since,
+        scenario_id=scenario_id,
+        incident_id=incident_id,
+    )
     return {
         "window_hours": bounded_hours,
         "generated_at": utc_now(),
@@ -208,6 +215,22 @@ def _matches(row: dict[str, Any], *, scenario_id: str | None, incident_id: str |
         if not isinstance(payload, dict) or str(payload.get("incident_id")) != incident_id:
             return False
     return True
+
+
+def _matching_tail(
+    store: LocalStore,
+    path: str,
+    *,
+    limit: int,
+    since: datetime,
+    scenario_id: str | None,
+    incident_id: str | None,
+) -> list[dict[str, Any]]:
+    rows: deque[dict[str, Any]] = deque(maxlen=max(1, limit))
+    for row in store.iter_jsonl(path):
+        if _inside_window(row, since) and _matches(row, scenario_id=scenario_id, incident_id=incident_id):
+            rows.append(row)
+    return list(rows)
 
 
 def _without_none(row: dict[str, Any]) -> dict[str, Any]:

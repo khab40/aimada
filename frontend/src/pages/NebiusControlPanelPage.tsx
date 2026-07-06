@@ -206,6 +206,7 @@ export function NebiusControlPanelPage() {
   const [nebiusObservatory, setNebiusObservatory] = useState<NebiusObservatory | null>(null);
   const [deploymentPanelMessage, setDeploymentPanelMessage] = useState<string | null>(null);
   const [runtimeMode, setRuntimeMode] = useState<RuntimeMode>(() => getStoredRuntimeMode());
+  const [activeWorkflowStep, setActiveWorkflowStep] = useState(1);
 
   useEffect(() => {
     void refreshControlPlane();
@@ -523,47 +524,101 @@ export function NebiusControlPanelPage() {
   const jobWillUseNebius = runtimeMode !== "local-demo" && jobConfigured;
   const fallbackStatus = endpointWillUseNebius || jobWillUseNebius ? "cloud path available" : runtimeMode === "local-demo" ? "Simulated / Local Demo" : "fallback to deterministic mock";
   const deploymentRequired = runtimeMode === "nebius-cloud" && !(nebiusStatus?.api_key_configured || nebiusStatus?.cli_installed);
+  const workflowSteps = [
+    "Runtime",
+    "Scenario Generator",
+    "Investigation Team",
+    "Detector Tournament",
+    "Execution Trace"
+  ];
+  const activeWorkflowTitle = workflowSteps[activeWorkflowStep - 1] ?? workflowSteps[0];
+  const goToPreviousWorkflowStep = () => setActiveWorkflowStep((step) => Math.max(1, step - 1));
+  const goToNextWorkflowStep = () => setActiveWorkflowStep((step) => Math.min(workflowSteps.length, step + 1));
 
   return (
     <section className="nebius-control-page">
       <header className="ai-platform-header">
         <div>
-          <h1>AI Command Center</h1>
+          <h1>Command Center</h1>
           <p>Generate suspicious workload, detect incidents with Nebius AI, and run detector tournaments on Nebius Serverless Jobs.</p>
         </div>
-        <span className="ai-platform-badge">Powered by Nebius AI Serverless Endpoint</span>
       </header>
 
       <section className="command-center-service-grid" aria-label="AI command center capabilities">
         <CommandCenterServiceCard
-          title="Nebius AI Serverless Endpoint"
+          title="Serverless Endpoint"
           detail={nebiusStatus?.endpoint_base_url || "Mock endpoint active for local demo"}
           status={endpointWillUseNebius ? "configured" : runtimeMode === "nebius-cloud" ? "pending" : "mock mode"}
         />
         <CommandCenterServiceCard
-          title="Nebius AI Investigation Team"
+          title="Investigation Team"
           detail={endpointWillUseNebius ? nebiusStatus?.model || "Model configured" : "Deterministic investigator fallback"}
           status={endpointWillUseNebius ? "active" : "mock mode"}
         />
         <CommandCenterServiceCard
-          title="Nebius AI Scenario Generator"
+          title="Scenario Generator"
           detail={nebiusStatus?.scenario_generator_configured ? "Scenario endpoint configured" : "Local scenario templates enabled"}
           status={nebiusStatus?.scenario_generator_configured ? "configured" : "mock mode"}
         />
         <CommandCenterServiceCard
-          title="Nebius Serverless Jobs"
+          title="Serverless Jobs"
           detail={jobConfigured ? nebiusStatus?.job_image || "Job image configured" : "Local smart batch runner ready"}
           status={jobConfigured ? "configured" : runtimeMode === "nebius-cloud" ? "pending" : "mock mode"}
         />
         <CommandCenterServiceCard
-          title="Nebius AI Detector Tournament"
+          title="Detector Tournament"
           detail={experiment ? `${experiment.attack_count} workloads · batch ${experiment.batch_size}` : "Create a detector tournament"}
           status={experiment ? experiment.status.replaceAll("_", " ") : "pending"}
         />
       </section>
 
+      <section className="command-center-wizard" aria-label="Command Center workflow">
+        <div className="command-center-wizard-header">
+          <button
+            aria-label="Previous workflow step"
+            className="secondary-button wizard-arrow-button"
+            disabled={activeWorkflowStep === 1}
+            onClick={goToPreviousWorkflowStep}
+            type="button"
+          >
+            &lt;&lt;
+          </button>
+          <div>
+            <span>Step {activeWorkflowStep} of {workflowSteps.length}</span>
+            <strong>{activeWorkflowTitle}</strong>
+          </div>
+          <button
+            aria-label="Next workflow step"
+            className="secondary-button wizard-arrow-button"
+            disabled={activeWorkflowStep === workflowSteps.length}
+            onClick={goToNextWorkflowStep}
+            type="button"
+          >
+            &gt;&gt;
+          </button>
+        </div>
+        <div className="command-center-step-tabs" role="tablist" aria-label="Command Center steps">
+          {workflowSteps.map((label, index) => {
+            const step = index + 1;
+            return (
+              <button
+                aria-selected={step === activeWorkflowStep}
+                className={step === activeWorkflowStep ? "active" : ""}
+                key={label}
+                onClick={() => setActiveWorkflowStep(step)}
+                role="tab"
+                type="button"
+              >
+                <span>{step}</span>
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
       <section className="nebius-infra-workflow">
-        <InfrastructureSection
+        {activeWorkflowStep === 1 ? <InfrastructureSection
           step={1}
           title="Runtime"
           description="Current local demo, endpoint, job, artifact, and fallback status for the command-center workflow."
@@ -595,18 +650,17 @@ export function NebiusControlPanelPage() {
             onSubmitNebius={() => void submitExperimentToNebius()}
             status={nebiusStatus}
           />
-        </InfrastructureSection>
+        </InfrastructureSection> : null}
 
-        <DemoScenariosSection
-          deploymentRequired={deploymentRequired}
-          onStart={startDemoScenario}
-        />
-
-        <InfrastructureSection
+        {activeWorkflowStep === 2 ? <InfrastructureSection
           step={2}
-          title="Nebius AI Scenario Generator"
-          description="Powered by Nebius AI Serverless Endpoint. Generate synthetic market-abuse workloads with ground truth, then replay them through the existing Arena scenario path."
+          title="Scenario Generator"
+          description="Generate synthetic market-abuse workloads with ground truth, then replay them through the existing Arena scenario path."
         >
+          <DemoScenariosSection
+            deploymentRequired={deploymentRequired}
+            onStart={startDemoScenario}
+          />
           <AIScenarioGeneratorPanel
             busyAction={experimentBusyAction}
             form={scenarioForm}
@@ -616,12 +670,12 @@ export function NebiusControlPanelPage() {
             onReplay={() => void replayGeneratedScenario()}
             onUpdate={updateScenarioForm}
           />
-        </InfrastructureSection>
+        </InfrastructureSection> : null}
 
-        <InfrastructureSection
+        {activeWorkflowStep === 3 ? <InfrastructureSection
           step={3}
-          title="Nebius AI Investigation Team"
-          description="Powered by Nebius AI Serverless Endpoint. Send detector incidents for explanation, report generation, and analyst-ready findings."
+          title="Investigation Team"
+          description="Send detector incidents for explanation, report generation, and analyst-ready findings."
         >
           <InfrastructureMetricGrid>
             <MetricBlock label="Inference calls" value={String(usageMetrics.aiEndpointCallsToday)} />
@@ -640,12 +694,12 @@ export function NebiusControlPanelPage() {
           </div>
           {investigationTeamReport ? <InvestigationTeamReport report={investigationTeamReport} /> : null}
           {experimentMessage ? <p className="experiment-message">{experimentMessage}</p> : null}
-        </InfrastructureSection>
+        </InfrastructureSection> : null}
 
-        <InfrastructureSection
+        {activeWorkflowStep === 4 ? <InfrastructureSection
           step={4}
-          title="Nebius AI Detector Tournament"
-          description="Powered by Nebius Serverless Jobs. Run local or serverless detector tournaments over generated market workloads and compare detector outcomes."
+          title="Detector Tournament"
+          description="Run local or serverless detector tournaments over generated market workloads and compare detector outcomes."
         >
           <DetectorTournamentPanel
             busyAction={experimentBusyAction}
@@ -675,9 +729,9 @@ export function NebiusControlPanelPage() {
             onUpdateForm={updateExperimentForm}
             summary={experimentSummary}
           />
-        </InfrastructureSection>
+        </InfrastructureSection> : null}
 
-        <InfrastructureSection
+        {activeWorkflowStep === 5 ? <InfrastructureSection
           step={5}
           title="Execution Trace"
           description="Compact execution graph plus endpoint, jobs, latency, tokens, GPU, cost, artifacts, and real versus simulated status."
@@ -699,7 +753,7 @@ export function NebiusControlPanelPage() {
           <p className="fallback-note">No credentials, Google login, or deployment are required in Local Demo. Benchmark results use deterministic mock data until Cloud mode is selected.</p>
           <UsageCostMonitor metrics={usageMetrics} />
           <ExperimentArtifactLinks artifacts={experiment ? experimentArtifactsFrom(experiment, experimentSummary) : []} experimentId={experiment?.id} />
-        </InfrastructureSection>
+        </InfrastructureSection> : null}
       </section>
 
     </section>
@@ -874,7 +928,7 @@ function AIScenarioGeneratorPanel({
         </div>
         <div className="nebius-button-row">
           <button className="primary-button" disabled={busyAction === "generate-ai-scenario"} onClick={onGenerate} type="button">
-            {busyAction === "generate-ai-scenario" ? "Generating..." : "Generate Nebius AI Scenario"}
+            {busyAction === "generate-ai-scenario" ? "Generating..." : "Generate AI Scenario"}
           </button>
           <button className="secondary-button" disabled={!generatedScenario || !replaySupported || busyAction === "replay-ai-scenario"} onClick={onReplay} type="button">
             {busyAction === "replay-ai-scenario" ? "Replaying..." : "Replay in Arena"}
@@ -894,7 +948,6 @@ function AIScenarioGeneratorPanel({
               </div>
               <span className={`runtime-status ${generatedScenario.mode}`}>{generatedScenario.mode}</span>
             </div>
-            <span className="runtime-status configured">Powered by Nebius AI Serverless Endpoint</span>
             <InfrastructureMetricGrid>
               <MetricBlock label="Scenario" value={generatedScenario.scenario_id} />
               <MetricBlock label="Risk" value={generatedScenario.expected_detector_behavior.expected_risk_score.toFixed(2)} />
@@ -937,7 +990,7 @@ function DemoScenariosSection({
   onStart: (scenario: DemoScenario) => void;
 }) {
   return (
-    <details className="panel demo-scenarios-section">
+    <details className="demo-scenarios-section">
       <summary>
         <span>Demo Scenarios</span>
         <strong>Choose a guided path through Scenario Setup {"->"} Workload Generator {"->"} AI Investigation.</strong>

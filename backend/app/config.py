@@ -84,6 +84,7 @@ class Settings(BaseSettings):
         alias="NEBIUS_LOCAL_TOURNAMENT_SCENARIO_LIMIT",
     )
     arena_output_dir: Path = Field(default=Path("../outputs"), alias="ARENA_OUTPUT_DIR")
+    arena_data_retention_days: int = Field(default=1, ge=1, le=3650, alias="ARENA_DATA_RETENTION_DAYS")
     arena_sample_data_dir: Path = Field(default=Path("../data/sample"), alias="ARENA_SAMPLE_DATA_DIR")
     google_client_id: str | None = Field(default=None, alias="GOOGLE_CLIENT_ID")
     google_client_secret: str | None = Field(default=None, alias="GOOGLE_CLIENT_SECRET")
@@ -137,6 +138,13 @@ class Settings(BaseSettings):
         le=1_000.0,
         alias="ARENA_MAX_AGENT_QUOTE_SIZE",
     )
+    arena_tick_history_interval: int = Field(
+        default=10,
+        ge=1,
+        le=10_000,
+        alias="ARENA_TICK_HISTORY_INTERVAL",
+    )
+    arena_persist_all_events: bool = Field(default=False, alias="ARENA_PERSIST_ALL_EVENTS")
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
 
     @property

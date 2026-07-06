@@ -182,21 +182,21 @@ export function AboutPage() {
             </article>
           </div>
         </section>
-      </div>
 
-      <section className="panel research-panel">
-        <div className="section-heading-row">
+        <section className="panel about-card research-panel">
           <h3>Research Papers</h3>
-        </div>
-        <div className="research-link-grid">
+          <ul className="research-link-list">
           {researchLinks.map((item) => (
-            <a href={item.url} key={item.title} rel="noreferrer" target="_blank">
-              <strong>{item.title}</strong>
-              <span>{item.source}</span>
-            </a>
+            <li key={item.title}>
+              <a href={item.url} rel="noreferrer" target="_blank">
+                <strong>{item.title}</strong>
+                <span>{item.source}</span>
+              </a>
+            </li>
           ))}
-        </div>
-      </section>
+          </ul>
+        </section>
+      </div>
     </section>
   );
 }
