@@ -86,3 +86,16 @@ Current prototype status:
 - A detached frontend prototype exists under `frontend/src/tabs/MarketBattlefield3D/`.
 - The prototype adapts the same arena exchange ticker, order book, detector scores, incidents, and agent events into battlefield frames.
 - It is intentionally detached from the main navigation until the core Arena and Lab flows are stable enough to support it as a polished demo surface.
+
+
+## ABIDES inspired
+ABIDES is an excellent foundation, but it predates the current generation of AI systems. For AIMADA, I would extend it with:
+
+1. LLM agents that choose manipulation strategies and explain decisions.
+2. RL attackers that learn spoofing and layering policies.
+3. Graph neural networks to detect coordinated manipulation across traders.
+4. Streaming detection pipelines that score suspicious behavior in real time.
+5. Market abuse scoring based on behavioral sequences rather than isolated events.
+6. Agent memory and adaptation, allowing attackers and defenders to evolve over multiple episodes.
+
+That would transform ABIDES from a market simulator into a complete AI-vs-AI Market Abuse Arena, closely aligned with the goals of your Nebius Serverless project.
