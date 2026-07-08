@@ -23,6 +23,7 @@ Implementation phases:
 - `[done]` Phase 1, Nebius AI Investigation Team via Serverless Endpoint: `POST /api/nebius/investigation-team/analyze` forwards incident, detector, order-book, trade, and metric context to `/investigation-team`, with deterministic mock fallback.
 - `[done]` Phase 2, Nebius AI Scenario Generator via Serverless Endpoint: `POST /api/nebius/scenario-generator/generate` returns simulator-compatible scenario JSON with ground truth, replay metadata, expected detector behavior, and mock fallback.
 - `[done]` Phase 3, Nebius AI Detector Tournament via Serverless Jobs: `POST /api/nebius/tournament/start` queues detector benchmark work, submits configured Nebius jobs when available, or completes a local mock tournament with the same response schema.
+- `[done]` Challenge E2E smoke path: `POST /api/nebius/serverless-smoke/run` orchestrates one spoofing incident demo, labels missing cloud job templates as `real_nebius_pending`, and writes `outputs/serverless-smoke/` artifacts.
 
 Primary docs:
 

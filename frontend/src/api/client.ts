@@ -589,6 +589,26 @@ export type DetectorTournamentResponse = {
   fallback_reason?: string | null;
 };
 
+export type ServerlessSmokeArtifact = {
+  name: string;
+  path: string;
+  download_url: string;
+};
+
+export type ServerlessSmokeResponse = {
+  mode: "local" | "real_nebius_pending" | "real_nebius" | "error";
+  summary: string;
+  scenario_id: string;
+  incident_id?: string | null;
+  detector_alerts: Record<string, unknown>[];
+  explanation?: IncidentExplanation | null;
+  investigation?: AIInvestigationTeamResponse | null;
+  tournament: DetectorTournamentResponse;
+  serverless_job: Record<string, unknown>;
+  artifacts: ServerlessSmokeArtifact[];
+  benefits: string[];
+};
+
 export type ScenarioActionResponse = {
   message: string;
   scenario?: AttackScenario | null;
@@ -1199,6 +1219,16 @@ export async function getDetectorTournament(tournamentId: string): Promise<Detec
   const response = await fetch(`${API_BASE_URL}/api/nebius/tournament/${encodeURIComponent(tournamentId)}`);
   if (!response.ok) {
     throw new Error(`AI detector tournament status failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function runServerlessSmokeDemo(): Promise<ServerlessSmokeResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/nebius/serverless-smoke/run`, {
+    method: "POST"
+  });
+  if (!response.ok) {
+    throw new Error(await apiErrorMessage(response, "Serverless smoke demo failed"));
   }
   return response.json();
 }

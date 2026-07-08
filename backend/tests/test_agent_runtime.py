@@ -1,6 +1,15 @@
 import asyncio
 
-from app.agents.runtime import AgentIntent, AgentManager, MarketSnapshot, RemoteAgentClient, build_agent_manager, build_heavy_agents, build_normal_agents
+from app.agents.runtime import (
+    AgentIntent,
+    AgentManager,
+    MarketSnapshot,
+    RemoteAgentClient,
+    build_agent_manager,
+    build_heavy_agents,
+    build_normal_agents,
+    build_prefixed_normal_agents,
+)
 from app.arena.engine import SimulationEngine
 
 
@@ -110,6 +119,19 @@ def test_build_agent_manager_combines_local_and_remote_runners() -> None:
     )
 
     assert manager.agent_ids == ["MM_01", "NOISE_01", "TAKER_01", "remote_runner:01", "remote_runner:03"]
+
+
+def test_prefixed_remote_agents_emit_market_flow_in_demo_window() -> None:
+    agents = build_prefixed_normal_agents(24, "REMOTE")
+    market_intents = []
+
+    for tick in range(1, 5):
+        for agent in agents:
+            market_intents.extend(intent for intent in agent.decide(_snapshot(tick=tick)) if intent.kind == "market")
+
+    assert len(agents) == 24
+    assert market_intents
+    assert {intent.agent_id for intent in market_intents} >= {"REMOTE_TAKER_001", "REMOTE_TAKER_004"}
 
 
 def test_heavy_agent_uses_async_worker_path() -> None:

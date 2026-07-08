@@ -35,6 +35,7 @@ from app.nebius.scenario_generator import (
     project_attack_scenario,
 )
 from app.nebius.smart_batch_runner import read_metrics, run_local_smart_batch
+from app.nebius.serverless_smoke import ServerlessSmokeResponse, run_serverless_smoke_demo
 from app.storage.history import append_history_artifact
 
 router = APIRouter(prefix="/api/nebius", tags=["nebius"])
@@ -45,6 +46,16 @@ nebius_cloud_adapter = MockNebiusCloudAdapter()
 @router.get("/status", response_model=NebiusIntegrationStatus)
 def nebius_status() -> NebiusIntegrationStatus:
     return nebius_client.integration_status()
+
+
+@router.post("/serverless-smoke/run", response_model=ServerlessSmokeResponse)
+async def run_serverless_smoke(request: Request) -> ServerlessSmokeResponse:
+    return await run_serverless_smoke_demo(
+        client=nebius_client,
+        simulation=request.app.state.simulation,
+        store=request.app.state.store,
+        repo_root=_repo_root(),
+    )
 
 
 @router.post("/red-team-scenario", response_model=RedTeamScenarioResponse)

@@ -45,6 +45,7 @@ Implemented:
 - Nebius AI Investigation Team as the primary Serverless Endpoint feature: `POST /api/nebius/investigation-team/analyze` calls `/investigation-team` and returns specialist agent findings, consensus, timeline, and recommended action.
 - Nebius AI Scenario Generator: `POST /api/nebius/scenario-generator/generate` calls `/generate-market-abuse-scenario`, preserves ground truth, and projects generated scenarios into the existing Arena replay path.
 - Nebius AI Detector Tournament: `POST /api/nebius/tournament/start` runs the Serverless Job-compatible tournament runner locally by default and returns leaderboard, precision, recall, F1, false positives, false negatives, latency, summary, and artifacts.
+- Polished Serverless E2E smoke demo: `POST /api/nebius/serverless-smoke/run` creates one spoofing incident flow and writes `outputs/serverless-smoke/{summary.json,scenario.json,simulation_events.json,detector_alerts.json,investigation_report.md,tournament_result.json,serverless_job.json,manifest.json}`.
 - Live React/FastAPI Market Workload Generator with WebSocket state, order-book visualization, scenario launch, detector scores, incidents, and report/replay workflows.
 - In-process `AgentManager` for hundreds of lightweight normal agents with per-tick deadlines and single-writer exchange application.
 - Separate `agent-runner` service for out-of-process agents over HTTP, while the backend keeps the exchange/order book authoritative.
@@ -108,12 +109,14 @@ Open http://localhost:5173 to land directly in the AI Command Center.
 
 Default demo flow:
 
-1. Generate a Nebius AI scenario.
-2. Replay it in the Arena / Market Workload Generator.
-3. Create detector output and an incident.
-4. Run the Nebius AI Investigation Team.
-5. Run the Nebius AI Detector Tournament.
-6. Show leaderboard, metrics, and artifacts.
+1. Open Command Center and click `Run Serverless E2E Demo`.
+2. Show the generated spoofing scenario and LOB simulation events.
+3. Show the rule-based detector alert and incident explanation.
+4. Show the AI Investigation Team report.
+5. Show the detector tournament leaderboard.
+6. Open artifacts under `outputs/serverless-smoke/`.
+
+Real Nebius mode uses `NEBIUS_JOB_*_COMMAND_TEMPLATE` for job submission/status/logs/artifacts. If those templates are missing, the UI and `serverless_job.json` show `real_nebius_pending` rather than pretending cloud success.
 
 For guided next steps, see [docs/QUICKSTART.md](docs/QUICKSTART.md), [docs/demo-surface-reduction.md](docs/demo-surface-reduction.md), and [docs/ui-theme.md](docs/ui-theme.md).
 

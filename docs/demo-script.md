@@ -17,6 +17,19 @@ Local demo mode requires no Google login, no `NEBIUS_API_KEY`, and no deployed e
 
 ## Step 1: Generate AI Scenario
 
+Preferred path:
+
+1. In `Command Center`, click `Run Serverless E2E Demo`.
+2. Show the story line:
+   `AI-generated spoofing incident -> LOB simulation -> detector alert -> LLM explanation -> investigation report -> detector tournament -> artifacts`.
+3. Confirm current mode:
+   - `local` for local deterministic execution
+   - `real_nebius_pending` when Nebius job command templates are missing
+   - `real_nebius` when the real command-template path is configured
+4. Open `outputs/serverless-smoke/manifest.json`.
+
+Manual backup path:
+
 1. In `Nebius AI Scenario Generator`, choose:
    - manipulation type: `Spoofing`
    - difficulty: `Medium`
@@ -85,6 +98,15 @@ Screenshot: Detector Tournament status and metrics.
    - `benchmark_report.md`
    - F1 / confidence / latency charts
 3. Explain that the same response shape is used when Nebius Serverless Jobs are configured.
+4. For the polished E2E path, open:
+   - `outputs/serverless-smoke/summary.json`
+   - `outputs/serverless-smoke/scenario.json`
+   - `outputs/serverless-smoke/simulation_events.json`
+   - `outputs/serverless-smoke/detector_alerts.json`
+   - `outputs/serverless-smoke/investigation_report.md`
+   - `outputs/serverless-smoke/tournament_result.json`
+   - `outputs/serverless-smoke/serverless_job.json`
+   - `outputs/serverless-smoke/manifest.json`
 
 Screenshot: Detector Tournament leaderboard and artifact links.
 
@@ -99,9 +121,13 @@ NEBIUS_ENDPOINT_BASE_URL=<deployed-endpoint-base-url>
 NEBIUS_MODEL=<model>
 NEBIUS_JOB_IMAGE=<job-image>
 NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE=<submit-command-template>
+NEBIUS_JOB_STATUS_COMMAND_TEMPLATE=<status-command-template>
+NEBIUS_JOB_LOGS_COMMAND_TEMPLATE=<logs-command-template>
+NEBIUS_JOB_ARTIFACTS_COMMAND_TEMPLATE=<artifacts-command-template>
 ```
 
 The interactive path calls the Nebius AI Serverless Endpoint. The batch path uses Nebius Serverless Jobs for detector tournament compute.
+If command templates are not configured, the E2E smoke demo still writes local artifacts but labels cloud job state as `real_nebius_pending`.
 
 ## Judge Talking Points
 

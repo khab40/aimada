@@ -293,16 +293,16 @@ def build_prefixed_normal_agents(count: int, prefix: str) -> list[RuntimeAgent]:
     if count >= 2:
         agents.append(DeterministicNoiseTrader(f"{normalized}_NOISE_001", offset=1))
     if count >= 3:
-        agents.append(PeriodicLiquidityTaker(f"{normalized}_TAKER_001", offset=2))
+        agents.append(PeriodicLiquidityTaker(f"{normalized}_TAKER_001", offset=1, cadence=2, quantity=0.65))
 
     for index in range(4, count + 1):
-        if index % 8 == 0:
+        if index % 4 == 0:
             agents.append(
                 PeriodicLiquidityTaker(
                     agent_id=f"{normalized}_TAKER_{index:03d}",
                     offset=index,
-                    cadence=8 + (index % 5),
-                    quantity=round(0.05 + (index % 4) * 0.025, 3),
+                    cadence=2 + (index % 3),
+                    quantity=round(0.2 + (index % 4) * 0.05, 3),
                 )
             )
         else:

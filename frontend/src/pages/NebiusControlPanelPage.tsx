@@ -22,6 +22,7 @@ import {
   renderManagedExperimentNebiusJobConfig,
   runAIInvestigationTeam,
   runManagedExperimentInvestigations,
+  runServerlessSmokeDemo,
   runManagedExperimentLocalBatch,
   startDetectorTournament,
   submitManagedExperimentNebius,
@@ -37,7 +38,8 @@ import {
   type ManagedExperimentCreateRequest,
   type NebiusObservatory,
   type NebiusStatus,
-  type ReportsSummary
+  type ReportsSummary,
+  type ServerlessSmokeResponse
 } from "@/api/client";
 import { RuntimeStatusCard } from "@/features/nebius/components/RuntimeStatusCard";
 import { UsageCostMonitor } from "@/features/nebius/components/UsageCostMonitor";
@@ -97,6 +99,7 @@ type ExperimentAction =
   | "submit-nebius"
   | "refresh-job-status"
   | "collect-cloud-artifacts"
+  | "run-serverless-smoke"
   | "render-job-config"
   | "test-endpoint-health"
   | "aggregate"
@@ -198,6 +201,7 @@ export function NebiusControlPanelPage() {
   const [scenarioMessage, setScenarioMessage] = useState<string | null>(null);
   const [tournamentForm, setTournamentForm] = useState<DetectorTournamentStartRequest>(initialTournamentForm);
   const [detectorTournament, setDetectorTournament] = useState<DetectorTournamentResponse | null>(null);
+  const [serverlessSmokeResult, setServerlessSmokeResult] = useState<ServerlessSmokeResponse | null>(null);
   const [tournamentMessage, setTournamentMessage] = useState<string | null>(null);
   const [investigationTeamReport, setInvestigationTeamReport] = useState<AIInvestigationTeamResponse | null>(null);
   const [experimentMessage, setExperimentMessage] = useState<string | null>(null);
@@ -502,6 +506,16 @@ export function NebiusControlPanelPage() {
     }, setTournamentMessage);
   }
 
+  async function runServerlessSmoke() {
+    await runExperimentAction("run-serverless-smoke", async () => {
+      const result = await runServerlessSmokeDemo();
+      setServerlessSmokeResult(result);
+      setDetectorTournament(result.tournament);
+      setInvestigationTeamReport(result.investigation ?? null);
+      setTournamentMessage(`${result.mode.replaceAll("_", " ")}: ${result.summary}`);
+    }, setTournamentMessage);
+  }
+
   function switchRuntimeMode(nextMode: RuntimeMode) {
     storeRuntimeMode(nextMode);
     setRuntimeMode(nextMode);
@@ -571,6 +585,12 @@ export function NebiusControlPanelPage() {
           status={experiment ? experiment.status.replaceAll("_", " ") : "pending"}
         />
       </section>
+
+      <ServerlessSmokeDemoPanel
+        busy={experimentBusyAction === "run-serverless-smoke"}
+        result={serverlessSmokeResult}
+        onRun={() => void runServerlessSmoke()}
+      />
 
       <section className="command-center-wizard" aria-label="Command Center workflow">
         <div className="command-center-wizard-header">
@@ -777,6 +797,115 @@ function CommandCenterServiceCard({
       </div>
       <span className={`runtime-status ${status.toLowerCase().replace(/\s+/g, "-")}`}>{status}</span>
     </article>
+  );
+}
+
+function ServerlessSmokeDemoPanel({
+  busy,
+  onRun,
+  result
+}: {
+  busy: boolean;
+  onRun: () => void;
+  result: ServerlessSmokeResponse | null;
+}) {
+  const jobStatus = String(result?.serverless_job.status ?? "not run");
+  const jobId = result?.serverless_job.job_id ? String(result.serverless_job.job_id) : "pending";
+  return (
+    <section className="panel serverless-smoke-panel" aria-label="Nebius Serverless E2E demo">
+      <div className="nebius-card-heading">
+        <div>
+          <span>Polished E2E demo</span>
+          <h2>Nebius Serverless Spoofing Incident</h2>
+          <p className="nebius-card-purpose">
+            AI-generated spoofing incident {"->"} LOB simulation {"->"} detector alert {"->"} LLM explanation {"->"} investigation report {"->"} detector tournament {"->"} artifacts.
+          </p>
+        </div>
+        <span className={`runtime-status ${result?.mode ?? "pending"}`}>{result?.mode.replaceAll("_", " ") ?? "ready"}</span>
+      </div>
+      <div className="nebius-button-row">
+        <button className="primary-button" disabled={busy} onClick={onRun} type="button">
+          {busy ? "Running E2E demo..." : "Run Serverless E2E Demo"}
+        </button>
+        {result ? <span className="fallback-note">Artifacts written to outputs/serverless-smoke/</span> : null}
+      </div>
+      {result ? (
+        <>
+          <InfrastructureMetricGrid>
+            <MetricBlock label="Current mode" value={result.mode.replaceAll("_", " ")} />
+            <MetricBlock label="Scenario" value={result.scenario_id} />
+            <MetricBlock label="Incident" value={result.incident_id ?? "not created"} />
+            <MetricBlock label="Detector alerts" value={String(result.detector_alerts.length)} />
+            <MetricBlock label="Job status" value={jobStatus.replaceAll("_", " ")} />
+            <MetricBlock label="Job id" value={jobId} />
+          </InfrastructureMetricGrid>
+          <div className="experiment-output-grid">
+            <div className="nebius-result-block">
+              <span>Incident explanation</span>
+              <p>{result.explanation?.plain_english_summary ?? "No incident explanation available."}</p>
+              {result.explanation?.evidence?.length ? (
+                <ul>
+                  {result.explanation.evidence.slice(0, 4).map((item) => <li key={item}>{item}</li>)}
+                </ul>
+              ) : null}
+            </div>
+            <div className="nebius-result-block">
+              <span>Detector evidence</span>
+              <ul>
+                {result.detector_alerts.slice(0, 5).map((alert, index) => (
+                  <li key={`${String(alert.name ?? alert.detector ?? "detector")}-${index}`}>
+                    {String(alert.name ?? alert.detector ?? "detector")}: {String(alert.confidence ?? alert.suspicion_score ?? "n/a")}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          <div className="experiment-output-grid">
+            <div className="nebius-result-block">
+              <span>Tournament leaderboard</span>
+              <table className="leaderboard-table">
+                <thead>
+                  <tr>
+                    <th>Detector</th>
+                    <th>Scenario</th>
+                    <th>F1</th>
+                    <th>FP</th>
+                    <th>FN</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {result.tournament.leaderboard.slice(0, 8).map((row) => (
+                    <tr key={`${row.detector}-${row.scenario}`}>
+                      <td>{row.detector}</td>
+                      <td>{row.scenario}</td>
+                      <td>{row.f1.toFixed(2)}</td>
+                      <td>{row.false_positives}</td>
+                      <td>{row.false_negatives}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="nebius-result-block">
+              <span>Artifacts</span>
+              <div className="artifact-link-list">
+                {result.artifacts.map((artifact) => (
+                  <a href={artifactDownloadUrl(artifact.path)} key={artifact.name}>
+                    {artifact.name}
+                  </a>
+                ))}
+              </div>
+              <span>Serverless benefits</span>
+              <ul>
+                {result.benefits.map((benefit) => <li key={benefit}>{benefit}</li>)}
+              </ul>
+            </div>
+          </div>
+          {result.investigation ? <InvestigationTeamReport report={result.investigation} /> : null}
+          {String(result.serverless_job.message ?? "") ? <p className="fallback-note">{String(result.serverless_job.message)}</p> : null}
+        </>
+      ) : null}
+    </section>
   );
 }
 

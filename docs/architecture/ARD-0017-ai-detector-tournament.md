@@ -9,7 +9,9 @@ Implementation Status: `[done]`
 Primary implementation:
 
 - Backend API: `POST /api/nebius/tournament/start`, `GET /api/nebius/tournament/{id}`, `GET /api/nebius/tournament/{id}/artifacts`
+- E2E demo API: `POST /api/nebius/serverless-smoke/run`
 - Backend service: `backend/app/nebius/detector_tournament.py`
+- E2E demo service: `backend/app/nebius/serverless_smoke.py`
 - Serverless job: `serverless/jobs/detector_tournament.py`
 - Frontend surface: AI Command Center detector tournament panel
 
@@ -41,6 +43,7 @@ The facade reuses existing experiment APIs and runners internally:
 - Explicit `local` execution uses `serverless/jobs/detector_tournament.py` for capped detector-set comparison when the user starts a lightweight tournament.
 - Managed Nebius job path uses `ManagedExperiment`, `render-nebius-job-config`, `submit-nebius`, `collect-nebius-artifacts`, and `aggregate`.
 - Larger artifact-heavy tournaments continue to use `run_batch_experiments.py` because it already produces canonical JSONL/CSV/MD artifacts for investigations and reports.
+- The polished challenge demo uses `serverless-smoke/run` as orchestration glue only. It does not introduce new detector algorithms or duplicate job architecture; it writes a curated artifact bundle under `outputs/serverless-smoke/`.
 
 ```mermaid
 graph TD
@@ -207,6 +210,29 @@ Route behavior:
 6. Persist tournament state under `nebius/tournaments/{tournament_id}/`.
 7. Append summary rows to `nebius/tournaments.jsonl`.
 8. Store history artifact with `kind="run"` and `source="ai_detector_tournament"`.
+
+## E2E Smoke Demo Contract
+
+`POST /api/nebius/serverless-smoke/run` runs one curated story:
+
+1. Generate spoofing scenario through the existing Nebius scenario generator client.
+2. Replay `spoofing-like` through the existing Arena simulation.
+3. Capture deterministic detector alerts and incident.
+4. Explain the incident through the existing incident explainer.
+5. Run the AI Investigation Team through the existing endpoint client.
+6. Run a local detector tournament for immediate leaderboard evidence.
+7. Write `serverless_job.json` with `real_nebius_pending` if `NEBIUS_JOB_*_COMMAND_TEMPLATE` values are absent.
+
+Artifacts:
+
+- `outputs/serverless-smoke/summary.json`
+- `outputs/serverless-smoke/scenario.json`
+- `outputs/serverless-smoke/simulation_events.json`
+- `outputs/serverless-smoke/detector_alerts.json`
+- `outputs/serverless-smoke/investigation_report.md`
+- `outputs/serverless-smoke/tournament_result.json`
+- `outputs/serverless-smoke/serverless_job.json`
+- `outputs/serverless-smoke/manifest.json`
 
 ## Serverless Job Design
 

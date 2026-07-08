@@ -1,6 +1,6 @@
 # Nebius AI Serverless Build Plan
 
-Status: Draft
+Status: Implemented
 
 Date: 2026-07-06
 
@@ -19,10 +19,37 @@ This plan does not propose a rewrite. It reuses existing code paths:
 - Managed experiment orchestration: `backend/app/experiments/manager.py`, `backend/app/experiments/nebius_orchestrator.py`
 - Serverless endpoint: `serverless/endpoint/app.py`
 - Serverless jobs: `serverless/jobs/run_batch_experiments.py`, `serverless/jobs/render_job_config.py`, `serverless/jobs/nebius_job_config.yaml`
+- E2E smoke route: `POST /api/nebius/serverless-smoke/run`
+- E2E smoke service: `backend/app/nebius/serverless_smoke.py`
 
 ## Platform Narrative
 
 AIMADA generates synthetic suspicious market workloads. Nebius AI Serverless investigates incidents, generates bounded scenarios, and runs detector tournaments. The browser never calls Nebius directly; FastAPI owns endpoint URLs, API keys, request shaping, persistence, and fallback labeling.
+
+## Polished Challenge Demo Path
+
+The judging path is intentionally one story:
+
+`AI-generated spoofing incident -> LOB simulation -> rule-based detector alert -> LLM incident explanation -> AI investigation report -> detector tournament as Nebius Serverless Job -> artifacts and leaderboard`.
+
+Use:
+
+```http
+POST /api/nebius/serverless-smoke/run
+```
+
+The route reuses existing clients and simulation code, then writes:
+
+- `outputs/serverless-smoke/summary.json`
+- `outputs/serverless-smoke/scenario.json`
+- `outputs/serverless-smoke/simulation_events.json`
+- `outputs/serverless-smoke/detector_alerts.json`
+- `outputs/serverless-smoke/investigation_report.md`
+- `outputs/serverless-smoke/tournament_result.json`
+- `outputs/serverless-smoke/serverless_job.json`
+- `outputs/serverless-smoke/manifest.json`
+
+If `NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE`, `NEBIUS_JOB_STATUS_COMMAND_TEMPLATE`, `NEBIUS_JOB_LOGS_COMMAND_TEMPLATE`, and `NEBIUS_JOB_ARTIFACTS_COMMAND_TEMPLATE` are absent, `serverless_job.json` reports `real_nebius_pending`. It does not fake cloud success.
 
 ## Phase 1: AI Investigation Team Via Nebius AI Serverless Endpoint
 
