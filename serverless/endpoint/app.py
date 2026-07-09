@@ -12,6 +12,15 @@ from pydantic import BaseModel, Field
 
 from prompts import INCIDENT_EXPLANATION_SYSTEM_PROMPT, SCENARIO_GENERATOR_SYSTEM_PROMPT
 
+import logging
+
+logger = logging.getLogger("aimada-endpoint")
+
+JSON_ONLY_INSTRUCTION = (
+    "Return ONLY valid JSON. Do not use markdown. Do not wrap the JSON in code fences. "
+    "Do not add explanatory text before or after the JSON. "
+)
+
 DISCLAIMER = (
     "Educational synthetic simulation only. This does not detect real market manipulation, "
     "does not provide trading signals, and must not be used for compliance decisions."
@@ -252,9 +261,15 @@ def orderbook_alert(request: OrderBookWindow) -> OrderBookAlertResponse:
     fallback = _deterministic_orderbook_alert(request)
     model_response = _call_model_json(
         system_prompt=(
-            "Return JSON with suspicion_score, detected_pattern, confidence, reasons, "
-            "and recommended_action for a synthetic educational L2 order-book window. "
-            "Never claim real market surveillance capability."
+            JSON_ONLY_INSTRUCTION
+            + "You are an educational synthetic order-book surveillance assistant. "
+            "Return a JSON object with exactly these keys: "
+            "suspicion_score, detected_pattern, confidence, reasons, recommended_action. "
+            "suspicion_score and confidence must be numbers between 0 and 1. "
+            "detected_pattern and recommended_action must be strings. "
+            "reasons must be an array of strings. "
+            "Never claim real market surveillance capability. "
+            "Do not provide trading, compliance, legal, or enforcement advice."
         ),
         user_payload=request.model_dump(mode="json"),
     )
@@ -269,6 +284,7 @@ def orderbook_alert(request: OrderBookWindow) -> OrderBookAlertResponse:
         },
     )
     if payload is None:
+        _log_fallback("orderbook_alert", model_response)
         return _with_model_metadata(fallback, _fallback_model_result(model_response))
     return _merge_alert_response(fallback, payload, model_response)
 
@@ -278,11 +294,26 @@ def investigation_report(request: InvestigationReportRequest) -> InvestigationRe
     fallback = _deterministic_investigation_report(request)
     model_response = _call_model_json(
         system_prompt=(
-            "Return a JSON market-abuse case report for an educational synthetic trace. "
-            "Required keys: title, summary, timeline, detector_findings, limitations, "
-            "recommended_next_steps. Avoid real-world enforcement or trading advice."
+            JSON_ONLY_INSTRUCTION
+            + "You are a market-surveillance analyst assistant for educational synthetic data. "
+            "Return a JSON object with exactly these keys: "
+            "title, summary, timeline, detector_findings, limitations, recommended_next_steps. "
+            "title and summary must be strings. "
+            "timeline, detector_findings, limitations, and recommended_next_steps must be arrays of strings. "
+            "Avoid real-world enforcement, investment, legal, compliance, or trading advice."
         ),
-        user_payload=request.model_dump(mode="json"),
+        user_payload={
+            "task": "Create a concise synthetic market-abuse investigation report.",
+            "required_schema": {
+                "title": "string",
+                "summary": "string",
+                "timeline": ["string"],
+                "detector_findings": ["string"],
+                "limitations": ["string"],
+                "recommended_next_steps": ["string"],
+            },
+            "input": request.model_dump(mode="json"),
+        },
     )
     payload = _validated_model_payload(
         model_response,
@@ -296,6 +327,7 @@ def investigation_report(request: InvestigationReportRequest) -> InvestigationRe
         },
     )
     if payload is None:
+        _log_fallback("investigation_report", model_response)
         return _with_model_metadata(fallback, _fallback_model_result(model_response))
     return _merge_report_response(fallback, payload, model_response)
 
@@ -305,12 +337,19 @@ def investigation_team(request: AIInvestigationTeamRequest) -> AIInvestigationTe
     fallback = _deterministic_investigation_team(request)
     model_response = _call_model_json(
         system_prompt=(
-            "Return JSON for a synthetic AI market surveillance investigation team. Required keys: "
+            JSON_ONLY_INSTRUCTION
+            + "You are an educational synthetic AI market-surveillance investigation team. "
+            "Return a JSON object with exactly these keys: "
             "investigation_id, manipulation_type, risk_score, confidence, agents, consensus, "
-            "evidence_timeline, recommended_action, executive_summary. agents must be a list of "
-            "objects with name, role, finding, confidence, evidence. Use these exact agent names: "
-            "OrderBookExpertAgent, TradePatternAgent, StatisticsAgent, ComplianceAgent, "
-            "LeadInvestigatorAgent. Never claim real market abuse detection."
+            "evidence_timeline, recommended_action, executive_summary. "
+            "risk_score and confidence must be numbers between 0 and 1. "
+            "agents must be an array of objects with exactly these keys: "
+            "name, role, finding, confidence, evidence. "
+            "evidence must be an array of objects with key, label, value, source. "
+            "Use these exact agent names: OrderBookExpertAgent, TradePatternAgent, StatisticsAgent, "
+            "ComplianceAgent, LeadInvestigatorAgent. "
+            "evidence_timeline must be an array of objects with sequence, event, tick, source, significance. "
+            "Never claim real market-abuse detection or real compliance capability."
         ),
         user_payload=request.model_dump(mode="json"),
     )
@@ -329,6 +368,7 @@ def investigation_team(request: AIInvestigationTeamRequest) -> AIInvestigationTe
         },
     )
     if payload is None:
+        _log_fallback("investigation_team", model_response)
         return _with_model_metadata(fallback, _fallback_model_result(model_response))
     return _merge_investigation_team_response(fallback, payload, model_response)
 
@@ -337,7 +377,13 @@ def investigation_team(request: AIInvestigationTeamRequest) -> AIInvestigationTe
 def explain_event(request: IncidentExplanationRequest) -> IncidentExplanationResponse:
     fallback = _deterministic_explanation(request)
     model_response = _call_model_json(
-        system_prompt=INCIDENT_EXPLANATION_SYSTEM_PROMPT,
+        system_prompt=(
+            JSON_ONLY_INSTRUCTION
+            + INCIDENT_EXPLANATION_SYSTEM_PROMPT
+            + " Return a JSON object with exactly these keys: risk_level, plain_english_summary, evidence, recommended_action. "
+            "risk_level, plain_english_summary, and recommended_action must be strings. "
+            "evidence must be an array of strings."
+        ),
         user_payload=request.model_dump(mode="json"),
     )
     payload = _validated_model_payload(
@@ -350,6 +396,7 @@ def explain_event(request: IncidentExplanationRequest) -> IncidentExplanationRes
         },
     )
     if payload is None:
+        _log_fallback("explain_event", model_response)
         return _with_model_metadata(fallback, _fallback_model_result(model_response))
     return _merge_explanation_response(request, fallback, payload, model_response)
 
@@ -357,7 +404,11 @@ def explain_event(request: IncidentExplanationRequest) -> IncidentExplanationRes
 @app.post("/explain-simulation")
 def explain_simulation(request: ExplainPayload) -> dict[str, Any]:
     summary = _call_model_json(
-        system_prompt=INCIDENT_EXPLANATION_SYSTEM_PROMPT,
+        system_prompt=(
+            JSON_ONLY_INSTRUCTION
+            + INCIDENT_EXPLANATION_SYSTEM_PROMPT
+            + " Return a concise JSON object summarizing the synthetic simulation."
+        ),
         user_payload={"task": "explain_simulation", **request.payload},
     )
     if summary.payload is not None:
@@ -368,6 +419,7 @@ def explain_simulation(request: ExplainPayload) -> dict[str, Any]:
             "latency_ms": summary.latency_ms,
             "disclaimer": DISCLAIMER,
         }
+    _log_fallback("explain_simulation", summary)
     return {
         "summary": "Synthetic simulation completed with deterministic detector outputs and bounded scenario labels.",
         "payload": request.payload,
@@ -382,7 +434,11 @@ def explain_simulation(request: ExplainPayload) -> dict[str, Any]:
 @app.post("/generate-incident-report")
 def generate_incident_report(request: ExplainPayload) -> dict[str, Any]:
     summary = _call_model_json(
-        system_prompt=INCIDENT_EXPLANATION_SYSTEM_PROMPT,
+        system_prompt=(
+            JSON_ONLY_INSTRUCTION
+            + INCIDENT_EXPLANATION_SYSTEM_PROMPT
+            + " Return a concise JSON object for an educational synthetic incident report."
+        ),
         user_payload={"task": "generate_report", **request.payload},
     )
     if summary.payload is not None:
@@ -393,6 +449,7 @@ def generate_incident_report(request: ExplainPayload) -> dict[str, Any]:
             "latency_ms": summary.latency_ms,
             "disclaimer": DISCLAIMER,
         }
+    _log_fallback("generate_incident_report", summary)
     return {
         "report": "Synthetic incident report generated from deterministic evidence. Review detector scores, replay window, and labels.",
         "payload": request.payload,
@@ -407,7 +464,13 @@ def generate_incident_report(request: ExplainPayload) -> dict[str, Any]:
 def generate_scenario(request: ScenarioGenerationRequest) -> ScenarioGenerationResponse:
     fallback = _deterministic_scenario(request)
     model_response = _call_model_json(
-        system_prompt=SCENARIO_GENERATOR_SYSTEM_PROMPT,
+        system_prompt=(
+            JSON_ONLY_INSTRUCTION
+            + SCENARIO_GENERATOR_SYSTEM_PROMPT
+            + " Return a JSON object with exactly these keys: scenario_type, title, description, parameters, expected_detector_risk. "
+            "scenario_type, title, and description must be strings. "
+            "parameters must be an object. expected_detector_risk must be a number between 0 and 1."
+        ),
         user_payload=request.model_dump(mode="json"),
     )
     payload = _validated_model_payload(
@@ -421,6 +484,7 @@ def generate_scenario(request: ScenarioGenerationRequest) -> ScenarioGenerationR
         },
     )
     if payload is None:
+        _log_fallback("generate_scenario", model_response)
         return _with_model_metadata(fallback, _fallback_model_result(model_response))
     return _merge_scenario_response(fallback, payload, model_response)
 
@@ -430,13 +494,17 @@ def generate_market_abuse_scenario(request: MarketAbuseScenarioGenerationRequest
     fallback = _deterministic_market_abuse_scenario(request)
     model_response = _call_model_json(
         system_prompt=(
-            "Return JSON for one bounded synthetic market-abuse scenario. Required keys: "
+            JSON_ONLY_INSTRUCTION
+            + "You generate bounded educational synthetic market-abuse scenarios for an order-book simulator. "
+            "Return a JSON object with exactly these keys: "
             "scenario_id, title, description, manipulation_type, difficulty, symbol, duration_ticks, "
             "liquidity_regime, volatility_regime, ground_truth, events, expected_detector_behavior, "
-            "explanation, replay, source. Events must use the arena AgentEvent-compatible fields: "
+            "explanation, replay, source. "
+            "events must be an array of objects using these Arena AgentEvent-compatible fields: "
             "event_id, tick, event_type, type, agent_id, symbol, scenario_id, scenario_name, "
             "scenario_family, stage, message, side, price, quantity, order_id, metadata. "
-            "Use synthetic educational data only."
+            "ground_truth, expected_detector_behavior, replay, and source must be objects. "
+            "Use synthetic educational data only and do not provide real manipulation instructions."
         ),
         user_payload=request.model_dump(mode="json"),
     )
@@ -457,6 +525,7 @@ def generate_market_abuse_scenario(request: MarketAbuseScenarioGenerationRequest
         },
     )
     if payload is None:
+        _log_fallback("generate_market_abuse_scenario", model_response)
         return _with_model_metadata(fallback, _fallback_model_result(model_response))
     return _merge_market_abuse_scenario_response(fallback, payload, model_response)
 
@@ -530,7 +599,8 @@ def _call_model_json(system_prompt: str, user_payload: dict[str, Any]) -> ModelC
     try:
         with urlopen(request, timeout=_float_env("NEBIUS_REQUEST_TIMEOUT_SECONDS", 12.0)) as response:
             decoded = json.loads(response.read().decode("utf-8"))
-    except (HTTPError, URLError, TimeoutError, json.JSONDecodeError, ValueError):
+    except (HTTPError, URLError, TimeoutError, json.JSONDecodeError, ValueError) as ex:
+        logger.exception("Nebius model call failed: %s", ex)
         return ModelCallResult(
             payload=None,
             model_mode="deterministic_fallback",
@@ -541,6 +611,7 @@ def _call_model_json(system_prompt: str, user_payload: dict[str, Any]) -> ModelC
 
     parsed = _parse_chat_completion_json(decoded)
     if parsed is None:
+        logger.warning("Model returned invalid JSON response: %s", json.dumps(decoded)[:4000])
         return ModelCallResult(
             payload=None,
             model_mode="deterministic_fallback",
@@ -592,8 +663,12 @@ def _parse_chat_completion_json(decoded: Any) -> dict[str, Any] | None:
     try:
         parsed = json.loads(content)
     except json.JSONDecodeError:
+        logger.warning("Model content is not valid JSON: %s", content[:4000])
         return None
-    return parsed if isinstance(parsed, dict) else None
+    if not isinstance(parsed, dict):
+        logger.warning("Model JSON content is not an object: %s", content[:4000])
+        return None
+    return parsed
 
 
 def _validated_model_payload(
@@ -624,6 +699,7 @@ def _with_model_metadata(response: BaseModel, result: ModelCallResult) -> Any:
     )
 
 
+
 def _fallback_model_result(result: ModelCallResult) -> ModelCallResult:
     if result.model_mode == "deterministic_fallback":
         return result
@@ -633,6 +709,17 @@ def _fallback_model_result(result: ModelCallResult) -> ModelCallResult:
         model=result.model,
         latency_ms=result.latency_ms,
         fallback_reason="invalid_model_json",
+    )
+
+
+# Helper to log fallback events for all routes
+def _log_fallback(route: str, result: ModelCallResult) -> None:
+    logger.warning(
+        "%s falling back to deterministic response: mode=%s reason=%s latency_ms=%s",
+        route,
+        result.model_mode,
+        result.fallback_reason,
+        result.latency_ms,
     )
 
 
