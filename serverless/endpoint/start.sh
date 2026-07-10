@@ -3,11 +3,24 @@ set -euo pipefail
 
 UVICORN_HOST="${UVICORN_HOST:-0.0.0.0}"
 UVICORN_PORT="${UVICORN_PORT:-9000}"
+UVICORN_STARTUP_GRACE_SECONDS="${UVICORN_STARTUP_GRACE_SECONDS:-2}"
 export PYTHONUNBUFFERED=1
+
+start_uvicorn() {
+  echo "Uvicorn running on http://${UVICORN_HOST}:${UVICORN_PORT}"
+  python3 -m uvicorn app:app --host "${UVICORN_HOST}" --port "${UVICORN_PORT}" &
+  UVICORN_PID="$!"
+  sleep "${UVICORN_STARTUP_GRACE_SECONDS}"
+  if ! kill -0 "${UVICORN_PID}" >/dev/null 2>&1; then
+    echo "Uvicorn failed during startup pid=${UVICORN_PID}"
+    wait "${UVICORN_PID}" || true
+    exit 1
+  fi
+}
 
 if [[ "${NEBIUS_ENDPOINT_MODE:-mock}" != "local_vllm" ]]; then
   echo "Endpoint startup: mode=${NEBIUS_ENDPOINT_MODE:-mock}; starting FastAPI only on ${UVICORN_HOST}:${UVICORN_PORT}"
-  exec uvicorn app:app --host "${UVICORN_HOST}" --port "${UVICORN_PORT}"
+  exec python3 -m uvicorn app:app --host "${UVICORN_HOST}" --port "${UVICORN_PORT}"
 fi
 
 LOCAL_VLLM_MODEL="${LOCAL_VLLM_MODEL:-Qwen/Qwen2.5-1.5B-Instruct}"
@@ -33,7 +46,9 @@ echo "vLLM startup: model=${LOCAL_VLLM_MODEL} host=${LOCAL_VLLM_HOST} port=${LOC
 echo
 echo "vLLM readiness..."
 
-python -m vllm.entrypoints.openai.api_server \
+start_uvicorn
+
+python3 -m vllm.entrypoints.openai.api_server \
   --model "${LOCAL_VLLM_MODEL}" \
   --host "${LOCAL_VLLM_HOST}" \
   --port "${LOCAL_VLLM_PORT}" \
@@ -41,7 +56,6 @@ python -m vllm.entrypoints.openai.api_server \
   --max-model-len "${LOCAL_VLLM_MAX_MODEL_LEN}" &
 
 VLLM_PID="$!"
-UVICORN_PID=""
 
 cleanup() {
   if [[ -n "${UVICORN_PID}" ]] && kill -0 "${UVICORN_PID}" >/dev/null 2>&1; then
@@ -62,7 +76,7 @@ echo "vLLM readiness: waiting for ${LOCAL_VLLM_BASE_URL}/models timeout_seconds=
 LOCAL_VLLM_BASE_URL="${LOCAL_VLLM_BASE_URL}" \
 LOCAL_VLLM_READY_TIMEOUT_SECONDS="${LOCAL_VLLM_READY_TIMEOUT_SECONDS}" \
 VLLM_PID="${VLLM_PID}" \
-python - <<'PY'
+python3 - <<'PY'
 import os
 import sys
 import time
@@ -100,9 +114,6 @@ sys.exit(1)
 PY
 
 echo "vLLM ready"
-echo "Uvicorn running on http://${UVICORN_HOST}:${UVICORN_PORT}"
-uvicorn app:app --host "${UVICORN_HOST}" --port "${UVICORN_PORT}" &
-UVICORN_PID="$!"
 
 set +e
 wait -n "${UVICORN_PID}" "${VLLM_PID}"

@@ -257,7 +257,13 @@ def test_nebius_endpoint_base_url_derives_backend_routes(monkeypatch: Any) -> No
             return None
 
         def read(self) -> bytes:
-            return json.dumps({"status": "ok", "endpoint_mode": "local_vllm"}).encode("utf-8")
+            return json.dumps(
+                {
+                    "status": "ok",
+                    "endpoint_mode": "local_vllm",
+                    "model": "Qwen/Qwen2.5-1.5B-Instruct",
+                }
+            ).encode("utf-8")
 
     def fake_urlopen(request: Any, timeout: float) -> FakeHealthResponse:
         captured["url"] = request.full_url
@@ -282,7 +288,13 @@ def test_nebius_endpoint_base_url_derives_backend_routes(monkeypatch: Any) -> No
         assert status.investigation_report_configured is True
         assert status.investigation_team_configured is True
         assert status.endpoint_base_url_configured is True
-        assert status.endpoint_health == {"status": "ok", "endpoint_mode": "local_vllm"}
+        assert status.endpoint_mode == "local_vllm"
+        assert status.model == "Qwen/Qwen2.5-1.5B-Instruct"
+        assert status.endpoint_health == {
+            "status": "ok",
+            "endpoint_mode": "local_vllm",
+            "model": "Qwen/Qwen2.5-1.5B-Instruct",
+        }
         assert captured["url"] == "https://nebius-endpoint.example/health"
         assert captured["method"] == "GET"
         assert captured["authorization"] == "Bearer test-token"

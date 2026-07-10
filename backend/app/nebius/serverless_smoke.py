@@ -120,7 +120,7 @@ async def run_serverless_smoke_demo(
             store=store,
             repo_root=repo_root,
         )
-        if _job_templates_configured(settings)
+        if _job_submit_configured(settings)
         else None
     )
     serverless_job = _serverless_job_status(settings, local_tournament, cloud_tournament)
@@ -169,7 +169,8 @@ async def run_serverless_smoke_demo(
                 "serverless_job.json",
             ],
             "required_modes": ["local", "real_nebius_pending", "real_nebius", "error"],
-            "job_templates_configured": _job_templates_configured(settings),
+            "job_templates_configured": _job_submit_configured(settings),
+            "artifact_collection_configured": _artifact_collection_configured(settings),
         },
     }
     for name, payload in artifact_payloads.items():
@@ -260,25 +261,28 @@ def _serverless_job_status(
     tournament: DetectorTournamentResponse,
     cloud_tournament: DetectorTournamentResponse | None,
 ) -> dict[str, Any]:
-    configured = _job_templates_configured(settings)
+    configured = _job_submit_configured(settings)
+    artifact_collection_configured = _artifact_collection_configured(settings)
     if not configured:
         return {
             "status": "real_nebius_pending",
             "execution_mode": "nebius_serverless_job",
             "job_id": None,
-            "message": "NEBIUS_JOB_*_COMMAND_TEMPLATE values are not configured; local tournament artifact is available.",
+            "message": "Nebius job submit/status/log commands are not configured for this backend process.",
             "local_tournament_id": tournament.tournament_id,
             "templates_configured": False,
+            "artifact_collection_configured": artifact_collection_configured,
         }
     if cloud_tournament is not None:
         return {
             "status": cloud_tournament.status,
             "execution_mode": cloud_tournament.execution_mode,
             "job_id": cloud_tournament.metrics.get("nebius_job_id") if isinstance(cloud_tournament.metrics, dict) else None,
-            "message": cloud_tournament.summary,
+            "message": _cloud_job_message(cloud_tournament, artifact_collection_configured=artifact_collection_configured),
             "local_tournament_id": tournament.tournament_id,
             "cloud_tournament_id": cloud_tournament.tournament_id,
             "templates_configured": True,
+            "artifact_collection_configured": artifact_collection_configured,
             "artifacts": cloud_tournament.artifacts,
         }
     return {
@@ -288,15 +292,35 @@ def _serverless_job_status(
         "message": "Nebius command templates are configured but no cloud tournament was submitted.",
         "local_tournament_id": tournament.tournament_id,
         "templates_configured": True,
+        "artifact_collection_configured": artifact_collection_configured,
     }
 
 
-def _job_templates_configured(settings: Any) -> bool:
+def _job_submit_configured(settings: Any) -> bool:
     return bool(
         settings.nebius_job_submit_command_template
         and settings.nebius_job_status_command_template
         and settings.nebius_job_logs_command_template
-        and settings.nebius_job_artifacts_command_template
+    )
+
+
+def _artifact_collection_configured(settings: Any) -> bool:
+    return bool(
+        settings.nebius_job_artifacts_command_template
+        or getattr(settings, "nebius_job_output_uri", None)
+    )
+
+
+def _cloud_job_message(
+    cloud_tournament: DetectorTournamentResponse,
+    *,
+    artifact_collection_configured: bool,
+) -> str:
+    if artifact_collection_configured:
+        return cloud_tournament.summary
+    return (
+        f"{cloud_tournament.summary} Cloud artifact sync is pending an output URI; "
+        "set a Nebius output volume plus NEBIUS_JOB_OUTPUT_URI when you want the UI to collect job artifacts."
     )
 
 

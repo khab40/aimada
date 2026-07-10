@@ -95,17 +95,19 @@ def test_submit_with_template_persists_failed_job_and_redacts(monkeypatch: Any, 
 
 def test_refresh_does_not_complete_without_artifact_confirmation(monkeypatch: Any, tmp_path: Path) -> None:
     repository = _repository_with_experiment(tmp_path)
+    captured_status_argv: list[str] = []
 
     def fake_run(argv: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
         if argv[0] == "submit-job":
             return subprocess.CompletedProcess(argv, 0, stdout="job_id: job-refresh", stderr="")
+        captured_status_argv.extend(argv)
         return subprocess.CompletedProcess(argv, 0, stdout='{"status":"completed"}', stderr="")
 
     monkeypatch.setattr("app.experiments.nebius_orchestrator.subprocess.run", fake_run)
     settings = Settings(
         _env_file=None,
         NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE="submit-job {config_path}",
-        NEBIUS_JOB_STATUS_COMMAND_TEMPLATE="status-job {experiment_id}",
+        NEBIUS_JOB_STATUS_COMMAND_TEMPLATE="status-job {job_id}",
     )
     orchestrator = NebiusExperimentOrchestrator(repository, settings)
 
@@ -114,6 +116,7 @@ def test_refresh_does_not_complete_without_artifact_confirmation(monkeypatch: An
 
     assert submitted is not None
     assert submitted.status == "queued"
+    assert captured_status_argv == ["status-job", "job-refresh"]
     assert refreshed is not None
     assert refreshed[0].status == "running"
     assert "artifact collection is not confirmed" in refreshed[0].message

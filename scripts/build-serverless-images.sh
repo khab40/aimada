@@ -1,43 +1,52 @@
-# vLLM-only endpoint image for Nebius Serverless AI Endpoint on H100.
-# The image runs a private local vLLM OpenAI-compatible server on 127.0.0.1:8001
-# and exposes only the AIMADA FastAPI endpoint on 0.0.0.0:9000.
+#!/usr/bin/env bash
+set -euo pipefail
 
-FROM vllm/vllm-openai:latest
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+IMAGE_NAMESPACE="${IMAGE_NAMESPACE:-ghcr.io/khab40}"
+TAG="${TAG:-latest}"
+PLATFORM="${PLATFORM:-linux/amd64}"
+PUSH="${PUSH:-false}"
+SMOKE="${SMOKE:-false}"
 
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PIP_NO_CACHE_DIR=1 \
-    NEBIUS_ENDPOINT_MODE=mock \
-    VLLM_HOST=127.0.0.1 \
-    VLLM_PORT=8001 \
-    VLLM_BASE_URL=http://127.0.0.1:8001/v1 \
-    VLLM_MODEL=Qwen/Qwen2.5-1.5B-Instruct \
-    VLLM_GPU_MEMORY_UTILIZATION=0.90 \
-    VLLM_MAX_MODEL_LEN=4096
+ENDPOINT_IMAGE="${ENDPOINT_IMAGE:-${IMAGE_NAMESPACE}/ai-market-abuse-detection-arena-endpoint:${TAG}}"
+JOBS_IMAGE="${JOBS_IMAGE:-${IMAGE_NAMESPACE}/ai-market-abuse-detection-arena-jobs:${TAG}}"
 
-WORKDIR /endpoint
+endpoint_args=(
+  docker build
+  --platform "${PLATFORM}"
+  -f "${ROOT_DIR}/serverless/endpoint/Dockerfile"
+  -t "${ENDPOINT_IMAGE}"
+  "${ROOT_DIR}/serverless/endpoint"
+)
 
-# Install only lightweight app/runtime dependencies here.
-# Heavy GPU/vLLM dependencies come from the base image to keep rebuilds faster.
-COPY requirements.txt /endpoint/requirements.txt
-RUN python -m pip install --upgrade pip && \
-    python -m pip install --no-cache-dir -r /endpoint/requirements.txt
+jobs_args=(
+  docker build
+  --platform "${PLATFORM}"
+  -f "${ROOT_DIR}/serverless/jobs/Dockerfile"
+  -t "${JOBS_IMAGE}"
+  "${ROOT_DIR}"
+)
 
-# Copy app code after dependencies so small code changes do not invalidate heavy layers.
-COPY app.py /endpoint/app.py
-COPY entrypoint.sh /endpoint/entrypoint.sh
-RUN chmod +x /endpoint/entrypoint.sh
+printf "%s\n" "Building endpoint image: ${ENDPOINT_IMAGE}"
+"${endpoint_args[@]}"
 
-# Lightweight build-time smoke test only.
-# Do not start vLLM or download models during docker build.
-RUN NEBIUS_ENDPOINT_MODE=mock python - <<'PY'
-import app
-health = app.health()
-assert health["status"] == "ok"
-assert health["endpoint_mode"] == "mock"
-print("AIMADA endpoint smoke test passed")
-PY
+printf "%s\n" "Building jobs image: ${JOBS_IMAGE}"
+"${jobs_args[@]}"
 
-EXPOSE 9000
+if [[ "${SMOKE}" == "true" ]]; then
+  printf "%s\n" "Smoke checking endpoint image metadata"
+  docker image inspect "${ENDPOINT_IMAGE}" >/dev/null
 
-CMD ["/endpoint/entrypoint.sh"]
+  printf "%s\n" "Smoke checking jobs image metadata"
+  docker image inspect "${JOBS_IMAGE}" >/dev/null
+fi
+
+if [[ "${PUSH}" == "true" ]]; then
+  printf "%s\n" "Pushing endpoint image: ${ENDPOINT_IMAGE}"
+  docker push "${ENDPOINT_IMAGE}"
+
+  printf "%s\n" "Pushing jobs image: ${JOBS_IMAGE}"
+  docker push "${JOBS_IMAGE}"
+fi
+
+printf "%s\n" "Serverless image build complete"

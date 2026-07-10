@@ -25,6 +25,7 @@ RUN pip install --no-cache-dir \
   python-dotenv \
   requests \
   pyyaml \
+  awscli \
   "uvicorn[standard]"
 
 COPY backend/app ./app

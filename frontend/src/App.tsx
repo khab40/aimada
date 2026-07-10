@@ -4,7 +4,7 @@ import { BrowserRouter, Navigate, NavLink, Route, Routes, useLocation } from "re
 import "./App.css";
 import { AboutPage } from "@/pages/AboutPage";
 import { useAuth } from "@/auth/useAuth";
-import type { ArenaRole } from "@/api/client";
+import { getNebiusStatus, type ArenaRole } from "@/api/client";
 import { ArenaPage } from "@/pages/ArenaPage";
 import { AttackScenarioGeneratorPage } from "@/pages/AttackScenarioGeneratorPage";
 import { NebiusControlPanelPage } from "@/pages/NebiusControlPanelPage";
@@ -451,7 +451,12 @@ function RuntimePanel() {
   const runtime = visibleRuntimeOptions.find((option) => option.value === runtimeMode) ?? visibleRuntimeOptions[0];
   const currentMatrix = { ...runtime.matrix, ...runtimeOverrides[runtimeMode] };
 
-  useEffect(() => storeRuntimeMode(runtimeMode), [runtimeMode]);
+  useEffect(() => {
+    storeRuntimeMode(runtimeMode);
+    if (runtimeMode !== "local-demo") {
+      void refreshNebiusRuntimeStatus(runtimeMode);
+    }
+  }, [runtimeMode]);
 
   function switchRuntime(mode: RuntimeMode) {
     setRuntimeMode(mode);
@@ -460,30 +465,51 @@ function RuntimePanel() {
       setRuntimeMessage("Switched to Local Demo. Mock AI fallback is active.");
       return;
     }
-    setRuntimeMessage(`${visibleRuntimeOptions.find((option) => option.value === mode)?.label ?? "Runtime"} selected. If Nebius is not configured, cloud status will show deployment required.`);
+    setRuntimeMessage("Checking Nebius endpoint status...");
   }
 
-  function testNebiusConnection() {
-    setRuntimeOverrides((current) => ({
-      ...current,
-      [runtimeMode]: {
-        ...current[runtimeMode],
-        "AI Endpoint": "Endpoint unavailable"
-      }
-    }));
-    setRuntimeMessage("Nebius unavailable or not configured. Falling back to mock AI.");
+  async function refreshNebiusRuntimeStatus(mode: RuntimeMode) {
+    try {
+      const status = await getNebiusStatus();
+      const endpointReady = status.endpoint_health?.status === "ok";
+      const endpointConfigured = Boolean(
+        status.incident_explainer_configured
+        || status.scenario_generator_configured
+        || status.orderbook_alert_configured
+        || status.investigation_report_configured
+      );
+      const connected = endpointReady || endpointConfigured || status.endpoint_token_configured || status.api_key_configured || status.cli_installed;
+      setRuntimeOverrides((current) => ({
+        ...current,
+        [mode]: {
+          ...current[mode],
+          "AI Endpoint": endpointReady ? "Ready" : endpointConfigured ? "Connected" : "Endpoint unavailable"
+        }
+      }));
+      setRuntimeMessage(
+        connected
+          ? `Nebius endpoint ${endpointReady ? "healthy" : "configured"}${status.endpoint_base_url ? `: ${status.endpoint_base_url}` : "."}`
+          : "Nebius unavailable or not configured. Falling back to mock AI."
+      );
+    } catch (error) {
+      setRuntimeOverrides((current) => ({
+        ...current,
+        [mode]: {
+          ...current[mode],
+          "AI Endpoint": "Endpoint unavailable"
+        }
+      }));
+      setRuntimeMessage(error instanceof Error ? error.message : "Nebius status check failed.");
+    }
   }
 
-  function deployNebiusCloud() {
-    if (runtimeMode !== "nebius-cloud") {
-      setRuntimeMessage("Switch to Nebius Cloud before deploying.");
+  async function testNebiusConnection() {
+    if (runtimeMode === "local-demo") {
+      setRuntimeMessage("Switch to Nebius Cloud before testing the Nebius endpoint.");
       return;
     }
-    setRuntimeOverrides((current) => ({
-      ...current,
-      "nebius-cloud": Object.fromEntries(runtimeComponents.map((component) => [component, "Deploying" as RuntimeStatus]))
-    }));
-    setRuntimeMessage("Nebius deployment requested. If credentials are missing, the demo continues with mock AI.");
+    setRuntimeMessage("Checking Nebius endpoint status...");
+    await refreshNebiusRuntimeStatus(runtimeMode);
   }
 
   return (
@@ -538,7 +564,6 @@ function RuntimePanel() {
             <button onClick={() => switchRuntime("local-demo")} type="button">Switch to Local Demo</button>
             <button onClick={() => switchRuntime("nebius-cloud")} type="button">Switch to Nebius Cloud</button>
             <button onClick={testNebiusConnection} type="button">Test Nebius Connection</button>
-            <button disabled={runtimeMode !== "nebius-cloud"} onClick={deployNebiusCloud} type="button">Deploy to Nebius Cloud</button>
           </div>
           <p className="runtime-fallback-note">{runtimeMessage}</p>
         </div>

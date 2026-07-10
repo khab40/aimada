@@ -15,6 +15,15 @@ def test_backend_settings_reads_endpoint_token(monkeypatch: Any) -> None:
     assert settings.endpoint_token == "endpoint-token"
 
 
+def test_backend_settings_reads_legacy_nebius_endpoint_token(monkeypatch: Any) -> None:
+    monkeypatch.delenv("ENDPOINT_TOKEN", raising=False)
+    monkeypatch.setenv("NEBIUS_ENDPOINT_TOKEN", "legacy-endpoint-token")
+
+    settings = Settings(_env_file=None)
+
+    assert settings.endpoint_token == "legacy-endpoint-token"
+
+
 def test_backend_settings_has_no_model_gateway_config() -> None:
     settings = Settings(_env_file=None)
 

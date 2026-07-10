@@ -532,12 +532,18 @@ export function NebiusControlPanelPage() {
   }
 
   const runtimeLabel = visibleRuntimeOptions.find((option) => option.value === runtimeMode)?.label ?? "Local Demo";
-  const endpointConfigured = Boolean(nebiusStatus?.incident_explainer_configured);
+  const endpointConfigured = Boolean(
+    nebiusStatus?.incident_explainer_configured
+    || nebiusStatus?.scenario_generator_configured
+    || nebiusStatus?.orderbook_alert_configured
+    || nebiusStatus?.investigation_report_configured
+    || nebiusStatus?.investigation_team_configured
+  );
   const jobConfigured = Boolean(nebiusStatus?.job_submit_template_configured);
   const endpointWillUseNebius = runtimeMode !== "local-demo" && endpointConfigured;
   const jobWillUseNebius = runtimeMode !== "local-demo" && jobConfigured;
   const fallbackStatus = endpointWillUseNebius || jobWillUseNebius ? "cloud path available" : runtimeMode === "local-demo" ? "Simulated / Local Demo" : "fallback to deterministic mock";
-  const deploymentRequired = runtimeMode === "nebius-cloud" && !(nebiusStatus?.api_key_configured || nebiusStatus?.cli_installed);
+  const connectedToNebius = Boolean(nebiusStatus?.endpoint_token_configured || nebiusStatus?.api_key_configured || nebiusStatus?.cli_installed);
   const workflowSteps = [
     "Runtime",
     "Scenario Generator",
@@ -576,8 +582,8 @@ export function NebiusControlPanelPage() {
         />
         <CommandCenterServiceCard
           title="Serverless Jobs"
-          detail={jobConfigured ? nebiusStatus?.job_image || "Job image configured" : "Local smart batch runner ready"}
-          status={jobConfigured ? "configured" : runtimeMode === "nebius-cloud" ? "pending" : "mock mode"}
+          detail={jobConfigured ? nebiusStatus?.job_image || "Job image configured" : runtimeMode === "nebius-cloud" ? "Job submit template missing" : "Local smart batch runner ready"}
+          status={jobConfigured ? "configured" : runtimeMode === "nebius-cloud" ? "not configured" : "mock mode"}
         />
         <CommandCenterServiceCard
           title="Detector Tournament"
@@ -647,11 +653,11 @@ export function NebiusControlPanelPage() {
           <InfrastructureMetricGrid>
             <MetricBlock label="Current mode" value={runtimeLabel} />
             <MetricBlock label="Frontend / backend / runner" value={runtimeMode === "nebius-cloud" ? "cloud" : "local"} />
-            <MetricBlock label="Cloud connection status" value={nebiusStatus?.api_key_configured || nebiusStatus?.cli_installed ? "Connected" : deploymentRequired ? "Deployment required" : "Not configured"} />
+            <MetricBlock label="Cloud connection status" value={connectedToNebius ? "Connected" : runtimeMode === "nebius-cloud" ? "Not connected" : "Not configured"} />
             <MetricBlock label="Model name" value={nebiusStatus?.model || "mock deterministic model"} />
             <MetricBlock label="Endpoint mode" value={nebiusStatus?.endpoint_mode ?? nebiusObservatory?.endpoint_mode ?? "mock"} />
             <MetricBlock label="Endpoint availability" value={endpointWillUseNebius ? "real endpoint used" : runtimeMode === "nebius-cloud" ? "endpoint unavailable" : "mock fallback"} />
-            <MetricBlock label="Job availability" value={jobWillUseNebius ? "cloud job available" : runtimeMode === "nebius-cloud" ? "Deployment required" : "deterministic fallback"} />
+            <MetricBlock label="Job availability" value={jobWillUseNebius ? "cloud job available" : runtimeMode === "nebius-cloud" ? "job submit template missing" : "deterministic fallback"} />
           </InfrastructureMetricGrid>
           <div className="nebius-button-row">
             <button className="secondary-button" onClick={() => switchRuntimeMode("local-demo")} type="button">Switch runtime: Local Demo</button>
@@ -678,7 +684,6 @@ export function NebiusControlPanelPage() {
           description="Generate synthetic market-abuse workloads with ground truth, then replay them through the existing Arena scenario path."
         >
           <DemoScenariosSection
-            deploymentRequired={deploymentRequired}
             onStart={startDemoScenario}
           />
           <AIScenarioGeneratorPanel
@@ -735,6 +740,7 @@ export function NebiusControlPanelPage() {
             busyAction={experimentBusyAction}
             experiment={experiment}
             form={experimentForm}
+            jobConfigured={jobConfigured}
             jobs={experimentJobs}
             leaderboard={experimentLeaderboard}
             message={experimentMessage}
@@ -759,7 +765,7 @@ export function NebiusControlPanelPage() {
           <ExecutionGraph endpointActive={endpointWillUseNebius} jobActive={jobWillUseNebius} runtimeMode={runtimeMode} />
           <InfrastructureMetricGrid>
             <MetricBlock label="Endpoint" value={endpointWillUseNebius ? "real endpoint used" : runtimeMode === "nebius-cloud" ? "endpoint unavailable" : "mock deterministic endpoint"} />
-            <MetricBlock label="Jobs" value={jobWillUseNebius ? latestExperimentJob(experimentJobs)?.status.replaceAll("_", " ") ?? "cloud job available" : runtimeMode === "nebius-cloud" ? "Deployment required" : latestExperimentJob(experimentJobs)?.status.replaceAll("_", " ") ?? "deterministic mock results"} />
+            <MetricBlock label="Jobs" value={jobWillUseNebius ? latestExperimentJob(experimentJobs)?.status.replaceAll("_", " ") ?? "cloud job available" : runtimeMode === "nebius-cloud" ? "job submit template missing" : latestExperimentJob(experimentJobs)?.status.replaceAll("_", " ") ?? "deterministic mock results"} />
             <MetricBlock label="Latency" value={`${usageMetrics.averageLlmLatencySec.toFixed(2)}s`} />
             <MetricBlock label="Tokens" value={String(usageMetrics.tokensUsed)} />
             <MetricBlock label="GPU" value={runtimeMode === "nebius-cloud" && (endpointWillUseNebius || jobWillUseNebius) ? "GPU runtime" : "not used in Local Demo"} />
@@ -1112,10 +1118,8 @@ function AIScenarioGeneratorPanel({
 }
 
 function DemoScenariosSection({
-  deploymentRequired,
   onStart
 }: {
-  deploymentRequired: boolean;
   onStart: (scenario: DemoScenario) => void;
 }) {
   return (
@@ -1126,7 +1130,6 @@ function DemoScenariosSection({
       </summary>
       <div className="demo-scenario-grid">
         {demoScenarios.map((scenario) => {
-          const cloudScenario = scenario.runtime === "nebius-cloud";
           return (
             <article className="demo-scenario-card" key={scenario.id}>
               <div className="nebius-card-heading">
@@ -1134,7 +1137,6 @@ function DemoScenariosSection({
                   <h3>{scenario.title}</h3>
                   <p className="nebius-card-purpose">Runtime: {scenario.runtime === "local-demo" ? "Local Demo" : "Cloud"}</p>
                 </div>
-                {cloudScenario && deploymentRequired ? <span className="runtime-status not_configured">Deployment required</span> : null}
               </div>
               <div>
                 <span>Demonstrates</span>
@@ -1144,7 +1146,6 @@ function DemoScenariosSection({
               </div>
               {scenario.duration ? <p><strong>Duration</strong> {scenario.duration}</p> : null}
               {scenario.purpose ? <p><strong>Purpose</strong> {scenario.purpose}</p> : null}
-              {cloudScenario && deploymentRequired ? <p className="fallback-note">Deployment required. Cloud status is shown honestly before execution.</p> : null}
               <button className="primary-button" onClick={() => onStart(scenario)} type="button">{scenario.cta ?? "Start"}</button>
             </article>
           );
@@ -1195,7 +1196,7 @@ function ExecutionGraph({
   runtimeMode: RuntimeMode;
 }) {
   const endpointStatus = endpointActive ? "real endpoint" : runtimeMode === "nebius-cloud" ? "endpoint unavailable" : "mock endpoint";
-  const jobStatus = jobActive ? "cloud job" : runtimeMode === "nebius-cloud" ? "deployment required" : "mock job";
+  const jobStatus = jobActive ? "cloud job" : runtimeMode === "nebius-cloud" ? "cloud job not configured" : "mock job";
   const resultsStatus = endpointActive || jobActive ? "real results" : "deterministic results";
   const steps = [
     ["Scenario", "ready"],
@@ -1225,7 +1226,7 @@ function runtimeFrom(status: NebiusStatus, observatory: NebiusObservatory): Nebi
   return {
     activeSimulation: latest ? String(latest.scenarios ?? "Cloud batch") : "Spoofing Attack #042",
     aiEndpointStatus: endpointConfigured ? "ready" : "ready",
-    cloudStatus: status.cli_installed || status.api_key_configured ? "online" : "degraded",
+    cloudStatus: status.cli_installed || status.endpoint_token_configured || status.api_key_configured ? "online" : "degraded",
     eventsPerSecond: 1250,
     mode: endpointConfigured ? "nebius-cloud" : "local",
     region: "eu-north1",
@@ -1368,6 +1369,7 @@ function ExperimentLab({
   busyAction,
   experiment,
   form,
+  jobConfigured,
   jobs,
   leaderboard,
   message,
@@ -1385,6 +1387,7 @@ function ExperimentLab({
   busyAction: ExperimentAction | null;
   experiment: ManagedExperiment | null;
   form: ExperimentFormState;
+  jobConfigured: boolean;
   jobs: ExperimentJobRecord[];
   leaderboard: ExperimentLeaderboardRow[];
   message: string | null;
@@ -1489,7 +1492,7 @@ function ExperimentLab({
           <div className="experiment-flow-actions">
             <button disabled={!canRun || busyAction === "generate-manifest"} onClick={onGenerateManifest} type="button">Generate manifest</button>
             <button disabled={!canRun || busyAction === "run-local-batch"} onClick={onRunLocalBatch} type="button">Run Local Demo tournament</button>
-            <button disabled={!canRun || busyAction === "submit-nebius"} onClick={onSubmitNebius} type="button">Run serverless job</button>
+            <button disabled={!canRun || !jobConfigured || busyAction === "submit-nebius"} onClick={onSubmitNebius} type="button">Run serverless job</button>
             <button disabled={!canRun || busyAction === "aggregate"} onClick={onAggregate} type="button">Aggregate</button>
             <button disabled={!canRun || busyAction === "run-investigations"} onClick={onRunInvestigations} type="button">Run AI Investigation</button>
           </div>
@@ -1535,6 +1538,8 @@ function RealNebiusDeploymentPanel({
   const endpointHealth = status?.endpoint_health ?? observatory?.endpoint_health ?? null;
   const endpointMode = status?.endpoint_mode ?? observatory?.endpoint_mode ?? "mock";
   const hasExperiment = Boolean(experiment);
+  const canSubmitJob = hasExperiment && Boolean(status?.job_submit_template_configured);
+  const noJobLabel = status?.job_submit_template_configured ? "ready to submit" : "no cloud job";
 
   return (
     <section className="experiment-lab-panel real-nebius-deployment-panel">
@@ -1542,8 +1547,8 @@ function RealNebiusDeploymentPanel({
         <div>
           <h2>Deployment Status</h2>
         </div>
-        <span className={`runtime-status ${cloudJob?.status ?? "missing"}`}>
-          {cloudJob?.status.replaceAll("_", " ") ?? "no cloud job"}
+        <span className={`runtime-status ${cloudJob?.status ?? (status?.job_submit_template_configured ? "ready" : "missing")}`}>
+          {cloudJob?.status.replaceAll("_", " ") ?? noJobLabel}
         </span>
       </div>
 
@@ -1562,8 +1567,20 @@ function RealNebiusDeploymentPanel({
           value={status?.job_submit_template_configured ? "yes" : "no"}
         />
         <MetricBlock
+          label="Job resources"
+          value={status?.job_resource_configured ? "configured" : "missing subnet"}
+        />
+        <MetricBlock
+          label="Status/logs"
+          value={`${status?.job_status_template_configured ? "status" : "no status"} / ${status?.job_logs_template_configured ? "logs" : "no logs"}`}
+        />
+        <MetricBlock
+          label="Cloud artifact sync"
+          value={status?.job_artifacts_collection_configured ? "configured" : "set output URI"}
+        />
+        <MetricBlock
           label="Latest cloud job"
-          value={cloudJob ? `${cloudJob.status.replaceAll("_", " ")} · ${cloudJob.job_id}` : "no cloud job"}
+          value={cloudJob ? `${cloudJob.status.replaceAll("_", " ")} · ${cloudJob.job_id}` : noJobLabel}
         />
         <MetricBlock label="Artifact collection" value={artifactCollectionStatus(experiment)} />
       </div>
@@ -1579,7 +1596,7 @@ function RealNebiusDeploymentPanel({
         </button>
         <button
           className="secondary-button"
-          disabled={!hasExperiment || busyAction === "submit-nebius"}
+          disabled={!canSubmitJob || busyAction === "submit-nebius"}
           onClick={onSubmitNebius}
           type="button"
         >
@@ -1608,6 +1625,11 @@ function RealNebiusDeploymentPanel({
           Job submit template is not configured. Submitting records pending cloud execution and keeps Local Demo fallback available.
         </p>
       )}
+      {status?.job_submit_template_configured && !status?.job_resource_configured ? (
+        <p className="experiment-pending-note">
+          Job submit template is configured, but `NEBIUS_SUBNET_ID` is missing from the backend environment.
+        </p>
+      ) : null}
       {cloudJob?.message ? <p className="experiment-message">{cloudJob.message}</p> : null}
       {message ? <p className="experiment-message">{message}</p> : null}
     </section>

@@ -362,7 +362,20 @@ def _submit_nebius_job(
         "experiment_id": tournament_id,
         "image": settings.nebius_job_image,
         "output_dir": str(artifact_dir / "job-output"),
+        "job_args": shlex.quote(
+            "/job/serverless/jobs/run_batch_experiments.py "
+            f"--runs {request.number_of_scenarios} "
+            f"--batch-size {min(request.number_of_scenarios, 100)} "
+            f"--scenarios {','.join(_scenario_names(request.manipulation_types))} "
+            f"--output /job/outputs/tournaments/{tournament_id}/local-batch"
+        ),
         "tournament_id": tournament_id,
+        "subnet_id": settings.nebius_subnet_id or "",
+        "subnet_id_arg": _optional_flag("--subnet-id", settings.nebius_subnet_id),
+        "parent_id": settings.nebius_parent_id or "",
+        "parent_id_arg": _optional_flag("--parent-id", settings.nebius_parent_id),
+        "volume": settings.nebius_job_output_volume or settings.nebius_volume or "",
+        "volume_arg": _optional_flag("--volume", settings.nebius_job_output_volume or settings.nebius_volume),
     }
     try:
         command = submit_template.format(**context)
@@ -436,6 +449,12 @@ def _failed_nebius_submit_response(
         summary=message,
         fallback_reason=message,
     )
+
+
+def _optional_flag(flag: str, value: str | None) -> str:
+    if not value or not value.strip():
+        return ""
+    return f"{flag} {shlex.quote(value.strip())}"
 
 
 def _mock_tournament_response(

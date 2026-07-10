@@ -1,6 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
-from pydantic import Field
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -12,7 +12,10 @@ class Settings(BaseSettings):
     )
 
     app_name: str = "AI Market Abuse Detection Arena"
-    endpoint_token: str | None = Field(default=None, alias="ENDPOINT_TOKEN")
+    endpoint_token: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("ENDPOINT_TOKEN", "NEBIUS_ENDPOINT_TOKEN"),
+    )
     nebius_tenant_id: str | None = Field(default=None, alias="NEBIUS_TENANT_ID")
     nebius_endpoint_base_url: str | None = Field(
         default=None,
@@ -44,8 +47,17 @@ class Settings(BaseSettings):
     )
     nebius_endpoint_mode: str = Field(default="mock", alias="NEBIUS_ENDPOINT_MODE")
     nebius_job_image: str = Field(
-        default="ghcr.io/your-org/ai-market-abuse-detection-arena-jobs:latest",
+        default="ghcr.io/khab40/ai-market-abuse-detection-arena-jobs:latest",
         alias="NEBIUS_JOB_IMAGE",
+    )
+    nebius_subnet_id: str | None = Field(default=None, alias="NEBIUS_SUBNET_ID")
+    nebius_parent_id: str | None = Field(default=None, alias="NEBIUS_PARENT_ID")
+    nebius_volume: str | None = Field(default=None, alias="NEBIUS_VOLUME")
+    nebius_job_output_volume: str | None = Field(default=None, alias="NEBIUS_JOB_OUTPUT_VOLUME")
+    nebius_job_output_uri: str | None = Field(default=None, alias="NEBIUS_JOB_OUTPUT_URI")
+    nebius_object_storage_endpoint_url: str | None = Field(
+        default=None,
+        alias="NEBIUS_OBJECT_STORAGE_ENDPOINT_URL",
     )
     nebius_job_submit_command_template: str | None = Field(
         default=None,

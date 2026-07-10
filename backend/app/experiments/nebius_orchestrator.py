@@ -1,7 +1,9 @@
 import importlib.util
 import json
+import os
 import re
 import shlex
+import shutil
 import subprocess
 from pathlib import Path
 from typing import Any, Callable, Literal
@@ -235,6 +237,12 @@ class NebiusExperimentOrchestrator:
                     command_message = "Artifact collection command executed."
                 except RuntimeError as exc:
                     command_message = f"Artifact collection command failed: {_redact(str(exc))}"
+            elif self._setting("nebius_job_output_uri"):
+                try:
+                    source_dir = self._sync_cloud_output_uri(context)
+                    command_message = "Nebius cloud output URI synced."
+                except RuntimeError as exc:
+                    command_message = f"Nebius cloud output sync failed: {_redact(str(exc))}"
 
         if source_dir is None:
             return self._mark_artifacts_pending(
@@ -280,7 +288,11 @@ class NebiusExperimentOrchestrator:
             return job
         artifact_dir = self.repository.experiment_dir(job.experiment_id)
         config_path = Path(job.artifact_paths.get("nebius_job_config", artifact_dir / "nebius_job_config.rendered.yaml"))
-        context = self._command_context(experiment=experiment, rendered_config_path=config_path)
+        context = self._command_context(
+            experiment=experiment,
+            rendered_config_path=config_path,
+            job_id=job.job_id,
+        )
         status_template = self._setting("nebius_job_status_command_template")
         if not status_template:
             return job.model_copy(
@@ -375,19 +387,47 @@ class NebiusExperimentOrchestrator:
             rendered_path=artifact_dir / "nebius_job_config.rendered.yaml",
         )
 
-    def _command_context(self, *, experiment: Experiment, rendered_config_path: Path) -> dict[str, str]:
+    def _command_context(
+        self,
+        *,
+        experiment: Experiment,
+        rendered_config_path: Path,
+        job_id: str | None = None,
+    ) -> dict[str, str]:
         return {
             "config_path": str(rendered_config_path),
             "experiment_id": experiment.id,
+            "job_id": job_id or experiment.smart_batch_id or "",
             "image": self._job_image(),
             "output_dir": f"/job/outputs/experiments/{experiment.id}/local-batch",
+            "job_args": shlex.quote(
+                "/job/serverless/jobs/run_batch_experiments.py "
+                f"--runs {experiment.attack_count} "
+                f"--batch-size {experiment.batch_size} "
+                f"--scenarios {','.join(experiment.scenarios)} "
+                f"--output /job/outputs/experiments/{experiment.id}/local-batch"
+            ),
+            "subnet_id": self._settings_value("nebius_subnet_id"),
+            "subnet_id_arg": self._optional_flag("--subnet-id", self._settings_value("nebius_subnet_id")),
+            "parent_id": self._settings_value("nebius_parent_id"),
+            "parent_id_arg": self._optional_flag("--parent-id", self._settings_value("nebius_parent_id")),
+            "volume": self._job_output_volume(),
+            "volume_arg": self._optional_flag("--volume", self._job_output_volume()),
+            "job_output_uri": self._settings_value("nebius_job_output_uri"),
+            "cloud_output_uri": self._cloud_output_uri(experiment.id),
+            "local_output_dir": str(self.repository.experiment_dir(experiment.id) / "cloud-batch"),
+            "object_storage_endpoint_url": self._settings_value("nebius_object_storage_endpoint_url"),
+            "object_storage_endpoint_url_arg": self._optional_flag(
+                "--endpoint-url",
+                self._settings_value("nebius_object_storage_endpoint_url"),
+            ),
         }
 
     def _job_image(self) -> str:
         return (
             self.settings.nebius_job_image
             if self.settings is not None
-            else "ghcr.io/your-org/ai-market-abuse-detection-arena-jobs:latest"
+            else "ghcr.io/khab40/ai-market-abuse-detection-arena-jobs:latest"
         )
 
     def _setting(self, name: str) -> str | None:
@@ -397,6 +437,25 @@ class NebiusExperimentOrchestrator:
         if isinstance(value, str) and value.strip():
             return value
         return None
+
+    def _settings_value(self, name: str) -> str:
+        value = self._setting(name)
+        return value or ""
+
+    def _job_output_volume(self) -> str:
+        return self._settings_value("nebius_job_output_volume") or self._settings_value("nebius_volume")
+
+    def _cloud_output_uri(self, experiment_id: str) -> str:
+        base_uri = self._settings_value("nebius_job_output_uri").rstrip("/")
+        if not base_uri:
+            return ""
+        return f"{base_uri}/experiments/{experiment_id}/local-batch"
+
+    @staticmethod
+    def _optional_flag(flag: str, value: str) -> str:
+        if not value.strip():
+            return ""
+        return f"{flag} {shlex.quote(value.strip())}"
 
     def _run_template_command(self, template: str, context: dict[str, str]) -> subprocess.CompletedProcess[str]:
         try:
@@ -435,6 +494,48 @@ class NebiusExperimentOrchestrator:
         path = artifact_dir / f"nebius_job_{kind}.{suffix}"
         path.write_text(_redact(result.stdout), encoding="utf-8")
         return path
+
+    def _sync_cloud_output_uri(self, context: dict[str, str]) -> Path:
+        source_uri = context["cloud_output_uri"]
+        if not source_uri:
+            raise RuntimeError("NEBIUS_JOB_OUTPUT_URI is not configured")
+        destination = Path(context["local_output_dir"])
+        destination.mkdir(parents=True, exist_ok=True)
+        if source_uri.startswith("s3://"):
+            aws = shutil.which("aws")
+            if aws is None:
+                raise RuntimeError("aws CLI is required to sync s3:// Nebius job artifacts")
+            command = [aws, "s3", "sync", source_uri, str(destination), "--only-show-errors"]
+            endpoint_url = context.get("object_storage_endpoint_url", "").strip()
+            if endpoint_url:
+                command.extend(["--endpoint-url", endpoint_url])
+            env = os.environ.copy()
+            env.setdefault("AWS_EC2_METADATA_DISABLED", "true")
+            completed = subprocess.run(
+                command,
+                capture_output=True,
+                check=False,
+                text=True,
+                timeout=300.0,
+                env=env,
+            )
+            sync_stdout_path = self.repository.experiment_dir(context["experiment_id"]) / "nebius_artifact_sync_stdout.txt"
+            sync_stdout_path.write_text(_redact(completed.stdout or completed.stderr), encoding="utf-8")
+            if completed.returncode != 0:
+                details = _redact((completed.stderr or completed.stdout or "").strip())
+                raise RuntimeError(f"aws s3 sync exited {completed.returncode}: {details}")
+            return destination
+
+        source = Path(source_uri).expanduser()
+        if not source.exists() or not source.is_dir():
+            raise RuntimeError(f"artifact source directory is unavailable: {source}")
+        for item in source.iterdir():
+            target = destination / item.name
+            if item.is_dir():
+                shutil.copytree(item, target, dirs_exist_ok=True)
+            elif item.is_file():
+                shutil.copy2(item, target)
+        return destination
 
     def _find_mounted_output_dir(
         self,

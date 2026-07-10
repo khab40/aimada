@@ -35,11 +35,11 @@ LOCAL_VLLM_GPU_MEMORY_UTILIZATION=0.85
 LOCAL_VLLM_MAX_MODEL_LEN=4096
 ```
 
-In `local_vllm` mode, `/endpoint/start.sh` starts the local vLLM
-OpenAI-compatible server first, waits until `http://127.0.0.1:8001/v1/models`
-is healthy, then starts FastAPI/Uvicorn on `0.0.0.0:9000`. Startup logs include
-the vLLM model, host, port, GPU memory utilization, max model length, readiness
-attempts, and FastAPI start line.
+In `local_vllm` mode, `/endpoint/start.sh` starts FastAPI/Uvicorn on
+`0.0.0.0:9000`, starts the local vLLM OpenAI-compatible server, then waits until
+`http://127.0.0.1:8001/v1/models` is healthy. Startup logs include the vLLM
+model, host, port, GPU memory utilization, max model length, readiness attempts,
+and FastAPI start line.
 
 ## Deploy Local vLLM On H100
 

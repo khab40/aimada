@@ -34,4 +34,5 @@ PY
 
 EXPOSE 9000
 
-ENTRYPOINT ["/bin/bash", "/endpoint/start.sh"]
+ENTRYPOINT ["/endpoint/start.sh"]
+CMD []

@@ -136,8 +136,14 @@ class NebiusIntegrationStatus(BaseModel):
     endpoint_base_url: str | None = None
     endpoint_base_url_configured: bool
     endpoint_health: dict[str, Any] | None = None
+    model: str | None = None
     job_image: str
     job_submit_template_configured: bool
+    job_resource_configured: bool
+    job_status_template_configured: bool
+    job_logs_template_configured: bool
+    job_artifacts_template_configured: bool
+    job_artifacts_collection_configured: bool
     cli_installed: bool
     cli_path: str | None = None
     cli_version: str | None = None
@@ -299,6 +305,9 @@ class NebiusClient:
 
     def integration_status(self) -> NebiusIntegrationStatus:
         settings = get_settings()
+        endpoint_health = self.endpoint_health()
+        endpoint_mode = _health_string(endpoint_health, "endpoint_mode") or settings.nebius_endpoint_mode
+        model = _health_string(endpoint_health, "model") or _health_string(endpoint_health, "local_vllm_model")
         cli_path = shutil.which("nebius")
         cli_version = None
         if cli_path:
@@ -323,12 +332,20 @@ class NebiusClient:
             investigation_team_configured=bool(settings.nebius_investigation_team_endpoint_url),
             market_abuse_scenario_configured=bool(settings.nebius_market_abuse_scenario_endpoint_url),
             endpoint_token_configured=bool(settings.endpoint_token),
-            endpoint_mode=settings.nebius_endpoint_mode,
+            endpoint_mode=endpoint_mode,
             endpoint_base_url=settings.nebius_endpoint_base_url,
             endpoint_base_url_configured=bool(settings.nebius_endpoint_base_url),
-            endpoint_health=self.endpoint_health(),
+            endpoint_health=endpoint_health,
+            model=model,
             job_image=settings.nebius_job_image,
             job_submit_template_configured=bool(settings.nebius_job_submit_command_template),
+            job_resource_configured=bool(settings.nebius_subnet_id),
+            job_status_template_configured=bool(settings.nebius_job_status_command_template),
+            job_logs_template_configured=bool(settings.nebius_job_logs_command_template),
+            job_artifacts_template_configured=bool(settings.nebius_job_artifacts_command_template),
+            job_artifacts_collection_configured=bool(
+                settings.nebius_job_artifacts_command_template or settings.nebius_job_output_uri
+            ),
             cli_installed=bool(cli_path),
             cli_path=cli_path,
             cli_version=cli_version,
@@ -666,6 +683,16 @@ def _bounded_float(value: Any, fallback: float) -> float:
         return max(0.0, min(1.0, float(value)))
     except (TypeError, ValueError):
         return fallback
+
+
+def _health_string(health: dict[str, Any] | None, key: str) -> str | None:
+    if not isinstance(health, dict):
+        return None
+    value = health.get(key)
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
 
 
 def _string_list(value: Any) -> list[str]:

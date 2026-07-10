@@ -272,7 +272,7 @@ The command-template adapter lives only in `backend/app/experiments/nebius_orche
 | `NEBIUS_JOB_LOGS_COMMAND_TEMPLATE` | Optional logs collection command. |
 | `NEBIUS_JOB_ARTIFACTS_COMMAND_TEMPLATE` | Optional artifacts collection command. |
 
-Supported template variables are `{config_path}`, `{experiment_id}`, `{image}`, and `{output_dir}`. Command stdout/stderr is redacted before persistence. A job is not marked `completed` just because submission succeeded; refresh only marks it completed after status reports completion and artifact collection succeeds.
+Supported template variables are `{config_path}`, `{experiment_id}`, `{job_id}`, `{image}`, `{output_dir}`, `{subnet_id_arg}`, `{parent_id_arg}`, and `{volume_arg}`. Command stdout/stderr is redacted before persistence. A job is not marked `completed` just because submission succeeded; refresh only marks it completed after status reports completion and artifact collection succeeds.
 
 `POST /api/experiments/{id}/collect-nebius-artifacts` collects the existing job output format from mounted output, or executes `NEBIUS_JOB_ARTIFACTS_COMMAND_TEMPLATE` and then scans the mounted output. It expects these files: `order_book_events.jsonl`, `trades.jsonl`, `attack_labels.jsonl`, `blue_team_alerts.jsonl`, `detector_metrics.csv`, `generated_report.md`, and `manifest.json`. The backend copies only files that exist into the canonical experiment layout and writes `artifact_index.json`; if no collection source is available, the experiment status becomes `cloud_artifacts_pending`.
 
