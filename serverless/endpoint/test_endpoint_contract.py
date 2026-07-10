@@ -24,12 +24,11 @@ from app import (
 @pytest.fixture(autouse=True)
 def endpoint_env(monkeypatch: pytest.MonkeyPatch) -> None:
     for key in (
-        "NEBIUS_API_KEY",
         "NEBIUS_ENDPOINT_MODE",
-        "NEBIUS_BASE_URL",
-        "NEBIUS_AI_STUDIO_BASE_URL",
-        "NEBIUS_MODEL",
-        "NEBIUS_AI_MODEL",
+        "LOCAL_VLLM_BASE_URL",
+        "LOCAL_VLLM_MODEL",
+        "LOCAL_VLLM_HOST",
+        "LOCAL_VLLM_PORT",
     ):
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setenv("NEBIUS_ENDPOINT_MODE", "mock")
@@ -197,11 +196,12 @@ def test_investigation_team_returns_agent_contract() -> None:
     assert response.evidence_timeline
 
 
-def test_ai_mode_uses_mocked_http_response(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("NEBIUS_ENDPOINT_MODE", "ai")
-    monkeypatch.setenv("NEBIUS_API_KEY", "super-secret-test-key")
-    monkeypatch.setenv("NEBIUS_BASE_URL", "https://model.example/v1/")
-    monkeypatch.setenv("NEBIUS_MODEL", "test-model")
+def test_local_vllm_mode_uses_local_openai_compatible_endpoint_without_auth(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("NEBIUS_ENDPOINT_MODE", "local_vllm")
+    monkeypatch.setenv("LOCAL_VLLM_BASE_URL", "http://127.0.0.1:8001/v1")
+    monkeypatch.setenv("LOCAL_VLLM_MODEL", "test-local-vllm-model")
     captured: dict[str, str | None] = {}
 
     def fake_urlopen(request: object, timeout: float) -> FakeModelResponse:
@@ -214,7 +214,7 @@ def test_ai_mode_uses_mocked_http_response(monkeypatch: pytest.MonkeyPatch) -> N
                         "suspicion_score": 0.91,
                         "detected_pattern": "spoofing_like_wall",
                         "confidence": 0.88,
-                        "reasons": ["Model identified a synthetic liquidity wall."],
+                        "reasons": ["Local vLLM returned structured synthetic JSON."],
                         "recommended_action": "Review the synthetic replay window.",
                     }
                 )
@@ -232,19 +232,23 @@ def test_ai_mode_uses_mocked_http_response(monkeypatch: pytest.MonkeyPatch) -> N
         )
     )
 
-    assert response.model_mode == "ai_studio"
-    assert response.model == "test-model"
-    assert response.latency_ms >= 0
-    assert response.reasons == ["Model identified a synthetic liquidity wall."]
-    assert captured["url"] == "https://model.example/v1/chat/completions"
-    assert captured["authorization"] == "Bearer super-secret-test-key"
-    assert "super-secret-test-key" not in response.model_dump_json()
+    assert response.model_mode == "local_vllm"
+    assert response.model == "test-local-vllm-model"
+    assert captured["url"] == "http://127.0.0.1:8001/v1/chat/completions"
+    assert captured["authorization"] is None
+
+
+def test_local_vllm_base_url_defaults_to_configured_host_and_port(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("LOCAL_VLLM_BASE_URL", raising=False)
+    monkeypatch.setenv("LOCAL_VLLM_HOST", "127.0.0.1")
+    monkeypatch.setenv("LOCAL_VLLM_PORT", "8001")
+
+    assert endpoint_app._local_vllm_base_url() == "http://127.0.0.1:8001/v1"
 
 
 def test_invalid_model_json_falls_back(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("NEBIUS_ENDPOINT_MODE", "ai")
-    monkeypatch.setenv("NEBIUS_API_KEY", "super-secret-test-key")
-    monkeypatch.setenv("NEBIUS_MODEL", "test-model")
+    monkeypatch.setenv("NEBIUS_ENDPOINT_MODE", "local_vllm")
+    monkeypatch.setenv("LOCAL_VLLM_MODEL", "test-model")
 
     def fake_urlopen(request: object, timeout: float) -> FakeModelResponse:
         return FakeModelResponse(_chat_completion("{not-json"))
@@ -263,13 +267,12 @@ def test_invalid_model_json_falls_back(monkeypatch: pytest.MonkeyPatch) -> None:
     assert response.model_mode == "deterministic_fallback"
     assert response.model == "test-model"
     assert response.detected_pattern == "spoofing_like_wall"
-    assert "super-secret-test-key" not in response.model_dump_json()
+    assert response.fallback_reason == "invalid_model_json"
 
 
 def test_wrong_shaped_model_json_falls_back(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("NEBIUS_ENDPOINT_MODE", "ai")
-    monkeypatch.setenv("NEBIUS_API_KEY", "super-secret-test-key")
-    monkeypatch.setenv("NEBIUS_MODEL", "test-model")
+    monkeypatch.setenv("NEBIUS_ENDPOINT_MODE", "local_vllm")
+    monkeypatch.setenv("LOCAL_VLLM_MODEL", "test-model")
 
     def fake_urlopen(request: object, timeout: float) -> FakeModelResponse:
         return FakeModelResponse(_chat_completion(json.dumps({"unexpected": "shape"})))
@@ -289,16 +292,14 @@ def test_wrong_shaped_model_json_falls_back(monkeypatch: pytest.MonkeyPatch) -> 
     assert response.model == "test-model"
     assert response.detected_pattern == "spoofing_like_wall"
     assert response.reasons != ["unexpected"]
-    assert "super-secret-test-key" not in response.model_dump_json()
+    assert response.fallback_reason == "invalid_model_json"
 
 
-def test_missing_api_key_falls_back_without_http_call(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("NEBIUS_ENDPOINT_MODE", "ai")
-    monkeypatch.delenv("NEBIUS_API_KEY", raising=False)
-    monkeypatch.setenv("NEBIUS_MODEL", "test-model")
+def test_unknown_endpoint_mode_falls_back_without_http_call(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("NEBIUS_ENDPOINT_MODE", "unsupported")
 
     def fail_urlopen(request: object, timeout: float) -> FakeModelResponse:
-        raise AssertionError("HTTP model call should not run without an API key")
+        raise AssertionError("HTTP model call should not run for unsupported endpoint mode")
 
     monkeypatch.setattr(endpoint_app, "urlopen", fail_urlopen)
 
@@ -312,5 +313,14 @@ def test_missing_api_key_falls_back_without_http_call(monkeypatch: pytest.Monkey
     )
 
     assert response.model_mode == "deterministic_fallback"
-    assert response.model == "test-model"
+    assert response.model == "Qwen/Qwen2.5-1.5B-Instruct"
     assert response.latency_ms == 0.0
+    assert response.fallback_reason == "unsupported_endpoint_mode"
+
+
+def test_model_json_parser_extracts_fenced_object() -> None:
+    parsed = endpoint_app._parse_json_object_text(
+        "Model output:\n```json\n{\"status\":\"ok\",\"value\":1}\n```\nTrailing text."
+    )
+
+    assert parsed == {"status": "ok", "value": 1}

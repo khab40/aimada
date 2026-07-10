@@ -37,7 +37,7 @@ def main() -> None:
     )
     url = f"{args.base_url.rstrip('/')}/{args.route}"
     headers = {"Content-Type": "application/json"}
-    token = os.environ.get("NEBIUS_ENDPOINT_TOKEN")
+    token = os.environ.get("ENDPOINT_TOKEN")
     if token:
         headers["Authorization"] = f"Bearer {token}"
     request = Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")

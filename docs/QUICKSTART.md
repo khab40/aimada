@@ -18,9 +18,9 @@ cd ai-market-abuse-detection-arena
 # Copy environment template
 cp .env.example .env
 
-# (Optional) If you have Nebius credentials, add them to .env:
+# (Optional) If you have a deployed Nebius endpoint, add it to .env:
 # NEBIUS_TENANT_ID=your-tenant-id
-# NEBIUS_API_KEY=your-api-key
+# ENDPOINT_TOKEN=your-endpoint-token
 # NEBIUS_ENDPOINT_BASE_URL=https://your-endpoint
 ```
 

@@ -112,10 +112,8 @@ curl_json() {
   local payload_file="$3"
   local output_file="$4"
   local args=(-fsS -X "${method}" -H "Content-Type: application/json")
-  if [[ -n "${NEBIUS_API_KEY:-}" ]]; then
-    args+=(-H "Authorization: Bearer ${NEBIUS_API_KEY}")
-  elif [[ -n "${NEBIUS_ENDPOINT_TOKEN:-}" ]]; then
-    args+=(-H "Authorization: Bearer ${NEBIUS_ENDPOINT_TOKEN}")
+  if [[ -n "${ENDPOINT_TOKEN:-}" ]]; then
+    args+=(-H "Authorization: Bearer ${ENDPOINT_TOKEN}")
   fi
   if [[ -n "${payload_file}" ]]; then
     args+=(--data @"${payload_file}")

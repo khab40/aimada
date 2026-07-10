@@ -7,28 +7,19 @@ from typing import Any
 from app.config import Settings
 
 
-def test_backend_settings_prefers_new_nebius_base_url_and_model(monkeypatch: Any) -> None:
-    monkeypatch.setenv("NEBIUS_BASE_URL", "https://new.example/v1/")
-    monkeypatch.setenv("NEBIUS_AI_STUDIO_BASE_URL", "https://old.example/v1/")
-    monkeypatch.setenv("NEBIUS_MODEL", "new-model")
-    monkeypatch.setenv("NEBIUS_AI_MODEL", "old-model")
+def test_backend_settings_reads_endpoint_token(monkeypatch: Any) -> None:
+    monkeypatch.setenv("ENDPOINT_TOKEN", "endpoint-token")
 
     settings = Settings(_env_file=None)
 
-    assert settings.nebius_base_url == "https://new.example/v1/"
-    assert settings.nebius_model == "new-model"
+    assert settings.endpoint_token == "endpoint-token"
 
 
-def test_backend_settings_accepts_old_nebius_aliases(monkeypatch: Any) -> None:
-    monkeypatch.delenv("NEBIUS_BASE_URL", raising=False)
-    monkeypatch.delenv("NEBIUS_MODEL", raising=False)
-    monkeypatch.setenv("NEBIUS_AI_STUDIO_BASE_URL", "https://old.example/v1/")
-    monkeypatch.setenv("NEBIUS_AI_MODEL", "old-model")
-
+def test_backend_settings_has_no_model_gateway_config() -> None:
     settings = Settings(_env_file=None)
 
-    assert settings.nebius_base_url == "https://old.example/v1/"
-    assert settings.nebius_model == "old-model"
+    assert not hasattr(settings, "nebius_base_url")
+    assert not hasattr(settings, "nebius_model")
 
 
 def test_demo_surface_flags_default_to_reduced_demo_mode(monkeypatch: Any) -> None:
@@ -67,34 +58,20 @@ def test_backend_settings_derives_investigation_team_endpoint_from_base_url(monk
     assert settings.nebius_investigation_team_endpoint_url == "https://endpoint.example/investigation-team"
 
 
-def test_serverless_endpoint_prefers_new_nebius_env_names(monkeypatch: Any) -> None:
+def test_serverless_endpoint_local_vllm_base_url_uses_explicit_value(monkeypatch: Any) -> None:
     endpoint = _load_endpoint_module()
-    monkeypatch.setenv("NEBIUS_BASE_URL", "https://new.example/v1/")
-    monkeypatch.setenv("NEBIUS_AI_STUDIO_BASE_URL", "https://old.example/v1/")
-    monkeypatch.setenv("NEBIUS_MODEL", "new-model")
-    monkeypatch.setenv("NEBIUS_AI_MODEL", "old-model")
+    monkeypatch.setenv("LOCAL_VLLM_BASE_URL", "http://127.0.0.1:8001/v1")
 
-    assert endpoint._nebius_base_url() == "https://new.example/v1/"
-    assert endpoint._nebius_model() == "new-model"
+    assert endpoint._local_vllm_base_url() == "http://127.0.0.1:8001/v1"
 
 
-def test_serverless_endpoint_accepts_old_nebius_env_aliases(monkeypatch: Any) -> None:
+def test_serverless_endpoint_local_vllm_base_url_uses_host_and_port(monkeypatch: Any) -> None:
     endpoint = _load_endpoint_module()
-    monkeypatch.delenv("NEBIUS_BASE_URL", raising=False)
-    monkeypatch.delenv("NEBIUS_MODEL", raising=False)
-    monkeypatch.setenv("NEBIUS_AI_STUDIO_BASE_URL", "https://old.example/v1/")
-    monkeypatch.setenv("NEBIUS_AI_MODEL", "old-model")
+    monkeypatch.delenv("LOCAL_VLLM_BASE_URL", raising=False)
+    monkeypatch.setenv("LOCAL_VLLM_HOST", "127.0.0.1")
+    monkeypatch.setenv("LOCAL_VLLM_PORT", "8001")
 
-    assert endpoint._nebius_base_url() == "https://old.example/v1/"
-    assert endpoint._nebius_model() == "old-model"
-
-
-def test_serverless_endpoint_uses_tokenfactory_default(monkeypatch: Any) -> None:
-    endpoint = _load_endpoint_module()
-    monkeypatch.delenv("NEBIUS_BASE_URL", raising=False)
-    monkeypatch.delenv("NEBIUS_AI_STUDIO_BASE_URL", raising=False)
-
-    assert endpoint._nebius_base_url() == "https://api.tokenfactory.nebius.com/v1/"
+    assert endpoint._local_vllm_base_url() == "http://127.0.0.1:8001/v1"
 
 
 def _load_endpoint_module() -> ModuleType:

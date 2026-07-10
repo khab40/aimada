@@ -25,10 +25,15 @@ DISCLAIMER = (
     "Educational synthetic simulation only. This does not detect real market manipulation, "
     "does not provide trading signals, and must not be used for compliance decisions."
 )
-DEFAULT_NEBIUS_BASE_URL = "https://api.tokenfactory.nebius.com/v1/"
-DEFAULT_NEBIUS_MODEL = "meta-llama/Meta-Llama-3.1-8B-Instruct"
+DEFAULT_LOCAL_VLLM_HOST = "127.0.0.1"
+DEFAULT_LOCAL_VLLM_PORT = "8001"
+DEFAULT_LOCAL_VLLM_MODEL = "Qwen/Qwen2.5-1.5B-Instruct"
+DEFAULT_ENDPOINT_MODEL = DEFAULT_LOCAL_VLLM_MODEL
 
-app = FastAPI(title="AI Market Abuse Detection Arena Serverless Endpoint")
+
+app = FastAPI(
+    title="AI Market Abuse Detection Arena Serverless Endpoint",
+)
 
 
 class EvidenceItem(BaseModel):
@@ -59,8 +64,9 @@ class IncidentExplanationResponse(BaseModel):
     evidence: list[str]
     recommended_action: str
     model_mode: str = "deterministic_fallback"
-    model: str = DEFAULT_NEBIUS_MODEL
+    model: str = DEFAULT_ENDPOINT_MODEL
     latency_ms: float = 0.0
+    fallback_reason: str | None = None
     disclaimer: str = DISCLAIMER
 
 
@@ -76,8 +82,9 @@ class ScenarioGenerationResponse(BaseModel):
     parameters: dict[str, Any]
     expected_detector_risk: float = Field(ge=0.0, le=1.0)
     model_mode: str = "deterministic_fallback"
-    model: str = DEFAULT_NEBIUS_MODEL
+    model: str = DEFAULT_ENDPOINT_MODEL
     latency_ms: float = 0.0
+    fallback_reason: str | None = None
     safety_note: str = DISCLAIMER
 
 
@@ -127,8 +134,9 @@ class MarketAbuseScenarioResponse(BaseModel):
     replay: dict[str, Any]
     source: dict[str, Any]
     model_mode: str = "deterministic_fallback"
-    model: str = DEFAULT_NEBIUS_MODEL
+    model: str = DEFAULT_ENDPOINT_MODEL
     latency_ms: float = 0.0
+    fallback_reason: str | None = None
     disclaimer: str = DISCLAIMER
 
 
@@ -157,8 +165,9 @@ class OrderBookAlertResponse(BaseModel):
     reasons: list[str]
     recommended_action: str
     model_mode: str
-    model: str = DEFAULT_NEBIUS_MODEL
+    model: str = DEFAULT_ENDPOINT_MODEL
     latency_ms: float = 0.0
+    fallback_reason: str | None = None
     disclaimer: str = DISCLAIMER
 
 
@@ -176,8 +185,9 @@ class InvestigationReportResponse(BaseModel):
     limitations: list[str]
     recommended_next_steps: list[str]
     model_mode: str = "deterministic_fallback"
-    model: str = DEFAULT_NEBIUS_MODEL
+    model: str = DEFAULT_ENDPOINT_MODEL
     latency_ms: float = 0.0
+    fallback_reason: str | None = None
     disclaimer: str = DISCLAIMER
 
 
@@ -223,8 +233,9 @@ class AIInvestigationTeamResponse(BaseModel):
     recommended_action: str
     executive_summary: str
     model_mode: str = "deterministic_fallback"
-    model: str = DEFAULT_NEBIUS_MODEL
+    model: str = DEFAULT_ENDPOINT_MODEL
     latency_ms: float = 0.0
+    fallback_reason: str | None = None
     disclaimer: str = DISCLAIMER
 
 
@@ -239,8 +250,10 @@ def health() -> dict[str, str | bool]:
         "service": "ai-market-abuse-detection-arena-endpoint",
         "endpoint_mode": _endpoint_mode(),
         "model_mode": _active_model_mode(),
-        "model": _nebius_model(),
-        "credentials_configured": _api_key_configured(),
+        "model": _active_model_name(),
+        "local_vllm_base_url": _local_vllm_base_url(),
+        "local_vllm_model": _local_vllm_model(),
+        "credentials_configured": _credentials_configured(),
     }
 
 
@@ -251,8 +264,10 @@ def ready() -> dict[str, str | bool]:
         "service": "ai-market-abuse-detection-arena-endpoint",
         "endpoint_mode": _endpoint_mode(),
         "model_mode": _active_model_mode(),
-        "model": _nebius_model(),
-        "credentials_configured": _api_key_configured(),
+        "model": _active_model_name(),
+        "local_vllm_base_url": _local_vllm_base_url(),
+        "local_vllm_model": _local_vllm_model(),
+        "credentials_configured": _credentials_configured(),
     }
 
 
@@ -417,6 +432,7 @@ def explain_simulation(request: ExplainPayload) -> dict[str, Any]:
             "model_mode": summary.model_mode,
             "model": summary.model,
             "latency_ms": summary.latency_ms,
+            "fallback_reason": summary.fallback_reason,
             "disclaimer": DISCLAIMER,
         }
     _log_fallback("explain_simulation", summary)
@@ -426,6 +442,7 @@ def explain_simulation(request: ExplainPayload) -> dict[str, Any]:
         "model_mode": summary.model_mode,
         "model": summary.model,
         "latency_ms": summary.latency_ms,
+        "fallback_reason": summary.fallback_reason,
         "disclaimer": DISCLAIMER,
     }
 
@@ -447,6 +464,7 @@ def generate_incident_report(request: ExplainPayload) -> dict[str, Any]:
             "model_mode": summary.model_mode,
             "model": summary.model,
             "latency_ms": summary.latency_ms,
+            "fallback_reason": summary.fallback_reason,
             "disclaimer": DISCLAIMER,
         }
     _log_fallback("generate_incident_report", summary)
@@ -456,6 +474,7 @@ def generate_incident_report(request: ExplainPayload) -> dict[str, Any]:
         "model_mode": summary.model_mode,
         "model": summary.model,
         "latency_ms": summary.latency_ms,
+        "fallback_reason": summary.fallback_reason,
         "disclaimer": DISCLAIMER,
     }
 
@@ -548,33 +567,63 @@ def _endpoint_mode() -> str:
     return os.environ.get("NEBIUS_ENDPOINT_MODE", "mock").strip().lower() or "mock"
 
 
-def _api_key_configured() -> bool:
-    return bool(os.environ.get("NEBIUS_API_KEY"))
+def _credentials_configured() -> bool:
+    return False
 
 
 def _active_model_mode() -> str:
-    return "ai_studio" if _model_enabled() else "deterministic_fallback"
+    if _local_vllm_enabled():
+        return "local_vllm"
+    return "deterministic_fallback"
 
 
-def _model_enabled() -> bool:
-    return _api_key_configured() and _endpoint_mode() == "ai"
+def _local_vllm_enabled() -> bool:
+    return _endpoint_mode() == "local_vllm"
+
+
+def _active_model_name() -> str:
+    if _local_vllm_enabled():
+        return _local_vllm_model()
+    return DEFAULT_ENDPOINT_MODEL
 
 
 def _call_model_json(system_prompt: str, user_payload: dict[str, Any]) -> ModelCallResult:
-    model = _nebius_model()
-    if not _model_enabled():
-        reason = "missing_api_key" if _endpoint_mode() == "ai" and not _api_key_configured() else "mock_mode"
-        return ModelCallResult(
-            payload=None,
-            model_mode="deterministic_fallback",
-            model=model,
-            fallback_reason=reason,
-        )
+    if _local_vllm_enabled():
+        return _call_local_vllm_json(system_prompt, user_payload)
+    return ModelCallResult(
+        payload=None,
+        model_mode="deterministic_fallback",
+        model=DEFAULT_ENDPOINT_MODEL,
+        fallback_reason="mock_mode" if _endpoint_mode() == "mock" else "unsupported_endpoint_mode",
+    )
 
-    api_key = os.environ["NEBIUS_API_KEY"]
-    base_url = _nebius_base_url()
-    temperature = _float_env("NEBIUS_TEMPERATURE", 0.2)
-    max_tokens = _int_env("NEBIUS_MAX_TOKENS", 800)
+
+def _call_local_vllm_json(system_prompt: str, user_payload: dict[str, Any]) -> ModelCallResult:
+    return _call_openai_compatible_json(
+        base_url=_local_vllm_base_url(),
+        model=_local_vllm_model(),
+        model_mode="local_vllm",
+        failure_reason="local_vllm_failed",
+        temperature=0.0,
+        max_tokens=400,
+        system_prompt=system_prompt,
+        user_payload=user_payload,
+        headers={"Content-Type": "application/json"},
+    )
+
+
+def _call_openai_compatible_json(
+    *,
+    base_url: str,
+    model: str,
+    model_mode: str,
+    failure_reason: str,
+    temperature: float,
+    max_tokens: int,
+    system_prompt: str,
+    user_payload: dict[str, Any],
+    headers: dict[str, str],
+) -> ModelCallResult:
     url = f"{base_url.rstrip('/')}/chat/completions"
     body = {
         "model": model,
@@ -586,27 +635,19 @@ def _call_model_json(system_prompt: str, user_payload: dict[str, Any]) -> ModelC
             {"role": "user", "content": json.dumps(user_payload, separators=(",", ":"))},
         ],
     }
-    request = Request(
-        url,
-        data=json.dumps(body).encode("utf-8"),
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        },
-        method="POST",
-    )
+    request = Request(url, data=json.dumps(body).encode("utf-8"), headers=headers, method="POST")
     started = perf_counter()
     try:
         with urlopen(request, timeout=_float_env("NEBIUS_REQUEST_TIMEOUT_SECONDS", 12.0)) as response:
             decoded = json.loads(response.read().decode("utf-8"))
     except (HTTPError, URLError, TimeoutError, json.JSONDecodeError, ValueError) as ex:
-        logger.exception("Nebius model call failed: %s", ex)
+        logger.exception("OpenAI-compatible model call failed: mode=%s url=%s error=%s", model_mode, url, ex)
         return ModelCallResult(
             payload=None,
             model_mode="deterministic_fallback",
             model=model,
             latency_ms=_elapsed_ms(started),
-            fallback_reason="model_call_failed",
+            fallback_reason=failure_reason,
         )
 
     parsed = _parse_chat_completion_json(decoded)
@@ -621,7 +662,7 @@ def _call_model_json(system_prompt: str, user_payload: dict[str, Any]) -> ModelC
         )
     return ModelCallResult(
         payload=parsed,
-        model_mode="ai_studio",
+        model_mode=model_mode,
         model=model,
         latency_ms=_elapsed_ms(started),
     )
@@ -660,15 +701,56 @@ def _parse_chat_completion_json(decoded: Any) -> dict[str, Any] | None:
     content = message.get("content")
     if not isinstance(content, str) or not content.strip():
         return None
-    try:
-        parsed = json.loads(content)
-    except json.JSONDecodeError:
-        logger.warning("Model content is not valid JSON: %s", content[:4000])
-        return None
-    if not isinstance(parsed, dict):
-        logger.warning("Model JSON content is not an object: %s", content[:4000])
-        return None
-    return parsed
+    return _parse_json_object_text(content)
+
+
+def _parse_json_object_text(content: str) -> dict[str, Any] | None:
+    decoder = json.JSONDecoder()
+    for candidate_text in _json_text_candidates(content):
+        try:
+            parsed = json.loads(candidate_text)
+        except json.JSONDecodeError:
+            parsed = None
+        if isinstance(parsed, dict):
+            return parsed
+
+        for index, char in enumerate(candidate_text):
+            if char != "{":
+                continue
+            try:
+                candidate, _ = decoder.raw_decode(candidate_text[index:])
+            except json.JSONDecodeError:
+                continue
+            if isinstance(candidate, dict):
+                return candidate
+
+    logger.warning("Model content does not contain a JSON object: %s", content[:4000])
+    return None
+
+
+def _json_text_candidates(content: str) -> list[str]:
+    stripped = content.strip()
+    candidates = [stripped]
+
+    fence_parts = stripped.split("```")
+    if len(fence_parts) >= 3:
+        for part in fence_parts[1::2]:
+            block = part.strip()
+            if block.lower().startswith("json"):
+                block = block[4:].strip()
+            if block:
+                candidates.append(block)
+
+    first_brace = stripped.find("{")
+    last_brace = stripped.rfind("}")
+    if first_brace != -1 and last_brace > first_brace:
+        candidates.append(stripped[first_brace : last_brace + 1])
+
+    deduped: list[str] = []
+    for candidate in candidates:
+        if candidate and candidate not in deduped:
+            deduped.append(candidate)
+    return deduped
 
 
 def _validated_model_payload(
@@ -695,6 +777,7 @@ def _with_model_metadata(response: BaseModel, result: ModelCallResult) -> Any:
             "model_mode": result.model_mode,
             "model": result.model,
             "latency_ms": result.latency_ms,
+            "fallback_reason": result.fallback_reason,
         }
     )
 
@@ -723,20 +806,17 @@ def _log_fallback(route: str, result: ModelCallResult) -> None:
     )
 
 
-def _nebius_base_url() -> str:
-    return (
-        os.environ.get("NEBIUS_BASE_URL")
-        or os.environ.get("NEBIUS_AI_STUDIO_BASE_URL")
-        or DEFAULT_NEBIUS_BASE_URL
-    )
+def _local_vllm_base_url() -> str:
+    configured = os.environ.get("LOCAL_VLLM_BASE_URL")
+    if configured and configured.strip():
+        return configured.strip()
+    host = os.environ.get("LOCAL_VLLM_HOST", DEFAULT_LOCAL_VLLM_HOST).strip() or DEFAULT_LOCAL_VLLM_HOST
+    port = os.environ.get("LOCAL_VLLM_PORT", DEFAULT_LOCAL_VLLM_PORT).strip() or DEFAULT_LOCAL_VLLM_PORT
+    return f"http://{host}:{port}/v1"
 
 
-def _nebius_model() -> str:
-    return (
-        os.environ.get("NEBIUS_MODEL")
-        or os.environ.get("NEBIUS_AI_MODEL")
-        or DEFAULT_NEBIUS_MODEL
-    )
+def _local_vllm_model() -> str:
+    return os.environ.get("LOCAL_VLLM_MODEL", DEFAULT_LOCAL_VLLM_MODEL).strip() or DEFAULT_LOCAL_VLLM_MODEL
 
 
 def _deterministic_explanation(request: IncidentExplanationRequest) -> IncidentExplanationResponse:

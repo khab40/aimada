@@ -97,11 +97,11 @@ Endpoint wiring is controlled by environment variables:
 NEBIUS_INCIDENT_EXPLAINER_URL
 NEBIUS_SCENARIO_GENERATOR_URL
 NEBIUS_ENDPOINT_BASE_URL
-NEBIUS_API_KEY optional
+ENDPOINT_TOKEN optional
 NEBIUS_TENANT_ID optional metadata/status field
 ```
 
-Secrets must not be committed. The UI never receives the API key.
+Secrets must not be committed. The UI never receives the endpoint token.
 
 ## Component Diagram
 

@@ -88,7 +88,7 @@ Update this file with each significant commit before pushing.
 
 - Extended backend `NebiusClient` to derive `/orderbook-alert`, `/investigation-report`, `/explain-event`, and `/generate-scenario` from `NEBIUS_ENDPOINT_BASE_URL`.
 - Added explicit `NEBIUS_ORDERBOOK_ALERT_URL` and `NEBIUS_INVESTIGATION_REPORT_URL` route overrides alongside the existing incident and scenario overrides.
-- Kept Bearer-token forwarding with `NEBIUS_API_KEY`, timeout handling, and mock fallback behavior for unavailable deployed endpoints.
+- Kept Bearer-token forwarding with `ENDPOINT_TOKEN`, timeout handling, and mock fallback behavior for unavailable deployed endpoints.
 - Added endpoint `/health` probing plus endpoint base/order-book/investigation/mode metadata to `/api/nebius/status` and `/api/nebius/observatory`.
 - Added mocked HTTP tests for route derivation, explicit overrides, Bearer auth, deployed order-book/investigation calls, and fallback on endpoint failure.
 
@@ -97,16 +97,15 @@ Update this file with each significant commit before pushing.
 - Added `/ready` to the existing serverless endpoint app and expanded `/health` with endpoint mode, active model mode, model name, and sanitized credential readiness metadata.
 - Added `model`, `model_mode`, and `latency_ms` metadata to endpoint responses where possible.
 - Hardened Nebius model JSON parsing and route-specific schema validation so malformed or wrong-shaped AI output falls back deterministically.
-- Preserved no-fail deterministic fallback behavior for mock mode, missing credentials, HTTP/model failures, and invalid model JSON without exposing API keys.
-- Added endpoint contract tests for mock mode, mocked AI responses, invalid model JSON fallback, and missing-key fallback.
+- Preserved no-fail deterministic fallback behavior for mock mode, HTTP/model failures, and invalid model JSON without exposing endpoint tokens.
+- Added endpoint contract tests for mock mode, mocked local-vLLM responses, and invalid JSON fallback.
 
 ### Current - fix: normalize Nebius endpoint environment names
 
-- Added `NEBIUS_BASE_URL` and `NEBIUS_MODEL` as canonical endpoint AI configuration names, defaulting `NEBIUS_BASE_URL` to `https://api.tokenfactory.nebius.com/v1/`.
-- Kept backward compatibility for `NEBIUS_AI_STUDIO_BASE_URL` and `NEBIUS_AI_MODEL` in backend settings and the serverless endpoint runtime.
+- Removed endpoint-side external AI gateway configuration in favor of local vLLM or deterministic mock mode.
 - Updated serverless env/config examples, Docker Compose, endpoint creation script, and Nebius deployment docs.
-- Stopped the Nebius endpoint creation script from printing generated auth tokens.
-- Added tests for new-name precedence, old-name fallback, and the tokenfactory default.
+- Stopped the Nebius endpoint creation script from printing endpoint auth tokens.
+- Added tests for local-vLLM endpoint routing and deterministic fallback.
 
 ### Current - fix: restore backend Docker startup
 

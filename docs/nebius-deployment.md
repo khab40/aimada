@@ -95,12 +95,92 @@ Then create the endpoint and job:
 ```bash
 export NEBIUS_SUBNET_ID=<vpc-subnet-id>
 export NEBIUS_PARENT_ID=<project-id>
+export ENDPOINT_TOKEN=<endpoint-bearer-token>
 export NEBIUS_ENDPOINT_IMAGE=ghcr.io/<your-org>/ai-market-abuse-detection-arena-endpoint:<tag>
 export NEBIUS_JOB_IMAGE=ghcr.io/<your-org>/ai-market-abuse-detection-arena-jobs:<tag>
 
 ./scripts/create-nebius-ai-endpoint.sh
 ./scripts/create-nebius-ai-job.sh
 ```
+
+To deploy the endpoint with local vLLM on Nebius H100:
+
+```bash
+export NEBIUS_SUBNET_ID=<vpc-subnet-id>
+export NEBIUS_PARENT_ID=<project-id>
+export ENDPOINT_TOKEN=<endpoint-bearer-token>
+export NEBIUS_ENDPOINT_IMAGE=ghcr.io/<your-org>/ai-market-abuse-detection-arena-endpoint:<tag>
+export NEBIUS_ENDPOINT_MODE=local_vllm
+export NEBIUS_ENDPOINT_PLATFORM=gpu-h100
+export NEBIUS_ENDPOINT_PRESET=1gpu-16vcpu-200gb
+export LOCAL_VLLM_MODEL=Qwen/Qwen2.5-1.5B-Instruct
+export LOCAL_VLLM_HOST=127.0.0.1
+export LOCAL_VLLM_PORT=8001
+export LOCAL_VLLM_BASE_URL=http://127.0.0.1:8001/v1
+export LOCAL_VLLM_GPU_MEMORY_UTILIZATION=0.85
+export LOCAL_VLLM_MAX_MODEL_LEN=4096
+
+./scripts/create-nebius-ai-endpoint.sh
+```
+
+Smoke the deployed endpoint with endpoint auth:
+
+```bash
+ENDPOINT_TOKEN=<endpoint-bearer-token> \
+python scripts/call_endpoint.py \
+  --base-url https://<endpoint-host> \
+  --route orderbook-alert
+```
+
+### Cloud Validation For `local_vllm`
+
+Apple Silicon Docker does not validate the H100 path. Use Nebius as the source
+of truth:
+
+```bash
+export NEBIUS_ENDPOINT_IMAGE=ghcr.io/<your-org>/ai-market-abuse-detection-arena-endpoint:<tag>
+docker buildx build --platform linux/amd64 \
+  -f serverless/endpoint/Dockerfile \
+  -t "${NEBIUS_ENDPOINT_IMAGE}" \
+  --push \
+  serverless/endpoint
+
+export NEBIUS_SUBNET_ID=<vpc-subnet-id>
+export NEBIUS_PARENT_ID=<project-id>
+export ENDPOINT_TOKEN=<endpoint-bearer-token>
+export NEBIUS_ENDPOINT_MODE=local_vllm
+export NEBIUS_ENDPOINT_PLATFORM=gpu-h100
+export NEBIUS_ENDPOINT_PRESET=1gpu-16vcpu-200gb
+export LOCAL_VLLM_MODEL=Qwen/Qwen2.5-1.5B-Instruct
+export LOCAL_VLLM_HOST=127.0.0.1
+export LOCAL_VLLM_PORT=8001
+export LOCAL_VLLM_BASE_URL=http://127.0.0.1:8001/v1
+export LOCAL_VLLM_GPU_MEMORY_UTILIZATION=0.85
+export LOCAL_VLLM_MAX_MODEL_LEN=4096
+
+./scripts/create-nebius-ai-endpoint.sh
+```
+
+Validate the deployed endpoint:
+
+```bash
+export NEBIUS_ENDPOINT_BASE_URL=https://<endpoint-host>
+export NEBIUS_ENDPOINT_ID=<endpoint-id>
+export ENDPOINT_TOKEN=<endpoint-bearer-token>
+
+curl -fsS -H "Authorization: Bearer ${ENDPOINT_TOKEN}" \
+  "${NEBIUS_ENDPOINT_BASE_URL%/}/health"
+
+./scripts/validate-local-vllm-endpoint.sh validate
+./scripts/validate-local-vllm-endpoint.sh logs
+```
+
+Success criteria:
+
+- `endpoint_mode=local_vllm`
+- `model_mode=local_vllm`
+- `local_vllm_model=Qwen/Qwen2.5-1.5B-Instruct`
+- `latency_ms > 0` on `/orderbook-alert` and `/investigation-report`
 
 After the endpoint, backend, and jobs image are available, run the deployment smoke workflow:
 
@@ -205,7 +285,7 @@ Copy `.env.example` to `.env` and set:
 - `NEBIUS_TENANT_ID`
 - `NEBIUS_INCIDENT_EXPLAINER_URL`
 - `NEBIUS_SCENARIO_GENERATOR_URL`
-- `NEBIUS_API_KEY`
+- `ENDPOINT_TOKEN`
 - `ARENA_OUTPUT_DIR`
 
 Keep secrets out of source control.
@@ -220,15 +300,14 @@ Set these on the deployed endpoint container:
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `NEBIUS_ENDPOINT_MODE` | yes | `mock` for deterministic fallback, `ai` to call the Nebius OpenAI-compatible chat/completions API. |
-| `NEBIUS_API_KEY` | only for `ai` mode | Token used by the endpoint to call Nebius AI Studio. Store as a secret. |
-| `NEBIUS_BASE_URL` | no | Nebius OpenAI-compatible API base URL. Defaults to `https://api.tokenfactory.nebius.com/v1/`. |
-| `NEBIUS_MODEL` | no | Model used for explanation/scenario JSON. |
-| `NEBIUS_TEMPERATURE` | no | Model temperature. Use `0.2` for stable outputs. |
-| `NEBIUS_MAX_TOKENS` | no | Max completion size. Use a small value such as `800`. |
+| `NEBIUS_ENDPOINT_MODE` | yes | `mock` for deterministic fallback or `local_vllm` to start and call a local OpenAI-compatible vLLM server. |
 | `NEBIUS_REQUEST_TIMEOUT_SECONDS` | no | Endpoint model-call timeout. |
-
-Backward-compatible aliases are still supported: `NEBIUS_AI_STUDIO_BASE_URL` is accepted when `NEBIUS_BASE_URL` is unset, and `NEBIUS_AI_MODEL` is accepted when `NEBIUS_MODEL` is unset. New deployments should use `NEBIUS_BASE_URL` and `NEBIUS_MODEL`.
+| `LOCAL_VLLM_BASE_URL` | only for `local_vllm` overrides | Local vLLM OpenAI-compatible base URL. Defaults to `http://127.0.0.1:8001/v1`. |
+| `LOCAL_VLLM_MODEL` | only for `local_vllm` overrides | Model name sent to vLLM. Defaults to `Qwen/Qwen2.5-1.5B-Instruct`. |
+| `LOCAL_VLLM_HOST` | no | Local vLLM bind host. Defaults to `127.0.0.1`. |
+| `LOCAL_VLLM_PORT` | no | Local vLLM port. Defaults to `8001`. |
+| `LOCAL_VLLM_GPU_MEMORY_UTILIZATION` | no | vLLM GPU memory utilization. Defaults to `0.85`. |
+| `LOCAL_VLLM_MAX_MODEL_LEN` | no | vLLM maximum model context length. Defaults to `4096`. |
 
 The endpoint exposes:
 
@@ -254,7 +333,7 @@ Set these on the backend container or backend Docker Compose environment:
 | `NEBIUS_SCENARIO_GENERATOR_URL` | no | Explicit full URL override for `/generate-scenario`. |
 | `NEBIUS_ORDERBOOK_ALERT_URL` | no | Explicit full URL override for `/orderbook-alert`. |
 | `NEBIUS_INVESTIGATION_REPORT_URL` | no | Explicit full URL override for `/investigation-report`. |
-| `NEBIUS_API_KEY` | optional | Bearer token if the deployed endpoint requires auth. |
+| `ENDPOINT_TOKEN` | optional | Bearer token if the deployed endpoint requires auth. |
 | `ARENA_OUTPUT_DIR` | no | Local/output artifact path. |
 | `LOG_LEVEL` | no | Backend logging level. |
 
@@ -263,7 +342,7 @@ Example backend production values:
 ```bash
 NEBIUS_TENANT_ID=tenant-e00ek8wmcr5jzwfa9k
 NEBIUS_ENDPOINT_BASE_URL=http://<nebius-endpoint>
-NEBIUS_API_KEY=<endpoint-auth-token-if-used>
+ENDPOINT_TOKEN=<endpoint-auth-token-if-used>
 ```
 
 `/api/nebius/status` and `/api/nebius/observatory` report whether the base URL, order-book alert route, investigation-report route, endpoint mode, and endpoint `/health` probe are configured. If the endpoint is unavailable, backend calls fall back to mock responses instead of failing the demo path.

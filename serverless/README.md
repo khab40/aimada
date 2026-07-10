@@ -16,7 +16,7 @@ The backend calls the endpoint through:
 ```text
 NEBIUS_INCIDENT_EXPLAINER_URL=http://<endpoint>/explain-event
 NEBIUS_SCENARIO_GENERATOR_URL=http://<endpoint>/generate-scenario
-NEBIUS_API_KEY=<optional endpoint token>
+ENDPOINT_TOKEN=<optional endpoint token>
 ```
 
 The frontend keeps calling the backend:
@@ -124,7 +124,7 @@ For a deployed endpoint:
 ```bash
 NEBIUS_ENDPOINT_BASE_URL=https://<endpoint-host> \
 BACKEND_BASE_URL=https://<backend-host> \
-NEBIUS_API_KEY=<optional-endpoint-token> \
+ENDPOINT_TOKEN=<optional-endpoint-token> \
 JOBS_IMAGE=ghcr.io/<your-org>/ai-market-abuse-detection-arena-jobs:<tag> \
 ./scripts/serverless-smoke.sh
 ```
@@ -140,7 +140,7 @@ when not configured, it is marked pending in the summary.
 Equivalent manual commands:
 
 ```bash
-docker build -f serverless/endpoint/Dockerfile \
+docker build --platform linux/amd64 -f serverless/endpoint/Dockerfile \
   -t ghcr.io/khab40/ai-market-abuse-detection-arena-endpoint:latest \
   serverless/endpoint
 
@@ -152,12 +152,32 @@ docker build -f serverless/jobs/Dockerfile \
 ## First Deployment Checklist
 
 1. Build and push `nebius-market-abuse-endpoint`.
-2. Deploy it as a Nebius Serverless AI Endpoint using `endpoint/endpoint_config.example.yaml`.
+2. Deploy it as a Nebius Serverless AI Endpoint with `scripts/create-nebius-ai-endpoint.sh`.
 3. Copy the public endpoint URL into backend env:
    - `NEBIUS_INCIDENT_EXPLAINER_URL`
    - `NEBIUS_SCENARIO_GENERATOR_URL`
 4. Start the backend and frontend.
 5. In Arena, create an incident and click Nebius AI Investigator.
+
+Local-vLLM H100 endpoint:
+
+```bash
+export NEBIUS_PARENT_ID=<project-id>
+export NEBIUS_SUBNET_ID=<vpc-subnet-id>
+export ENDPOINT_TOKEN=<endpoint-bearer-token>
+export NEBIUS_ENDPOINT_IMAGE=ghcr.io/<your-org>/ai-market-abuse-detection-arena-endpoint:<tag>
+export NEBIUS_ENDPOINT_MODE=local_vllm
+export NEBIUS_ENDPOINT_PLATFORM=gpu-h100
+export NEBIUS_ENDPOINT_PRESET=1gpu-16vcpu-200gb
+export LOCAL_VLLM_BASE_URL=http://127.0.0.1:8001/v1
+export LOCAL_VLLM_MODEL=Qwen/Qwen2.5-1.5B-Instruct
+export LOCAL_VLLM_HOST=127.0.0.1
+export LOCAL_VLLM_PORT=8001
+export LOCAL_VLLM_GPU_MEMORY_UTILIZATION=0.85
+export LOCAL_VLLM_MAX_MODEL_LEN=4096
+
+./scripts/create-nebius-ai-endpoint.sh
+```
 6. In Lab/Judge flow, call `POST /api/red-team/generate-scenario`.
 7. Build and push `nebius-market-abuse-jobs`.
 8. Run the detector tournament job with `jobs/job_config.example.yaml`.
@@ -167,7 +187,7 @@ docker build -f serverless/jobs/Dockerfile \
 
 - Keep endpoint mode as `mock` for initial connectivity tests.
 - Use `--runs 100` and `--samples 100` until the full path works.
-- Switch `NEBIUS_ENDPOINT_MODE=ai` only after backend-to-endpoint wiring is verified.
+- Switch `NEBIUS_ENDPOINT_MODE=local_vllm` only after backend-to-endpoint wiring is verified.
 
 ## Safety
 

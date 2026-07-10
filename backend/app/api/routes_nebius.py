@@ -680,7 +680,7 @@ def observatory(request: Request) -> NebiusObservatoryResponse:
                     or integration.orderbook_alert_configured
                     or integration.investigation_report_configured
                 ),
-                token_configured=integration.api_key_configured,
+                token_configured=integration.endpoint_token_configured,
                 output_dir=store.output_dir,
                 latest_batch=latest_batch,
             )

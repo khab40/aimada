@@ -1,6 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
-from pydantic import AliasChoices, Field
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     )
 
     app_name: str = "AI Market Abuse Detection Arena"
-    nebius_api_key: str | None = Field(default=None, alias="NEBIUS_API_KEY")
+    endpoint_token: str | None = Field(default=None, alias="ENDPOINT_TOKEN")
     nebius_tenant_id: str | None = Field(default=None, alias="NEBIUS_TENANT_ID")
     nebius_endpoint_base_url: str | None = Field(
         default=None,
@@ -43,14 +43,6 @@ class Settings(BaseSettings):
         alias="NEBIUS_INVESTIGATION_TEAM_URL",
     )
     nebius_endpoint_mode: str = Field(default="mock", alias="NEBIUS_ENDPOINT_MODE")
-    nebius_base_url: str = Field(
-        default="https://api.tokenfactory.nebius.com/v1/",
-        validation_alias=AliasChoices("NEBIUS_BASE_URL", "NEBIUS_AI_STUDIO_BASE_URL"),
-    )
-    nebius_model: str = Field(
-        default="meta-llama/Meta-Llama-3.1-8B-Instruct",
-        validation_alias=AliasChoices("NEBIUS_MODEL", "NEBIUS_AI_MODEL"),
-    )
     nebius_job_image: str = Field(
         default="ghcr.io/your-org/ai-market-abuse-detection-arena-jobs:latest",
         alias="NEBIUS_JOB_IMAGE",

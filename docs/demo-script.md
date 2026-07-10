@@ -13,7 +13,7 @@ docker compose up --build
 
 Open http://localhost:5173. The app should land on `AI Command Center`.
 
-Local demo mode requires no Google login, no `NEBIUS_API_KEY`, and no deployed endpoint.
+Local demo mode requires no Google login, no endpoint token, and no deployed endpoint.
 
 ## Step 1: Generate AI Scenario
 
@@ -115,10 +115,9 @@ Screenshot: Detector Tournament leaderboard and artifact links.
 For a real Nebius run:
 
 ```bash
-NEBIUS_ENDPOINT_MODE=ai
-NEBIUS_API_KEY=<token>
+NEBIUS_ENDPOINT_MODE=local_vllm
 NEBIUS_ENDPOINT_BASE_URL=<deployed-endpoint-base-url>
-NEBIUS_MODEL=<model>
+ENDPOINT_TOKEN=<endpoint-token>
 NEBIUS_JOB_IMAGE=<job-image>
 NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE=<submit-command-template>
 NEBIUS_JOB_STATUS_COMMAND_TEMPLATE=<status-command-template>

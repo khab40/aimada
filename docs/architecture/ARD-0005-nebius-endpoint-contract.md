@@ -139,7 +139,7 @@ The backend reads endpoint wiring from:
 - `NEBIUS_INCIDENT_EXPLAINER_URL`
 - `NEBIUS_SCENARIO_GENERATOR_URL`
 - `NEBIUS_ENDPOINT_BASE_URL`
-- `NEBIUS_API_KEY` optional
+- `ENDPOINT_TOKEN` optional
 - `NEBIUS_TENANT_ID` optional metadata/status field
 
 ## Consequences

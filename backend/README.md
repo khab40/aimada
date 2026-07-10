@@ -62,7 +62,7 @@ Nebius integration variables:
 ```bash
 NEBIUS_TENANT_ID=your-tenant-id
 NEBIUS_ENDPOINT_BASE_URL=https://your-nebius-endpoint
-NEBIUS_API_KEY=optional-token
+ENDPOINT_TOKEN=optional-token
 ```
 
 The backend derives `/explain-event` and `/generate-scenario` from `NEBIUS_ENDPOINT_BASE_URL`. You can still set `NEBIUS_INCIDENT_EXPLAINER_URL` and `NEBIUS_SCENARIO_GENERATOR_URL` as explicit overrides. When endpoint URLs are not configured, the backend returns typed mock responses.

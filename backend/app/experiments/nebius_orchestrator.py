@@ -360,7 +360,7 @@ class NebiusExperimentOrchestrator:
         )
 
     def _has_nebius_credentials(self) -> bool:
-        return bool(self.settings and self.settings.nebius_api_key and self.settings.nebius_tenant_id)
+        return bool(self.settings and self.settings.endpoint_token and self.settings.nebius_tenant_id)
 
     def _render_job_config(self, experiment: Experiment, artifact_dir: Path) -> Path:
         render_job_config = _load_render_job_config()

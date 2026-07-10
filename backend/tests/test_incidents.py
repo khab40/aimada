@@ -244,7 +244,7 @@ def test_nebius_endpoint_base_url_derives_backend_routes(monkeypatch: Any) -> No
     monkeypatch.setenv("NEBIUS_SCENARIO_GENERATOR_URL", "")
     monkeypatch.setenv("NEBIUS_ORDERBOOK_ALERT_URL", "")
     monkeypatch.setenv("NEBIUS_INVESTIGATION_REPORT_URL", "")
-    monkeypatch.setenv("NEBIUS_API_KEY", "test-token")
+    monkeypatch.setenv("ENDPOINT_TOKEN", "test-token")
     get_settings.cache_clear()
 
     captured: dict[str, Any] = {}
@@ -257,7 +257,7 @@ def test_nebius_endpoint_base_url_derives_backend_routes(monkeypatch: Any) -> No
             return None
 
         def read(self) -> bytes:
-            return json.dumps({"status": "ok", "endpoint_mode": "ai"}).encode("utf-8")
+            return json.dumps({"status": "ok", "endpoint_mode": "local_vllm"}).encode("utf-8")
 
     def fake_urlopen(request: Any, timeout: float) -> FakeHealthResponse:
         captured["url"] = request.full_url
@@ -282,7 +282,7 @@ def test_nebius_endpoint_base_url_derives_backend_routes(monkeypatch: Any) -> No
         assert status.investigation_report_configured is True
         assert status.investigation_team_configured is True
         assert status.endpoint_base_url_configured is True
-        assert status.endpoint_health == {"status": "ok", "endpoint_mode": "ai"}
+        assert status.endpoint_health == {"status": "ok", "endpoint_mode": "local_vllm"}
         assert captured["url"] == "https://nebius-endpoint.example/health"
         assert captured["method"] == "GET"
         assert captured["authorization"] == "Bearer test-token"

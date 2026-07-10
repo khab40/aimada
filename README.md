@@ -244,12 +244,19 @@ The local experiment path writes synthetic benchmark evidence under `outputs/exp
 
 ## Environment Configuration
 
-Nebius endpoint and job wiring is configured through environment variables. Leave URLs and submit templates unset for local mock mode; the app still runs and labels fallback responses clearly.
+Nebius endpoint and job wiring is configured through environment variables. The cloud endpoint defaults to a GPU local-vLLM path; use mock mode only for local deterministic development.
 
 ```bash
-NEBIUS_API_KEY=optional-token-for-endpoint-or-model-calls
-NEBIUS_ENDPOINT_MODE=mock              # mock | ai
-NEBIUS_MODEL=meta-llama/Meta-Llama-3.1-8B-Instruct
+ENDPOINT_TOKEN=endpoint-auth-token
+NEBIUS_ENDPOINT_MODE=local_vllm        # local_vllm | mock
+NEBIUS_ENDPOINT_PLATFORM=gpu-h100
+NEBIUS_ENDPOINT_PRESET=1gpu-16vcpu-200gb
+LOCAL_VLLM_BASE_URL=http://127.0.0.1:8001/v1
+LOCAL_VLLM_MODEL=Qwen/Qwen2.5-1.5B-Instruct
+LOCAL_VLLM_HOST=127.0.0.1
+LOCAL_VLLM_PORT=8001
+LOCAL_VLLM_GPU_MEMORY_UTILIZATION=0.85
+LOCAL_VLLM_MAX_MODEL_LEN=4096
 NEBIUS_ENDPOINT_BASE_URL=https://your-nebius-endpoint
 ```
 
@@ -265,15 +272,14 @@ The backend derives Endpoint routes from `NEBIUS_ENDPOINT_BASE_URL`. Set explici
 Local mock mode:
 
 - `NEBIUS_ENDPOINT_MODE=mock`
-- no `NEBIUS_API_KEY` required
 - no Google login required
 - all primary demo actions return deterministic structured responses
 
-Real Nebius integration path:
+Nebius GPU local-vLLM integration path:
 
 - deploy `serverless/endpoint/app.py` as the Nebius AI Serverless Endpoint
 - set `NEBIUS_ENDPOINT_BASE_URL` or the route-specific `NEBIUS_*_URL` variables
-- set `NEBIUS_API_KEY` when the endpoint/model gateway requires auth
+- set `ENDPOINT_TOKEN` for endpoint auth
 - configure `NEBIUS_JOB_IMAGE` and `NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE` for real Nebius Serverless Jobs
 
 Nebius AI Scenario Generator:
@@ -308,11 +314,32 @@ Nebius resource creation:
 ```bash
 export NEBIUS_PARENT_ID=<project-id>
 export NEBIUS_SUBNET_ID=<vpc-subnet-id>
+export ENDPOINT_TOKEN=<endpoint-bearer-token>
 export NEBIUS_ENDPOINT_IMAGE=ghcr.io/<your-org>/ai-market-abuse-detection-arena-endpoint:<tag>
 export NEBIUS_JOB_IMAGE=ghcr.io/<your-org>/ai-market-abuse-detection-arena-jobs:<tag>
 
 ./scripts/create-nebius-ai-endpoint.sh
 ./scripts/create-nebius-ai-job.sh
+```
+
+Nebius H100 endpoint with local vLLM:
+
+```bash
+export NEBIUS_PARENT_ID=<project-id>
+export NEBIUS_SUBNET_ID=<vpc-subnet-id>
+export ENDPOINT_TOKEN=<endpoint-bearer-token>
+export NEBIUS_ENDPOINT_IMAGE=ghcr.io/<your-org>/ai-market-abuse-detection-arena-endpoint:<tag>
+export NEBIUS_ENDPOINT_MODE=local_vllm
+export NEBIUS_ENDPOINT_PLATFORM=gpu-h100
+export NEBIUS_ENDPOINT_PRESET=1gpu-16vcpu-200gb
+export LOCAL_VLLM_MODEL=Qwen/Qwen2.5-1.5B-Instruct
+export LOCAL_VLLM_HOST=127.0.0.1
+export LOCAL_VLLM_PORT=8001
+export LOCAL_VLLM_BASE_URL=http://127.0.0.1:8001/v1
+export LOCAL_VLLM_GPU_MEMORY_UTILIZATION=0.85
+export LOCAL_VLLM_MAX_MODEL_LEN=4096
+
+./scripts/create-nebius-ai-endpoint.sh
 ```
 
 Frontend WebSocket connection:

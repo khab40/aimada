@@ -2,8 +2,8 @@ name: market-abuse-arena-ai-endpoint
 container_port: 9000
 public: true
 auth: token
-platform: cpu-d3
-preset: 4vcpu-16gb
+platform: gpu-h100
+preset: 1gpu-16vcpu-200gb
 subnet_name: default-subnet
 
 image:
@@ -11,20 +11,19 @@ image:
   tag: latest
 
 env:
-  # mock = deterministic local fallback, ai = call Nebius AI Studio OpenAI-compatible API.
-  NEBIUS_ENDPOINT_MODE: mock
-  NEBIUS_BASE_URL: https://api.tokenfactory.nebius.com/v1/
-  NEBIUS_MODEL: meta-llama/Meta-Llama-3.1-8B-Instruct
-  # Backward-compatible aliases still supported:
-  # NEBIUS_AI_STUDIO_BASE_URL: https://api.tokenfactory.nebius.com/v1/
-  # NEBIUS_AI_MODEL: meta-llama/Meta-Llama-3.1-8B-Instruct
-  NEBIUS_TEMPERATURE: "0.2"
-  NEBIUS_MAX_TOKENS: "800"
+  # local_vllm = call local OpenAI-compatible vLLM server inside the endpoint runtime.
+  # mock = deterministic fallback.
+  NEBIUS_ENDPOINT_MODE: local_vllm
+  LOCAL_VLLM_BASE_URL: http://127.0.0.1:8001/v1
+  LOCAL_VLLM_MODEL: Qwen/Qwen2.5-1.5B-Instruct
+  LOCAL_VLLM_HOST: 127.0.0.1
+  LOCAL_VLLM_PORT: "8001"
+  LOCAL_VLLM_GPU_MEMORY_UTILIZATION: "0.85"
+  LOCAL_VLLM_MAX_MODEL_LEN: "4096"
   NEBIUS_REQUEST_TIMEOUT_SECONDS: "12"
 
 secrets:
   # Do not commit real values. Set through Nebius endpoint env-secret/token-secret options.
-  NEBIUS_API_KEY: ""
   ENDPOINT_AUTH_TOKEN: ""
 
 routes:
@@ -40,4 +39,4 @@ backend_wiring:
   NEBIUS_INCIDENT_EXPLAINER_URL: http://<endpoint-public-ip>/explain-event
   NEBIUS_SCENARIO_GENERATOR_URL: http://<endpoint-public-ip>/generate-scenario
   NEBIUS_INVESTIGATION_TEAM_URL: http://<endpoint-public-ip>/investigation-team
-  NEBIUS_API_KEY: <same endpoint auth token if auth=token>
+  ENDPOINT_TOKEN: <same endpoint auth token if auth=token>
