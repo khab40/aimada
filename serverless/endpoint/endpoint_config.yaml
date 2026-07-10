@@ -2,7 +2,7 @@ name: market-abuse-arena-ai-endpoint
 container_port: 9000
 public: true
 auth: token
-platform: gpu-h100
+platform: gpu-h100-sxm
 preset: 1gpu-16vcpu-200gb
 disk_size: 200Gi
 

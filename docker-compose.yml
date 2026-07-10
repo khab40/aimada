@@ -1,13 +1,4 @@
 services:
-  endpoint:
-    build:
-      context: ./serverless/endpoint
-    environment:
-      NEBIUS_ENDPOINT_MODE: ${NEBIUS_ENDPOINT_MODE:-mock}
-      NEBIUS_REQUEST_TIMEOUT_SECONDS: ${NEBIUS_REQUEST_TIMEOUT_SECONDS:-12}
-    ports:
-      - "9001:9000"
-
   agent-runner:
     profiles:
       - remote-agents

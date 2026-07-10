@@ -3,6 +3,7 @@ set -euo pipefail
 
 UVICORN_HOST="${UVICORN_HOST:-0.0.0.0}"
 UVICORN_PORT="${UVICORN_PORT:-9000}"
+export PYTHONUNBUFFERED=1
 
 if [[ "${NEBIUS_ENDPOINT_MODE:-mock}" != "local_vllm" ]]; then
   echo "Endpoint startup: mode=${NEBIUS_ENDPOINT_MODE:-mock}; starting FastAPI only on ${UVICORN_HOST}:${UVICORN_PORT}"
@@ -12,7 +13,10 @@ fi
 LOCAL_VLLM_MODEL="${LOCAL_VLLM_MODEL:-Qwen/Qwen2.5-1.5B-Instruct}"
 LOCAL_VLLM_HOST="${LOCAL_VLLM_HOST:-127.0.0.1}"
 LOCAL_VLLM_PORT="${LOCAL_VLLM_PORT:-8001}"
-LOCAL_VLLM_BASE_URL="${LOCAL_VLLM_BASE_URL:-http://${LOCAL_VLLM_HOST}:${LOCAL_VLLM_PORT}/v1}"
+LOCAL_VLLM_BASE_URL="${LOCAL_VLLM_BASE_URL:-}"
+if [[ -z "${LOCAL_VLLM_BASE_URL}" ]]; then
+  LOCAL_VLLM_BASE_URL="http://${LOCAL_VLLM_HOST}:${LOCAL_VLLM_PORT}/v1"
+fi
 LOCAL_VLLM_GPU_MEMORY_UTILIZATION="${LOCAL_VLLM_GPU_MEMORY_UTILIZATION:-0.85}"
 LOCAL_VLLM_MAX_MODEL_LEN="${LOCAL_VLLM_MAX_MODEL_LEN:-4096}"
 LOCAL_VLLM_READY_TIMEOUT_SECONDS="${LOCAL_VLLM_READY_TIMEOUT_SECONDS:-900}"
@@ -24,7 +28,10 @@ export LOCAL_VLLM_GPU_MEMORY_UTILIZATION
 export LOCAL_VLLM_MAX_MODEL_LEN
 
 echo "Endpoint startup: mode=local_vllm"
-echo "vLLM startup: model=${LOCAL_VLLM_MODEL} host=${LOCAL_VLLM_HOST} port=${LOCAL_VLLM_PORT} gpu_memory_utilization=${LOCAL_VLLM_GPU_MEMORY_UTILIZATION} max_model_len=${LOCAL_VLLM_MAX_MODEL_LEN}"
+echo
+echo "vLLM startup: model=${LOCAL_VLLM_MODEL} host=${LOCAL_VLLM_HOST} port=${LOCAL_VLLM_PORT}"
+echo
+echo "vLLM readiness..."
 
 python -m vllm.entrypoints.openai.api_server \
   --model "${LOCAL_VLLM_MODEL}" \
@@ -92,7 +99,8 @@ print(f"vLLM readiness: timed out url={url} timeout_seconds={timeout_seconds}", 
 sys.exit(1)
 PY
 
-echo "FastAPI startup: starting uvicorn on ${UVICORN_HOST}:${UVICORN_PORT} with local vLLM base ${LOCAL_VLLM_BASE_URL}"
+echo "vLLM ready"
+echo "Uvicorn running on http://${UVICORN_HOST}:${UVICORN_PORT}"
 uvicorn app:app --host "${UVICORN_HOST}" --port "${UVICORN_PORT}" &
 UVICORN_PID="$!"
 
