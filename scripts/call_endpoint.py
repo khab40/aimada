@@ -25,7 +25,6 @@ SAMPLE_REPORT = {
     "metrics": {"precision": 0.91, "recall": 0.88, "f1": 0.895, "avg_detection_latency_ms": 750},
 }
 
-
 def main() -> None:
     parser = argparse.ArgumentParser(description="Call Nebius Serverless AI endpoint contract.")
     parser.add_argument("--base-url", default=os.environ.get("NEBIUS_ENDPOINT_BASE_URL", "http://localhost:9000"))
@@ -38,7 +37,7 @@ def main() -> None:
     )
     url = f"{args.base_url.rstrip('/')}/{args.route}"
     headers = {"Content-Type": "application/json"}
-    token = os.environ.get("NEBIUS_API_KEY") or os.environ.get("NEBIUS_ENDPOINT_TOKEN")
+    token = os.environ.get("NEBIUS_ENDPOINT_TOKEN")
     if token:
         headers["Authorization"] = f"Bearer {token}"
     request = Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")

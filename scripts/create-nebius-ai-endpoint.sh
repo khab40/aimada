@@ -2,7 +2,7 @@
 set -euo pipefail
 
 NAME="${NEBIUS_ENDPOINT_NAME:-market-abuse-arena-ai-endpoint}"
-IMAGE="${NEBIUS_ENDPOINT_IMAGE:-ghcr.io/your-org/ai-market-abuse-detection-arena-endpoint:latest}"
+IMAGE="${NEBIUS_ENDPOINT_IMAGE:-ghcr.io/khab40/ai-market-abuse-detection-arena-endpoint:latest}"
 PLATFORM="${NEBIUS_ENDPOINT_PLATFORM:-cpu-d3}"
 PRESET="${NEBIUS_ENDPOINT_PRESET:-4vcpu-16gb}"
 DISK_SIZE="${NEBIUS_ENDPOINT_DISK_SIZE:-100Gi}"
@@ -10,7 +10,7 @@ CONTAINER_PORT="${NEBIUS_ENDPOINT_PORT:-9000}"
 AUTH="${NEBIUS_ENDPOINT_AUTH:-token}"
 MODE="${NEBIUS_ENDPOINT_MODE:-mock}"
 BASE_URL="${NEBIUS_BASE_URL:-${NEBIUS_AI_STUDIO_BASE_URL:-https://api.tokenfactory.nebius.com/v1/}}"
-MODEL="${NEBIUS_MODEL:-${NEBIUS_AI_MODEL:-meta-llama/Meta-Llama-3.1-8B-Instruct}}"
+MODEL="${NEBIUS_MODEL:-${NEBIUS_AI_MODEL:-meta-llama/Llama-3.3-70B-Instruct}}"
 
 if [[ -z "${NEBIUS_SUBNET_ID:-}" ]]; then
   printf "%s\n" "NEBIUS_SUBNET_ID is required." >&2
@@ -56,6 +56,9 @@ fi
 
 if [[ -n "${NEBIUS_API_KEY_SECRET:-}" ]]; then
   args+=(--env-secret "NEBIUS_API_KEY=${NEBIUS_API_KEY_SECRET}")
+elif [[ -n "${NEBIUS_API_KEY:-}" ]]; then
+  args+=(--env "NEBIUS_API_KEY=${NEBIUS_API_KEY}")
+  printf "%s\n" "Using NEBIUS_API_KEY from the environment. API key value is not printed."
 fi
 
 if [[ -n "${NEBIUS_VOLUME:-}" ]]; then
