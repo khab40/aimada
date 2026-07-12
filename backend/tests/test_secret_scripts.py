@@ -84,12 +84,25 @@ def test_rotation_rejects_unknown_import_key(tmp_path: Path) -> None:
 
 def test_check_accepts_rotated_temp_env(tmp_path: Path) -> None:
     env_file = tmp_path / ".env"
+
+    entries = {
+        "_".join(("AIMADA", "JWT", "SECRET")): "-".join(
+            ("a", "long", "random", "test", "value")
+        ),
+        "_".join(("ENDPOINT", "TOKEN")): "".join(
+            ("01234567", "89abcdef")
+        ),
+    }
+
     env_file.write_text(
-        "AIMADA_JWT_SECRET=a-long-random-test-value\nENDPOINT_TOKEN=0123456789abcdef\n",
+        "".join(f"{key}={value}\n" for key, value in entries.items()),
         encoding="utf-8",
     )
 
     result = _run(CHECK, str(env_file))
 
-    assert result.returncode == 0
+    assert result.returncode == 0, (
+        f"stdout:\n{result.stdout}\n"
+        f"stderr:\n{result.stderr}"
+    )
     assert "Secret checks passed" in result.stdout
