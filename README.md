@@ -118,7 +118,7 @@ Default demo flow:
 
 Real Nebius mode uses `NEBIUS_JOB_*_COMMAND_TEMPLATE` for job submission/status/logs/artifacts. If those templates are missing, the UI and `serverless_job.json` show `real_nebius_pending` rather than pretending cloud success.
 
-For guided next steps, see [docs/QUICKSTART.md](docs/QUICKSTART.md), [docs/demo-surface-reduction.md](docs/demo-surface-reduction.md), and [docs/ui-theme.md](docs/ui-theme.md).
+For guided next steps, see [docs/QUICKSTART.md](docs/QUICKSTART.md), [docs/runtime-model.md](docs/runtime-model.md), and [docs/ui-theme.md](docs/ui-theme.md).
 
 ## Architecture Decisions
 
@@ -355,7 +355,7 @@ Agent scheduler:
 ARENA_AGENT_COUNT=3
 ARENA_DATA_RETENTION_DAYS=1
 ARENA_AGENT_DECISION_TIMEOUT_SECONDS=0.05
-ARENA_REMOTE_AGENT_URLS=
+ARENA_REMOTE_AGENT_URLS=http://agent-runner:9100
 ARENA_REMOTE_AGENT_TIMEOUT_SECONDS=0.05
 ARENA_BASELINE_LIQUIDITY_LEVELS=12
 ARENA_BASELINE_LIQUIDITY_BASE_SIZE=1.5
@@ -375,7 +375,7 @@ AGENT_RUNNER_MAX_LANGGRAPH_AGENT_COUNT=4
 AGENT_RUNNER_LANGGRAPH_STRATEGY=liquidity_rebalancer
 ```
 
-Local demo leaves `ARENA_REMOTE_AGENT_URLS` empty so live Arena ticks stay fast and backend memory stays small. To test remote agents, start the runner with `docker compose --profile remote-agents up agent-runner` and set `ARENA_REMOTE_AGENT_URLS=http://agent-runner:9100`. Worker env values are clamped by `AGENT_RUNNER_MAX_*` caps so stale `.env` values cannot spawn hundreds of agents by accident. The backend receives only `AgentIntent` objects; LangGraph and heavy-agent execution stay inside the runner. The `ARENA_BASELINE_LIQUIDITY_*` settings maintain a minimum bid/ask ladder around the reference price so market orders and scenarios cannot leave one side permanently empty. Agent `set_level` intents are additive per agent at a price level and capped by `ARENA_MAX_AGENT_QUOTE_SIZE`; scenarios can still replace whole levels when they need scripted walls or cancellations. `ARENA_DATA_RETENTION_DAYS=1` removes generated output files older than one day on backend startup. `ARENA_TICK_HISTORY_INTERVAL` and `ARENA_PERSIST_ALL_EVENTS=false` keep local JSONL history bounded enough for long demos while preserving significant scenario and detector evidence.
+Docker Compose starts `agent-runner`, `backend`, and `frontend` together. The backend defaults `ARENA_REMOTE_AGENT_URLS` to `http://agent-runner:9100`, so live Arena ticks use the out-of-process runner without a separate profile. Worker env values are clamped by `AGENT_RUNNER_MAX_*` caps so stale `.env` values cannot spawn hundreds of agents by accident. The backend receives only `AgentIntent` objects; LangGraph and heavy-agent execution stay inside the runner. The `ARENA_BASELINE_LIQUIDITY_*` settings maintain a minimum bid/ask ladder around the reference price so market orders and scenarios cannot leave one side permanently empty. Agent `set_level` intents are additive per agent at a price level and capped by `ARENA_MAX_AGENT_QUOTE_SIZE`; scenarios can still replace whole levels when they need scripted walls or cancellations. `ARENA_DATA_RETENTION_DAYS=1` removes generated output files older than one day on backend startup. `ARENA_TICK_HISTORY_INTERVAL` and `ARENA_PERSIST_ALL_EVENTS=false` keep local JSONL history bounded enough for long demos while preserving significant scenario and detector evidence.
 
 Google authentication:
 
@@ -419,7 +419,7 @@ Start with the guides above, then explore:
 |-------|------|---------|
 | **Quick Start** | [docs/QUICKSTART.md](docs/QUICKSTART.md) | 5-minute setup walkthrough |
 | **Architecture Overview** | [docs/architecture.md](docs/architecture.md) | System design with Mermaid diagrams |
-| **Architecture Records** | [docs/architecture/README.md](docs/architecture/README.md) | 13 decision records (ARD-0001 to ARD-0013) |
+| **Architecture Records** | [docs/architecture/README.md](docs/architecture/README.md) | Decision records (ARD-0001 to ARD-0017) |
 | **Use Cases & Workflows** | [docs/USE_CASES.md](docs/USE_CASES.md) | Eight primary workflows |
 | **Runtime Model** | [docs/runtime-model.md](docs/runtime-model.md) | How the simulation engine executes |
 | **Benchmark Methodology** | [docs/benchmark-methodology.md](docs/benchmark-methodology.md) | Detector quality metrics |

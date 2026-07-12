@@ -39,7 +39,7 @@ Runtime scale knobs:
 ARENA_AGENT_COUNT=3
 ARENA_DATA_RETENTION_DAYS=1
 ARENA_AGENT_DECISION_TIMEOUT_SECONDS=0.05
-ARENA_REMOTE_AGENT_URLS=
+ARENA_REMOTE_AGENT_URLS=http://agent-runner:9100
 ARENA_REMOTE_AGENT_TIMEOUT_SECONDS=0.05
 ARENA_BASELINE_LIQUIDITY_LEVELS=12
 ARENA_BASELINE_LIQUIDITY_BASE_SIZE=1.5
@@ -59,9 +59,9 @@ AGENT_RUNNER_MAX_LANGGRAPH_AGENT_COUNT=4
 AGENT_RUNNER_LANGGRAPH_STRATEGY=liquidity_rebalancer
 ```
 
-Local demo keeps `ARENA_REMOTE_AGENT_URLS` empty by default. Agents that miss the per-tick decision deadline are skipped for that tick. This keeps the live arena responsive. Runtime agent `set_level` intents update that agent's own bounded synthetic quote at a price level, so hundreds of agents can share one price without overwriting each other or compounding aggregate depth. The backend caps these quotes with `ARENA_MAX_AGENT_QUOTE_SIZE`. Worker-side `AGENT_RUNNER_MAX_*` caps clamp stale or aggressive env values before agents are built. `ARENA_DATA_RETENTION_DAYS=1` removes generated output files older than one day on backend startup. `ARENA_TICK_HISTORY_INTERVAL` limits routine tick snapshots and `ARENA_PERSIST_ALL_EVENTS=false` writes only significant scenario/detector events to the full event log. After each tick, the backend applies a baseline liquidity guard that restores the configured minimum bid/ask ladder around `ARENA_BASELINE_LIQUIDITY_REFERENCE_PRICE`, including when a side has been fully consumed.
+Docker Compose starts `agent-runner`, `backend`, and `frontend` together by default. Agents that miss the per-tick decision deadline are skipped for that tick. Runtime agent `set_level` intents update that agent's own bounded synthetic quote at a price level, so hundreds of agents can share one price without overwriting each other or compounding aggregate depth. The backend caps these quotes with `ARENA_MAX_AGENT_QUOTE_SIZE`. Worker-side `AGENT_RUNNER_MAX_*` caps clamp stale or aggressive env values before agents are built. `ARENA_DATA_RETENTION_DAYS=1` removes generated output files older than one day on backend startup. `ARENA_TICK_HISTORY_INTERVAL` limits routine tick snapshots and `ARENA_PERSIST_ALL_EVENTS=false` writes only significant scenario/detector events to the full event log. After each tick, the backend applies a baseline liquidity guard that restores the configured minimum bid/ask ladder around `ARENA_BASELINE_LIQUIDITY_REFERENCE_PRICE`, including when a side has been fully consumed.
 
-Phase 2 adds out-of-process agent runners. A runner exposes `POST /decide`, receives the same read-only `MarketSnapshot`, and returns `AgentIntent` JSON. Start it with `docker compose --profile remote-agents up agent-runner`, then point `ARENA_REMOTE_AGENT_URLS` at it. Only the backend applies accepted intents to the exchange. This preserves deterministic single-writer market state while allowing agent decision work to scale independently.
+Phase 2 adds out-of-process agent runners. A runner exposes `POST /decide`, receives the same read-only `MarketSnapshot`, and returns `AgentIntent` JSON. In Compose, the backend points at `http://agent-runner:9100` by default. Only the backend applies accepted intents to the exchange. This preserves deterministic single-writer market state while allowing agent decision work to scale independently.
 
 Phase 3 adds heavy and LangGraph-compatible remote agents. Heavy agents run their expensive decision function through a worker pool inside `agent-runner`. Generic LangGraph agents use `StateGraph` with `observe` and `decide` nodes, then emit the same `AgentIntent` contract. The backend does not import LangGraph and does not know whether a remote intent came from a simple function, a process-pool worker, or a LangGraph graph.
 

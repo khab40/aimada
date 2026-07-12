@@ -46,6 +46,7 @@ export function AboutPage() {
 
       <div className="about-grid">
         <section className="panel about-card">
+          <span className="about-section-label">Training Narrative</span>
           <h3>Educational Story: Why These Attacks Matter</h3>
           <p>
             The demo can be read as a training story for market participants, engineers, and reviewers. It shows
@@ -71,6 +72,7 @@ export function AboutPage() {
         </section>
 
         <section className="panel about-card">
+          <span className="about-section-label">Product Scope</span>
           <h3>What We Solve</h3>
           <p>
             The project makes order-book anomaly detection understandable without using real trading data. It lets a
@@ -87,6 +89,7 @@ export function AboutPage() {
         </section>
 
         <section className="panel about-card">
+          <span className="about-section-label">ML Framing</span>
           <h3>ML-Friendly Mental Model</h3>
           <ul>
             <li><strong>Market state:</strong> the order book is the feature stream, similar to a time-series sensor feed.</li>
@@ -99,6 +102,7 @@ export function AboutPage() {
         </section>
 
         <section className="panel about-card">
+          <span className="about-section-label">Cloud Runtime</span>
           <h3>How Nebius Is Used</h3>
           <p>
             Nebius is split into Nebius AI inference and offline jobs. The browser never receives Nebius secrets; it
@@ -113,6 +117,7 @@ export function AboutPage() {
         </section>
 
         <section className="panel about-card">
+          <span className="about-section-label">Safety</span>
           <h3>Project Guardrails</h3>
           <ul>
             <li>Show the market first; explanations should be grounded in visible state.</li>
@@ -124,6 +129,7 @@ export function AboutPage() {
         </section>
 
         <section className="panel about-card">
+          <span className="about-section-label">Operator Path</span>
           <h3>How To Run</h3>
           <ol>
             <li>Build and run the full local stack: <code>docker compose up --build</code>.</li>
@@ -150,6 +156,7 @@ export function AboutPage() {
 
       <div className="about-grid">
         <section className="panel about-card">
+          <span className="about-section-label">Execution Flow</span>
           <h3>Pipeline</h3>
           <ol>
             <li>Generate or select a bounded synthetic attack scenario.</li>
@@ -162,6 +169,7 @@ export function AboutPage() {
         </section>
 
         <section className="panel about-card benchmark-summary-card">
+          <span className="about-section-label">Evaluation</span>
           <h3>Benchmark Summary</h3>
           <p>Benchmarks compare detector performance across labeled synthetic scenarios and repeatable replay windows.</p>
           <div className="benchmark-summary-grid">
@@ -183,7 +191,8 @@ export function AboutPage() {
           </div>
         </section>
 
-        <section className="panel about-card research-panel">
+        <section className="panel about-card research-panel wide">
+          <span className="about-section-label">Reading List</span>
           <h3>Research Papers</h3>
           <ul className="research-link-list">
           {researchLinks.map((item) => (
@@ -204,97 +213,103 @@ export function AboutPage() {
 function ArchitectureDiagram() {
   return (
     <svg
-      aria-label="Architecture diagram showing Front, Back, Platform Identity, Agent Runners Workspace, Nebius Serverless Cloud, and Artifacts"
+      aria-label="Architecture diagram showing browser, backend, identity, simulation runners, Nebius cloud, and evidence artifacts with directional arrows"
       className="architecture-flow-diagram"
       role="img"
-      viewBox="0 0 1100 540"
+      viewBox="0 0 1120 560"
     >
       <defs>
-        <marker id="architecture-arrow" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
-          <path d="M0,0 L8,4 L0,8 Z" />
+        <marker id="architecture-arrow" markerHeight="10" markerWidth="10" orient="auto" refX="9" refY="5">
+          <path d="M0,0 L10,5 L0,10 Z" />
         </marker>
       </defs>
 
-      <g className="architecture-node architecture-front">
-        <rect height="132" width="270" x="415" y="24" />
-        <text x="550" y="58">
-          <tspan x="550">Front - React / Vite UI -</tspan>
-          <tspan x="550" dy="25">Arena, Demo, Scenario</tspan>
-          <tspan x="550" dy="25">Generator, Detection,</tspan>
-          <tspan x="550" dy="25">Experiments, Nebius AI,</tspan>
-          <tspan x="550" dy="25">About</tspan>
+      <text className="architecture-lane-title" x="120" y="38">User Surface</text>
+      <text className="architecture-lane-title" x="420" y="38">Backend Control Plane</text>
+      <text className="architecture-lane-title" x="735" y="38">Compute</text>
+      <text className="architecture-lane-title" x="980" y="38">Evidence</text>
+
+      <g className="architecture-node">
+        <rect height="128" width="230" x="36" y="72" />
+        <text x="151" y="108">
+          <tspan x="151">React / Vite UI</tspan>
+          <tspan x="151" dy="24">Arena, Detection,</tspan>
+          <tspan x="151" dy="24">Nebius AI, About</tspan>
+          <tspan x="151" dy="24">Dashboard views</tspan>
         </text>
       </g>
 
-      <g className="architecture-node architecture-back">
-        <rect height="96" width="270" x="415" y="224" />
-        <text x="550" y="260">
-          <tspan x="550">Back - FastAPI backend -</tspan>
-          <tspan x="550" dy="25">REST, WebSocket,</tspan>
-          <tspan x="550" dy="25">orchestration, persistence</tspan>
+      <g className="architecture-node">
+        <rect height="132" width="252" x="360" y="70" />
+        <text x="486" y="105">
+          <tspan x="486">FastAPI Backend</tspan>
+          <tspan x="486" dy="24">REST, WebSocket,</tspan>
+          <tspan x="486" dy="24">runtime config, jobs,</tspan>
+          <tspan x="486" dy="24">artifact collection</tspan>
         </text>
       </g>
 
-      <g className="architecture-node architecture-identity">
-        <rect height="94" width="250" x="760" y="214" />
-        <text x="885" y="246">
-          <tspan x="885">Platform Identity -</tspan>
-          <tspan x="885" dy="25">users, workspace, roles,</tspan>
-          <tspan x="885" dy="25">cases, audit trail</tspan>
+      <g className="architecture-node architecture-secondary">
+        <rect height="104" width="238" x="366" y="252" />
+        <text x="485" y="286">
+          <tspan x="485">Platform Identity</tspan>
+          <tspan x="485" dy="24">workspace, roles,</tspan>
+          <tspan x="485" dy="24">cases, audit trail</tspan>
         </text>
       </g>
 
-      <g className="architecture-node architecture-runners">
-        <rect height="92" width="275" x="75" y="410" />
-        <text x="212" y="446">
-          <tspan x="212">Agent Runners Workspace -</tspan>
-          <tspan x="212" dy="25">local Docker and remote</tspan>
-          <tspan x="212" dy="25">workers</tspan>
+      <g className="architecture-node">
+        <rect height="120" width="242" x="690" y="72" />
+        <text x="811" y="106">
+          <tspan x="811">Local Simulation</tspan>
+          <tspan x="811" dy="24">agent runners, order book,</tspan>
+          <tspan x="811" dy="24">detectors, replay windows</tspan>
         </text>
       </g>
 
-      <g className="architecture-node architecture-nebius">
-        <rect height="112" width="285" x="430" y="400" />
-        <text x="572" y="432">
-          <tspan x="572">Nebius Serverless Cloud -</tspan>
-          <tspan x="572" dy="25">model selection,</tspan>
-          <tspan x="572" dy="25">inference, batch jobs, GPU</tspan>
-          <tspan x="572" dy="25">runtime, datasets, artifacts</tspan>
+      <g className="architecture-node architecture-cloud">
+        <rect height="132" width="254" x="686" y="250" />
+        <text x="813" y="284">
+          <tspan x="813">Nebius Serverless</tspan>
+          <tspan x="813" dy="24">vLLM endpoint, AI reports,</tspan>
+          <tspan x="813" dy="24">serverless jobs, object</tspan>
+          <tspan x="813" dy="24">storage artifact sync</tspan>
         </text>
       </g>
 
-      <g className="architecture-node architecture-artifacts">
-        <rect height="112" width="245" x="805" y="400" />
-        <text x="928" y="432">
-          <tspan x="928">Artifacts - events,</tspan>
-          <tspan x="928" dy="25">snapshots, incidents,</tspan>
-          <tspan x="928" dy="25">reports, benchmark</tspan>
-          <tspan x="928" dy="25">outputs</tspan>
+      <g className="architecture-node architecture-evidence">
+        <rect height="138" width="220" x="864" y="402" />
+        <text x="974" y="438">
+          <tspan x="974">Evidence Store</tspan>
+          <tspan x="974" dy="24">events, snapshots,</tspan>
+          <tspan x="974" dy="24">alerts, reports, metrics,</tspan>
+          <tspan x="974" dy="24">benchmark outputs</tspan>
         </text>
       </g>
 
-      <path className="architecture-edge" d="M550 156 L550 224" />
-      <text className="architecture-edge-label" x="550" y="194">REST and WebSocket</text>
+      <path className="architecture-edge" d="M266 136 L360 136" />
+      <text className="architecture-edge-label" x="313" y="120">REST / WS</text>
 
-      <path className="architecture-edge architecture-edge-curved" d="M685 94 C780 118 830 160 860 214" />
-      <text className="architecture-edge-label" x="820" y="142">Google or demo identity</text>
+      <path className="architecture-edge" d="M612 132 L690 132" />
+      <text className="architecture-edge-label" x="651" y="116">run state</text>
 
-      <path className="architecture-edge architecture-edge-curved" d="M760 272 C725 280 710 285 685 286" />
-      <text className="architecture-edge-label" x="750" y="310">case metadata and audit</text>
+      <path className="architecture-edge" d="M612 304 L686 304" />
+      <text className="architecture-edge-label" x="649" y="288">jobs + AI calls</text>
 
-      <path className="architecture-edge architecture-edge-curved" d="M415 282 C290 300 80 325 160 410" />
-      <text className="architecture-edge-label" x="200" y="334">snapshot and run config</text>
+      <path className="architecture-edge" d="M812 192 L812 250" />
+      <text className="architecture-edge-label" x="812" y="224">detector evidence</text>
 
-      <path className="architecture-edge architecture-edge-curved" d="M275 410 C330 360 360 326 415 318" />
-      <text className="architecture-edge-label" x="355" y="365">agent intents and detector outputs</text>
+      <path className="architecture-edge architecture-edge-curved" d="M940 314 C1015 328 1032 370 1006 402" />
+      <text className="architecture-edge-label" x="1010" y="354">cloud outputs</text>
 
-      <path className="architecture-edge" d="M550 320 L550 400" />
-      <text className="architecture-edge-label" x="550" y="365">LLM calls and managed jobs</text>
+      <path className="architecture-edge architecture-edge-curved" d="M812 382 C812 440 840 468 864 472" />
+      <text className="architecture-edge-label" x="806" y="428">reports</text>
 
-      <path className="architecture-edge architecture-edge-curved" d="M650 400 C710 355 710 330 685 306" />
-      <text className="architecture-edge-label" x="716" y="348">explanations, metrics, artifacts</text>
+      <path className="architecture-edge architecture-edge-curved" d="M932 132 C1012 170 1038 295 1000 402" />
+      <text className="architecture-edge-label" x="1014" y="240">local artifacts</text>
 
-      <path className="architecture-edge architecture-edge-curved" d="M685 280 C875 318 980 332 928 400" />
+      <path className="architecture-edge architecture-edge-back" d="M864 506 C620 560 290 520 184 200" />
+      <text className="architecture-edge-label" x="514" y="526">artifact links return to the UI</text>
     </svg>
   );
 }

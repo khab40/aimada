@@ -224,7 +224,7 @@ export function NebiusControlPanelPage() {
       const next = event instanceof CustomEvent && typeof event.detail === "string"
         ? event.detail
         : getStoredRuntimeMode();
-      if (next === "local-demo" || next === "hybrid" || next === "nebius-cloud") {
+      if (next === "local-demo" || next === "nebius-cloud") {
         setRuntimeMode(next);
       }
     }
@@ -557,13 +557,6 @@ export function NebiusControlPanelPage() {
 
   return (
     <section className="nebius-control-page">
-      <header className="ai-platform-header">
-        <div>
-          <h1>Command Center</h1>
-          <p>Generate suspicious workload, detect incidents with Nebius AI, and run detector tournaments on Nebius Serverless Jobs.</p>
-        </div>
-      </header>
-
       <section className="command-center-service-grid" aria-label="AI command center capabilities">
         <CommandCenterServiceCard
           title="Serverless Endpoint"

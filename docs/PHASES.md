@@ -27,7 +27,6 @@ Implementation phases:
 
 Primary docs:
 
-- `docs/nebius-serverless-build-plan.md`
 - `docs/architecture/ARD-0015-nebius-ai-investigation-team.md`
 - `docs/architecture/ARD-0016-ai-scenario-generator.md`
 - `docs/architecture/ARD-0017-ai-detector-tournament.md`
@@ -354,8 +353,8 @@ Deliverables:
 - `[done]` final disclaimer and safety language in README/docs/UI
 - `[done]` professional UI shell controls: collapsible Google/auth widget, compact sidebar toggle, day/night/system theme selector, and paused-state-stable Liquidity Map
 - `[done]` multiuser platform foundation with demo fallback user/workspace, global workspace/user menu, case ownership metadata, report attribution, and audit trail records.
-- `[done]` seven-entry navigation: Arena, Demo, Scenario Generator, Detection, Experiments, Nebius AI, and About
-- `[done]` `/demo` page orchestrates Real Nebius AI Run, Two-Model Pipeline, and Streaming Explanation paths into Arena demo modes
+- `[done]` compact primary navigation: Command Center, Arena / Workload Generator, Scenario Generator, and About
+- `[done]` Command Center orchestrates endpoint status, scenario generation, AI investigation, detector tournaments, jobs, and artifacts
 - `[done]` Arena three-section layout: Scenario / Attack Configuration, Market, and Detection
 - `[done]` About and ARD-0001 architecture diagrams show Front, Back, Agent Runners Workspace, and Nebius Serverless Cloud
 - `[partial]` durable backend workspace/case/audit persistence APIs remain future work beyond the current frontend platform foundation.

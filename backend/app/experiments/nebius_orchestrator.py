@@ -248,7 +248,11 @@ class NebiusExperimentOrchestrator:
             return self._mark_artifacts_pending(
                 experiment,
                 artifact_dir=artifact_dir,
-                message=command_message or "Nebius job artifacts are not available in the mounted output path yet.",
+                message=command_message
+                or (
+                    "Nebius job is queued or running. Artifact sync will become available after the job writes "
+                    "outputs to the configured mounted path or NEBIUS_JOB_OUTPUT_URI."
+                ),
             )
 
         normalized = normalize_batch_artifacts(

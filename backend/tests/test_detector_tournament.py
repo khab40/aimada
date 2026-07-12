@@ -3,6 +3,7 @@ from types import SimpleNamespace
 
 from fastapi import BackgroundTasks
 
+from app.config import get_settings
 from app.api.routes_nebius import read_detector_tournament, start_detector_tournament
 from app.nebius.detector_tournament import DetectorTournamentStartRequest, get_tournament, start_tournament
 from app.storage.local_store import LocalStore
@@ -35,21 +36,25 @@ def test_detector_tournament_runs_local_mock_and_persists(tmp_path: Path) -> Non
 
 
 def test_detector_tournament_nebius_mode_falls_back_without_submit_config(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.delenv("NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE", raising=False)
-    response = start_tournament(
-        DetectorTournamentStartRequest(
-            number_of_scenarios=1,
-            manipulation_types=["quote_stuffing"],
-            detector_set=["quote_stuffing"],
-            execution_mode="nebius",
-        ),
-        store=LocalStore(tmp_path),
-        repo_root=Path(__file__).resolve().parents[2],
-    )
+    monkeypatch.setenv("NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE", "")
+    get_settings.cache_clear()
+    try:
+        response = start_tournament(
+            DetectorTournamentStartRequest(
+                number_of_scenarios=1,
+                manipulation_types=["quote_stuffing"],
+                detector_set=["quote_stuffing"],
+                execution_mode="nebius",
+            ),
+            store=LocalStore(tmp_path),
+            repo_root=Path(__file__).resolve().parents[2],
+        )
 
-    assert response.status == "completed"
-    assert response.execution_mode == "local_mock"
-    assert response.fallback_reason
+        assert response.status == "completed"
+        assert response.execution_mode == "local_mock"
+        assert response.fallback_reason
+    finally:
+        get_settings.cache_clear()
 
 
 def test_detector_tournament_api_facade_round_trip(tmp_path: Path) -> None:

@@ -127,7 +127,10 @@ export function App() {
               />
             ))}
           </nav>
-          <div />
+          <div className="sidebar-controls" aria-label="Runtime and safety controls">
+            <RuntimePanel />
+            <DisclaimerPopover />
+          </div>
           <div
             aria-hidden={sidebarCollapsed}
             className="sidebar-resize-handle"
@@ -150,27 +153,14 @@ export function App() {
               resolvedTheme={resolvedTheme}
             />
             {featureFlags.enableGoogleAuth ? <IdentityPanel /> : null}
-            <RuntimePanel />
           </header>
+          <WorkspaceBanner />
 
           <Routes>
             <Route path="/" element={<Navigate to="/nebius" replace />} />
-            <Route path="/demo" element={<Navigate to="/nebius" replace />} />
             <Route path="/arena" element={<ArenaPage />} />
-            <Route path="/attack" element={<Navigate to="/attack-scenarios" replace />} />
             <Route path="/attack-scenarios" element={<AttackScenarioGeneratorPage />} />
-            <Route path="/scenario-generator" element={<Navigate to="/attack-scenarios" replace />} />
-            <Route path="/benchmark" element={<Navigate to="/nebius" replace />} />
-            <Route path="/investigations" element={<Navigate to="/nebius" replace />} />
-            <Route path="/detection" element={<Navigate to="/arena" replace />} />
-            <Route path="/blue-team" element={<Navigate to="/arena" replace />} />
-            <Route path="/lab" element={<Navigate to="/nebius" replace />} />
-            <Route path="/experiments" element={<Navigate to="/nebius" replace />} />
-            <Route path="/deploy" element={<Navigate to="/nebius" replace />} />
-            <Route path="/deployment" element={<Navigate to="/nebius" replace />} />
-            <Route path="/ai-platform" element={<Navigate to="/nebius" replace />} />
             <Route path="/nebius" element={<NebiusControlPanelPage />} />
-            <Route path="/reports" element={<Navigate to="/arena" replace />} />
             <Route path="/about" element={<AboutPage />} />
           </Routes>
           <ArenaSplashOverlay />
@@ -183,9 +173,23 @@ export function App() {
 function ConsoleTopbar() {
   return (
     <section className="console-topbar" aria-label="AI command console">
-      <span className="runtime-status active console-ai-button">Investigator ready</span>
-      <span className="runtime-status connected">AI active</span>
-      <DisclaimerPopover />
+      <span className="runtime-status active console-ai-button">Command Center ready</span>
+    </section>
+  );
+}
+
+function WorkspaceBanner() {
+  const { pathname } = useLocation();
+  const content = workspaceBanners[pathname];
+  if (!content) {
+    return null;
+  }
+  return (
+    <section className="workspace-banner" aria-label={`${content.title} overview`}>
+      <div>
+        <h1>{content.title}</h1>
+        <p>{content.description}</p>
+      </div>
     </section>
   );
 }
@@ -323,7 +327,7 @@ function SidebarLink({
   );
 }
 
-type AppIconName = "arena" | "attack" | "demo" | "detection" | "tournament" | "reports" | "cloud" | "about";
+type AppIconName = "arena" | "attack" | "cloud" | "about";
 
 type SidebarItem = {
   icon: AppIconName;
@@ -336,12 +340,24 @@ type SidebarItem = {
 };
 
 const allRoles: ArenaRole[] = ["observer", "attacker", "defender", "judge"];
+const workspaceBanners: Record<string, { title: string; description: string }> = {
+  "/nebius": {
+    title: "Command Center",
+    description: "Generate suspicious workload, detect incidents with Nebius AI, and run detector tournaments on Nebius Serverless Jobs."
+  },
+  "/arena": {
+    title: "Arena",
+    description: "Generate synthetic market workloads, inspect order-book pressure, and review incident evidence in one live cockpit."
+  },
+  "/about": {
+    title: "About",
+    description: "Understand the architecture, safety guardrails, benchmark flow, and research basis behind the synthetic market arena."
+  }
+};
 const sidebarItems: SidebarItem[] = [
   { icon: "cloud", label: "Command Center", primary: true, shortLabel: "CC", to: "/nebius", visibleFor: allRoles },
   { icon: "arena", label: "Arena / Workload Generator", primary: true, shortLabel: "WG", to: "/arena", visibleFor: allRoles },
-  { icon: "detection", label: "Incidents / Investigations", shortLabel: "IN", to: "/investigations", visibleFor: allRoles },
-  { icon: "tournament", label: "Detector Benchmark", shortLabel: "DB", to: "/benchmark", visibleFor: allRoles },
-  { icon: "about", label: "About / Docs / Demo", primary: true, shortLabel: "ADD", to: "/about", visibleFor: allRoles },
+  { icon: "about", label: "About / Docs", primary: true, shortLabel: "AD", to: "/about", visibleFor: allRoles },
   { icon: "attack", label: "Scenario Setup", shortLabel: "SS", team: "red", to: "/attack-scenarios", visibleFor: allRoles }
 ];
 
@@ -350,11 +366,7 @@ function AppIcon({ name }: { name: AppIconName }) {
     about: ["M12 17v-5", "M12 8h.01", "M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"],
     arena: ["M4 17h16", "M6 14l3-4 3 2 4-6 2 3", "M5 5v14h14"],
     attack: ["M4 12h10", "M10 6l6 6-6 6", "M16 4h4v4", "M16 20h4v-4"],
-    cloud: ["M7 18h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.4 8.4 4.5 4.5 0 0 0 7 18Z"],
-    demo: ["M4 5h16v12H4z", "M9 21h6", "M12 17v4", "M10 9l5 3-5 3z"],
-    detection: ["M12 3v3", "M12 18v3", "M3 12h3", "M18 12h3", "M7.8 7.8l2.1 2.1", "M14.1 14.1l2.1 2.1", "M16.2 7.8l-2.1 2.1", "M9.9 14.1l-2.1 2.1", "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"],
-    reports: ["M6 3h9l3 3v15H6z", "M15 3v4h4", "M9 13h6", "M9 17h6", "M9 9h2"],
-    tournament: ["M8 4h8v3a4 4 0 0 1-8 0z", "M6 5H4v2a4 4 0 0 0 4 4", "M18 5h2v2a4 4 0 0 1-4 4", "M12 11v5", "M9 20h6", "M10 16h4"]
+    cloud: ["M7 18h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.4 8.4 4.5 4.5 0 0 0 7 18Z"]
   };
   return (
     <svg aria-hidden="true" className="app-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24">
@@ -527,19 +539,6 @@ function RuntimePanel() {
       </button>
       {menuOpen ? (
         <div className="runtime-drawer" role="menu">
-          <div className="runtime-mode-options" role="group" aria-label="Runtime modes">
-            {visibleRuntimeOptions.map((option) => (
-              <button
-                aria-pressed={option.value === runtimeMode}
-                className={option.value === runtimeMode ? "active" : ""}
-                key={option.value}
-                onClick={() => switchRuntime(option.value)}
-                type="button"
-              >
-                Switch to {option.label}
-              </button>
-            ))}
-          </div>
           <p>{runtime.description}</p>
           <table className="runtime-matrix">
             <thead>
@@ -561,9 +560,23 @@ function RuntimePanel() {
             </tbody>
           </table>
           <div className="runtime-actions">
-            <button onClick={() => switchRuntime("local-demo")} type="button">Switch to Local Demo</button>
-            <button onClick={() => switchRuntime("nebius-cloud")} type="button">Switch to Nebius Cloud</button>
-            <button onClick={testNebiusConnection} type="button">Test Nebius Connection</button>
+            <button
+              aria-pressed={runtimeMode === "local-demo"}
+              className={runtimeMode === "local-demo" ? "active" : ""}
+              onClick={() => switchRuntime("local-demo")}
+              type="button"
+            >
+              Local Demo
+            </button>
+            <button
+              aria-pressed={runtimeMode === "nebius-cloud"}
+              className={runtimeMode === "nebius-cloud" ? "active" : ""}
+              onClick={() => switchRuntime("nebius-cloud")}
+              type="button"
+            >
+              Nebius Cloud
+            </button>
+            <button onClick={testNebiusConnection} type="button">Test</button>
           </div>
           <p className="runtime-fallback-note">{runtimeMessage}</p>
         </div>

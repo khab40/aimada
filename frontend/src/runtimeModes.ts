@@ -1,4 +1,4 @@
-export type RuntimeMode = "local-demo" | "hybrid" | "nebius-cloud";
+export type RuntimeMode = "local-demo" | "nebius-cloud";
 export type RuntimeStatus = "Ready" | "Mock" | "Connected" | "Not configured" | "Endpoint unavailable" | "Error";
 export type RuntimeComponent = "Frontend" | "Backend" | "Runner" | "AI Endpoint" | "Jobs" | "Storage";
 
@@ -22,20 +22,6 @@ export const runtimeOptions: { description: string; label: string; marker: strin
     value: "local-demo"
   },
   {
-    description: "Local UI, backend, and runner with Nebius endpoint and job calls when configured.",
-    label: "Hybrid",
-    matrix: {
-      "AI Endpoint": "Not configured",
-      Backend: "Ready",
-      Frontend: "Ready",
-      Jobs: "Not configured",
-      Runner: "Ready",
-      Storage: "Mock"
-    },
-    marker: "🟡",
-    value: "hybrid"
-  },
-  {
     description: "Production-style cloud runtime across app, workers, AI, jobs, and artifacts.",
     label: "Nebius Cloud",
     matrix: {
@@ -50,7 +36,7 @@ export const runtimeOptions: { description: string; label: string; marker: strin
     value: "nebius-cloud"
   }
 ];
-export const visibleRuntimeOptions = runtimeOptions.filter((option) => option.value !== "hybrid");
+export const visibleRuntimeOptions = runtimeOptions;
 
 export function getStoredRuntimeMode(): RuntimeMode {
   const stored = window.localStorage.getItem(RUNTIME_MODE_KEY);

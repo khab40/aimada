@@ -1,7 +1,5 @@
 services:
   agent-runner:
-    profiles:
-      - remote-agents
     build:
       context: .
       dockerfile: agent-runner/Dockerfile
@@ -21,6 +19,12 @@ services:
       AGENT_RUNNER_DECISION_TIMEOUT_SECONDS: ${AGENT_RUNNER_DECISION_TIMEOUT_SECONDS:-0.05}
     ports:
       - "9100:9100"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9100/health', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 10s
 
   backend:
     build:
@@ -32,7 +36,7 @@ services:
       ARENA_AGENT_COUNT: ${ARENA_AGENT_COUNT:-3}
       ARENA_DATA_RETENTION_DAYS: ${ARENA_DATA_RETENTION_DAYS:-1}
       ARENA_AGENT_DECISION_TIMEOUT_SECONDS: ${ARENA_AGENT_DECISION_TIMEOUT_SECONDS:-0.05}
-      ARENA_REMOTE_AGENT_URLS: ${ARENA_REMOTE_AGENT_URLS:-}
+      ARENA_REMOTE_AGENT_URLS: ${ARENA_REMOTE_AGENT_URLS:-http://agent-runner:9100}
       ARENA_REMOTE_AGENT_TIMEOUT_SECONDS: ${ARENA_REMOTE_AGENT_TIMEOUT_SECONDS:-0.05}
       ARENA_BASELINE_LIQUIDITY_LEVELS: ${ARENA_BASELINE_LIQUIDITY_LEVELS:-12}
       ARENA_BASELINE_LIQUIDITY_BASE_SIZE: ${ARENA_BASELINE_LIQUIDITY_BASE_SIZE:-1.5}
@@ -59,7 +63,7 @@ services:
       NEBIUS_ORDERBOOK_ALERT_URL: ${NEBIUS_ORDERBOOK_ALERT_URL:-}
       NEBIUS_INVESTIGATION_REPORT_URL: ${NEBIUS_INVESTIGATION_REPORT_URL:-}
       NEBIUS_INVESTIGATION_TEAM_URL: ${NEBIUS_INVESTIGATION_TEAM_URL:-}
-      NEBIUS_HEALTH_TIMEOUT_SECONDS: ${NEBIUS_HEALTH_TIMEOUT_SECONDS:-0.5}
+      NEBIUS_HEALTH_TIMEOUT_SECONDS: ${NEBIUS_HEALTH_TIMEOUT_SECONDS:-5}
       NEBIUS_LOCAL_TOURNAMENT_SCENARIO_LIMIT: ${NEBIUS_LOCAL_TOURNAMENT_SCENARIO_LIMIT:-24}
       NEBIUS_JOB_IMAGE: ${NEBIUS_JOB_IMAGE:-ghcr.io/khab40/ai-market-abuse-detection-arena-jobs:latest}
       NEBIUS_SUBNET_ID: ${NEBIUS_SUBNET_ID:-}
@@ -78,6 +82,9 @@ services:
       NEBIUS_JOB_SCENARIOS: ${NEBIUS_JOB_SCENARIOS:-normal_market,spoofing,layering,quote_stuffing,pump_and_cancel}
     ports:
       - "8000:8000"
+    depends_on:
+      agent-runner:
+        condition: service_healthy
     volumes:
       - ./outputs:/app/outputs
       - ${HOME}/.nebius/config.yaml:/root/.nebius/config.yaml:ro

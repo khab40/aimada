@@ -10,15 +10,15 @@ Status as of 2026-07-03: `[partial]`
 
 Implemented:
 
-- React/Vite routed UI for Arena, Demo, Scenario Generator, Detection, Experiments, Nebius AI, and About pages.
-- Legacy `/blue-team`, `/investigation`, and `/reports` routes redirect to Detection.
+- React/Vite routed UI for AI Command Center, Arena / Workload Generator, Scenario Generator, and About pages.
+- Old standalone demo, blue-team, report, experiment, and deployment pages have been removed or folded into current Command Center and Arena surfaces.
 - FastAPI backend with simulation lifecycle APIs, WebSocket live state, scenario launch, incident persistence, benchmark/report APIs, and Nebius endpoint client fallback behavior.
 - Synthetic exchange, matching engine, normal agents, scenario agents, deterministic detectors, evidence objects, and local artifact storage.
 - In-process and remote agent runners with HTTP `MarketSnapshot` / `AgentIntent` protocol, heavy-agent worker pools, and LangGraph-compatible generic remote agents.
 - Baseline liquidity invariant with additive per-agent quote ownership and quote-size guardrails.
 - Google-authenticated user persistence with app-issued JWT sessions.
 - Multiuser platform foundation with demo fallback identity, workspace metadata, case ownership, report attribution, and audit trail records.
-- UI shell with AI-MADA banner asset, compact navigation control, collapsible auth widget, persisted day/night/system theme, `/demo` orchestration, and paused-state-stable Liquidity Map behavior.
+- UI shell with AI-MADA banner asset, compact navigation control, collapsible auth widget, persisted day/night/system theme, Command Center orchestration, and paused-state-stable Liquidity Map behavior.
 - Serverless endpoint/job scaffolds, Dockerfiles, configs, scripts, and local mock/cloud-adapter paths.
 
 Not yet complete:
@@ -46,7 +46,7 @@ The main architecture has four execution areas:
 
 ```mermaid
 graph TD
-    Front["Front - React / Vite UI - Arena, Demo, Scenario Generator, Detection, Experiments, Nebius AI, About"]
+    Front["Front - React / Vite UI - Command Center, Arena, Scenario Generator, About"]
     Back["Back - FastAPI backend - REST, WebSocket, orchestration, persistence"]
     Runners["Agent Runners Workspace - local Docker and remote workers"]
     Nebius["Nebius Serverless Cloud - model selection, inference, batch jobs, GPU runtime, datasets, artifacts"]
@@ -135,19 +135,19 @@ graph LR
 
 ### UI Layer
 
-The UI is a React product shell under `frontend/`. It presents Demo, Arena, Detection, Scenario Generator, Experiments, Nebius AI, and About without owning simulation logic.
+The UI is a React product shell under `frontend/`. It presents AI Command Center, Arena, Scenario Generator, and About without owning simulation logic.
 
 Responsibilities:
 
 - show the live order book ladder
 - show mid-price, spread, imbalance, and detector confidence views
 - provide Start, Pause, Reset, and scenario controls
-- provide `/demo` cards that launch deterministic Arena modes
+- provide Command Center workflows that launch deterministic or Nebius-backed demo paths
 - provide scenario launch buttons
 - show agent activity and active agents
 - show incident cards and Incident Details
-- show Nebius AI operations for model selection, inference, batch execution, GPU utilization, datasets, experiments, artifacts, and cost context
-- show Detection evidence for persisted jobs, explanations, screenshots, exports, and promoted report artifacts
+- show Nebius AI operations for inference, batch execution, GPU utilization, experiments, artifacts, and cost context
+- show evidence for persisted jobs, explanations, screenshots, exports, and promoted report artifacts
 - provide role-aware Google auth/session controls that can collapse to a compact account widget
 - provide the global workspace/user menu and show case ownership, reviewer, generated-by, and audit metadata where investigations are reviewed
 - provide persisted day/night/system theme behavior across the shell

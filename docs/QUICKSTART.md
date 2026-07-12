@@ -39,8 +39,8 @@ docker compose up --build
 
 Open your browser:
 
-- **Frontend (Arena)**: http://localhost:5173
-- **Product Demo**: http://localhost:5173/demo
+- **Frontend / Command Center**: http://localhost:5173
+- **Arena**: http://localhost:5173/arena
 - **Backend API**: http://localhost:8000
 - **API Docs**: http://localhost:8000/docs
 
@@ -79,10 +79,10 @@ curl -X POST http://localhost:8000/api/scenarios/spoofing-like
 - Click **Inject Scenario** to trigger abuse-like behavior
 - View detector confidence in the right panel
 
-### 3-Minute Product Demo
-- Open `/demo`
-- Choose **Real Nebius AI Run**, **Two-Model Pipeline**, or **Streaming Explanation**
-- The selected card launches Arena with deterministic demo settings and AI cost/latency reporting
+### Command Center Demo
+- Open `/nebius`
+- Use **Run Serverless E2E Demo** or the Runtime workflow steps
+- The flow shows endpoint health, AI investigation, detector tournament status, and artifacts
 
 ### Incident Investigation
 - Click on an incident badge to open Incident Details
@@ -115,7 +115,7 @@ python scripts/call_endpoint.py --base-url http://localhost:9000 --route orderbo
 ## Troubleshooting
 
 ### Port Already in Use
-If ports 5173, 8000, or 9001 are in use:
+If ports 5173, 8000, or 9100 are in use:
 ```bash
 # Change ports in docker-compose.yml or use:
 docker compose up --build -p my-project

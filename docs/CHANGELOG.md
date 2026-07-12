@@ -5,6 +5,12 @@ Update this file with each significant commit before pushing.
 
 ## Unreleased
 
+### Current - chore: compact command center and remove stale docs
+
+- Folded standalone demo/report/detection/experiment page modules into the current Command Center and Arena surfaces.
+- Removed stale planning and one-pager docs that were not referenced by the active documentation index.
+- Compact runtime controls and Command Center workflow cards for the current three-primary-tab UI.
+
 ### Current - test: expand exchange and detector coverage
 
 - Added backend coverage tooling with `pytest-cov` and documented the coverage command.
@@ -261,7 +267,7 @@ Update this file with each significant commit before pushing.
 
 ### `3ccbece` - feat: add Nebius serverless endpoint and jobs
 
-- Added Nebius Serverless AI Endpoint implementation with deterministic mock mode and optional AI Studio JSON calls.
+- Added Nebius Serverless AI Endpoint implementation with deterministic mock mode; the current GPU endpoint path uses local vLLM.
 - Added endpoint routes for health, incident explanation, simulation explanation, report generation, and scenario generation.
 - Added detector tournament and synthetic dataset factory serverless job scripts.
 - Added serverless Dockerfiles, example job configs, endpoint config, deployment env example, and serverless README.

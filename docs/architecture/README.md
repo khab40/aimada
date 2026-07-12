@@ -70,9 +70,8 @@ Current UI architecture note: the product shell now exposes AI Command Center, A
 - [ARD-0016: AI Scenario Generator](ARD-0016-ai-scenario-generator.md) — Phase 2 build plan and implementation record for scenario generation via Nebius AI Serverless Endpoint
 - [ARD-0017: AI Detector Tournament](ARD-0017-ai-detector-tournament.md) — Phase 3 build plan and implementation record for detector tournaments via Nebius Serverless Jobs
 
-### Build Plan And Use Cases
+### Use Cases
 
-- [Nebius AI Serverless Build Plan](../nebius-serverless-build-plan.md) — Three-phase implementation plan centered on Nebius execution
 - [Nebius Serverless Use Cases](../use-cases/nebius-serverless-use-cases.md) — Product use cases and concrete API flows
 
 ## ARD Format

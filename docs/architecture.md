@@ -4,7 +4,7 @@ AI Market Abuse Detection Arena is organized around four execution areas and two
 
 The four execution areas are:
 
-- **Front**: React/Vite browser UI for Arena, Demo, Scenario Generator, Detection, Experiments, Nebius AI, and About.
+- **Front**: React/Vite browser UI for Command Center, Arena / Workload Generator, Scenario Generator, and About.
 - **Back**: FastAPI backend for REST, WebSocket streaming, orchestration, persistence, Smart Detection, and AI Investigator adapters.
 - **Agent Runners Workspace**: local Docker or remote worker space where market agents, attacker agents, detector workers, replay writers, and dataset writers execute.
 - **Nebius Serverless Cloud**: Nebius AI model selection, LLM inference, Managed Experiment jobs, GPU utilization, datasets, and artifacts.
@@ -22,8 +22,8 @@ A platform identity layer maps Google or local demo users into workspace, role, 
 
 ```mermaid
 graph TD
-    Demo["Front - Demo Orchestrator - real, two-model, streaming"]
-    UI["Front - React / Vite UI - Demo, Arena, Scenario Generator, Detection, Experiments, Nebius AI, About"]
+    Demo["Front - Command Center workflow"]
+    UI["Front - React / Vite UI - Command Center, Arena, Scenario Generator, About"]
     API["Back - FastAPI Backend - REST control-plane APIs"]
     WS["WebSocket Manager - live arena controls and arena_state stream"]
     Runtime["Live Arena Runtime - 250-500 ms simulation ticks"]
@@ -37,7 +37,7 @@ graph TD
     Explain["Nebius Serverless Cloud - Nebius AI, LLM inference, Managed Experiment jobs"]
     Artifacts["Local Artifacts - events, snapshots, incidents, reports"]
 
-    Demo -->|selects demo mode| UI
+    Demo -->|selects workflow step| UI
     UI -->|WebSocket live commands| WS
     UI -->|REST Nebius/artifact/report APIs| API
     UI --> Identity
@@ -64,7 +64,7 @@ graph TD
 
 | Component | Responsibility |
 | --- | --- |
-| React / Vite UI | Presents the themed product shell, global workspace/user menu, Demo, Arena, Scenario Generator, Detection, Experiments, Nebius AI, About, Standard/Battlefield visualization modes, detector output, Incident Details, and AI Investigator reports. Arena live controls and state use WebSocket; Nebius AI, experiment, artifact, and report actions use backend REST APIs. |
+| React / Vite UI | Presents the themed product shell, global workspace/user menu, Command Center, Arena, Scenario Generator, About, Standard/Battlefield visualization modes, detector output, Incident Details, and AI Investigator reports. Arena live controls and state use WebSocket; Nebius AI, experiment, artifact, and report actions use backend REST APIs. |
 | Platform identity layer | Maps Google or demo users to workspace, role, case ownership, report attribution, reviewer metadata, and audit trail records. |
 | FastAPI demo backend | Owns the demo control plane. It starts and stops simulations, launches scenarios, broadcasts state to the UI, persists incidents, and calls Nebius AI endpoints for explanation and report generation. |
 | Local live simulation | Runs the authoritative exchange, scenario state, detector engine, local agent scheduling, single-writer book mutation, per-agent quote ownership, and baseline liquidity guard. |

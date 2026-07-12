@@ -30,7 +30,7 @@ export function NebiusAIInvestigatorPanel({
       const next = event instanceof CustomEvent && typeof event.detail === "string"
         ? event.detail
         : getStoredRuntimeMode();
-      if (next === "local-demo" || next === "hybrid" || next === "nebius-cloud") {
+      if (next === "local-demo" || next === "nebius-cloud") {
         setRuntimeMode(next);
       }
     }
