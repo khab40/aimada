@@ -22,5 +22,11 @@ testpaths = ["tests"]
 
 [dependency-groups]
 dev = [
+    "langgraph>=0.2.0",
     "pytest-cov>=7.1.0",
+    "ruff>=0.12.0",
 ]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120

@@ -93,12 +93,18 @@ PUSH=true IMAGE_NAMESPACE=ghcr.io/<your-org> TAG=<tag> ./scripts/build-serverles
 SMOKE=true IMAGE_NAMESPACE=ghcr.io/<your-org> TAG=<tag> ./scripts/build-serverless-images.sh
 ```
 
-By default, the script builds:
+By default, the script builds these local tags:
 
 ```text
 ghcr.io/khab40/ai-market-abuse-detection-arena-endpoint:latest
 ghcr.io/khab40/ai-market-abuse-detection-arena-jobs:latest
 ```
+
+Anonymous registry verification on 2026-07-12 succeeded only for the jobs
+`latest` tag. The endpoint tag is not published; build it locally and push it
+to a registry namespace you control before endpoint deployment. The VM and
+Kubernetes deployment scripts likewise build and push their application images
+to the explicitly configured namespace; they do not rely on prepublished tags.
 
 Smoke checks:
 

@@ -13,19 +13,22 @@ backend.
 ## Nebius Serverless AI Jobs
 
 ```mermaid
-graph TD
-    Jobs["Nebius Serverless AI Jobs"]
-    Batch["Batch simulations"]
-    Scenario["Scenario generation"]
-    Features["Feature extraction"]
-    Evaluation["Evaluation runs"]
-    Reports["Experiment reports"]
+flowchart LR
+    API["FastAPI Experiment Manager"]
+    Job["Nebius Serverless AI Job"]
+    Runner["run_batch_experiments.py"]
+    Simulation["Synthetic scenarios + labels"]
+    Detection["Deterministic detector evaluation"]
+    Artifacts["JSONL + CSV + Markdown + manifest"]
+    Review["Detection UI + artifact download"]
 
-    Jobs --> Batch
-    Jobs --> Scenario
-    Jobs --> Features
-    Jobs --> Evaluation
-    Jobs --> Reports
+    API -->|"render config + submit"| Job
+    Job --> Runner
+    Runner --> Simulation
+    Simulation --> Detection
+    Detection --> Artifacts
+    Artifacts -->|"collect + normalize"| API
+    API --> Review
 ```
 
 Job responsibilities:
@@ -42,15 +45,19 @@ usage. Large runs belong in final benchmark passes only.
 ## Nebius AI Endpoints
 
 ```mermaid
-graph TD
-    Endpoints["Nebius AI Endpoints"]
-    Judge["Real-time AI judge"]
-    Explain["Explanation generation"]
-    Narrator["Scenario narrator"]
-
-    Endpoints --> Judge
-    Endpoints --> Explain
-    Endpoints --> Narrator
+sequenceDiagram
+    participant UI as React UI
+    participant API as FastAPI Backend
+    participant DET as Deterministic Detectors
+    participant EP as Nebius AI Endpoint
+    participant STORE as Artifact Store
+    UI->>API: request scenario, explanation, or investigation
+    API->>DET: obtain structured evidence when applicable
+    DET-->>API: features, scores, labels, timeline
+    API->>EP: bounded structured payload
+    EP-->>API: structured generated response
+    API->>STORE: persist request, response, and report
+    API-->>UI: validated response or deterministic fallback
 ```
 
 Endpoint responsibilities:
@@ -133,8 +140,14 @@ To wire local Compose to the cloud endpoint and job image:
 set -a
 . outputs/deployments/nebius-partial-latest.env
 set +a
-docker compose up -d --build
+docker compose -f docker-compose.yml -f docker-compose.nebius.yml up -d --build
 ```
+
+The override is intentionally required for real Nebius mode. It installs the
+Nebius CLI in the backend image and mounts the host's
+`$HOME/.nebius/config.yaml` and `$HOME/.nebius/credentials.yaml`. The default
+Compose file omits those mounts and uses mock mode, so a new user does not need
+Nebius credentials or a GPU.
 
 Serverless Jobs do not need a long-running deployment. The jobs image is pushed
 now; actual jobs are submitted on demand from the backend experiment flow. To

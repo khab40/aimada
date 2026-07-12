@@ -197,9 +197,9 @@ PY
 }
 
 set_image_and_replicas() {
-  replace_text "${K8S_RENDER_DIR}/backend.yaml" "ghcr.io/khab40/ai-market-abuse-detection-arena-backend:k8s" "${NEBIUS_BACKEND_IMAGE}"
-  replace_text "${K8S_RENDER_DIR}/frontend.yaml" "ghcr.io/khab40/ai-market-abuse-detection-arena-frontend:k8s" "${NEBIUS_FRONTEND_IMAGE}"
-  replace_text "${K8S_RENDER_DIR}/agent-runner.yaml" "ghcr.io/khab40/ai-market-abuse-detection-arena-agent-runner:k8s" "${NEBIUS_AGENT_RUNNER_IMAGE}"
+  replace_text "${K8S_RENDER_DIR}/backend.yaml" "ghcr.io/your-org/ai-market-abuse-detection-arena-backend:k8s" "${NEBIUS_BACKEND_IMAGE}"
+  replace_text "${K8S_RENDER_DIR}/frontend.yaml" "ghcr.io/your-org/ai-market-abuse-detection-arena-frontend:k8s" "${NEBIUS_FRONTEND_IMAGE}"
+  replace_text "${K8S_RENDER_DIR}/agent-runner.yaml" "ghcr.io/your-org/ai-market-abuse-detection-arena-agent-runner:k8s" "${NEBIUS_AGENT_RUNNER_IMAGE}"
   replace_text "${K8S_RENDER_DIR}/backend.yaml" "replicas: 1" "replicas: ${K8S_BACKEND_REPLICAS}"
   replace_text "${K8S_RENDER_DIR}/frontend.yaml" "replicas: 1" "replicas: ${K8S_FRONTEND_REPLICAS}"
   replace_text "${K8S_RENDER_DIR}/agent-runner.yaml" "replicas: 2" "replicas: ${K8S_AGENT_RUNNER_REPLICAS}"

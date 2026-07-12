@@ -21,9 +21,9 @@ Implemented:
 - UI shell with AI-MADA banner asset, compact navigation control, collapsible auth widget, persisted day/night/system theme, Command Center orchestration, and paused-state-stable Liquidity Map behavior.
 - Serverless endpoint/job scaffolds, Dockerfiles, configs, scripts, and local mock/cloud-adapter paths.
 
-Not yet complete:
+Remaining publication work:
 
-- One archived real Nebius endpoint and Serverless AI Job run with logs, metrics, and produced artifacts.
+- Curated, redacted production logs, runtime/cost measurements, and Nebius console screenshots linked from the submission index. Production Serverless AI Job and Endpoint execution has been validated.
 - Production-grade surveillance integrations, real market data ingestion, compliance workflows, and trading signals remain intentionally out of scope.
 
 ## Context
@@ -48,7 +48,7 @@ The main architecture has four execution areas:
 graph TD
     Front["Front - React / Vite UI - Command Center, Arena, Scenario Generator, About"]
     Back["Back - FastAPI backend - REST, WebSocket, orchestration, persistence"]
-    Runners["Agent Runners Workspace - local Docker and remote workers"]
+    Runners["Agent Runners Workspace - normal, heavy, and LangGraph agents"]
     Nebius["Nebius Serverless Cloud - model selection, inference, batch jobs, GPU runtime, datasets, artifacts"]
     Store["Artifacts - events, snapshots, incidents, reports, benchmark outputs"]
     Identity["Platform Identity - user, workspace, role, case ownership, audit"]
@@ -56,8 +56,8 @@ graph TD
     Front -->|REST and WebSocket| Back
     Front -->|Google or demo identity| Identity
     Identity -->|case ownership and audit metadata| Back
-    Back -->|snapshot and run config| Runners
-    Runners -->|agent intents and detector outputs| Back
+    Back -->|read-only MarketSnapshot| Runners
+    Runners -->|bounded AgentIntent| Back
     Back -->|LLM calls and managed jobs| Nebius
     Nebius -->|explanations, metrics, artifacts| Back
     Back --> Store
@@ -71,8 +71,9 @@ graph TD
     Backend["FastAPI Backend - control plane"]
     Runtime["Live Arena Runtime - simulation clock"]
     Exchange["Synthetic Exchange - order book + matching engine"]
-    Agents["Agents - local + remote + scenario"]
-    Runner["agent-runner - heavy + LangGraph agents"]
+    LocalAgents["Local AgentManager"]
+    Runner["agent-runner - normal + heavy + LangGraph"]
+    ScenarioAgents["Bounded scenario agents"]
     Detectors["Deterministic Detectors - microstructure features"]
     Incidents["Incident Store - evidence + confidence"]
     Identity["Platform Identity - users, workspaces, roles, audit"]
@@ -84,10 +85,13 @@ graph TD
     Backend -->|WebSocket arena_state| Arena
     Detection -->|REST artifact/report APIs| Backend
     Backend --> Runtime
-    Runtime --> Agents
-    Agents -->|remote snapshot / intents| Runner
-    Runner --> Agents
-    Agents --> Exchange
+    Runtime -->|read-only snapshot| LocalAgents
+    Runtime -->|read-only MarketSnapshot| Runner
+    LocalAgents -->|AgentIntent| Runtime
+    Runner -->|AgentIntent| Runtime
+    Runtime --> ScenarioAgents
+    ScenarioAgents -->|labeled intent| Runtime
+    Runtime --> Exchange
     Exchange --> Detectors
     Detectors --> Incidents
     Incidents --> Endpoint
@@ -99,20 +103,6 @@ graph TD
 ```
 
 The batch path runs separately:
-
-```mermaid
-graph TD
-    Job["Nebius Serverless AI Job"]
-    Runs["Run many synthetic simulations"]
-    Labels["Inject labeled scenario families"]
-    Metrics["Compute precision, recall, and F1"]
-    Artifacts["Generate benchmark artifacts and charts"]
-
-    Job --> Runs
-    Job --> Labels
-    Job --> Metrics
-    Job --> Artifacts
-```
 
 ```mermaid
 graph LR

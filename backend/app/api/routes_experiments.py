@@ -1,5 +1,4 @@
 import csv
-import json
 import shutil
 import subprocess
 import sys
@@ -32,7 +31,7 @@ from app.experiments.nebius_orchestrator import (
 )
 from app.experiments.repository import ExperimentRepository
 from app.nebius.client import NebiusClient
-from app.schemas.arena import AttackTrackerState, BenchmarkResult, MarketRegime
+from app.schemas.arena import AttackTrackerState, BenchmarkResult
 from app.storage.history import append_history_artifact, history_window
 from app.storage.local_store import LocalStore
 

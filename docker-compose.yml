@@ -56,8 +56,8 @@ services:
       AIMADA_JWT_EXPIRES_IN_SECONDS: ${AIMADA_JWT_EXPIRES_IN_SECONDS:-43200}
       ENDPOINT_TOKEN: ${ENDPOINT_TOKEN:-}
       NEBIUS_TENANT_ID: ${NEBIUS_TENANT_ID:-}
-      NEBIUS_ENDPOINT_MODE: ${NEBIUS_ENDPOINT_MODE:-local_vllm}
-      NEBIUS_ENDPOINT_BASE_URL: ${NEBIUS_ENDPOINT_BASE_URL:-http://endpoint:9000}
+      NEBIUS_ENDPOINT_MODE: ${NEBIUS_ENDPOINT_MODE:-mock}
+      NEBIUS_ENDPOINT_BASE_URL: ${NEBIUS_ENDPOINT_BASE_URL:-}
       NEBIUS_INCIDENT_EXPLAINER_URL: ${NEBIUS_INCIDENT_EXPLAINER_URL:-}
       NEBIUS_SCENARIO_GENERATOR_URL: ${NEBIUS_SCENARIO_GENERATOR_URL:-}
       NEBIUS_ORDERBOOK_ALERT_URL: ${NEBIUS_ORDERBOOK_ALERT_URL:-}
@@ -87,8 +87,6 @@ services:
         condition: service_healthy
     volumes:
       - ./outputs:/app/outputs
-      - ${HOME}/.nebius/config.yaml:/root/.nebius/config.yaml:ro
-      - ${HOME}/.nebius/credentials.yaml:/root/.nebius/credentials.yaml:ro
 
   frontend:
     build:

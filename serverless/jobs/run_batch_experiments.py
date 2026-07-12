@@ -246,7 +246,7 @@ def _build_report(results: list[BatchResult], metrics: list[dict[str, Any]], bat
         "",
         f"- Simulations: {len(results)}",
         f"- Parallel batch size: {batch_size}",
-        f"- Output files: 6",
+        "- Output files: 6",
         "",
         "| Scenario | Runs | Alerts | Precision | Recall | F1 | Avg latency ms |",
         "| --- | ---: | ---: | ---: | ---: | ---: | ---: |",

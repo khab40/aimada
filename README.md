@@ -14,21 +14,33 @@ Nebius value is visible in the first demo minute:
 
 ```mermaid
 flowchart LR
-    UI["AI Command Center<br/>React"]
-    API["FastAPI Control Plane"]
-    Arena["Market Workload Generator<br/>Simulator + Detectors"]
-    Endpoint["Nebius AI Serverless Endpoint<br/>Investigation + Scenario Generation"]
-    Jobs["Nebius Serverless Jobs<br/>Detector Tournament"]
-    Store["Artifacts<br/>Ground truth, metrics, reports"]
+    subgraph Front["Front"]
+        UI["React / Vite<br/>Command Center + Arena"]
+    end
+    subgraph Back["Back"]
+        API["FastAPI<br/>REST + WebSocket"]
+        Runtime["Authoritative Runtime<br/>Exchange + Matching"]
+        Detectors["Deterministic Detectors"]
+        Store["Local Artifacts<br/>events, metrics, reports"]
+    end
+    subgraph Agents["Agents Workspace"]
+        Runner["agent-runner<br/>normal, heavy, LangGraph"]
+    end
+    subgraph Nebius["Nebius Serverless AI"]
+        Endpoint["Endpoint<br/>investigation + generation"]
+        Jobs["Jobs<br/>detector tournaments"]
+    end
 
-    UI --> API
-    API --> Arena
-    API --> Endpoint
-    API --> Jobs
-    Arena --> Store
-    Endpoint --> Store
-    Jobs --> Store
-    Store --> UI
+    UI <-->|"commands + arena_state"| API
+    API --> Runtime
+    Runtime -->|"read-only MarketSnapshot"| Runner
+    Runner -->|"bounded AgentIntent"| Runtime
+    Runtime --> Detectors
+    Detectors --> Store
+    API <-->|"structured requests / responses"| Endpoint
+    API -->|"batch submission"| Jobs
+    Jobs -->|"metrics + reports"| Store
+    Store --> API
 ```
 
 Quick Start: Get running in 5 minutes with local mock fallback. See [Quick Start](#quick-start) below, [docs/QUICKSTART.md](docs/QUICKSTART.md), or the challenge-focused [demo script](docs/demo-script.md).
@@ -54,6 +66,7 @@ Implemented:
 - Multiuser platform foundation with demo fallback identity, workspace metadata, case ownership, reviewer metadata, report attribution, and audit trail records for investigation actions.
 - Deterministic detector evidence model for synthetic spoofing-like, layering-like, quote-stuffing-like, and liquidity-shock patterns.
 - Nebius endpoint and job scaffolds with local typed fallbacks, Docker/config files, scripts, and UI control surfaces, including `/investigation-team`, `/generate-market-abuse-scenario`, `/investigation-report`, `/orderbook-alert`, and `/generate-smart-scenario`.
+- Production validation completed more than ten Nebius Serverless AI Job runs and exercised a vLLM-backed Serverless AI Endpoint across scenario generation, incident analysis, investigation reporting, and structured market-event explanation routes.
 - Phase 4.5 Managed Experiments with deterministic attack manifests, local smart-batch execution, artifact normalization, aggregation, bounded AI Investigator reports, and Detection review of summaries, leaderboards, markdown reports, artifact indexes, and original local-batch files.
 - Reduced demo navigation around AI Command Center, Workload Generator, and Docs / Demo.
 - Demo page for three deterministic 3-minute product demo paths: Real Nebius AI Run, Two-Model Pipeline, and Streaming Explanation.
@@ -63,10 +76,10 @@ Implemented:
 - About and ARD-0001 include four-area architecture diagrams covering Front, Back, Agent Runners Workspace, and Nebius Serverless Cloud.
 - Coherent day/night/system UI theme behavior across widgets, charts, status chips, order-book levels, and canvas visualizations, plus compact vertical-navigation controls, paused-state-stable liquidity visualization, and documentation set for quick start, architecture, ARDs, runtime model, benchmark methodology, safety framing, deployment, and design ideas.
 
-Not yet complete:
+Remaining publication work:
 
-- Archived real Nebius endpoint and Serverless AI Job run with logs, metrics screenshots, and produced artifacts. Phase 4.5 `submit-nebius` correctly records `real_nebius_pending` until real job execution is implemented and evidenced.
-- Committed sample benchmark report under `outputs/benchmark/`.
+- Curated, redacted production-log excerpts, runtime/cost measurements, and Nebius console screenshots linked from the judge-facing submission index.
+- A compact committed benchmark evidence bundle under `outputs/benchmark/`.
 - Final screenshot assets for the README screenshot table beyond the About architecture diagram.
 - Dedicated Judge Mode timeline-window selector and formal benchmark artifact schema versioning.
 - Durable backend workspace/organization tables, case assignment APIs, and persisted audit-log APIs beyond the current frontend platform foundation.
@@ -75,6 +88,7 @@ Not yet complete:
 
 ```
 backend/          FastAPI simulator, detectors, reports, local storage
+agent-runner/     Out-of-process normal, heavy, and LangGraph agent workspace
 frontend/         Vite React UI for live arena and benchmark views
 serverless/       Nebius endpoint, job images, configs, and batch runners
 docs/             Complete architecture, deployment, and research notes
@@ -88,8 +102,8 @@ outputs/          Generated logs, incidents, reports, artifacts
 ### 1. Clone and Configure
 
 ```bash
-git clone https://github.com/khab40/ai-market-abuse-detection-arena.git
-cd ai-market-abuse-detection-arena
+git clone https://github.com/khab40/aimada.git
+cd aimada
 cp .env.example .env
 ```
 
@@ -98,6 +112,34 @@ cp .env.example .env
 ```bash
 docker compose up --build
 ```
+
+The default stack builds the agent runner, backend, and frontend from source. It
+does not pull GHCR images, require Nebius credentials, or start vLLM/GPU work.
+Nebius calls use the deterministic mock path, and generated artifacts are
+written to `./outputs`.
+
+Real Nebius mode is opt-in and validates the endpoint URL before startup:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.nebius.yml up --build
+```
+
+This override installs the Nebius CLI and mounts
+`$HOME/.nebius/{config,credentials}.yaml`; see
+[Nebius Deployment](docs/nebius-deployment.md) before using it.
+
+Secret rotation is dry-run first:
+
+```bash
+make secrets-plan
+make secrets-check
+make secrets-rotate
+```
+
+To import newly issued Google/Nebius provider credentials without exposing them
+on the command line, place only the supported keys in a temporary file outside
+the repository and run `./scripts/rotate-secrets.sh --import-env /path/to/provider.env --apply --restart`.
+Disable old provider credentials only after the health check succeeds.
 
 - **Frontend**: http://localhost:5173
 - **Backend**: http://localhost:8000
@@ -137,6 +179,34 @@ Capture these screens for submission:
 - Artifact links for metrics, results, benchmark report, and charts.
 
 ## Development
+
+### Continuous Integration
+
+GitHub Actions validates Ruff and backend tests, the agent workspace contract,
+frontend lint and production compilation, a three-run deterministic CPU
+evaluation, local Compose configuration, the backend/frontend/agent-runner
+images, and repository history with Gitleaks. CI needs no Nebius credentials,
+private data, GPU, or external private service. It does not build the long-running
+Nebius Serverless Endpoint or Serverless Job images and never runs vLLM/H100
+inference, pushes images, or deploys infrastructure. Production execution
+evidence is indexed in [Challenge Submission](docs/challenge-submission.md).
+
+Run the equivalent checks locally:
+
+```bash
+uv sync --project backend --dev --frozen
+uv run --project backend ruff check backend serverless scripts
+uv run --project backend pytest -c backend/pyproject.toml backend/tests
+uv run --project backend python scripts/validate_agent_workspace.py
+PYTHONPATH=backend uv run --project backend python scripts/generate_scenarios.py --samples 3 --output outputs/ci-eval/synthetic-dataset
+PYTHONPATH=backend uv run --project backend python scripts/run_local_eval.py --runs 3 --batch-size 2 --output outputs/ci-eval
+uv run --project backend python scripts/validate_ci_artifacts.py outputs/ci-eval
+(cd frontend && npm ci && npm run lint && npm run build)
+docker compose --env-file .env.example config --quiet
+docker compose build backend frontend agent-runner
+make secrets-check
+gitleaks git --redact --verbose
+```
 
 ```bash
 make backend-dev              # Run backend with auto-reload
@@ -437,7 +507,7 @@ Start with the guides above, then explore:
 | **Interactive Path** | Live React UI where operators control a synthetic exchange, inject scenarios, and review detector alerts in real time |
 | **Batch Path** | Managed Experiment jobs that run many simulations and compute detector metrics (precision, recall, F1) |
 | **Arena** | The live order-book visualization showing normal trading agents, abuse-like scenario behavior, and Standard/Battlefield market visualization modes |
-| **Agent Runners Workspace** | Local Docker or remote runner area where normal agents, attacker agents, detector workers, replay writers, and dataset writers execute |
+| **Agent Runners Workspace** | Local Docker or remote `agent-runner` processes that receive read-only snapshots and return bounded normal, heavy, or LangGraph `AgentIntent` decisions; only the backend mutates the exchange |
 | **Detector** | Deterministic algorithm that analyzes order-book microstructure and produces confidence scores |
 | **Smart Detection** | Nebius-backed or fallback order-book scoring path used for endpoint-style detector checks |
 | **Incident** | A time window flagged by the detector with supporting evidence |

@@ -6,7 +6,7 @@ The four execution areas are:
 
 - **Front**: React/Vite browser UI for Command Center, Arena / Workload Generator, Scenario Generator, and About.
 - **Back**: FastAPI backend for REST, WebSocket streaming, orchestration, persistence, Smart Detection, and AI Investigator adapters.
-- **Agent Runners Workspace**: local Docker or remote worker space where market agents, attacker agents, detector workers, replay writers, and dataset writers execute.
+- **Agent Runners Workspace**: local Docker or remote `agent-runner` processes where normal, CPU-heavy, and LangGraph-compatible agents convert read-only market snapshots into bounded intents.
 - **Nebius Serverless Cloud**: Nebius AI model selection, LLM inference, Managed Experiment jobs, GPU utilization, datasets, and artifacts.
 
 The two execution paths are:
@@ -21,43 +21,42 @@ A platform identity layer maps Google or local demo users into workspace, role, 
 ## Interactive Demo Path
 
 ```mermaid
-graph TD
-    Demo["Front - Command Center workflow"]
-    UI["Front - React / Vite UI - Command Center, Arena, Scenario Generator, About"]
-    API["Back - FastAPI Backend - REST control-plane APIs"]
-    WS["WebSocket Manager - live arena controls and arena_state stream"]
-    Runtime["Live Arena Runtime - 250-500 ms simulation ticks"]
-    Agents["Agent Runners Workspace - local AgentManager + remote runners"]
-    Runner["agent-runner - normal, heavy + LangGraph agents"]
-    Exchange["Synthetic Exchange - Order Book + Matching Engine"]
-    LiquidityGuard["Baseline Liquidity Guard - two-sided ladder invariant"]
-    Detectors["Deterministic Detectors - features + confidence scores"]
-    Incidents["Incident Store - evidence + metadata"]
-    Identity["Platform Identity - user, workspace, role, case ownership, audit"]
-    Explain["Nebius Serverless Cloud - Nebius AI, LLM inference, Managed Experiment jobs"]
-    Artifacts["Local Artifacts - events, snapshots, incidents, reports"]
+flowchart LR
+    subgraph Front["Front"]
+        UI["React / Vite<br/>Command Center + Arena"]
+    end
+    subgraph Back["Back"]
+        API["FastAPI<br/>REST control plane"]
+        WS["WebSocket<br/>arena_control + arena_state"]
+        Runtime["Runtime<br/>250-500 ms ticks"]
+        Exchange["Exchange + Matching Engine"]
+        Guard["Baseline Liquidity Guard"]
+        Detectors["Deterministic Detectors"]
+        Incidents["Incident + Artifact Stores"]
+    end
+    subgraph Workspace["Agent Runners Workspace"]
+        Runner["agent-runner<br/>normal + heavy + LangGraph"]
+    end
+    subgraph Cloud["Nebius Serverless Cloud"]
+        Endpoint["AI Endpoint<br/>explain + investigate + generate"]
+        Jobs["AI Jobs<br/>batch evaluation"]
+    end
 
-    Demo -->|selects workflow step| UI
-    UI -->|WebSocket live commands| WS
-    UI -->|REST Nebius/artifact/report APIs| API
-    UI --> Identity
-    WS --> API
-    API --> Runtime
-    Runtime --> Agents
-    Agents -->|MarketSnapshot / AgentIntent| Runner
-    Runner --> Agents
-    Agents --> Exchange
-    Exchange --> LiquidityGuard
-    LiquidityGuard --> Exchange
-    Exchange --> Detectors
+    UI -->|"REST"| API
+    UI -->|"live commands"| WS
+    WS --> Runtime
+    Runtime -->|"MarketSnapshot"| Runner
+    Runner -->|"AgentIntent"| Runtime
+    Runtime --> Exchange
+    Exchange --> Guard
+    Guard --> Detectors
     Detectors --> Incidents
-    Identity -->|owner, analyst, reviewer, audit| Incidents
-    Runtime --> WS
-    WS -->|arena_state| UI
-    Incidents -->|explain request| Explain
-    Explain -->|structured explanation| API
-    Runtime --> Artifacts
-    Incidents --> Artifacts
+    Runtime -->|"arena_state"| WS
+    WS --> UI
+    API <-->|"structured evidence / response"| Endpoint
+    API -->|"submit + refresh"| Jobs
+    Jobs -->|"metrics + artifacts"| Incidents
+    Incidents --> API
 ```
 
 ### Component Responsibilities
@@ -68,7 +67,7 @@ graph TD
 | Platform identity layer | Maps Google or demo users to workspace, role, case ownership, report attribution, reviewer metadata, and audit trail records. |
 | FastAPI demo backend | Owns the demo control plane. It starts and stops simulations, launches scenarios, broadcasts state to the UI, persists incidents, and calls Nebius AI endpoints for explanation and report generation. |
 | Local live simulation | Runs the authoritative exchange, scenario state, detector engine, local agent scheduling, single-writer book mutation, per-agent quote ownership, and baseline liquidity guard. |
-| Agent Runners Workspace | Runs local, remote, heavy, and LangGraph-compatible agents behind the common intent protocol; returns intents but never mutates the exchange directly. |
+| Agent Runners Workspace | Runs out-of-process normal, CPU-heavy, and LangGraph-compatible agents behind the common intent protocol. The local `AgentManager` stays in the backend; both paths return intents and never mutate the exchange directly. |
 | Experiment manager | Owns Managed Experiment manifests on `/api/experiments`, persists `outputs/experiments/<experiment_id>/experiment.json`, and exposes smart-batch-compatible artifact paths to Detection without replacing the Nebius AI smart-batch API. |
 | Nebius Serverless Cloud | Provides Nebius AI inference for Smart Detection and AI Investigator reports, plus Managed Experiment batch execution, GPU utilization, datasets, and artifacts. |
 | Event / snapshot log | Stores replayable event streams, order book snapshots, detected incidents, and generated reports for inspection and offline analysis. |
@@ -89,26 +88,23 @@ graph TD
 ### Live Tick Sequence
 
 ```mermaid
-graph TD
-    Start["1. UI sends WebSocket arena_control start"]
-    RuntimeStart["2. Backend starts runtime"]
-    AgentsStep["3. Local and remote agents return intents"]
-    SortStep["4. Backend sorts accepted intents"]
-    ExchangeStep["5. Single-writer exchange updates book"]
-    GuardStep["6. Baseline guard restores ladder"]
-    DetectorStep["7. Detectors score events and book"]
-    BroadcastStep["8. WebSocket broadcasts arena_state"]
-    RenderStep["9. UI renders book, events, agents, scores"]
-
-    Start --> RuntimeStart
-    RuntimeStart --> AgentsStep
-    AgentsStep --> SortStep
-    SortStep --> ExchangeStep
-    ExchangeStep --> GuardStep
-    GuardStep --> DetectorStep
-    DetectorStep --> BroadcastStep
-    BroadcastStep --> RenderStep
-    RenderStep --> AgentsStep
+sequenceDiagram
+    participant UI as React Arena
+    participant API as FastAPI Runtime
+    participant AR as agent-runner
+    participant EX as Exchange
+    participant DT as Detectors
+    UI->>API: arena_control(start / scenario)
+    loop Every simulation tick
+        API->>AR: read-only MarketSnapshot
+        AR-->>API: bounded AgentIntent list
+        API->>API: validate, deadline-filter, sort
+        API->>EX: apply accepted intents (single writer)
+        EX->>EX: match orders and restore baseline liquidity
+        EX->>DT: events + order-book state
+        DT-->>API: scores + incidents
+        API-->>UI: complete arena_state
+    end
 ```
 
 ## Batch / Benchmark Path

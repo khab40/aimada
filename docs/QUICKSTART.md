@@ -12,8 +12,8 @@ Get the system running locally in 5 minutes.
 
 ```bash
 # Clone the repository
-git clone https://github.com/khab40/ai-market-abuse-detection-arena.git
-cd ai-market-abuse-detection-arena
+git clone https://github.com/khab40/aimada.git
+cd aimada
 
 # Copy environment template
 cp .env.example .env
@@ -34,6 +34,12 @@ docker compose up --build
 # backend  | Application startup complete
 # frontend | Local:   http://localhost:5173/
 ```
+
+This CPU-safe local path builds all three services from source, needs no Nebius
+configuration or registry login, and falls back to deterministic mock responses.
+Real Nebius credentials are mounted only by the opt-in
+`docker-compose.nebius.yml` override documented in
+[Nebius Deployment](nebius-deployment.md).
 
 ## 3. Access the UI
 

@@ -25,7 +25,6 @@ from app.api.routes_experiments import (
     reports_summary,
     router,
     run_benchmark_experiment,
-    run_experiment_investigations,
     run_experiment_local_batch,
     save_attack_experiment,
     list_experiment_jobs,

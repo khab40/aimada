@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: ghcr.io/khab40/ai-market-abuse-detection-arena-backend:k8s
+          image: ghcr.io/your-org/ai-market-abuse-detection-arena-backend:k8s
           imagePullPolicy: Always
           envFrom:
             - configMapRef:

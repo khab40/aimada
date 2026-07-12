@@ -8,8 +8,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
-# Run the official Nebius AI Cloud CLI setup script
-RUN curl -sSL https://storage.eu-north1.nebius.cloud/cli/install.sh | bash
+ARG INSTALL_NEBIUS_CLI=false
+
+# Real Nebius mode opts in through docker-compose.nebius.yml. Local mock builds
+# do not depend on cloud credentials or the Nebius CLI download endpoint.
+RUN if [ "${INSTALL_NEBIUS_CLI}" = "true" ]; then \
+      curl -fsSL https://storage.eu-north1.nebius.cloud/cli/install.sh | bash; \
+    fi
 
 # Add the Nebius binary directory directly to the system PATH
 ENV PATH="/root/.nebius/bin:${PATH}"

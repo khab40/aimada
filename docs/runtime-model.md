@@ -7,25 +7,29 @@ This document describes how the live arena runs, how agents participate in the e
 The exchange simulator ticks continuously while the arena is running. A normal local cadence is one tick every 250-500 ms, fast enough for a live visual demo while still leaving the UI readable.
 
 ```mermaid
-graph TD
-    Tick["Every 250-500 ms"]
-    NormalAgents["1. Normal always-on agents act"]
-    ScenarioAgents["2. Active scenario agents act"]
-    Matching["3. Matching engine processes order events"]
-    Book["4. Order book state is updated"]
-    Detectors["5. Detectors recalculate features and confidence scores"]
-    Incidents["6. Incidents emit when thresholds are crossed"]
-    Store["7. Backend stores events and snapshots"]
-    UI["8. UI receives new state over WebSocket"]
+flowchart TD
+    Tick["Backend tick<br/>250-500 ms"]
+    Local["Local AgentManager<br/>read-only snapshot"]
+    Remote["agent-runner<br/>normal, heavy, LangGraph"]
+    Scenario["Bounded scenario agents"]
+    Sort["Validate + deadline-filter + deterministic sort"]
+    Exchange["Single-writer exchange + matching"]
+    Guard["Restore baseline two-sided liquidity"]
+    Detect["Feature extraction + deterministic detectors"]
+    Persist["Events, incidents, snapshots, reports"]
+    UI["WebSocket arena_state"]
 
-    Tick --> NormalAgents
-    NormalAgents --> ScenarioAgents
-    ScenarioAgents --> Matching
-    Matching --> Book
-    Book --> Detectors
-    Detectors --> Incidents
-    Incidents --> Store
-    Store --> UI
+    Tick --> Local
+    Tick -->|"MarketSnapshot"| Remote
+    Tick --> Scenario
+    Local -->|"AgentIntent"| Sort
+    Remote -->|"AgentIntent"| Sort
+    Scenario -->|"labeled intent"| Sort
+    Sort --> Exchange
+    Exchange --> Guard
+    Guard --> Detect
+    Detect --> Persist
+    Detect --> UI
     UI --> Tick
 ```
 

@@ -305,7 +305,8 @@ Deliverables:
 - `[done]` `/api/nebius/smart-batches` remains unchanged for Nebius AI smart-batch execution.
 - `[done]` tests for create, list, get, report visibility, delete, deterministic attack manifests, attack counts, expected labels, a 3-run local batch, fake local-batch artifact normalization, mocked Nebius investigations, sample-CSV aggregation, and missing real Nebius config.
 - `[done]` local HTTP verification created a 10-row mixed-scenario experiment in mock mode and confirmed manifest rows, normalized artifacts, original local-batch files, summary, leaderboard, benchmark report, and investigation artifacts under `outputs/experiments/<experiment_id>/`.
-- `[todo]` archived real Nebius job evidence, logs, metrics, and produced artifacts from an actual configured command-template run.
+- `[done]` more than ten production Nebius Serverless AI Job runs validated container execution, scenario generation, detector evaluation, metric aggregation, reporting, logging, and artifact persistence.
+- `[partial]` curate and link redacted production logs, runtime/cost summaries, console screenshots, and a compact artifact bundle for publication.
 
 Current behavior:
 
