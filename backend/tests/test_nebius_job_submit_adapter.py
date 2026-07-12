@@ -122,6 +122,90 @@ def test_refresh_does_not_complete_without_artifact_confirmation(monkeypatch: An
     assert "artifact collection is not confirmed" in refreshed[0].message
 
 
+def test_submit_with_s3_output_passes_upload_args_and_env(monkeypatch: Any, tmp_path: Path) -> None:
+    repository = _repository_with_experiment(tmp_path)
+    captured: dict[str, Any] = {}
+
+    def fake_run(argv: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        captured["argv"] = argv
+        return subprocess.CompletedProcess(argv, 0, stdout='{"job_id":"job-s3"}', stderr="")
+
+    monkeypatch.setattr("app.experiments.nebius_orchestrator.subprocess.run", fake_run)
+    settings = Settings(
+        _env_file=None,
+        NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE=(
+            "nebius ai job create --args {job_args} {object_storage_env_args}"
+        ),
+        NEBIUS_JOB_OUTPUT_URI="s3://aimada-artifacts",
+        NEBIUS_OBJECT_STORAGE_ENDPOINT_URL="https://storage.eu-north1.nebius.cloud",
+        NEBIUS_OBJECT_STORAGE_ACCESS_KEY_ID="access-key",
+        NEBIUS_OBJECT_STORAGE_SECRET_ACCESS_KEY="secret-key",
+    )
+    orchestrator = NebiusExperimentOrchestrator(repository, settings)
+
+    job = orchestrator.submit("EXP-SUBMIT")
+
+    assert job is not None
+    argv = captured["argv"]
+    joined = " ".join(argv)
+    assert "--s3-output-uri" in joined
+    assert "s3://aimada-artifacts/experiments/EXP-SUBMIT/local-batch" in joined
+    assert "--s3-endpoint-url" in joined
+    assert "--env" in argv
+    assert "AWS_ACCESS_KEY_ID=access-key" in argv
+    assert "AWS_SECRET_ACCESS_KEY=secret-key" in argv
+
+
+def test_refresh_completed_job_syncs_s3_artifacts(monkeypatch: Any, tmp_path: Path) -> None:
+    repository = _repository_with_experiment(tmp_path)
+
+    def fake_which(name: str) -> str | None:
+        return "/usr/bin/aws" if name == "aws" else None
+
+    def fake_run(argv: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        if argv[0] == "submit-job":
+            return subprocess.CompletedProcess(argv, 0, stdout="job_id: job-sync", stderr="")
+        if argv[0] == "status-job":
+            return subprocess.CompletedProcess(argv, 0, stdout='{"status":"completed"}', stderr="")
+        if argv[0] == "/usr/bin/aws":
+            destination = Path(argv[-2])
+            destination.mkdir(parents=True, exist_ok=True)
+            (destination / "order_book_events.jsonl").write_text('{"tick":1}\n', encoding="utf-8")
+            (destination / "trades.jsonl").write_text("", encoding="utf-8")
+            (destination / "attack_labels.jsonl").write_text('{"label":"spoofing"}\n', encoding="utf-8")
+            (destination / "blue_team_alerts.jsonl").write_text('{"alert_id":"a1"}\n', encoding="utf-8")
+            (destination / "detector_metrics.csv").write_text("scenario,runs,alerts,precision,recall,f1,avg_detection_latency_ms\n", encoding="utf-8")
+            (destination / "generated_report.md").write_text("# Report\n", encoding="utf-8")
+            (destination / "manifest.json").write_text('{"runs":4}\n', encoding="utf-8")
+            return subprocess.CompletedProcess(argv, 0, stdout="", stderr="")
+        raise AssertionError(f"unexpected command: {argv}")
+
+    monkeypatch.setattr("app.experiments.nebius_orchestrator.shutil.which", fake_which)
+    monkeypatch.setattr("app.experiments.nebius_orchestrator.subprocess.run", fake_run)
+    settings = Settings(
+        _env_file=None,
+        NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE="submit-job {config_path}",
+        NEBIUS_JOB_STATUS_COMMAND_TEMPLATE="status-job {job_id}",
+        NEBIUS_JOB_OUTPUT_URI="s3://aimada-artifacts",
+        NEBIUS_OBJECT_STORAGE_ENDPOINT_URL="https://storage.eu-north1.nebius.cloud",
+        NEBIUS_OBJECT_STORAGE_ACCESS_KEY_ID="access-key",
+        NEBIUS_OBJECT_STORAGE_SECRET_ACCESS_KEY="secret-key",
+    )
+    orchestrator = NebiusExperimentOrchestrator(repository, settings)
+
+    orchestrator.submit("EXP-SUBMIT")
+    refreshed = orchestrator.refresh("EXP-SUBMIT")
+
+    assert refreshed is not None
+    assert refreshed[0].status == "completed"
+    assert "cloud_artifact_evidence" in refreshed[0].artifact_paths
+    experiment = repository.get("EXP-SUBMIT")
+    assert experiment is not None
+    assert experiment.status == "completed"
+    assert Path(experiment.artifact_paths["cloud_artifact_evidence"]).exists()
+    assert Path(experiment.artifact_paths["benchmark_report"]).read_text(encoding="utf-8") == "# Report\n"
+
+
 def test_parse_job_id_from_json_and_text() -> None:
     assert _parse_job_id('{"id":"job-json"}') == "job-json"
     assert _parse_job_id('{"metadata":{"jobId":"job-nested"}}') == "job-nested"

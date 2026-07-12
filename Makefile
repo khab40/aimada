@@ -1,7 +1,7 @@
-.PHONY: help backend-test backend-dev frontend-dev serverless-benchmark serverless-build serverless-push serverless-smoke docker-up docker-down
+.PHONY: help backend-test backend-dev frontend-dev serverless-benchmark serverless-build serverless-push serverless-smoke nebius-partial-plan nebius-partial-deploy nebius-vm-plan nebius-vm-deploy nebius-k8s-plan nebius-k8s-deploy docker-up docker-down
 
 help:
-	@printf "%s\n" "Targets: backend-test backend-dev frontend-dev serverless-benchmark serverless-build serverless-push serverless-smoke docker-up docker-down"
+	@printf "%s\n" "Targets: backend-test backend-dev frontend-dev serverless-benchmark serverless-build serverless-push serverless-smoke nebius-partial-plan nebius-partial-deploy nebius-vm-plan nebius-vm-deploy nebius-k8s-plan nebius-k8s-deploy docker-up docker-down"
 
 backend-test:
 	cd backend && uv run pytest
@@ -23,6 +23,24 @@ serverless-push:
 
 serverless-smoke:
 	SMOKE=true ./scripts/build-serverless-images.sh
+
+nebius-partial-plan:
+	./scripts/deploy-nebius-partial.sh --dry-run
+
+nebius-partial-deploy:
+	./scripts/deploy-nebius-partial.sh
+
+nebius-vm-plan:
+	./scripts/deploy-nebius-vm.sh --dry-run
+
+nebius-vm-deploy:
+	./scripts/deploy-nebius-vm.sh
+
+nebius-k8s-plan:
+	./scripts/deploy-nebius-k8s.sh --dry-run
+
+nebius-k8s-deploy:
+	./scripts/deploy-nebius-k8s.sh
 
 docker-up:
 	docker compose up --build

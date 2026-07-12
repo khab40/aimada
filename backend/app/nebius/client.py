@@ -344,7 +344,14 @@ class NebiusClient:
             job_logs_template_configured=bool(settings.nebius_job_logs_command_template),
             job_artifacts_template_configured=bool(settings.nebius_job_artifacts_command_template),
             job_artifacts_collection_configured=bool(
-                settings.nebius_job_artifacts_command_template or settings.nebius_job_output_uri
+                settings.nebius_job_artifacts_command_template
+                or (
+                    settings.nebius_job_output_uri
+                    and (
+                        not settings.nebius_job_output_uri.startswith("s3://")
+                        or bool(settings.nebius_object_storage_access_key_id and settings.nebius_object_storage_secret_access_key)
+                    )
+                )
             ),
             cli_installed=bool(cli_path),
             cli_path=cli_path,

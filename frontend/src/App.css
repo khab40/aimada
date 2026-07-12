@@ -786,6 +786,41 @@ body[data-sidebar-resizing="true"] {
   width: 100%;
 }
 
+.sidebar-collapsed .sidebar-controls .runtime-drawer,
+.sidebar-collapsed .sidebar-controls .disclaimer-popover-panel {
+  bottom: calc(100% + 8px);
+  left: 0;
+  min-width: 0;
+  max-height: min(420px, calc(100vh - 140px));
+  overflow: auto;
+  right: auto;
+  width: calc(var(--sidebar-width, var(--layout-sidebar-width)) - 24px);
+}
+
+.sidebar-collapsed .sidebar-controls .runtime-drawer {
+  padding: 7px;
+}
+
+.sidebar-collapsed .sidebar-controls .runtime-drawer p,
+.sidebar-collapsed .sidebar-controls .runtime-matrix,
+.sidebar-collapsed .sidebar-controls .runtime-fallback-note {
+  display: none;
+}
+
+.sidebar-collapsed .sidebar-controls .runtime-actions {
+  grid-template-columns: 1fr;
+}
+
+.sidebar-collapsed .sidebar-controls .runtime-actions button {
+  min-height: 30px;
+  padding: 4px 6px;
+}
+
+.sidebar-collapsed .sidebar-controls .disclaimer-popover-panel {
+  font-size: 11px;
+  padding: 8px;
+}
+
 .sidebar-collapsed .sidebar-controls .runtime-status-pill strong,
 .sidebar-collapsed .sidebar-controls .disclaimer-popover-button {
   font-size: 0;
@@ -7128,6 +7163,11 @@ kbd,
     left: 0;
     right: auto;
     width: min(420px, calc(100vw - 24px));
+  }
+
+  .sidebar-collapsed .sidebar-controls .runtime-drawer,
+  .sidebar-collapsed .sidebar-controls .disclaimer-popover-panel {
+    width: calc(var(--sidebar-width, 78px) - 16px);
   }
 
   .auth-panel {

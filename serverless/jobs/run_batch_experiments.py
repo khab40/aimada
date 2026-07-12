@@ -1,6 +1,8 @@
 import argparse
 import csv
 import json
+import os
+import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
@@ -55,6 +57,8 @@ def main() -> None:
     parser.add_argument("--batch-size", type=int, default=100)
     parser.add_argument("--scenarios", default=",".join(SCENARIOS))
     parser.add_argument("--output", type=Path, default=Path("outputs/serverless-batch"))
+    parser.add_argument("--s3-output-uri", default="")
+    parser.add_argument("--s3-endpoint-url", default="")
     args = parser.parse_args()
 
     output = args.output
@@ -96,6 +100,8 @@ def main() -> None:
         },
     }
     (output / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    if args.s3_output_uri:
+        _sync_to_s3(output, args.s3_output_uri, args.s3_endpoint_url)
     print(json.dumps(manifest, indent=2))
 
 
@@ -217,6 +223,19 @@ def _write_metrics(path: Path, rows: list[dict[str, Any]]) -> None:
         )
         writer.writeheader()
         writer.writerows(rows)
+
+
+def _sync_to_s3(output: Path, s3_output_uri: str, endpoint_url: str) -> None:
+    command = ["aws"]
+    if endpoint_url:
+        command.extend(["--endpoint-url", endpoint_url])
+    command.extend(["s3", "sync", str(output), s3_output_uri.rstrip("/"), "--only-show-errors"])
+    env = os.environ.copy()
+    env.setdefault("AWS_EC2_METADATA_DISABLED", "true")
+    completed = subprocess.run(command, capture_output=True, check=False, text=True, timeout=300, env=env)
+    if completed.returncode != 0:
+        details = (completed.stderr or completed.stdout or "").strip()
+        raise RuntimeError(f"S3 artifact upload failed: {details}")
 
 
 def _build_report(results: list[BatchResult], metrics: list[dict[str, Any]], batch_size: int) -> str:

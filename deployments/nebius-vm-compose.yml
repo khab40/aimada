@@ -1,0 +1,68 @@
+name: aimada-nebius-vm
+
+services:
+  agent-runner:
+    image: ${NEBIUS_AGENT_RUNNER_IMAGE}
+    pull_policy: always
+    restart: unless-stopped
+    environment:
+      AGENT_RUNNER_ID: ${AGENT_RUNNER_ID:-vm-runner-1}
+      AGENT_RUNNER_AGENT_COUNT: ${AGENT_RUNNER_AGENT_COUNT:-250}
+      AGENT_RUNNER_MAX_AGENT_COUNT: ${AGENT_RUNNER_MAX_AGENT_COUNT:-1000}
+      AGENT_RUNNER_HEAVY_AGENT_COUNT: ${AGENT_RUNNER_HEAVY_AGENT_COUNT:-0}
+      AGENT_RUNNER_MAX_HEAVY_AGENT_COUNT: ${AGENT_RUNNER_MAX_HEAVY_AGENT_COUNT:-8}
+      AGENT_RUNNER_HEAVY_AGENT_COMPLEXITY: ${AGENT_RUNNER_HEAVY_AGENT_COMPLEXITY:-20000}
+      AGENT_RUNNER_HEAVY_AGENT_WORKERS: ${AGENT_RUNNER_HEAVY_AGENT_WORKERS:-2}
+      AGENT_RUNNER_MAX_HEAVY_AGENT_WORKERS: ${AGENT_RUNNER_MAX_HEAVY_AGENT_WORKERS:-8}
+      AGENT_RUNNER_LANGGRAPH_AGENT_COUNT: ${AGENT_RUNNER_LANGGRAPH_AGENT_COUNT:-0}
+      AGENT_RUNNER_MAX_LANGGRAPH_AGENT_COUNT: ${AGENT_RUNNER_MAX_LANGGRAPH_AGENT_COUNT:-32}
+      AGENT_RUNNER_LANGGRAPH_STRATEGY: ${AGENT_RUNNER_LANGGRAPH_STRATEGY:-liquidity_rebalancer}
+      AGENT_RUNNER_AGENT_ID_PREFIX: ${AGENT_RUNNER_AGENT_ID_PREFIX:-REMOTE}
+      AGENT_RUNNER_DECISION_TIMEOUT_SECONDS: ${AGENT_RUNNER_DECISION_TIMEOUT_SECONDS:-0.05}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9100/health', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 10s
+
+  backend:
+    image: ${NEBIUS_BACKEND_IMAGE}
+    pull_policy: always
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      ARENA_OUTPUT_DIR: /app/outputs
+      ARENA_AGENT_COUNT: ${ARENA_AGENT_COUNT:-3}
+      ARENA_DATA_RETENTION_DAYS: ${ARENA_DATA_RETENTION_DAYS:-1}
+      ARENA_AGENT_DECISION_TIMEOUT_SECONDS: ${ARENA_AGENT_DECISION_TIMEOUT_SECONDS:-0.05}
+      ARENA_REMOTE_AGENT_URLS: ${ARENA_REMOTE_AGENT_URLS:-http://agent-runner:9100}
+      ARENA_REMOTE_AGENT_TIMEOUT_SECONDS: ${ARENA_REMOTE_AGENT_TIMEOUT_SECONDS:-0.05}
+    ports:
+      - "${NEBIUS_VM_BACKEND_PORT:-8000}:8000"
+    depends_on:
+      agent-runner:
+        condition: service_healthy
+    volumes:
+      - ./outputs:/app/outputs
+      - ./nebius:/root/.nebius:ro
+
+  frontend:
+    image: ${NEBIUS_FRONTEND_IMAGE}
+    pull_policy: always
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+      VITE_ARENA_MODE: websocket
+      VITE_ARENA_WS_URL: ${VITE_ARENA_WS_URL}
+      VITE_ENABLE_GOOGLE_AUTH: ${VITE_ENABLE_GOOGLE_AUTH:-false}
+      VITE_ENABLE_ADVANCED_ATTACK_CONTROLS: ${VITE_ENABLE_ADVANCED_ATTACK_CONTROLS:-false}
+      VITE_ENABLE_LEGACY_PAGES: ${VITE_ENABLE_LEGACY_PAGES:-false}
+    ports:
+      - "${NEBIUS_VM_FRONTEND_PORT:-80}:5173"
+    depends_on:
+      - backend

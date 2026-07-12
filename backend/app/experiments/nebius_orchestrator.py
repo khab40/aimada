@@ -45,8 +45,10 @@ class NebiusArtifactCollectionResponse(BaseModel):
     experiment_id: str
     status: Literal["collected", "cloud_artifacts_pending"]
     source_dir: str | None = None
+    source_uri: str | None = None
     artifact_dir: str
     artifact_paths: dict[str, str] = Field(default_factory=dict)
+    evidence_path: str | None = None
     copied_count: int = 0
     missing: list[str] = Field(default_factory=list)
     message: str
@@ -224,6 +226,7 @@ class NebiusExperimentOrchestrator:
         context = self._command_context(experiment=experiment, rendered_config_path=rendered_config_path)
         source_dir = self._find_mounted_output_dir(experiment, context)
         command_message = ""
+        source_uri = None
 
         if source_dir is None:
             artifacts_template = self._setting("nebius_job_artifacts_command_template")
@@ -240,6 +243,7 @@ class NebiusExperimentOrchestrator:
             elif self._setting("nebius_job_output_uri"):
                 try:
                     source_dir = self._sync_cloud_output_uri(context)
+                    source_uri = context["cloud_output_uri"]
                     command_message = "Nebius cloud output URI synced."
                 except RuntimeError as exc:
                     command_message = f"Nebius cloud output sync failed: {_redact(str(exc))}"
@@ -260,11 +264,22 @@ class NebiusExperimentOrchestrator:
             artifact_dir=artifact_dir,
             source_dir=source_dir,
         )
+        evidence_path = self._write_collection_evidence(
+            experiment=experiment,
+            source_dir=source_dir,
+            source_uri=source_uri or context.get("cloud_output_uri") or None,
+            normalized=normalized,
+            command_message=command_message,
+        )
         collected = not normalized.missing
         updated = experiment.model_copy(
             update={
                 "status": "completed" if collected else "cloud_artifacts_pending",
-                "artifact_paths": {**experiment.artifact_paths, **normalized.artifact_paths},
+                "artifact_paths": {
+                    **experiment.artifact_paths,
+                    **normalized.artifact_paths,
+                    "cloud_artifact_evidence": str(evidence_path),
+                },
                 "updated_at": utc_now(),
             }
         )
@@ -275,8 +290,10 @@ class NebiusExperimentOrchestrator:
             experiment_id=experiment.id,
             status="collected" if collected else "cloud_artifacts_pending",
             source_dir=str(source_dir),
+            source_uri=source_uri or context.get("cloud_output_uri") or None,
             artifact_dir=str(artifact_dir),
-            artifact_paths=normalized.artifact_paths,
+            artifact_paths={**normalized.artifact_paths, "cloud_artifact_evidence": str(evidence_path)},
+            evidence_path=str(evidence_path),
             copied_count=normalized.copied_count,
             missing=normalized.missing,
             message=(
@@ -345,6 +362,20 @@ class NebiusExperimentOrchestrator:
                     "artifact_paths": artifact_paths,
                 }
             )
+        if status == "completed" and self._setting("nebius_job_output_uri"):
+            collected = self.collect_artifacts(job.experiment_id)
+            if collected is not None and collected.status == "collected":
+                return job.model_copy(
+                    update={
+                        "status": "completed",
+                        "updated_at": now,
+                        "message": (
+                            "Nebius job completed; S3-compatible artifacts were synced and normalized "
+                            f"from {collected.source_uri or collected.source_dir}."
+                        ),
+                        "artifact_paths": {**artifact_paths, **collected.artifact_paths},
+                    }
+                )
         if status == "completed":
             return job.model_copy(
                 update={
@@ -410,6 +441,7 @@ class NebiusExperimentOrchestrator:
                 f"--batch-size {experiment.batch_size} "
                 f"--scenarios {','.join(experiment.scenarios)} "
                 f"--output /job/outputs/experiments/{experiment.id}/local-batch"
+                f"{self._job_s3_args(experiment.id)}"
             ),
             "subnet_id": self._settings_value("nebius_subnet_id"),
             "subnet_id_arg": self._optional_flag("--subnet-id", self._settings_value("nebius_subnet_id")),
@@ -425,6 +457,7 @@ class NebiusExperimentOrchestrator:
                 "--endpoint-url",
                 self._settings_value("nebius_object_storage_endpoint_url"),
             ),
+            "object_storage_env_args": self._object_storage_env_args(),
         }
 
     def _job_image(self) -> str:
@@ -455,11 +488,37 @@ class NebiusExperimentOrchestrator:
             return ""
         return f"{base_uri}/experiments/{experiment_id}/local-batch"
 
+    def _job_s3_args(self, experiment_id: str) -> str:
+        output_uri = self._cloud_output_uri(experiment_id)
+        if not output_uri.startswith("s3://"):
+            return ""
+        args = f" --s3-output-uri {shlex.quote(output_uri)}"
+        endpoint_url = self._settings_value("nebius_object_storage_endpoint_url")
+        if endpoint_url:
+            args += f" --s3-endpoint-url {shlex.quote(endpoint_url)}"
+        return args
+
+    def _object_storage_env_args(self) -> str:
+        flags = [
+            self._optional_env("AWS_ACCESS_KEY_ID", self._settings_value("nebius_object_storage_access_key_id")),
+            self._optional_env("AWS_SECRET_ACCESS_KEY", self._settings_value("nebius_object_storage_secret_access_key")),
+            self._optional_env("AWS_SESSION_TOKEN", self._settings_value("nebius_object_storage_session_token")),
+            self._optional_env("AWS_DEFAULT_REGION", self._settings_value("nebius_object_storage_region")),
+            self._optional_env("AWS_EC2_METADATA_DISABLED", "true"),
+        ]
+        return " ".join(flag for flag in flags if flag)
+
     @staticmethod
     def _optional_flag(flag: str, value: str) -> str:
         if not value.strip():
             return ""
         return f"{flag} {shlex.quote(value.strip())}"
+
+    @staticmethod
+    def _optional_env(name: str, value: str) -> str:
+        if not value.strip():
+            return ""
+        return f"--env {shlex.quote(f'{name}={value.strip()}')}"
 
     def _run_template_command(self, template: str, context: dict[str, str]) -> subprocess.CompletedProcess[str]:
         try:
@@ -509,11 +568,20 @@ class NebiusExperimentOrchestrator:
             aws = shutil.which("aws")
             if aws is None:
                 raise RuntimeError("aws CLI is required to sync s3:// Nebius job artifacts")
-            command = [aws, "s3", "sync", source_uri, str(destination), "--only-show-errors"]
+            command = [aws]
             endpoint_url = context.get("object_storage_endpoint_url", "").strip()
             if endpoint_url:
                 command.extend(["--endpoint-url", endpoint_url])
+            command.extend(["s3", "sync", source_uri, str(destination), "--only-show-errors"])
             env = os.environ.copy()
+            if self.settings is not None:
+                if self.settings.nebius_object_storage_access_key_id:
+                    env["AWS_ACCESS_KEY_ID"] = self.settings.nebius_object_storage_access_key_id
+                if self.settings.nebius_object_storage_secret_access_key:
+                    env["AWS_SECRET_ACCESS_KEY"] = self.settings.nebius_object_storage_secret_access_key
+                if self.settings.nebius_object_storage_session_token:
+                    env["AWS_SESSION_TOKEN"] = self.settings.nebius_object_storage_session_token
+                env["AWS_DEFAULT_REGION"] = self.settings.nebius_object_storage_region
             env.setdefault("AWS_EC2_METADATA_DISABLED", "true")
             completed = subprocess.run(
                 command,
@@ -540,6 +608,33 @@ class NebiusExperimentOrchestrator:
             elif item.is_file():
                 shutil.copy2(item, target)
         return destination
+
+    def _write_collection_evidence(
+        self,
+        *,
+        experiment: Experiment,
+        source_dir: Path,
+        source_uri: str | None,
+        normalized: ArtifactNormalizationResponse,
+        command_message: str,
+    ) -> Path:
+        artifact_dir = self.repository.experiment_dir(experiment.id)
+        evidence_path = artifact_dir / "cloud_artifact_evidence.json"
+        payload = {
+            "experiment_id": experiment.id,
+            "created_at": utc_now(),
+            "source_uri": _redact(source_uri or ""),
+            "source_dir": str(source_dir),
+            "artifact_dir": str(artifact_dir),
+            "copied_count": normalized.copied_count,
+            "missing": normalized.missing,
+            "artifact_paths": normalized.artifact_paths,
+            "message": command_message or "Nebius cloud artifacts collected from configured output.",
+            "object_storage_endpoint_url": self._settings_value("nebius_object_storage_endpoint_url"),
+        }
+        evidence_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        self.repository.store.append_jsonl("nebius/artifacts.jsonl", payload)
+        return evidence_path
 
     def _find_mounted_output_dir(
         self,

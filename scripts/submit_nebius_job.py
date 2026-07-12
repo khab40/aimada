@@ -16,11 +16,19 @@ def main() -> None:
     parser.add_argument("--platform", default=os.environ.get("NEBIUS_JOB_PLATFORM", "cpu-d3"))
     parser.add_argument("--preset", default=os.environ.get("NEBIUS_JOB_PRESET", "4vcpu-16gb"))
     parser.add_argument("--timeout", default=os.environ.get("NEBIUS_JOB_TIMEOUT", "1h"))
+    parser.add_argument("--s3-output-uri", default=os.environ.get("NEBIUS_JOB_OUTPUT_URI", ""))
+    parser.add_argument("--s3-endpoint-url", default=os.environ.get("NEBIUS_OBJECT_STORAGE_ENDPOINT_URL", ""))
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
     if not args.subnet_id:
         raise SystemExit("NEBIUS_SUBNET_ID or --subnet-id is required")
+
+    job_args = f"/job/serverless/jobs/run_batch_experiments.py --runs {args.runs} --batch-size {args.batch_size} --output /job/outputs/serverless-batch"
+    if args.s3_output_uri:
+        job_args += f" --s3-output-uri {args.s3_output_uri.rstrip('/')}/serverless-batch"
+    if args.s3_endpoint_url:
+        job_args += f" --s3-endpoint-url {args.s3_endpoint_url}"
 
     command = [
         "nebius",
@@ -34,7 +42,7 @@ def main() -> None:
         "--container-command",
         "python",
         "--args",
-        f"/job/serverless/jobs/run_batch_experiments.py --runs {args.runs} --batch-size {args.batch_size} --output /job/outputs/serverless-batch",
+        job_args,
         "--platform",
         args.platform,
         "--preset",
@@ -52,6 +60,14 @@ def main() -> None:
         command.extend(["--parent-id", args.parent_id])
     if os.environ.get("NEBIUS_VOLUME"):
         command.extend(["--volume", os.environ["NEBIUS_VOLUME"]])
+    if os.environ.get("NEBIUS_OBJECT_STORAGE_ACCESS_KEY_ID"):
+        command.extend(["--env", f"AWS_ACCESS_KEY_ID={os.environ['NEBIUS_OBJECT_STORAGE_ACCESS_KEY_ID']}"])
+    if os.environ.get("NEBIUS_OBJECT_STORAGE_SECRET_ACCESS_KEY"):
+        command.extend(["--env", f"AWS_SECRET_ACCESS_KEY={os.environ['NEBIUS_OBJECT_STORAGE_SECRET_ACCESS_KEY']}"])
+    if os.environ.get("NEBIUS_OBJECT_STORAGE_SESSION_TOKEN"):
+        command.extend(["--env", f"AWS_SESSION_TOKEN={os.environ['NEBIUS_OBJECT_STORAGE_SESSION_TOKEN']}"])
+    command.extend(["--env", f"AWS_DEFAULT_REGION={os.environ.get('NEBIUS_OBJECT_STORAGE_REGION', 'eu-north1')}"])
+    command.extend(["--env", "AWS_EC2_METADATA_DISABLED=true"])
 
     if args.dry_run:
         print(json.dumps({"command": command}, indent=2))

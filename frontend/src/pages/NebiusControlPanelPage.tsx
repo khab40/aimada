@@ -36,6 +36,7 @@ import {
   type MarketAbuseScenarioResponse,
   type ManagedExperiment,
   type ManagedExperimentCreateRequest,
+  type NebiusArtifactCollectionResponse,
   type NebiusObservatory,
   type NebiusStatus,
   type ReportsSummary,
@@ -209,6 +210,7 @@ export function NebiusControlPanelPage() {
   const [nebiusStatus, setNebiusStatus] = useState<NebiusStatus | null>(null);
   const [nebiusObservatory, setNebiusObservatory] = useState<NebiusObservatory | null>(null);
   const [deploymentPanelMessage, setDeploymentPanelMessage] = useState<string | null>(null);
+  const [cloudArtifactCollection, setCloudArtifactCollection] = useState<NebiusArtifactCollectionResponse | null>(null);
   const [runtimeMode, setRuntimeMode] = useState<RuntimeMode>(() => getStoredRuntimeMode());
   const [activeWorkflowStep, setActiveWorkflowStep] = useState(1);
 
@@ -418,6 +420,21 @@ export function NebiusControlPanelPage() {
       const refreshed = await refreshManagedExperimentJobs(experiment.id);
       setExperimentJobs(refreshed);
       const latest = latestExperimentJob(refreshed);
+      const evidencePath = latest?.artifact_paths.cloud_artifact_evidence;
+      if (evidencePath) {
+        setCloudArtifactCollection((current) => current ?? {
+          artifact_dir: experiment.artifact_dir,
+          artifact_paths: latest.artifact_paths,
+          copied_count: 0,
+          evidence_path: evidencePath,
+          experiment_id: experiment.id,
+          message: "Nebius cloud artifact evidence is available from the latest job refresh.",
+          missing: [],
+          source_dir: null,
+          source_uri: null,
+          status: "collected"
+        });
+      }
       setDeploymentPanelMessage(latest ? `Latest cloud job status: ${latest.status.replaceAll("_", " ")}` : "No job records yet.");
       await refreshExperimentDetails(experiment.id);
     });
@@ -427,6 +444,7 @@ export function NebiusControlPanelPage() {
     if (!experiment) return;
     await runExperimentAction("collect-cloud-artifacts", async () => {
       const result = await collectManagedExperimentNebiusArtifacts(experiment.id);
+      setCloudArtifactCollection(result);
       setDeploymentPanelMessage(result.status === "collected" ? `Collected ${result.copied_count} cloud artifacts.` : result.message);
       await refreshExperimentDetails(experiment.id);
     });
@@ -663,6 +681,7 @@ export function NebiusControlPanelPage() {
             jobs={experimentJobs}
             message={deploymentPanelMessage}
             observatory={nebiusObservatory}
+            cloudArtifactCollection={cloudArtifactCollection}
             onCollectArtifacts={() => void collectExperimentCloudArtifacts()}
             onRefreshJobStatus={() => void refreshExperimentJobStatus()}
             onRenderJobConfig={() => void renderExperimentJobConfig()}
@@ -810,6 +829,7 @@ function ServerlessSmokeDemoPanel({
 }) {
   const jobStatus = String(result?.serverless_job.status ?? "not run");
   const jobId = result?.serverless_job.job_id ? String(result.serverless_job.job_id) : "pending";
+  const cloudOutputUri = result?.serverless_job.cloud_output_uri ? String(result.serverless_job.cloud_output_uri) : "not configured";
   return (
     <section className="panel serverless-smoke-panel" aria-label="Nebius Serverless E2E demo">
       <div className="nebius-card-heading">
@@ -837,6 +857,7 @@ function ServerlessSmokeDemoPanel({
             <MetricBlock label="Detector alerts" value={String(result.detector_alerts.length)} />
             <MetricBlock label="Job status" value={jobStatus.replaceAll("_", " ")} />
             <MetricBlock label="Job id" value={jobId} />
+            <MetricBlock label="Cloud artifacts" value={cloudOutputUri} />
           </InfrastructureMetricGrid>
           <div className="experiment-output-grid">
             <div className="nebius-result-block">
@@ -1506,6 +1527,7 @@ function ExperimentLab({
 
 function RealNebiusDeploymentPanel({
   busyAction,
+  cloudArtifactCollection,
   experiment,
   jobs,
   message,
@@ -1517,6 +1539,7 @@ function RealNebiusDeploymentPanel({
   status
 }: {
   busyAction: ExperimentAction | null;
+  cloudArtifactCollection: NebiusArtifactCollectionResponse | null;
   experiment: ManagedExperiment | null;
   jobs: ExperimentJobRecord[];
   message: string | null;
@@ -1533,6 +1556,8 @@ function RealNebiusDeploymentPanel({
   const hasExperiment = Boolean(experiment);
   const canSubmitJob = hasExperiment && Boolean(status?.job_submit_template_configured);
   const noJobLabel = status?.job_submit_template_configured ? "ready to submit" : "no cloud job";
+  const evidencePath = cloudArtifactCollection?.evidence_path ?? experiment?.artifact_paths.cloud_artifact_evidence;
+  const sourceLabel = cloudArtifactCollection?.source_uri ?? cloudArtifactCollection?.source_dir ?? "waiting for cloud output";
 
   return (
     <section className="experiment-lab-panel real-nebius-deployment-panel">
@@ -1576,6 +1601,7 @@ function RealNebiusDeploymentPanel({
           value={cloudJob ? `${cloudJob.status.replaceAll("_", " ")} · ${cloudJob.job_id}` : noJobLabel}
         />
         <MetricBlock label="Artifact collection" value={artifactCollectionStatus(experiment)} />
+        <MetricBlock label="Artifact source" value={sourceLabel} />
       </div>
 
       <div className="nebius-button-row">
@@ -1624,6 +1650,11 @@ function RealNebiusDeploymentPanel({
         </p>
       ) : null}
       {cloudJob?.message ? <p className="experiment-message">{cloudJob.message}</p> : null}
+      {evidencePath ? (
+        <p className="experiment-message">
+          Cloud evidence: <a href={artifactDownloadUrl(evidencePath)} target="_blank" rel="noreferrer">cloud_artifact_evidence.json</a>
+        </p>
+      ) : null}
       {message ? <p className="experiment-message">{message}</p> : null}
     </section>
   );

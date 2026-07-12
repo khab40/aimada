@@ -59,6 +59,22 @@ class Settings(BaseSettings):
         default=None,
         alias="NEBIUS_OBJECT_STORAGE_ENDPOINT_URL",
     )
+    nebius_object_storage_access_key_id: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("NEBIUS_OBJECT_STORAGE_ACCESS_KEY_ID", "AWS_ACCESS_KEY_ID"),
+    )
+    nebius_object_storage_secret_access_key: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("NEBIUS_OBJECT_STORAGE_SECRET_ACCESS_KEY", "AWS_SECRET_ACCESS_KEY"),
+    )
+    nebius_object_storage_session_token: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("NEBIUS_OBJECT_STORAGE_SESSION_TOKEN", "AWS_SESSION_TOKEN"),
+    )
+    nebius_object_storage_region: str = Field(
+        default="eu-north1",
+        validation_alias=AliasChoices("NEBIUS_OBJECT_STORAGE_REGION", "AWS_DEFAULT_REGION"),
+    )
     nebius_job_submit_command_template: str | None = Field(
         default=None,
         alias="NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE",
@@ -149,11 +165,19 @@ class Settings(BaseSettings):
         alias="ARENA_TICK_HISTORY_INTERVAL",
     )
     arena_persist_all_events: bool = Field(default=False, alias="ARENA_PERSIST_ALL_EVENTS")
+    cors_allowed_origins: str = Field(
+        default="http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174",
+        alias="CORS_ALLOWED_ORIGINS",
+    )
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
 
     @property
     def remote_agent_url_list(self) -> list[str]:
         return [url.strip() for url in self.arena_remote_agent_urls.split(",") if url.strip()]
+
+    @property
+    def cors_allowed_origin_list(self) -> list[str]:
+        return [origin.strip() for origin in self.cors_allowed_origins.split(",") if origin.strip()]
 
     @property
     def nebius_explain_endpoint_url(self) -> str | None:

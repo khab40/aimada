@@ -173,6 +173,8 @@ export type ArtifactNormalizationResponse = {
 export type NebiusArtifactCollectionResponse = ArtifactNormalizationResponse & {
   status: "collected" | "cloud_artifacts_pending";
   source_dir?: string | null;
+  source_uri?: string | null;
+  evidence_path?: string | null;
   message: string;
 };
 

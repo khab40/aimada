@@ -90,6 +90,69 @@ SMOKE=true IMAGE_NAMESPACE=ghcr.io/<your-org> TAG=<tag> ./scripts/build-serverle
 PUSH=true IMAGE_NAMESPACE=ghcr.io/<your-org> TAG=<tag> ./scripts/build-serverless-images.sh
 ```
 
+## Recommended Partial Nebius Deployment
+
+For the current project shape, deploy only the AI execution surfaces to Nebius:
+
+- Nebius AI Endpoint: GPU H100 local-vLLM inference for `/orderbook-alert`,
+  `/investigation-report`, and related explanation routes.
+- Nebius Serverless Jobs: on-demand detector tournaments and batch experiment
+  runs using the pushed jobs image.
+- Local Docker Compose: frontend, FastAPI backend, and agent-runner remain local
+  by default.
+
+This is the best current split because the expensive and Nebius-specific work is
+model inference and batch execution. The UI/backend/agent-runner are lightweight,
+stateful, and still use local artifact paths; moving them to cloud infrastructure
+adds operational work before it adds demo value.
+
+Use the partial deployment helper:
+
+```bash
+export IMAGE_NAMESPACE=ghcr.io/<your-org>
+export TAG=<tag>
+export NEBIUS_SUBNET_ID=<vpc-subnet-id>
+export NEBIUS_PARENT_ID=<project-id>
+export ENDPOINT_TOKEN=<endpoint-bearer-token>
+
+./scripts/deploy-nebius-partial.sh --dry-run
+./scripts/deploy-nebius-partial.sh
+```
+
+Default targets are `images,endpoint,backend-env`. The script builds and pushes
+both serverless images, creates or reuses the GPU endpoint, and writes sourceable
+backend wiring to:
+
+```text
+outputs/deployments/nebius-partial-latest.env
+```
+
+To wire local Compose to the cloud endpoint and job image:
+
+```bash
+set -a
+. outputs/deployments/nebius-partial-latest.env
+set +a
+docker compose up -d --build
+```
+
+Serverless Jobs do not need a long-running deployment. The jobs image is pushed
+now; actual jobs are submitted on demand from the backend experiment flow. To
+submit one sample job from the helper, opt in explicitly:
+
+```bash
+./scripts/deploy-nebius-partial.sh --sample-job
+```
+
+If you later need a public cloud-hosted app, prefer one small Nebius VM running
+Docker Compose behind TLS before Kubernetes. A VM is enough for this app because
+the backend has WebSockets, local artifact writes, and a single demo operator
+profile. Move to Managed Kubernetes only after you need multi-user scale,
+rolling deploys, separate worker pools, or HA. A generic serverless web-container
+layer would make sense only if it supports WebSockets, persistent artifacts, and
+the Nebius CLI/config needed by the backend; otherwise it creates more friction
+than value for this repo today.
+
 Then create the endpoint and job:
 
 ```bash
@@ -271,10 +334,13 @@ The command-template adapter lives only in `backend/app/experiments/nebius_orche
 | `NEBIUS_JOB_STATUS_COMMAND_TEMPLATE` | Refreshes queued/running jobs. |
 | `NEBIUS_JOB_LOGS_COMMAND_TEMPLATE` | Optional logs collection command. |
 | `NEBIUS_JOB_ARTIFACTS_COMMAND_TEMPLATE` | Optional artifacts collection command. |
+| `NEBIUS_JOB_OUTPUT_URI` | Optional S3-compatible artifact root, for example `s3://bucket/aimada`. |
+| `NEBIUS_OBJECT_STORAGE_ENDPOINT_URL` | Nebius S3-compatible endpoint, for example `https://storage.eu-north1.nebius.cloud`. |
+| `NEBIUS_OBJECT_STORAGE_ACCESS_KEY_ID` / `NEBIUS_OBJECT_STORAGE_SECRET_ACCESS_KEY` | Object Storage credentials used by the job container to upload artifacts and by the backend to sync them. |
 
-Supported template variables are `{config_path}`, `{experiment_id}`, `{job_id}`, `{image}`, `{output_dir}`, `{subnet_id_arg}`, `{parent_id_arg}`, and `{volume_arg}`. Command stdout/stderr is redacted before persistence. A job is not marked `completed` just because submission succeeded; refresh only marks it completed after status reports completion and artifact collection succeeds.
+Supported template variables are `{config_path}`, `{experiment_id}`, `{job_id}`, `{image}`, `{output_dir}`, `{job_args}`, `{subnet_id_arg}`, `{parent_id_arg}`, `{volume_arg}`, `{cloud_output_uri}`, `{object_storage_endpoint_url_arg}`, and `{object_storage_env_args}`. Command stdout/stderr is redacted before persistence. A job is not marked `completed` just because submission succeeded; refresh only marks it completed after status reports completion and artifact collection succeeds.
 
-`POST /api/experiments/{id}/collect-nebius-artifacts` collects the existing job output format from mounted output, or executes `NEBIUS_JOB_ARTIFACTS_COMMAND_TEMPLATE` and then scans the mounted output. It expects these files: `order_book_events.jsonl`, `trades.jsonl`, `attack_labels.jsonl`, `blue_team_alerts.jsonl`, `detector_metrics.csv`, `generated_report.md`, and `manifest.json`. The backend copies only files that exist into the canonical experiment layout and writes `artifact_index.json`; if no collection source is available, the experiment status becomes `cloud_artifacts_pending`.
+`POST /api/experiments/{id}/collect-nebius-artifacts` collects the existing job output format from mounted output, executes `NEBIUS_JOB_ARTIFACTS_COMMAND_TEMPLATE`, or syncs `{NEBIUS_JOB_OUTPUT_URI}/experiments/{id}/local-batch` with `aws s3 sync --endpoint-url`. It expects these files: `order_book_events.jsonl`, `trades.jsonl`, `attack_labels.jsonl`, `blue_team_alerts.jsonl`, `detector_metrics.csv`, `generated_report.md`, and `manifest.json`. The backend copies only files that exist into the canonical experiment layout, writes `artifact_index.json`, writes `cloud_artifact_evidence.json`, and exposes those files to the UI through existing artifact download endpoints; if no collection source is available, the experiment status becomes `cloud_artifacts_pending`.
 
 Do not treat the local batch path, a queued submit record, or `real_nebius_pending` records as evidence of completed real cloud execution. Archive Nebius job logs, metrics, and produced artifacts before making cloud execution claims.
 

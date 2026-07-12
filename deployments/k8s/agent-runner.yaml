@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: agent-runner
+  namespace: aimada
+spec:
+  serviceName: agent-runner
+  replicas: 2
+  selector:
+    matchLabels:
+      app: agent-runner
+  template:
+    metadata:
+      labels:
+        app: agent-runner
+    spec:
+      containers:
+        - name: agent-runner
+          image: ghcr.io/khab40/ai-market-abuse-detection-arena-agent-runner:k8s
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: aimada-config
+          env:
+            - name: AGENT_RUNNER_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: AGENT_RUNNER_AGENT_ID_PREFIX
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          ports:
+            - containerPort: 9100
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 9100
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9100
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2"
+              memory: "2Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: agent-runner
+  namespace: aimada
+spec:
+  clusterIP: None
+  selector:
+    app: agent-runner
+  ports:
+    - name: http
+      port: 9100
+      targetPort: 9100

@@ -150,6 +150,8 @@ async def run_serverless_smoke_demo(
             "detector_alert_count": len(detector_alerts),
             "tournament_id": local_tournament.tournament_id,
             "serverless_job_status": serverless_job["status"],
+            "serverless_job_output_uri": serverless_job.get("cloud_output_uri"),
+            "artifact_collection_configured": serverless_job.get("artifact_collection_configured"),
             "normal_baseline": "Covered by local simulation events and false-positive fields in tournament rows.",
         },
         "scenario.json": scenario.model_dump(mode="json"),
@@ -171,6 +173,8 @@ async def run_serverless_smoke_demo(
             "required_modes": ["local", "real_nebius_pending", "real_nebius", "error"],
             "job_templates_configured": _job_submit_configured(settings),
             "artifact_collection_configured": _artifact_collection_configured(settings),
+            "job_output_uri": getattr(settings, "nebius_job_output_uri", None),
+            "object_storage_endpoint_url": getattr(settings, "nebius_object_storage_endpoint_url", None),
         },
     }
     for name, payload in artifact_payloads.items():
@@ -272,6 +276,7 @@ def _serverless_job_status(
             "local_tournament_id": tournament.tournament_id,
             "templates_configured": False,
             "artifact_collection_configured": artifact_collection_configured,
+            "cloud_output_uri": _cloud_output_uri(settings),
         }
     if cloud_tournament is not None:
         return {
@@ -283,6 +288,7 @@ def _serverless_job_status(
             "cloud_tournament_id": cloud_tournament.tournament_id,
             "templates_configured": True,
             "artifact_collection_configured": artifact_collection_configured,
+            "cloud_output_uri": _cloud_output_uri(settings),
             "artifacts": cloud_tournament.artifacts,
         }
     return {
@@ -293,6 +299,7 @@ def _serverless_job_status(
         "local_tournament_id": tournament.tournament_id,
         "templates_configured": True,
         "artifact_collection_configured": artifact_collection_configured,
+        "cloud_output_uri": _cloud_output_uri(settings),
     }
 
 
@@ -309,6 +316,13 @@ def _artifact_collection_configured(settings: Any) -> bool:
         settings.nebius_job_artifacts_command_template
         or getattr(settings, "nebius_job_output_uri", None)
     )
+
+
+def _cloud_output_uri(settings: Any) -> str | None:
+    base_uri = str(getattr(settings, "nebius_job_output_uri", "") or "").rstrip("/")
+    if not base_uri:
+        return None
+    return f"{base_uri}/tournaments"
 
 
 def _cloud_job_message(
