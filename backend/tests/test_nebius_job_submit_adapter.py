@@ -7,6 +7,8 @@ from app.experiments.models import Experiment, utc_now
 from app.experiments.nebius_orchestrator import (
     NebiusExperimentOrchestrator,
     _parse_job_id,
+    _parse_job_status,
+    _redact,
 )
 from app.experiments.repository import ExperimentRepository
 from app.storage.local_store import LocalStore
@@ -211,6 +213,27 @@ def test_parse_job_id_from_json_and_text() -> None:
     assert _parse_job_id('{"metadata":{"jobId":"job-nested"}}') == "job-nested"
     assert _parse_job_id("created job id: job-text-123") == "job-text-123"
     assert _parse_job_id("submitted NEB-ABC123") == "NEB-ABC123"
+
+
+def test_parse_job_status_accepts_current_nebius_nested_state() -> None:
+    assert _parse_job_status('{"status":{"state":"COMPLETED"}}') == "completed"
+    assert _parse_job_status('{"status":{"state":"PROVISIONING"}}') is None
+
+
+def test_redact_removes_object_storage_credentials_from_cli_output() -> None:
+    raw = (
+        '{"environment_variables":['
+        '{"name":"AWS_ACCESS_KEY_ID","value":"access-value"},'
+        '{"name":"AWS_SECRET_ACCESS_KEY","value":"secret-value"}]}'
+        " AWS_SESSION_TOKEN=session-value"
+    )
+
+    redacted = _redact(raw)
+
+    assert "access-value" not in redacted
+    assert "secret-value" not in redacted
+    assert "session-value" not in redacted
+    assert redacted.count("[REDACTED]") == 3
 
 
 def _repository_with_experiment(tmp_path: Path) -> ExperimentRepository:

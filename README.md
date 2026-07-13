@@ -4,6 +4,16 @@
 
 ![AI Market Abuse Detection Arena GitHub banner](assets/img/ai-mada.jpg)
 
+<p align="center">
+  <a href="https://github.com/nebius"><img src="https://img.shields.io/badge/Nebius-Serverless_AI-6C47FF?logo=nebius&amp;logoColor=white" alt="Nebius Serverless AI"></a>
+  <a href="https://github.com/python/cpython"><img src="https://img.shields.io/badge/Python-3.11-3776AB?logo=python&amp;logoColor=white" alt="Python 3.11"></a>
+  <a href="https://github.com/fastapi/fastapi"><img src="https://img.shields.io/badge/FastAPI-Backend-009688?logo=fastapi&amp;logoColor=white" alt="FastAPI backend"></a>
+  <a href="https://github.com/facebook/react"><img src="https://img.shields.io/badge/React-Frontend-61DAFB?logo=react&amp;logoColor=black" alt="React frontend"></a>
+  <a href="https://github.com/vitejs/vite"><img src="https://img.shields.io/badge/Vite-Build-646CFF?logo=vite&amp;logoColor=white" alt="Vite build tooling"></a>
+  <a href="https://github.com/langchain-ai/langgraph"><img src="https://img.shields.io/badge/LangGraph-Agents-1C3C3C?logo=langchain&amp;logoColor=white" alt="LangGraph agents"></a>
+  <a href="https://github.com/docker/compose"><img src="https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&amp;logoColor=white" alt="Docker Compose"></a>
+</p>
+
 AIMADA is a Nebius AI Serverless-first market surveillance command center for synthetic market-abuse workloads. The Arena generates suspicious market activity; Nebius AI Serverless investigates incidents, generates scenarios, and runs detector tournaments.
 
 Nebius value is visible in the first demo minute:
@@ -390,6 +400,13 @@ export NEBIUS_JOB_IMAGE=ghcr.io/<your-org>/ai-market-abuse-detection-arena-jobs:
 
 ./scripts/create-nebius-ai-endpoint.sh
 ./scripts/create-nebius-ai-job.sh
+
+# Optional durable Job artifacts: private bucket -> backend -> UI.
+./scripts/configure-nebius-artifact-storage.sh \
+  --project-id "${NEBIUS_PARENT_ID}" \
+  --tenant-id <tenant-id> \
+  --bucket-name <globally-unique-bucket-name> \
+  --apply --restart
 ```
 
 Nebius H100 endpoint with local vLLM:

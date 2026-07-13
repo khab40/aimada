@@ -6,10 +6,11 @@ ENV_FILE="${ROOT_DIR}/.env"
 IMPORT_FILE=""
 APPLY=false
 RESTART=false
+ENDPOINT_ONLY=false
 
 usage() {
   printf '%s\n' \
-    "Usage: $0 [--env-file PATH] [--import-env PATH] [--apply] [--restart]" \
+    "Usage: $0 [--env-file PATH] [--import-env PATH] [--endpoint-only] [--apply] [--restart]" \
     "" \
     "Generates new AIMADA_JWT_SECRET and ENDPOINT_TOKEN values." \
     "--import-env accepts only GOOGLE_CLIENT_SECRET and Nebius Object Storage keys." \
@@ -20,6 +21,7 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --env-file) ENV_FILE="$2"; shift 2 ;;
     --import-env) IMPORT_FILE="$2"; shift 2 ;;
+    --endpoint-only) ENDPOINT_ONLY=true; shift ;;
     --apply) APPLY=true; shift ;;
     --restart) RESTART=true; shift ;;
     -h|--help) usage; exit 0 ;;
@@ -34,8 +36,13 @@ command -v openssl >/dev/null 2>&1 || { printf '%s\n' 'openssl is required' >&2;
 
 JWT_SECRET="$(openssl rand -base64 48 | tr -d '\n')"
 ENDPOINT_TOKEN_VALUE="$(openssl rand -hex 32)"
-ROTATION_KEYS=(AIMADA_JWT_SECRET ENDPOINT_TOKEN)
-ROTATION_VALUES=("${JWT_SECRET}" "${ENDPOINT_TOKEN_VALUE}")
+if [[ "${ENDPOINT_ONLY}" == "true" ]]; then
+  ROTATION_KEYS=(ENDPOINT_TOKEN)
+  ROTATION_VALUES=("${ENDPOINT_TOKEN_VALUE}")
+else
+  ROTATION_KEYS=(AIMADA_JWT_SECRET ENDPOINT_TOKEN)
+  ROTATION_VALUES=("${JWT_SECRET}" "${ENDPOINT_TOKEN_VALUE}")
+fi
 
 if [[ -n "${IMPORT_FILE}" ]]; then
   while IFS='=' read -r key value || [[ -n "${key:-}" ]]; do

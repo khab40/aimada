@@ -4,10 +4,13 @@ import os
 from pathlib import Path
 import subprocess
 
+import yaml
+
 
 ROOT = Path(__file__).resolve().parents[2]
 ROTATE = ROOT / "scripts" / "rotate-secrets.sh"
 CHECK = ROOT / "scripts" / "check-secrets.sh"
+CONFIGURE_ARTIFACTS = ROOT / "scripts" / "configure-nebius-artifact-storage.sh"
 
 
 def _run(script: Path, *args: str) -> subprocess.CompletedProcess[str]:
@@ -82,6 +85,28 @@ def test_rotation_rejects_unknown_import_key(tmp_path: Path) -> None:
     assert "not allowed" in result.stderr
 
 
+def test_endpoint_only_rotation_preserves_jwt_secret(tmp_path: Path) -> None:
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "AIMADA_JWT_SECRET=keep-jwt\nENDPOINT_TOKEN=old-token\n",
+        encoding="utf-8",
+    )
+
+    result = _run(
+        ROTATE,
+        "--env-file",
+        str(env_file),
+        "--endpoint-only",
+        "--apply",
+    )
+
+    updated = env_file.read_text(encoding="utf-8")
+    assert result.returncode == 0
+    assert "AIMADA_JWT_SECRET=keep-jwt" in updated
+    assert "ENDPOINT_TOKEN=old-token" not in updated
+    assert "keep-jwt" not in result.stdout
+
+
 def test_check_accepts_rotated_temp_env(tmp_path: Path) -> None:
     env_file = tmp_path / ".env"
 
@@ -106,3 +131,56 @@ def test_check_accepts_rotated_temp_env(tmp_path: Path) -> None:
         f"stderr:\n{result.stderr}"
     )
     assert "Secret checks passed" in result.stdout
+
+
+def test_artifact_storage_dry_run_does_not_modify_env(tmp_path: Path) -> None:
+    env_file = tmp_path / ".env"
+    original = "KEEP=value\n"
+    env_file.write_text(original, encoding="utf-8")
+
+    result = _run(
+        CONFIGURE_ARTIFACTS,
+        "--env-file",
+        str(env_file),
+        "--project-id",
+        "project-test",
+        "--tenant-id",
+        "tenant-test",
+        "--bucket-name",
+        "aimada-test-artifacts",
+    )
+
+    assert result.returncode == 0
+    assert env_file.read_text(encoding="utf-8") == original
+    assert "Dry-run only" in result.stdout
+
+
+def test_artifact_storage_requires_apply_before_restart(tmp_path: Path) -> None:
+    env_file = tmp_path / ".env"
+    env_file.write_text("KEEP=value\n", encoding="utf-8")
+
+    result = _run(
+        CONFIGURE_ARTIFACTS,
+        "--env-file",
+        str(env_file),
+        "--project-id",
+        "project-test",
+        "--tenant-id",
+        "tenant-test",
+        "--bucket-name",
+        "aimada-test-artifacts",
+        "--restart",
+    )
+
+    assert result.returncode == 2
+    assert "--restart requires --apply" in result.stderr
+
+
+def test_real_nebius_compose_passes_object_storage_credentials() -> None:
+    compose = yaml.safe_load((ROOT / "docker-compose.nebius.yml").read_text(encoding="utf-8"))
+    environment = compose["services"]["backend"]["environment"]
+
+    assert "NEBIUS_OBJECT_STORAGE_ACCESS_KEY_ID" in environment
+    assert "NEBIUS_OBJECT_STORAGE_SECRET_ACCESS_KEY" in environment
+    assert "NEBIUS_OBJECT_STORAGE_SESSION_TOKEN" in environment
+    assert "NEBIUS_OBJECT_STORAGE_REGION" in environment

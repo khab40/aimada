@@ -5,6 +5,7 @@ from types import ModuleType
 from typing import Any
 
 from app.config import Settings
+from app.nebius.client import _job_artifact_collection_configured
 
 
 def test_backend_settings_reads_endpoint_token(monkeypatch: Any) -> None:
@@ -65,6 +66,27 @@ def test_backend_settings_derives_investigation_team_endpoint_from_base_url(monk
     settings = Settings(_env_file=None)
 
     assert settings.nebius_investigation_team_endpoint_url == "https://endpoint.example/investigation-team"
+
+
+def test_s3_artifact_status_requires_credentials_forwarded_to_job() -> None:
+    base = {
+        "_env_file": None,
+        "NEBIUS_JOB_OUTPUT_URI": "s3://aimada-artifacts/aimada",
+        "NEBIUS_OBJECT_STORAGE_ACCESS_KEY_ID": "access-key",
+        "NEBIUS_OBJECT_STORAGE_SECRET_ACCESS_KEY": "secret-key",
+    }
+
+    missing_forwarder = Settings(
+        **base,
+        NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE="nebius ai job create --args {job_args}",
+    )
+    configured = Settings(
+        **base,
+        NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE="nebius ai job create --args {job_args} {object_storage_env_args}",
+    )
+
+    assert _job_artifact_collection_configured(missing_forwarder) is False
+    assert _job_artifact_collection_configured(configured) is True
 
 
 def test_serverless_endpoint_local_vllm_base_url_uses_explicit_value(monkeypatch: Any) -> None:

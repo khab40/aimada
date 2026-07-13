@@ -185,6 +185,24 @@ jobs:
       - name: Validate Compose configuration
         run: docker compose config --quiet
 
+      - name: Verify local mode ignores cloud command templates
+        env:
+          NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE: should-not-run
+          NEBIUS_JOB_STATUS_COMMAND_TEMPLATE: should-not-run
+          NEBIUS_JOB_LOGS_COMMAND_TEMPLATE: should-not-run
+          NEBIUS_JOB_ARTIFACTS_COMMAND_TEMPLATE: should-not-run
+        run: |
+          docker compose config --format json | jq -e '
+            .services.backend.environment as $env
+            | [
+                $env.NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE,
+                $env.NEBIUS_JOB_STATUS_COMMAND_TEMPLATE,
+                $env.NEBIUS_JOB_LOGS_COMMAND_TEMPLATE,
+                $env.NEBIUS_JOB_ARTIFACTS_COMMAND_TEMPLATE
+              ]
+            | all(. == "")
+          '
+
   secret-scan:
     name: Scan repository history for secrets
     runs-on: ubuntu-latest

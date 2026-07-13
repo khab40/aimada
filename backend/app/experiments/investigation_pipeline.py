@@ -40,6 +40,11 @@ def run_batch_investigations(
 ) -> InvestigationRunResponse:
     alerts_path = _alerts_path(artifact_dir)
     alerts = _read_jsonl(alerts_path)
+    if not alerts:
+        raise ValueError(
+            "No detector alerts are available. Run the local batch or collect and normalize "
+            "completed Nebius Job artifacts before generating investigations."
+        )
     selected = _top_alerts(alerts, top_k=top_k)
     output_dir = artifact_dir / "investigations"
     output_dir.mkdir(parents=True, exist_ok=True)

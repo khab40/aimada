@@ -514,32 +514,22 @@ def generate_market_abuse_scenario(request: MarketAbuseScenarioGenerationRequest
     model_response = _call_model_json(
         system_prompt=(
             JSON_ONLY_INSTRUCTION
-            + "You generate bounded educational synthetic market-abuse scenarios for an order-book simulator. "
-            "Return a JSON object with exactly these keys: "
-            "scenario_id, title, description, manipulation_type, difficulty, symbol, duration_ticks, "
-            "liquidity_regime, volatility_regime, ground_truth, events, expected_detector_behavior, "
-            "explanation, replay, source. "
-            "events must be an array of objects using these Arena AgentEvent-compatible fields: "
-            "event_id, tick, event_type, type, agent_id, symbol, scenario_id, scenario_name, "
-            "scenario_family, stage, message, side, price, quantity, order_id, metadata. "
-            "ground_truth, expected_detector_behavior, replay, and source must be objects. "
+            + "You explain a bounded educational synthetic market-abuse scenario for an order-book simulator. "
+            "Return a compact JSON object with exactly these string keys: title, description, explanation. "
+            "The simulator, labels, event schedule, replay route, and detector targets are supplied separately "
+            "by deterministic code and must not be recreated. "
             "Use synthetic educational data only and do not provide real manipulation instructions."
         ),
-        user_payload=request.model_dump(mode="json"),
+        user_payload={
+            "task": "Describe the bounded synthetic scenario without changing its deterministic contract.",
+            "scenario": request.model_dump(mode="json"),
+        },
     )
     payload = _validated_model_payload(
         model_response,
         {
-            "scenario_id": str,
             "title": str,
             "description": str,
-            "manipulation_type": str,
-            "difficulty": str,
-            "symbol": str,
-            "duration_ticks": "number",
-            "ground_truth": dict,
-            "events": list,
-            "expected_detector_behavior": dict,
             "explanation": str,
         },
     )
@@ -1201,30 +1191,28 @@ def _merge_market_abuse_scenario_response(
     response: dict[str, Any],
     model_result: ModelCallResult,
 ) -> MarketAbuseScenarioResponse:
-    try:
-        events = [ScenarioEvent.model_validate(item) for item in response.get("events", []) if isinstance(item, dict)]
-    except ValueError:
-        events = []
     merged = MarketAbuseScenarioResponse(
-        scenario_id=str(response.get("scenario_id") or fallback.scenario_id),
+        scenario_id=fallback.scenario_id,
         title=str(response.get("title") or fallback.title),
         description=str(response.get("description") or fallback.description),
-        manipulation_type=str(response.get("manipulation_type") or fallback.manipulation_type),
-        difficulty=str(response.get("difficulty") or fallback.difficulty),
-        symbol=str(response.get("symbol") or fallback.symbol).upper(),
-        duration_ticks=int(response.get("duration_ticks") or fallback.duration_ticks),
-        liquidity_regime=str(response.get("liquidity_regime") or fallback.liquidity_regime),
-        volatility_regime=str(response.get("volatility_regime") or fallback.volatility_regime),
-        ground_truth=response.get("ground_truth") if isinstance(response.get("ground_truth"), dict) else fallback.ground_truth,
-        events=events or fallback.events,
-        expected_detector_behavior=(
-            response.get("expected_detector_behavior")
-            if isinstance(response.get("expected_detector_behavior"), dict)
-            else fallback.expected_detector_behavior
-        ),
+        manipulation_type=fallback.manipulation_type,
+        difficulty=fallback.difficulty,
+        symbol=fallback.symbol,
+        duration_ticks=fallback.duration_ticks,
+        liquidity_regime=fallback.liquidity_regime,
+        volatility_regime=fallback.volatility_regime,
+        ground_truth=fallback.ground_truth,
+        events=fallback.events,
+        expected_detector_behavior=fallback.expected_detector_behavior,
         explanation=str(response.get("explanation") or fallback.explanation),
-        replay=response.get("replay") if isinstance(response.get("replay"), dict) else fallback.replay,
-        source=response.get("source") if isinstance(response.get("source"), dict) else fallback.source,
+        replay=fallback.replay,
+        source={
+            "mode": "nebius",
+            "provider": "nebius_serverless",
+            "endpoint": "/generate-market-abuse-scenario",
+            "model": model_result.model,
+            "model_mode": model_result.model_mode,
+        },
         disclaimer=str(response.get("disclaimer") or DISCLAIMER),
     )
     return _with_model_metadata(merged, model_result)

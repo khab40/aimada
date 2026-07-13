@@ -14,6 +14,7 @@ from typing import Any
 def _add_backend_to_path() -> None:
     here = Path(__file__).resolve()
     candidates = [
+        here.parents[2],
         here.parents[2] / "backend",
         Path.cwd() / "backend",
         Path("/job/backend"),

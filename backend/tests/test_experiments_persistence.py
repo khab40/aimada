@@ -4,6 +4,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import yaml
+import pytest
 
 from app.api.routes_experiments import (
     AttackExperimentRequest,
@@ -437,6 +438,26 @@ def test_run_investigations_uses_mocked_nebius_client_for_top_alerts(tmp_path: P
     assert investigation_metric["investigation_mode"] == "mock"
     assert "endpoint_avg_latency_seconds" in investigation_metric
     assert refreshed.artifact_paths["investigations"] == str(tmp_path / "experiments" / experiment.id / "investigations")
+
+
+def test_run_investigations_requires_detector_alert_artifacts(tmp_path: Path) -> None:
+    request = _request(tmp_path)
+    experiment = create_experiment(
+        ExperimentCreateRequest(
+            name="Missing detector alerts",
+            attack_count=3,
+            batch_size=2,
+            scenarios=["normal_market", "spoofing"],
+            seed=63,
+        ),
+        request,
+    )
+
+    with pytest.raises(ValueError, match="Run the local batch or collect and normalize"):
+        ExperimentManager(ExperimentRepository(request.app.state.store)).run_investigations(
+            experiment.id,
+            client=_MockInvestigationClient(),
+        )
 
 
 def test_aggregate_experiment_uses_sample_detector_metrics_csv(tmp_path: Path) -> None:

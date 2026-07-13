@@ -111,6 +111,7 @@ type ExperimentAction =
 
 const TOURNAMENT_POLL_INTERVAL_MS = 1000;
 const TOURNAMENT_POLL_ATTEMPTS = 12;
+const CLOUD_JOB_POLL_INTERVAL_MS = 5000;
 
 function wait(ms: number): Promise<void> {
   return new Promise((resolve) => {
@@ -213,6 +214,10 @@ export function NebiusControlPanelPage() {
   const [cloudArtifactCollection, setCloudArtifactCollection] = useState<NebiusArtifactCollectionResponse | null>(null);
   const [runtimeMode, setRuntimeMode] = useState<RuntimeMode>(() => getStoredRuntimeMode());
   const [activeWorkflowStep, setActiveWorkflowStep] = useState(1);
+  const experimentId = experiment?.id;
+  const activeCloudJob = latestExperimentJob(experimentJobs);
+  const activeCloudJobId = activeCloudJob?.job_id;
+  const activeCloudJobStatus = activeCloudJob?.status;
 
   useEffect(() => {
     void refreshControlPlane();
@@ -220,6 +225,40 @@ export function NebiusControlPanelPage() {
     // Initial control-plane hydration only; user-triggered refreshes keep this page current.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!experimentId || !activeCloudJobId || !activeCloudJobStatus || !["queued", "running"].includes(activeCloudJobStatus)) {
+      return;
+    }
+    let refreshInFlight = false;
+    const timer = window.setInterval(() => {
+      if (refreshInFlight) return;
+      refreshInFlight = true;
+      void refreshManagedExperimentJobs(experimentId)
+        .then(async (refreshed) => {
+          setExperimentJobs(refreshed);
+          const latest = latestExperimentJob(refreshed);
+          if (latest?.status === "completed") {
+            const [updatedExperiment, collection] = await Promise.all([
+              getManagedExperiment(experimentId),
+              collectManagedExperimentNebiusArtifacts(experimentId)
+            ]);
+            setExperiment(updatedExperiment);
+            setCloudArtifactCollection(collection);
+            setDeploymentPanelMessage(`Collected ${collection.copied_count} cloud artifacts automatically.`);
+          } else if (latest?.status === "failed") {
+            setDeploymentPanelMessage(latest.message);
+          }
+        })
+        .catch((error) => {
+          setDeploymentPanelMessage(error instanceof Error ? error.message : "Cloud job refresh failed.");
+        })
+        .finally(() => {
+          refreshInFlight = false;
+        });
+    }, CLOUD_JOB_POLL_INTERVAL_MS);
+    return () => window.clearInterval(timer);
+  }, [activeCloudJobId, activeCloudJobStatus, experimentId]);
 
   useEffect(() => {
     function syncRuntimeMode(event: Event) {

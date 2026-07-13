@@ -7,7 +7,7 @@ from urllib.request import Request, urlopen
 
 from pydantic import BaseModel, Field
 
-from app.config import get_settings
+from app.config import Settings, get_settings
 from app.nebius.investigation_team import (
     AIInvestigationTeamRequest,
     AIInvestigationTeamResponse,
@@ -339,16 +339,7 @@ class NebiusClient:
             job_status_template_configured=bool(settings.nebius_job_status_command_template),
             job_logs_template_configured=bool(settings.nebius_job_logs_command_template),
             job_artifacts_template_configured=bool(settings.nebius_job_artifacts_command_template),
-            job_artifacts_collection_configured=bool(
-                settings.nebius_job_artifacts_command_template
-                or (
-                    settings.nebius_job_output_uri
-                    and (
-                        not settings.nebius_job_output_uri.startswith("s3://")
-                        or bool(settings.nebius_object_storage_access_key_id and settings.nebius_object_storage_secret_access_key)
-                    )
-                )
-            ),
+            job_artifacts_collection_configured=_job_artifact_collection_configured(settings),
             cli_installed=bool(cli_path),
             cli_path=cli_path,
             cli_version=cli_version,
@@ -540,8 +531,15 @@ class NebiusClient:
         endpoint: str,
     ) -> CanonicalMarketAbuseScenario:
         source = response.get("source") if isinstance(response.get("source"), dict) else {}
+        fallback_reason = response.get("fallback_reason")
         mode = "mock" if source.get("mode") == "mock" or response.get("model_mode") == "deterministic_fallback" else "nebius"
-        return normalize_market_abuse_scenario_response(response, request=request, endpoint=endpoint, mode=mode)
+        return normalize_market_abuse_scenario_response(
+            response,
+            request=request,
+            endpoint=endpoint,
+            mode=mode,
+            fallback_reason=str(fallback_reason) if fallback_reason else None,
+        )
 
     def _mock_explanation(self, incident: Incident, *, reason: str) -> IncidentExplanationResponse:
         return IncidentExplanationResponse(
@@ -696,6 +694,22 @@ def _health_string(health: dict[str, Any] | None, key: str) -> str | None:
         return None
     text = str(value).strip()
     return text or None
+
+
+def _job_artifact_collection_configured(settings: Settings) -> bool:
+    if settings.nebius_job_artifacts_command_template:
+        return True
+    output_uri = settings.nebius_job_output_uri or ""
+    if not output_uri:
+        return False
+    if not output_uri.startswith("s3://"):
+        return True
+    submit_template = settings.nebius_job_submit_command_template or ""
+    credentials_configured = bool(
+        settings.nebius_object_storage_access_key_id and settings.nebius_object_storage_secret_access_key
+    )
+    credentials_forwarded = "{object_storage_env_args}" in submit_template or "--env-secret" in submit_template
+    return credentials_configured and credentials_forwarded
 
 
 def _string_list(value: Any) -> list[str]:

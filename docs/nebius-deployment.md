@@ -333,7 +333,7 @@ repository/tag while still using the existing `serverless/jobs/Dockerfile` and
 The managed experiment flow is available locally through FastAPI and the React UI:
 
 - `/nebius` Managed Experiment Lab creates experiment manifests, generates attack manifests, runs local batches, aggregates outputs, and runs bounded mock/endpoint-backed AI Investigator reports.
-- `/nebius` Real Nebius Deployment shows endpoint base URL, endpoint health, endpoint mode, model, job image, rendered job config path, submit-template readiness, latest cloud job status, and artifact collection state. Its buttons call FastAPI to test endpoint health, smoke Smart Detection and AI Investigator report routes, render job config, submit real Nebius jobs, refresh job status, and collect cloud artifacts.
+- `/nebius` Real Nebius Deployment shows endpoint base URL, endpoint health, endpoint mode, model, job image, rendered job config path, submit-template readiness, latest cloud job status, and artifact collection state. Queued/running jobs are polled every five seconds; completion automatically syncs Object Storage artifacts and refreshes their UI links. Manual refresh and collection remain available.
 - Detection outputs list experiments and show the selected experiment summary, detector leaderboard, `benchmark_report.md`, AI Investigator report files, `artifact_index.json`, canonical artifacts, and original `local-batch` files.
 - Local batch execution reuses `serverless/jobs/run_batch_experiments.py` and writes under `outputs/experiments/<experiment_id>/`.
 - `POST /api/experiments/{id}/render-nebius-job-config` renders the existing job config for an experiment without submitting it.
@@ -350,6 +350,18 @@ The command-template adapter lives only in `backend/app/experiments/nebius_orche
 | `NEBIUS_JOB_OUTPUT_URI` | Optional S3-compatible artifact root, for example `s3://bucket/aimada`. |
 | `NEBIUS_OBJECT_STORAGE_ENDPOINT_URL` | Nebius S3-compatible endpoint, for example `https://storage.eu-north1.nebius.cloud`. |
 | `NEBIUS_OBJECT_STORAGE_ACCESS_KEY_ID` / `NEBIUS_OBJECT_STORAGE_SECRET_ACCESS_KEY` | Object Storage credentials used by the job container to upload artifacts and by the backend to sync them. |
+
+Provision the private bucket, dedicated service account, access key, `.env` values, and backend validation with:
+
+```bash
+./scripts/configure-nebius-artifact-storage.sh \
+  --project-id <project-id> \
+  --tenant-id <tenant-id> \
+  --bucket-name <globally-unique-bucket-name> \
+  --apply --restart
+```
+
+The command is dry-run-only without `--apply`, never prints credential values, and does not build Serverless Job or Endpoint images.
 
 Supported template variables are `{config_path}`, `{experiment_id}`, `{job_id}`, `{image}`, `{output_dir}`, `{job_args}`, `{subnet_id_arg}`, `{parent_id_arg}`, `{volume_arg}`, `{cloud_output_uri}`, `{object_storage_endpoint_url_arg}`, and `{object_storage_env_args}`. Command stdout/stderr is redacted before persistence. A job is not marked `completed` just because submission succeeded; refresh only marks it completed after status reports completion and artifact collection succeeds.
 

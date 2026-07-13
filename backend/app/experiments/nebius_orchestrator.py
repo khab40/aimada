@@ -794,6 +794,8 @@ def _parse_job_status(output: str) -> JobStatus | None:
     parsed = _parse_json_object(text)
     if parsed is not None:
         value = parsed.get("status") or parsed.get("state")
+        if isinstance(value, dict):
+            value = value.get("state") or value.get("status")
         if isinstance(value, str):
             return _normalize_job_status(value)
     match = re.search(r"\b(?:status|state)\b\s*[:=]\s*([A-Za-z_-]+)", text, flags=re.IGNORECASE)
@@ -857,7 +859,17 @@ def _looks_like_json(text: str) -> bool:
 
 
 def _redact(value: str) -> str:
-    redacted = value
+    redacted = re.sub(
+        r'(?i)((?:["\']?name["\']?\s*:\s*)?["\']AWS_(?:ACCESS_KEY_ID|SECRET_ACCESS_KEY|SESSION_TOKEN)["\']'
+        r'\s*(?:,\s*["\']?value["\']?)?\s*:\s*["\'])([^"\']+)(["\'])',
+        lambda match: f"{match.group(1)}[REDACTED]{match.group(3)}",
+        value,
+    )
+    redacted = re.sub(
+        r"(?i)(AWS_(?:ACCESS_KEY_ID|SECRET_ACCESS_KEY|SESSION_TOKEN)\s*=\s*)([^\s,\"']+)",
+        lambda match: f"{match.group(1)}[REDACTED]",
+        redacted,
+    )
     patterns = [
         r"Bearer\s+[A-Za-z0-9._~+/=-]+",
         r"(?i)(api[_-]?key|token|secret|authorization)(\s*[:=]\s*)([^\s\"']+)",

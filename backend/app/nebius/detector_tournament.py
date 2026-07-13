@@ -1,5 +1,6 @@
 import csv
 import json
+import re
 import shlex
 import subprocess
 import sys
@@ -376,6 +377,7 @@ def _submit_nebius_job(
         "parent_id_arg": _optional_flag("--parent-id", settings.nebius_parent_id),
         "volume": settings.nebius_job_output_volume or settings.nebius_volume or "",
         "volume_arg": _optional_flag("--volume", settings.nebius_job_output_volume or settings.nebius_volume),
+        "object_storage_env_args": _object_storage_env_args(settings),
     }
     try:
         command = submit_template.format(**context)
@@ -455,6 +457,21 @@ def _optional_flag(flag: str, value: str | None) -> str:
     if not value or not value.strip():
         return ""
     return f"{flag} {shlex.quote(value.strip())}"
+
+
+def _object_storage_env_args(settings: Any) -> str:
+    values = {
+        "AWS_ACCESS_KEY_ID": settings.nebius_object_storage_access_key_id,
+        "AWS_SECRET_ACCESS_KEY": settings.nebius_object_storage_secret_access_key,
+        "AWS_SESSION_TOKEN": settings.nebius_object_storage_session_token,
+        "AWS_DEFAULT_REGION": settings.nebius_object_storage_region,
+        "AWS_EC2_METADATA_DISABLED": "true",
+    }
+    return " ".join(
+        f"--env {shlex.quote(f'{name}={value}')}"
+        for name, value in values.items()
+        if value
+    )
 
 
 def _mock_tournament_response(
@@ -591,8 +608,15 @@ def _parse_job_id(output: str) -> str | None:
             value = decoded.get(key)
             if isinstance(value, str) and value.strip():
                 return value.strip()
+    match = re.search(
+        r"\b(?:job[_ -]?id)\b\s*[:=]\s*([A-Za-z0-9_.:/-]+)",
+        output,
+        flags=re.IGNORECASE,
+    )
+    if match:
+        return match.group(1)
     for token in output.replace("\n", " ").split():
-        if token.startswith(("job-", "jobs/", "NEB-")):
+        if token.startswith(("aijob-", "job-", "jobs/", "NEB-")):
             return token.strip().strip(",")
     return None
 
