@@ -1,0 +1,6 @@
+scenario,runs,alerts,precision,recall,f1,avg_detection_latency_ms
+layering,20,20,1.0,1.0,1.0,1000.0
+normal_market,20,0,1.0,0.0,0.0,
+pump_and_cancel,20,0,1.0,0.0,0.0,
+quote_stuffing,20,20,1.0,1.0,1.0,2000.0
+spoofing,20,20,1.0,1.0,1.0,1000.0

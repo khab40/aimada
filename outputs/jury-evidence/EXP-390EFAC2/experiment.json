@@ -1,0 +1,52 @@
+{
+  "artifact_dir": "outputs/experiments/EXP-390EFAC2",
+  "artifact_paths": {
+    "alerts": "outputs/experiments/EXP-390EFAC2/alerts.jsonl",
+    "artifact_index": "outputs/experiments/EXP-390EFAC2/artifact_index.json",
+    "attack_labels": "outputs/experiments/EXP-390EFAC2/attack_labels.jsonl",
+    "attacks": "outputs/experiments/EXP-390EFAC2/attacks.jsonl",
+    "batch_manifest": "outputs/experiments/EXP-390EFAC2/batch_manifest.json",
+    "benchmark_report": "outputs/experiments/EXP-390EFAC2/benchmark_report.md",
+    "blue_team_alerts": "outputs/experiments/EXP-390EFAC2/blue_team_alerts.jsonl",
+    "cloud_artifact_evidence": "outputs/experiments/EXP-390EFAC2/cloud_artifact_evidence.json",
+    "detector_metrics": "outputs/experiments/EXP-390EFAC2/detector_metrics.csv",
+    "events": "outputs/experiments/EXP-390EFAC2/events.jsonl",
+    "experiment": "outputs/experiments/EXP-390EFAC2/experiment.json",
+    "experiment_summary": "outputs/experiments/EXP-390EFAC2/experiment_summary.json",
+    "generated_report": "outputs/experiments/EXP-390EFAC2/generated_report.md",
+    "investigations": "outputs/experiments/EXP-390EFAC2/investigations",
+    "jobs": "outputs/experiments/EXP-390EFAC2/jobs.jsonl",
+    "labels": "outputs/experiments/EXP-390EFAC2/labels.jsonl",
+    "leaderboard": "outputs/experiments/EXP-390EFAC2/leaderboard.json",
+    "manifest": "outputs/experiments/EXP-390EFAC2/experiment.json",
+    "nebius_job_config": "outputs/experiments/EXP-390EFAC2/nebius_job_config.rendered.yaml",
+    "order_book_event_logs": "outputs/experiments/EXP-390EFAC2/order_book_events.jsonl",
+    "submit_stdout": "outputs/experiments/EXP-390EFAC2/nebius_submit_stdout.txt",
+    "trades": "outputs/experiments/EXP-390EFAC2/trades.jsonl"
+  },
+  "attack_count": 100,
+  "batch_size": 20,
+  "created_at": "2026-07-13T14:43:13.934938+00:00",
+  "id": "EXP-390EFAC2",
+  "metrics": [
+    {
+      "endpoint_avg_latency_seconds": 2.0401,
+      "investigation_count": 7,
+      "investigation_mode": "nebius",
+      "kind": "investigation_summary"
+    }
+  ],
+  "name": "AI-MADA detector tournament",
+  "nebius_mode": "local_parallel_batch",
+  "scenarios": [
+    "normal_market",
+    "spoofing",
+    "layering",
+    "quote_stuffing",
+    "pump_and_cancel"
+  ],
+  "seed": 42,
+  "smart_batch_id": "aijob-e00qq10wjz0p5karsp",
+  "status": "completed",
+  "updated_at": "2026-07-13T15:00:06.864739+00:00"
+}

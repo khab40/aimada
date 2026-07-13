@@ -27,22 +27,22 @@ AIMADA is a synthetic market-surveillance arena that makes order-book abuse-like
 
 ## Results
 
-- **Number of runs:** More than ten production Serverless AI Job runs validated the batch workflow. The small local metric example contains 10 scenario executions: 5 each for `spoofing-like` and `layering-like`.
-- **Best detector in the local example:** `layering_like`, with precision 1.0, recall 1.0, and F1 1.0 on the deliberately small layering-like sample.
-- **Local example metrics:** Macro F1 0.125 across all scenario-detector pairs; 10 false positives; 5 false negatives; 500 ms average detection latency for detected layering cases.
-- **Main finding:** Production runs validated container execution, scenario generation, detector evaluation, aggregation, reporting, logs, and artifact persistence. The local metrics validate integration and reproducibility only; they are too small and narrow to support a real-world accuracy claim.
+- **Number of runs:** More than ten production Serverless AI Job runs validated the batch workflow. The committed `EXP-390EFAC2` evidence requested 100 workloads and retains 80 normalized attacks in its aggregate metrics.
+- **Best detector in the committed example:** The built-in deterministic detector suite reached precision/recall/F1 of 1.0 for the synthetic layering, quote-stuffing, and spoofing scenarios; recall was 0.0 for the normal-market and pump-and-cancel rows.
+- **Endpoint investigations:** Seven reports completed in Nebius mode with no fallback; the evidence window contains eight completed, S3-uploaded Endpoint records.
+- **Main finding:** Production runs validated container execution, scenario generation, detector evaluation, aggregation, reporting, logs, and artifact persistence. These synthetic metrics validate integration and reproducibility only; they do not support a real-world surveillance-accuracy claim.
 
 ## Proof of execution
 
 - **Job ID/status screenshot:** More than ten production jobs completed successfully and are visible in Nebius production logs; a curated screenshot index is still publication work.
 - **Endpoint screenshot:** A vLLM-backed endpoint executed scenario generation, incident analysis, investigation reporting, and structured market-event explanation routes; the curated screenshot link is still publication work.
-- **Logs:** Production execution logs exist in Nebius. Redacted excerpts have not yet been committed; local runtime logs are generated under `outputs/`.
-- **Output artifacts:** Production runs produced job artifacts, detector metrics, reports, and logs. The reproducible local tournament writes `metrics.csv`, `results.json`, `benchmark_report.md`, and charts under `outputs/nebius/tournaments/<id>/artifacts/`.
+- **Logs:** The sanitized [Nebius evidence index](../outputs/jury-evidence/EXP-390EFAC2/nebius_evidence_index.json) records completed Job and Endpoint operations whose evidence bundles were uploaded to S3. Raw logs remain excluded because they can contain environment-specific values.
+- **Output artifacts:** The committed [jury evidence bundle](../outputs/jury-evidence/EXP-390EFAC2/README.md) includes job records, aggregate metrics, a detector/model leaderboard, seven Endpoint investigations, the benchmark report, a manifest, and SHA-256 checksums.
 
 ## Limitations
 
-- Production execution is validated, but the repository still needs a compact redacted evidence bundle, consolidated runtime/cost summary, and direct console screenshot links.
+- Production execution is validated and a compact redacted evidence bundle is committed; consolidated runtime/cost records and direct console screenshot links remain publication work.
 - The rendered demo video and published article URL remain missing.
-- Reported metrics come from 10 deterministic synthetic scenario executions and do not measure real-market surveillance performance.
-- Results cover only spoofing-like and layering-like scenarios; broader scenarios, seeds, detectors, and a normal-market baseline are required before comparison claims are credible.
+- The committed evidence contains 80 normalized attacks from a 100-workload request; this coverage difference is disclosed and requires investigation before completeness claims.
+- Results cover five synthetic scenario labels with one deterministic detector suite/model dimension; broader seeds and learned-detector comparisons are required before comparative claims are credible.
 - The system is an educational research scaffold and must not be used for compliance decisions, trading signals, or allegations of market manipulation.

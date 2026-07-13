@@ -78,6 +78,7 @@ Implemented:
 - Nebius endpoint and job scaffolds with local typed fallbacks, Docker/config files, scripts, and UI control surfaces, including `/investigation-team`, `/generate-market-abuse-scenario`, `/investigation-report`, `/orderbook-alert`, and `/generate-smart-scenario`.
 - Production validation completed more than ten Nebius Serverless AI Job runs and exercised a vLLM-backed Serverless AI Endpoint across scenario generation, incident analysis, investigation reporting, and structured market-event explanation routes.
 - Phase 4.5 Managed Experiments with deterministic attack manifests, local smart-batch execution, artifact normalization, aggregation, bounded AI Investigator reports, and Detection review of summaries, leaderboards, markdown reports, artifact indexes, and original local-batch files.
+- Commit-safe [jury evidence](outputs/jury-evidence/README.md) with completed Job records, Endpoint investigations, S3 evidence metadata, metrics, reports, a manifest, and SHA-256 checksums.
 - Reduced demo navigation around AI Command Center, Workload Generator, and Docs / Demo.
 - Demo page for three deterministic 3-minute product demo paths: Real Nebius AI Run, Two-Model Pipeline, and Streaming Explanation.
 - Arena split into Scenario / Attack Configuration, Market, and Detection sections, with Standard and Battlefield market visualization modes.
@@ -86,11 +87,13 @@ Implemented:
 - About and ARD-0001 include four-area architecture diagrams covering Front, Back, Agent Runners Workspace, and Nebius Serverless Cloud.
 - Coherent day/night/system UI theme behavior across widgets, charts, status chips, order-book levels, and canvas visualizations, plus compact vertical-navigation controls, paused-state-stable liquidity visualization, and documentation set for quick start, architecture, ARDs, runtime model, benchmark methodology, safety framing, deployment, and design ideas.
 
-Remaining publication work:
+Before final submission:
 
-- Curated, redacted production-log excerpts, runtime/cost measurements, and Nebius console screenshots linked from the judge-facing submission index.
-- A compact committed benchmark evidence bundle under `outputs/benchmark/`.
+- Runtime/cost measurements and Nebius console screenshots linked from the judge-facing submission index.
 - Final screenshot assets for the README screenshot table beyond the About architecture diagram.
+
+Post-challenge engineering roadmap:
+
 - Dedicated Judge Mode timeline-window selector and formal benchmark artifact schema versioning.
 - Durable backend workspace/organization tables, case assignment APIs, and persisted audit-log APIs beyond the current frontend platform foundation.
 

@@ -1,0 +1,223 @@
+[
+  {
+    "artifact_paths": {
+      "metadata": "outputs/nebius/evidence/endpoint_call/EVD-6D0CDEFE9736/metadata.json",
+      "request": "outputs/nebius/evidence/endpoint_call/EVD-6D0CDEFE9736/request.json",
+      "response": "outputs/nebius/evidence/endpoint_call/EVD-6D0CDEFE9736/response.json"
+    },
+    "created_at": "2026-07-13T14:46:05.519502+00:00",
+    "endpoint": "/investigation-report",
+    "error": null,
+    "evidence_id": "EVD-6D0CDEFE9736",
+    "kind": "endpoint_call",
+    "latency_seconds": 0.854949,
+    "local_dir": "outputs/nebius/evidence/endpoint_call/EVD-6D0CDEFE9736",
+    "operation": "investigation-report",
+    "run_id": null,
+    "s3_status": "uploaded",
+    "source_uri": "s3://aimada-artifacts-e00g6zvxpr00/aimada/evidence/endpoint_call/EVD-6D0CDEFE9736",
+    "status": "completed"
+  },
+  {
+    "artifact_paths": {
+      "metadata": "outputs/nebius/evidence/endpoint_call/EVD-22D0E5FD7E73/metadata.json",
+      "request": "outputs/nebius/evidence/endpoint_call/EVD-22D0E5FD7E73/request.json",
+      "response": "outputs/nebius/evidence/endpoint_call/EVD-22D0E5FD7E73/response.json"
+    },
+    "created_at": "2026-07-13T14:46:03.549443+00:00",
+    "endpoint": "/investigation-report",
+    "error": null,
+    "evidence_id": "EVD-22D0E5FD7E73",
+    "kind": "endpoint_call",
+    "latency_seconds": 1.163501,
+    "local_dir": "outputs/nebius/evidence/endpoint_call/EVD-22D0E5FD7E73",
+    "operation": "investigation-report",
+    "run_id": null,
+    "s3_status": "uploaded",
+    "source_uri": "s3://aimada-artifacts-e00g6zvxpr00/aimada/evidence/endpoint_call/EVD-22D0E5FD7E73",
+    "status": "completed"
+  },
+  {
+    "artifact_paths": {
+      "metadata": "outputs/nebius/evidence/endpoint_call/EVD-3FB29382DD2D/metadata.json",
+      "request": "outputs/nebius/evidence/endpoint_call/EVD-3FB29382DD2D/request.json",
+      "response": "outputs/nebius/evidence/endpoint_call/EVD-3FB29382DD2D/response.json"
+    },
+    "created_at": "2026-07-13T14:46:01.313374+00:00",
+    "endpoint": "/investigation-report",
+    "error": null,
+    "evidence_id": "EVD-3FB29382DD2D",
+    "kind": "endpoint_call",
+    "latency_seconds": 0.85263,
+    "local_dir": "outputs/nebius/evidence/endpoint_call/EVD-3FB29382DD2D",
+    "operation": "investigation-report",
+    "run_id": null,
+    "s3_status": "uploaded",
+    "source_uri": "s3://aimada-artifacts-e00g6zvxpr00/aimada/evidence/endpoint_call/EVD-3FB29382DD2D",
+    "status": "completed"
+  },
+  {
+    "artifact_paths": {
+      "metadata": "outputs/nebius/evidence/endpoint_call/EVD-C7180FB76706/metadata.json",
+      "request": "outputs/nebius/evidence/endpoint_call/EVD-C7180FB76706/request.json",
+      "response": "outputs/nebius/evidence/endpoint_call/EVD-C7180FB76706/response.json"
+    },
+    "created_at": "2026-07-13T14:45:59.400713+00:00",
+    "endpoint": "/investigation-report",
+    "error": null,
+    "evidence_id": "EVD-C7180FB76706",
+    "kind": "endpoint_call",
+    "latency_seconds": 0.898494,
+    "local_dir": "outputs/nebius/evidence/endpoint_call/EVD-C7180FB76706",
+    "operation": "investigation-report",
+    "run_id": null,
+    "s3_status": "uploaded",
+    "source_uri": "s3://aimada-artifacts-e00g6zvxpr00/aimada/evidence/endpoint_call/EVD-C7180FB76706",
+    "status": "completed"
+  },
+  {
+    "artifact_paths": {
+      "cloud_artifact_evidence": "outputs/nebius/evidence/job/EVD-BC780BF7649F/cloud_artifact_evidence-cloud_artifact_evidence.json",
+      "metadata": "outputs/nebius/evidence/job/EVD-BC780BF7649F/metadata.json",
+      "nebius_job_config": "outputs/nebius/evidence/job/EVD-BC780BF7649F/nebius_job_config-nebius_job_config.rendered.yaml",
+      "nebius_job_logs": "outputs/nebius/evidence/job/EVD-BC780BF7649F/nebius_job_logs-nebius_job_logs.json",
+      "request": "outputs/nebius/evidence/job/EVD-BC780BF7649F/request.json",
+      "response": "outputs/nebius/evidence/job/EVD-BC780BF7649F/response.json",
+      "submit_stdout": "outputs/nebius/evidence/job/EVD-BC780BF7649F/submit_stdout-nebius_submit_stdout.txt"
+    },
+    "created_at": "2026-07-13T14:45:57.416457+00:00",
+    "endpoint": null,
+    "error": null,
+    "evidence_id": "EVD-BC780BF7649F",
+    "kind": "job",
+    "latency_seconds": null,
+    "local_dir": "outputs/nebius/evidence/job/EVD-BC780BF7649F",
+    "operation": "managed_experiment_collect",
+    "run_id": "aijob-e00qq10wjz0p5karsp",
+    "s3_status": "uploaded",
+    "source_uri": "s3://aimada-artifacts-e00g6zvxpr00/aimada/evidence/job/EVD-BC780BF7649F",
+    "status": "completed"
+  },
+  {
+    "artifact_paths": {
+      "metadata": "outputs/nebius/evidence/endpoint_call/EVD-EEA29D878B37/metadata.json",
+      "request": "outputs/nebius/evidence/endpoint_call/EVD-EEA29D878B37/request.json",
+      "response": "outputs/nebius/evidence/endpoint_call/EVD-EEA29D878B37/response.json"
+    },
+    "created_at": "2026-07-13T14:45:57.391535+00:00",
+    "endpoint": "/investigation-report",
+    "error": null,
+    "evidence_id": "EVD-EEA29D878B37",
+    "kind": "endpoint_call",
+    "latency_seconds": 1.181548,
+    "local_dir": "outputs/nebius/evidence/endpoint_call/EVD-EEA29D878B37",
+    "operation": "investigation-report",
+    "run_id": null,
+    "s3_status": "uploaded",
+    "source_uri": "s3://aimada-artifacts-e00g6zvxpr00/aimada/evidence/endpoint_call/EVD-EEA29D878B37",
+    "status": "completed"
+  },
+  {
+    "artifact_paths": {
+      "metadata": "outputs/nebius/evidence/endpoint_call/EVD-64EBC9AC282F/metadata.json",
+      "request": "outputs/nebius/evidence/endpoint_call/EVD-64EBC9AC282F/request.json",
+      "response": "outputs/nebius/evidence/endpoint_call/EVD-64EBC9AC282F/response.json"
+    },
+    "created_at": "2026-07-13T14:45:55.111134+00:00",
+    "endpoint": "/investigation-report",
+    "error": null,
+    "evidence_id": "EVD-64EBC9AC282F",
+    "kind": "endpoint_call",
+    "latency_seconds": 0.834324,
+    "local_dir": "outputs/nebius/evidence/endpoint_call/EVD-64EBC9AC282F",
+    "operation": "investigation-report",
+    "run_id": null,
+    "s3_status": "uploaded",
+    "source_uri": "s3://aimada-artifacts-e00g6zvxpr00/aimada/evidence/endpoint_call/EVD-64EBC9AC282F",
+    "status": "completed"
+  },
+  {
+    "artifact_paths": {
+      "cloud_artifact_evidence": "outputs/nebius/evidence/job/EVD-696668DA29CA/cloud_artifact_evidence-cloud_artifact_evidence.json",
+      "metadata": "outputs/nebius/evidence/job/EVD-696668DA29CA/metadata.json",
+      "nebius_job_config": "outputs/nebius/evidence/job/EVD-696668DA29CA/nebius_job_config-nebius_job_config.rendered.yaml",
+      "nebius_job_logs": "outputs/nebius/evidence/job/EVD-696668DA29CA/nebius_job_logs-nebius_job_logs.json",
+      "request": "outputs/nebius/evidence/job/EVD-696668DA29CA/request.json",
+      "response": "outputs/nebius/evidence/job/EVD-696668DA29CA/response.json",
+      "submit_stdout": "outputs/nebius/evidence/job/EVD-696668DA29CA/submit_stdout-nebius_submit_stdout.txt"
+    },
+    "created_at": "2026-07-13T14:45:54.092888+00:00",
+    "endpoint": null,
+    "error": null,
+    "evidence_id": "EVD-696668DA29CA",
+    "kind": "job",
+    "latency_seconds": null,
+    "local_dir": "outputs/nebius/evidence/job/EVD-696668DA29CA",
+    "operation": "managed_experiment_refresh",
+    "run_id": "aijob-e00cygzs8f63h4dg2z",
+    "s3_status": "uploaded",
+    "source_uri": "s3://aimada-artifacts-e00g6zvxpr00/aimada/evidence/job/EVD-696668DA29CA",
+    "status": "completed"
+  },
+  {
+    "artifact_paths": {
+      "metadata": "outputs/nebius/evidence/endpoint_call/EVD-15EC96C88E7F/metadata.json",
+      "request": "outputs/nebius/evidence/endpoint_call/EVD-15EC96C88E7F/request.json",
+      "response": "outputs/nebius/evidence/endpoint_call/EVD-15EC96C88E7F/response.json"
+    },
+    "created_at": "2026-07-13T14:45:53.148550+00:00",
+    "endpoint": "/investigation-report",
+    "error": null,
+    "evidence_id": "EVD-15EC96C88E7F",
+    "kind": "endpoint_call",
+    "latency_seconds": 0.86313,
+    "local_dir": "outputs/nebius/evidence/endpoint_call/EVD-15EC96C88E7F",
+    "operation": "investigation-report",
+    "run_id": null,
+    "s3_status": "uploaded",
+    "source_uri": "s3://aimada-artifacts-e00g6zvxpr00/aimada/evidence/endpoint_call/EVD-15EC96C88E7F",
+    "status": "completed"
+  },
+  {
+    "artifact_paths": {
+      "cloud_artifact_evidence": "outputs/nebius/evidence/job/EVD-B9AE7ED2B305/cloud_artifact_evidence-cloud_artifact_evidence.json",
+      "metadata": "outputs/nebius/evidence/job/EVD-B9AE7ED2B305/metadata.json",
+      "nebius_job_config": "outputs/nebius/evidence/job/EVD-B9AE7ED2B305/nebius_job_config-nebius_job_config.rendered.yaml",
+      "nebius_job_logs": "outputs/nebius/evidence/job/EVD-B9AE7ED2B305/nebius_job_logs-nebius_job_logs.txt",
+      "request": "outputs/nebius/evidence/job/EVD-B9AE7ED2B305/request.json",
+      "response": "outputs/nebius/evidence/job/EVD-B9AE7ED2B305/response.json",
+      "submit_stdout": "outputs/nebius/evidence/job/EVD-B9AE7ED2B305/submit_stdout-nebius_submit_stdout.txt"
+    },
+    "created_at": "2026-07-13T14:45:51.344032+00:00",
+    "endpoint": null,
+    "error": null,
+    "evidence_id": "EVD-B9AE7ED2B305",
+    "kind": "job",
+    "latency_seconds": null,
+    "local_dir": "outputs/nebius/evidence/job/EVD-B9AE7ED2B305",
+    "operation": "managed_experiment_collect",
+    "run_id": "aijob-e00qq10wjz0p5karsp",
+    "s3_status": "uploaded",
+    "source_uri": "s3://aimada-artifacts-e00g6zvxpr00/aimada/evidence/job/EVD-B9AE7ED2B305",
+    "status": "completed"
+  },
+  {
+    "artifact_paths": {
+      "metadata": "outputs/nebius/evidence/endpoint_call/EVD-0F13AD0D29DF/metadata.json",
+      "request": "outputs/nebius/evidence/endpoint_call/EVD-0F13AD0D29DF/request.json",
+      "response": "outputs/nebius/evidence/endpoint_call/EVD-0F13AD0D29DF/response.json"
+    },
+    "created_at": "2026-07-13T14:45:32.054982+00:00",
+    "endpoint": "/investigation-team",
+    "error": null,
+    "evidence_id": "EVD-0F13AD0D29DF",
+    "kind": "endpoint_call",
+    "latency_seconds": 1.685008,
+    "local_dir": "outputs/nebius/evidence/endpoint_call/EVD-0F13AD0D29DF",
+    "operation": "investigation-team",
+    "run_id": null,
+    "s3_status": "uploaded",
+    "source_uri": "s3://aimada-artifacts-e00g6zvxpr00/aimada/evidence/endpoint_call/EVD-0F13AD0D29DF",
+    "status": "completed"
+  }
+]

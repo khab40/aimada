@@ -1,0 +1,44 @@
+{
+  "artifact_paths": {
+    "alerts": "outputs/experiments/EXP-390EFAC2/alerts.jsonl",
+    "benchmark_report": "outputs/experiments/EXP-390EFAC2/benchmark_report.md",
+    "detector_metrics": "outputs/experiments/EXP-390EFAC2/detector_metrics.csv",
+    "experiment_summary": "outputs/experiments/EXP-390EFAC2/experiment_summary.json",
+    "labels": "outputs/experiments/EXP-390EFAC2/labels.jsonl",
+    "leaderboard": "outputs/experiments/EXP-390EFAC2/leaderboard.json"
+  },
+  "avg_detection_latency_ms": 1333.3333,
+  "experiment_id": "EXP-390EFAC2",
+  "f1_by_scenario": {
+    "layering": 1.0,
+    "normal_market": 0.0,
+    "pump_and_cancel": 0.0,
+    "quote_stuffing": 1.0,
+    "spoofing": 1.0
+  },
+  "failed_runs": 0,
+  "investigation_count": 7,
+  "precision_by_scenario": {
+    "layering": 1.0,
+    "normal_market": 1.0,
+    "pump_and_cancel": 1.0,
+    "quote_stuffing": 1.0,
+    "spoofing": 1.0
+  },
+  "recall_by_scenario": {
+    "layering": 1.0,
+    "normal_market": 0.0,
+    "pump_and_cancel": 0.0,
+    "quote_stuffing": 1.0,
+    "spoofing": 1.0
+  },
+  "scenarios": [
+    "layering",
+    "normal_market",
+    "pump_and_cancel",
+    "quote_stuffing",
+    "spoofing"
+  ],
+  "total_alerts": 80,
+  "total_attacks": 80
+}

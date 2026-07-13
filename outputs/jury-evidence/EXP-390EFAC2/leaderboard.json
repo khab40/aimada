@@ -1,0 +1,52 @@
+[
+  {
+    "alert_count": 20,
+    "avg_detection_latency_ms": 1000.0,
+    "detector": "built-in detector suite",
+    "f1": 1.0,
+    "model": "none (deterministic)",
+    "precision": 1.0,
+    "recall": 1.0,
+    "scenario": "layering"
+  },
+  {
+    "alert_count": 0,
+    "avg_detection_latency_ms": null,
+    "detector": "built-in detector suite",
+    "f1": 0.0,
+    "model": "none (deterministic)",
+    "precision": 1.0,
+    "recall": 0.0,
+    "scenario": "normal_market"
+  },
+  {
+    "alert_count": 0,
+    "avg_detection_latency_ms": null,
+    "detector": "built-in detector suite",
+    "f1": 0.0,
+    "model": "none (deterministic)",
+    "precision": 1.0,
+    "recall": 0.0,
+    "scenario": "pump_and_cancel"
+  },
+  {
+    "alert_count": 20,
+    "avg_detection_latency_ms": 2000.0,
+    "detector": "built-in detector suite",
+    "f1": 1.0,
+    "model": "none (deterministic)",
+    "precision": 1.0,
+    "recall": 1.0,
+    "scenario": "quote_stuffing"
+  },
+  {
+    "alert_count": 20,
+    "avg_detection_latency_ms": 1000.0,
+    "detector": "built-in detector suite",
+    "f1": 1.0,
+    "model": "none (deterministic)",
+    "precision": 1.0,
+    "recall": 1.0,
+    "scenario": "spoofing"
+  }
+]

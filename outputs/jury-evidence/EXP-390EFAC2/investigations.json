@@ -1,0 +1,487 @@
+[
+  {
+    "alert_id": "batch-000001-layering_like",
+    "experiment_id": "EXP-390EFAC2",
+    "fallback_reason": null,
+    "json_path": "outputs/experiments/EXP-390EFAC2/investigations/batch-000001-layering_like.json",
+    "latency_seconds": 1.9902,
+    "markdown_path": "outputs/experiments/EXP-390EFAC2/investigations/batch-000001-layering_like.md",
+    "mode": "nebius",
+    "request": {
+      "alerts": [
+        {
+          "alert_id": "batch-000001-layering_like",
+          "confidence": 1.0,
+          "detector": "layering_like",
+          "evidence": [
+            {
+              "interpretation": "Same-side visible depth is elevated across nearby ask levels.",
+              "key": "top_n_ask_depth",
+              "label": "Top ask depth",
+              "unit": null,
+              "value": 69.925
+            },
+            {
+              "interpretation": "Depth distribution shifted toward one side of the book.",
+              "key": "order_book_imbalance",
+              "label": "Order-book imbalance",
+              "unit": null,
+              "value": -0.5364
+            }
+          ],
+          "run_id": "batch-000001",
+          "scenario": "spoofing",
+          "tick": 6
+        }
+      ],
+      "metrics": {
+        "confidence": 1.0,
+        "detector": "layering_like",
+        "evidence_items": 2
+      },
+      "scenario_trace": {
+        "experiment_id": "EXP-390EFAC2",
+        "run_id": "batch-000001",
+        "scenario": "spoofing",
+        "tick": 6
+      }
+    },
+    "response": {
+      "detector_findings": [
+        "Layering-like behavior detected at tick 6."
+      ],
+      "endpoint": "/investigation-report",
+      "fallback_reason": null,
+      "limitations": [
+        "The detection was based on layering-like behavior which may not always accurately reflect true spoofing attempts."
+      ],
+      "mode": "nebius",
+      "recommended_next_steps": [
+        "Further investigation into the specific patterns observed during the experiment."
+      ],
+      "summary": "This report details an analysis conducted to identify potential spoofing activity within a simulated market environment.",
+      "timeline": [
+        "Scenario Trace - Experiment ID: EXP-390EFAC2, Run ID: batch-000001, Scenario: Spoofing, Tick: 6"
+      ],
+      "title": "Synthetic Market-Spoofing Detection Report"
+    },
+    "source_alert_path": "outputs/experiments/EXP-390EFAC2/alerts.jsonl"
+  },
+  {
+    "alert_id": "batch-000002-layering_like",
+    "experiment_id": "EXP-390EFAC2",
+    "fallback_reason": null,
+    "json_path": "outputs/experiments/EXP-390EFAC2/investigations/batch-000002-layering_like.json",
+    "latency_seconds": 1.9321,
+    "markdown_path": "outputs/experiments/EXP-390EFAC2/investigations/batch-000002-layering_like.md",
+    "mode": "nebius",
+    "request": {
+      "alerts": [
+        {
+          "alert_id": "batch-000002-layering_like",
+          "confidence": 1.0,
+          "detector": "layering_like",
+          "evidence": [
+            {
+              "interpretation": "Same-side visible depth is elevated across nearby ask levels.",
+              "key": "top_n_ask_depth",
+              "label": "Top ask depth",
+              "unit": null,
+              "value": 97.425
+            },
+            {
+              "interpretation": "Depth distribution shifted toward one side of the book.",
+              "key": "order_book_imbalance",
+              "label": "Order-book imbalance",
+              "unit": null,
+              "value": -0.644
+            }
+          ],
+          "run_id": "batch-000002",
+          "scenario": "layering",
+          "tick": 6
+        }
+      ],
+      "metrics": {
+        "confidence": 1.0,
+        "detector": "layering_like",
+        "evidence_items": 2
+      },
+      "scenario_trace": {
+        "experiment_id": "EXP-390EFAC2",
+        "run_id": "batch-000002",
+        "scenario": "layering",
+        "tick": 6
+      }
+    },
+    "response": {
+      "detector_findings": [
+        "Layering-like behavior detected at tick 6."
+      ],
+      "endpoint": "/investigation-report",
+      "fallback_reason": null,
+      "limitations": [
+        "The evidence provided does not include historical context or additional layers of analysis beyond the given metrics."
+      ],
+      "mode": "nebius",
+      "recommended_next_steps": [
+        "Further investigation into the root causes of layering-like behavior."
+      ],
+      "summary": "This report details an analysis conducted on layering behavior within a simulated market environment.",
+      "timeline": [
+        "Scenario Trace - Experiment ID: EXP-390EFAC2, Run ID: batch-000002, Scenario: layering, Tick: 6"
+      ],
+      "title": "Synthetic Market Abuse Investigation Report"
+    },
+    "source_alert_path": "outputs/experiments/EXP-390EFAC2/alerts.jsonl"
+  },
+  {
+    "alert_id": "batch-000003-quote_stuffing",
+    "experiment_id": "EXP-390EFAC2",
+    "fallback_reason": null,
+    "json_path": "outputs/experiments/EXP-390EFAC2/investigations/batch-000003-quote_stuffing.json",
+    "latency_seconds": 2.2907,
+    "markdown_path": "outputs/experiments/EXP-390EFAC2/investigations/batch-000003-quote_stuffing.md",
+    "mode": "nebius",
+    "request": {
+      "alerts": [
+        {
+          "alert_id": "batch-000003-quote_stuffing",
+          "confidence": 1.0,
+          "detector": "quote_stuffing",
+          "evidence": [
+            {
+              "interpretation": "High update throughput in the current tick window.",
+              "key": "message_rate_per_sec",
+              "label": "Message rate",
+              "unit": "events/sec",
+              "value": 22.0
+            },
+            {
+              "interpretation": "Most updates do not result in execution.",
+              "key": "cancel_to_trade_ratio",
+              "label": "Cancel/trade ratio",
+              "unit": null,
+              "value": 8.0
+            }
+          ],
+          "run_id": "batch-000003",
+          "scenario": "quote_stuffing",
+          "tick": 6
+        }
+      ],
+      "metrics": {
+        "confidence": 1.0,
+        "detector": "quote_stuffing",
+        "evidence_items": 2
+      },
+      "scenario_trace": {
+        "experiment_id": "EXP-390EFAC2",
+        "run_id": "batch-000003",
+        "scenario": "quote_stuffing",
+        "tick": 6
+      }
+    },
+    "response": {
+      "detector_findings": [
+        "High message rate per second (22 events/sec) observed in the current tick window.",
+        "Most updates do not result in trade executions (cancel-to-trade ratio of 8)."
+      ],
+      "endpoint": "/investigation-report",
+      "fallback_reason": null,
+      "limitations": [
+        "The evidence provided is limited to a single scenario trace and does not cover all possible scenarios within the dataset.",
+        "The confidence level of 1.0 indicates that there is no doubt about the detection of quote stuffing based on the available metrics."
+      ],
+      "mode": "nebius",
+      "recommended_next_steps": [
+        "Further analysis should be conducted across multiple scenario traces to confirm the presence of quote stuffing.",
+        "Investigate potential root causes such as high-frequency trading algorithms or automated market makers.",
+        "Implement additional security measures to prevent similar activities from occurring in the future."
+      ],
+      "summary": "This report details an investigation into quote stuffing activity detected during batch run EXP-390EFAC2 at tick 6.",
+      "timeline": [
+        "Scenario Trace: Quote Stuffing - Batch Run EXP-390EFAC2 at Tick 6"
+      ],
+      "title": "Synthetic Market Abuse Investigation Report"
+    },
+    "source_alert_path": "outputs/experiments/EXP-390EFAC2/alerts.jsonl"
+  },
+  {
+    "alert_id": "batch-000006-layering_like",
+    "experiment_id": "EXP-390EFAC2",
+    "fallback_reason": null,
+    "json_path": "outputs/experiments/EXP-390EFAC2/investigations/batch-000006-layering_like.json",
+    "latency_seconds": 1.9576,
+    "markdown_path": "outputs/experiments/EXP-390EFAC2/investigations/batch-000006-layering_like.md",
+    "mode": "nebius",
+    "request": {
+      "alerts": [
+        {
+          "alert_id": "batch-000006-layering_like",
+          "confidence": 1.0,
+          "detector": "layering_like",
+          "evidence": [
+            {
+              "interpretation": "Same-side visible depth is elevated across nearby ask levels.",
+              "key": "top_n_ask_depth",
+              "label": "Top ask depth",
+              "unit": null,
+              "value": 69.925
+            },
+            {
+              "interpretation": "Depth distribution shifted toward one side of the book.",
+              "key": "order_book_imbalance",
+              "label": "Order-book imbalance",
+              "unit": null,
+              "value": -0.5364
+            }
+          ],
+          "run_id": "batch-000006",
+          "scenario": "spoofing",
+          "tick": 6
+        }
+      ],
+      "metrics": {
+        "confidence": 1.0,
+        "detector": "layering_like",
+        "evidence_items": 2
+      },
+      "scenario_trace": {
+        "experiment_id": "EXP-390EFAC2",
+        "run_id": "batch-000006",
+        "scenario": "spoofing",
+        "tick": 6
+      }
+    },
+    "response": {
+      "detector_findings": [
+        "Layering-like detection identified evidence of top N ask depth elevation and order-book imbalance."
+      ],
+      "endpoint": "/investigation-report",
+      "fallback_reason": null,
+      "limitations": [
+        "The findings are based on limited data points and may not represent all instances of spoofing."
+      ],
+      "mode": "nebius",
+      "recommended_next_steps": [
+        "Further analysis should be conducted to confirm the presence of spoofing behavior."
+      ],
+      "summary": "This report details an investigation into potential spoofing activity detected on layering-like metrics.",
+      "timeline": [
+        "Scenario Trace - Experiment ID: EXP-390EFAC2, Run ID: batch-000006, Scenario: Spoofing, Tick: 6"
+      ],
+      "title": "Synthetic Market-Spoofing Detection Report"
+    },
+    "source_alert_path": "outputs/experiments/EXP-390EFAC2/alerts.jsonl"
+  },
+  {
+    "alert_id": "batch-000007-layering_like",
+    "experiment_id": "EXP-390EFAC2",
+    "fallback_reason": null,
+    "json_path": "outputs/experiments/EXP-390EFAC2/investigations/batch-000007-layering_like.json",
+    "latency_seconds": 1.9242,
+    "markdown_path": "outputs/experiments/EXP-390EFAC2/investigations/batch-000007-layering_like.md",
+    "mode": "nebius",
+    "request": {
+      "alerts": [
+        {
+          "alert_id": "batch-000007-layering_like",
+          "confidence": 1.0,
+          "detector": "layering_like",
+          "evidence": [
+            {
+              "interpretation": "Same-side visible depth is elevated across nearby ask levels.",
+              "key": "top_n_ask_depth",
+              "label": "Top ask depth",
+              "unit": null,
+              "value": 97.425
+            },
+            {
+              "interpretation": "Depth distribution shifted toward one side of the book.",
+              "key": "order_book_imbalance",
+              "label": "Order-book imbalance",
+              "unit": null,
+              "value": -0.644
+            }
+          ],
+          "run_id": "batch-000007",
+          "scenario": "layering",
+          "tick": 6
+        }
+      ],
+      "metrics": {
+        "confidence": 1.0,
+        "detector": "layering_like",
+        "evidence_items": 2
+      },
+      "scenario_trace": {
+        "experiment_id": "EXP-390EFAC2",
+        "run_id": "batch-000007",
+        "scenario": "layering",
+        "tick": 6
+      }
+    },
+    "response": {
+      "detector_findings": [
+        "Layering-like behavior detected at tick 6."
+      ],
+      "endpoint": "/investigation-report",
+      "fallback_reason": null,
+      "limitations": [
+        "The findings are based on a single instance of layering behavior observed at tick 6."
+      ],
+      "mode": "nebius",
+      "recommended_next_steps": [
+        "Further monitoring and analysis to confirm the presence of layering behavior."
+      ],
+      "summary": "This report details an analysis conducted on layering behavior within a simulated market environment.",
+      "timeline": [
+        "Scenario Trace - Experiment ID: EXP-390EFAC2, Run ID: batch-000007, Scenario: layering, Tick: 6"
+      ],
+      "title": "Synthetic Market Abuse Investigation Report"
+    },
+    "source_alert_path": "outputs/experiments/EXP-390EFAC2/alerts.jsonl"
+  },
+  {
+    "alert_id": "batch-000008-quote_stuffing",
+    "experiment_id": "EXP-390EFAC2",
+    "fallback_reason": null,
+    "json_path": "outputs/experiments/EXP-390EFAC2/investigations/batch-000008-quote_stuffing.json",
+    "latency_seconds": 2.2775,
+    "markdown_path": "outputs/experiments/EXP-390EFAC2/investigations/batch-000008-quote_stuffing.md",
+    "mode": "nebius",
+    "request": {
+      "alerts": [
+        {
+          "alert_id": "batch-000008-quote_stuffing",
+          "confidence": 1.0,
+          "detector": "quote_stuffing",
+          "evidence": [
+            {
+              "interpretation": "High update throughput in the current tick window.",
+              "key": "message_rate_per_sec",
+              "label": "Message rate",
+              "unit": "events/sec",
+              "value": 22.0
+            },
+            {
+              "interpretation": "Most updates do not result in execution.",
+              "key": "cancel_to_trade_ratio",
+              "label": "Cancel/trade ratio",
+              "unit": null,
+              "value": 8.0
+            }
+          ],
+          "run_id": "batch-000008",
+          "scenario": "quote_stuffing",
+          "tick": 6
+        }
+      ],
+      "metrics": {
+        "confidence": 1.0,
+        "detector": "quote_stuffing",
+        "evidence_items": 2
+      },
+      "scenario_trace": {
+        "experiment_id": "EXP-390EFAC2",
+        "run_id": "batch-000008",
+        "scenario": "quote_stuffing",
+        "tick": 6
+      }
+    },
+    "response": {
+      "detector_findings": [
+        "High message rate per second (22 events/sec) observed in the current tick window.",
+        "Most updates do not result in trade executions (cancel-to-trade ratio of 8)."
+      ],
+      "endpoint": "/investigation-report",
+      "fallback_reason": null,
+      "limitations": [
+        "The evidence provided is limited to a single scenario trace and does not cover all possible scenarios within the dataset.",
+        "The confidence level of 1.0 indicates that there is no doubt about the detection of quote stuffing based on the available metrics."
+      ],
+      "mode": "nebius",
+      "recommended_next_steps": [
+        "Further analysis should be conducted across multiple scenario traces to confirm the presence of quote stuffing.",
+        "Investigate potential root causes such as high-frequency trading strategies or automated bots.",
+        "Implement additional security measures to prevent future instances of quote stuffing."
+      ],
+      "summary": "This report details an investigation into quote stuffing activity detected during batch run EXP-390EFAC2 at tick 6.",
+      "timeline": [
+        "Scenario Trace: Quote Stuffing - Batch Run EXP-390EFAC2 at Tick 6"
+      ],
+      "title": "Synthetic Market Abuse Investigation Report"
+    },
+    "source_alert_path": "outputs/experiments/EXP-390EFAC2/alerts.jsonl"
+  },
+  {
+    "alert_id": "batch-000011-layering_like",
+    "experiment_id": "EXP-390EFAC2",
+    "fallback_reason": null,
+    "json_path": "outputs/experiments/EXP-390EFAC2/investigations/batch-000011-layering_like.json",
+    "latency_seconds": 1.9082,
+    "markdown_path": "outputs/experiments/EXP-390EFAC2/investigations/batch-000011-layering_like.md",
+    "mode": "nebius",
+    "request": {
+      "alerts": [
+        {
+          "alert_id": "batch-000011-layering_like",
+          "confidence": 1.0,
+          "detector": "layering_like",
+          "evidence": [
+            {
+              "interpretation": "Same-side visible depth is elevated across nearby ask levels.",
+              "key": "top_n_ask_depth",
+              "label": "Top ask depth",
+              "unit": null,
+              "value": 69.925
+            },
+            {
+              "interpretation": "Depth distribution shifted toward one side of the book.",
+              "key": "order_book_imbalance",
+              "label": "Order-book imbalance",
+              "unit": null,
+              "value": -0.5364
+            }
+          ],
+          "run_id": "batch-000011",
+          "scenario": "spoofing",
+          "tick": 6
+        }
+      ],
+      "metrics": {
+        "confidence": 1.0,
+        "detector": "layering_like",
+        "evidence_items": 2
+      },
+      "scenario_trace": {
+        "experiment_id": "EXP-390EFAC2",
+        "run_id": "batch-000011",
+        "scenario": "spoofing",
+        "tick": 6
+      }
+    },
+    "response": {
+      "detector_findings": [
+        "Layering-like behavior detected at tick 6."
+      ],
+      "endpoint": "/investigation-report",
+      "fallback_reason": null,
+      "limitations": [
+        "The detection was based on a single evidence item per alert.",
+        "No historical context provided for comparison."
+      ],
+      "mode": "nebius",
+      "recommended_next_steps": [
+        "Further investigation into Layering-like behavior patterns."
+      ],
+      "summary": "This report details an analysis conducted to identify potential spoofing activity within a simulated market environment.",
+      "timeline": [
+        "Scenario Trace - Experiment ID: EXP-390EFAC2, Run ID: batch-000011, Scenario: Spoofing, Tick: 6"
+      ],
+      "title": "Synthetic Market-Spoofing Detection Report"
+    },
+    "source_alert_path": "outputs/experiments/EXP-390EFAC2/alerts.jsonl"
+  }
+]

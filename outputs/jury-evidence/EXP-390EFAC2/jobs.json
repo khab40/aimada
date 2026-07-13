@@ -1,0 +1,79 @@
+[
+  {
+    "artifact_paths": {
+      "alerts": "outputs/experiments/EXP-390EFAC2/alerts.jsonl",
+      "artifact_index": "outputs/experiments/EXP-390EFAC2/artifact_index.json",
+      "attacks": "outputs/experiments/EXP-390EFAC2/attacks.jsonl",
+      "batch_manifest": "outputs/experiments/EXP-390EFAC2/batch_manifest.json",
+      "benchmark_report": "outputs/experiments/EXP-390EFAC2/benchmark_report.md",
+      "cloud_artifact_evidence": "outputs/experiments/EXP-390EFAC2/cloud_artifact_evidence.json",
+      "detector_metrics": "outputs/experiments/EXP-390EFAC2/detector_metrics.csv",
+      "events": "outputs/experiments/EXP-390EFAC2/events.jsonl",
+      "experiment": "outputs/experiments/EXP-390EFAC2/experiment.json",
+      "jobs": "outputs/experiments/EXP-390EFAC2/jobs.jsonl",
+      "labels": "outputs/experiments/EXP-390EFAC2/labels.jsonl",
+      "nebius_job_config": "outputs/experiments/EXP-390EFAC2/nebius_job_config.rendered.yaml",
+      "nebius_job_logs": "outputs/experiments/EXP-390EFAC2/nebius_job_logs.json",
+      "submit_stdout": "outputs/experiments/EXP-390EFAC2/nebius_submit_stdout.txt",
+      "trades": "outputs/experiments/EXP-390EFAC2/trades.jsonl"
+    },
+    "attack_count": 100,
+    "backend": "nebius_serverless_job",
+    "batch_end": 100,
+    "batch_start": 0,
+    "created_at": "2026-07-13T14:43:20.081197+00:00",
+    "experiment_id": "EXP-390EFAC2",
+    "job_id": "aijob-e00cygzs8f63h4dg2z",
+    "message": "Nebius job completed; S3-compatible artifacts were synced and normalized from s3://aimada-artifacts-e00g6zvxpr00/aimada/experiments/EXP-390EFAC2/local-batch.",
+    "status": "completed",
+    "updated_at": "2026-07-13T14:45:48.653993+00:00"
+  },
+  {
+    "artifact_paths": {
+      "attacks": "outputs/experiments/EXP-390EFAC2/attacks.jsonl",
+      "experiment": "outputs/experiments/EXP-390EFAC2/experiment.json",
+      "jobs": "outputs/experiments/EXP-390EFAC2/jobs.jsonl",
+      "nebius_job_config": "outputs/experiments/EXP-390EFAC2/nebius_job_config.rendered.yaml",
+      "nebius_job_logs": "outputs/experiments/EXP-390EFAC2/nebius_job_logs.json",
+      "submit_stdout": "outputs/experiments/EXP-390EFAC2/nebius_submit_stdout.txt"
+    },
+    "attack_count": 100,
+    "backend": "nebius_serverless_job",
+    "batch_end": 100,
+    "batch_start": 0,
+    "created_at": "2026-07-13T14:43:25.024879+00:00",
+    "experiment_id": "EXP-390EFAC2",
+    "job_id": "aijob-e00v3b8h4pmtapqvc0",
+    "message": "Nebius job status is queued.",
+    "status": "queued",
+    "updated_at": "2026-07-13T14:45:48.653993+00:00"
+  },
+  {
+    "artifact_paths": {
+      "alerts": "outputs/experiments/EXP-390EFAC2/alerts.jsonl",
+      "artifact_index": "outputs/experiments/EXP-390EFAC2/artifact_index.json",
+      "attacks": "outputs/experiments/EXP-390EFAC2/attacks.jsonl",
+      "batch_manifest": "outputs/experiments/EXP-390EFAC2/batch_manifest.json",
+      "benchmark_report": "outputs/experiments/EXP-390EFAC2/benchmark_report.md",
+      "detector_metrics": "outputs/experiments/EXP-390EFAC2/detector_metrics.csv",
+      "events": "outputs/experiments/EXP-390EFAC2/events.jsonl",
+      "experiment": "outputs/experiments/EXP-390EFAC2/experiment.json",
+      "jobs": "outputs/experiments/EXP-390EFAC2/jobs.jsonl",
+      "labels": "outputs/experiments/EXP-390EFAC2/labels.jsonl",
+      "nebius_job_config": "outputs/experiments/EXP-390EFAC2/nebius_job_config.rendered.yaml",
+      "nebius_job_logs": "outputs/experiments/EXP-390EFAC2/nebius_job_logs.json",
+      "submit_stdout": "outputs/experiments/EXP-390EFAC2/nebius_submit_stdout.txt",
+      "trades": "outputs/experiments/EXP-390EFAC2/trades.jsonl"
+    },
+    "attack_count": 100,
+    "backend": "nebius_serverless_job",
+    "batch_end": 100,
+    "batch_start": 0,
+    "created_at": "2026-07-13T14:43:29.499938+00:00",
+    "experiment_id": "EXP-390EFAC2",
+    "job_id": "aijob-e00qq10wjz0p5karsp",
+    "message": "Nebius job artifacts collected from mounted output.",
+    "status": "completed",
+    "updated_at": "2026-07-13T14:45:57.415765+00:00"
+  }
+]

@@ -6,7 +6,7 @@ Date: 2026-05-31
 
 ## Implementation Status
 
-Status as of 2026-07-03: `[partial]`
+Status as of 2026-07-13: `[partial]`
 
 Implemented:
 
@@ -20,11 +20,13 @@ Implemented:
 - Multiuser platform foundation with demo fallback identity, workspace metadata, case ownership, report attribution, and audit trail records.
 - UI shell with AI-MADA banner asset, compact navigation control, collapsible auth widget, persisted day/night/system theme, Command Center orchestration, and paused-state-stable Liquidity Map behavior.
 - Serverless endpoint/job scaffolds, Dockerfiles, configs, scripts, and local mock/cloud-adapter paths.
+- Production Serverless Job and Endpoint evidence archived in the commit-safe [jury bundle](../../outputs/jury-evidence/README.md).
 
-Remaining publication work:
+Before final submission:
 
-- Curated, redacted production logs, runtime/cost measurements, and Nebius console screenshots linked from the submission index. Production Serverless AI Job and Endpoint execution has been validated.
-- Production-grade surveillance integrations, real market data ingestion, compliance workflows, and trading signals remain intentionally out of scope.
+- Measured runtime/cost records and Nebius console screenshots linked from the submission index.
+
+Production-grade surveillance integrations, real market data ingestion, compliance workflows, and trading signals remain intentionally out of scope.
 
 ## Context
 

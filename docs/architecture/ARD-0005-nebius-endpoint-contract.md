@@ -6,7 +6,7 @@ Date: 2026-06-01
 
 ## Implementation Status
 
-Status as of 2026-06-23: `[partial]`
+Status as of 2026-07-13: `[partial]`
 
 Implemented:
 
@@ -14,11 +14,11 @@ Implemented:
 - Backend `NebiusClient` shapes typed requests, handles environment-based URLs, and falls back to deterministic typed mock responses.
 - UI and backend routes support incident explanation, smart detection, investigation report generation, and scenario drafting without exposing endpoint credentials to the browser.
 - Endpoint contract tests cover the local serverless app.
+- Real Endpoint investigations, response evidence, latency, fallback state, and S3 upload state are archived in the [jury bundle](../../outputs/jury-evidence/EXP-390EFAC2/README.md).
 
 Not yet complete:
 
-- The contract has not yet been proven with an archived real Nebius endpoint execution.
-- Production authentication, rate limiting, and endpoint observability evidence remain follow-up work.
+- Production authentication, rate limiting, console screenshots, and broader endpoint observability remain follow-up work.
 
 ## Context
 
