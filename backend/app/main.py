@@ -14,6 +14,7 @@ from app.api.routes_simulation import router as simulation_router
 from app.arena.engine import SimulationEngine
 from app.auth.store import AuthStore
 from app.config import get_settings
+from app.nebius.evidence_archive import configure_default_evidence_archive
 from app.storage.local_store import LocalStore
 from app.storage.retention import cleanup_output_data
 from app.websocket.manager import WebSocketManager
@@ -22,6 +23,11 @@ from app.websocket.routes import router as websocket_router
 app = FastAPI(title="AI Market Abuse Detection Arena")
 settings = get_settings()
 app.state.store = LocalStore(settings.arena_output_dir)
+app.state.nebius_evidence = (
+    configure_default_evidence_archive(app.state.store, settings)
+    if settings.nebius_evidence_archive_enabled
+    else None
+)
 app.state.retention_cleanup = cleanup_output_data(app.state.store.output_dir, settings.arena_data_retention_days)
 app.state.auth_store = AuthStore(settings.arena_output_dir / "auth" / "auth.db")
 app.state.settings = settings

@@ -13,12 +13,13 @@ import {
   getNebiusObservatory,
   getNebiusStatus,
   getReportsSummary,
-  getDetectorTournament,
   injectNebiusAttackScenario,
   listManagedExperimentJobs,
   listManagedExperiments,
+  listNebiusEvidence,
   collectManagedExperimentNebiusArtifacts,
   refreshManagedExperimentJobs,
+  refreshDetectorTournament,
   renderManagedExperimentNebiusJobConfig,
   runAIInvestigationTeam,
   runManagedExperimentInvestigations,
@@ -26,6 +27,7 @@ import {
   runManagedExperimentLocalBatch,
   startDetectorTournament,
   submitManagedExperimentNebius,
+  syncNebiusEvidence,
   type AIInvestigationTeamResponse,
   type DetectorTournamentResponse,
   type DetectorTournamentStartRequest,
@@ -37,6 +39,7 @@ import {
   type ManagedExperiment,
   type ManagedExperimentCreateRequest,
   type NebiusArtifactCollectionResponse,
+  type NebiusEvidenceRecord,
   type NebiusObservatory,
   type NebiusStatus,
   type ReportsSummary,
@@ -107,10 +110,11 @@ type ExperimentAction =
   | "run-investigations"
   | "run-investigation-team"
   | "run-ai-tournament"
+  | "sync-evidence"
   | "replay-ai-scenario";
 
-const TOURNAMENT_POLL_INTERVAL_MS = 1000;
-const TOURNAMENT_POLL_ATTEMPTS = 12;
+const TOURNAMENT_POLL_INTERVAL_MS = 2000;
+const TOURNAMENT_POLL_ATTEMPTS = 180;
 const CLOUD_JOB_POLL_INTERVAL_MS = 5000;
 
 function wait(ms: number): Promise<void> {
@@ -210,6 +214,7 @@ export function NebiusControlPanelPage() {
   const [experimentBusyAction, setExperimentBusyAction] = useState<ExperimentAction | null>(null);
   const [nebiusStatus, setNebiusStatus] = useState<NebiusStatus | null>(null);
   const [nebiusObservatory, setNebiusObservatory] = useState<NebiusObservatory | null>(null);
+  const [nebiusEvidence, setNebiusEvidence] = useState<NebiusEvidenceRecord[]>([]);
   const [deploymentPanelMessage, setDeploymentPanelMessage] = useState<string | null>(null);
   const [cloudArtifactCollection, setCloudArtifactCollection] = useState<NebiusArtifactCollectionResponse | null>(null);
   const [runtimeMode, setRuntimeMode] = useState<RuntimeMode>(() => getStoredRuntimeMode());
@@ -279,16 +284,18 @@ export function NebiusControlPanelPage() {
 
   async function refreshControlPlane() {
     try {
-      const [status, observatory, reports] = await Promise.all([
+      const [status, observatory, reports, evidence] = await Promise.all([
         getNebiusStatus(),
         getNebiusObservatory(),
-        getReportsSummary()
+        getReportsSummary(),
+        listNebiusEvidence()
       ]);
       setNebiusStatus(status);
       setNebiusObservatory(observatory);
       setRuntimeStatus(runtimeFrom(status, observatory));
       setUsageMetrics(usageFrom(observatory, reports));
       setArtifacts(artifactsFrom(reports, observatory));
+      setNebiusEvidence(evidence);
     } catch (error) {
       setDeploymentPanelMessage(error instanceof Error ? error.message : "Control plane refresh failed.");
     }
@@ -309,6 +316,14 @@ export function NebiusControlPanelPage() {
     } catch (error) {
       setExperimentMessage(error instanceof Error ? error.message : "Benchmark refresh failed.");
     }
+  }
+
+  async function syncEvidenceArchive() {
+    await runExperimentAction("sync-evidence", async () => {
+      const result = await syncNebiusEvidence();
+      setNebiusEvidence(await listNebiusEvidence());
+      setDeploymentPanelMessage(result.message);
+    });
   }
 
   async function refreshExperimentDetails(experimentId: string) {
@@ -554,7 +569,7 @@ export function NebiusControlPanelPage() {
           attempt += 1
         ) {
           await wait(TOURNAMENT_POLL_INTERVAL_MS);
-          tournament = await getDetectorTournament(tournament.tournament_id);
+          tournament = await refreshDetectorTournament(tournament.tournament_id);
           setDetectorTournament(tournament);
           setTournamentMessage(`${tournament.status.replaceAll("_", " ")}: ${tournament.summary}`);
         }
@@ -567,9 +582,23 @@ export function NebiusControlPanelPage() {
     await runExperimentAction("run-serverless-smoke", async () => {
       const result = await runServerlessSmokeDemo();
       setServerlessSmokeResult(result);
-      setDetectorTournament(result.tournament);
+      let tournament = result.cloud_tournament ?? result.tournament;
+      setDetectorTournament(tournament);
       setInvestigationTeamReport(result.investigation ?? null);
       setTournamentMessage(`${result.mode.replaceAll("_", " ")}: ${result.summary}`);
+      if (result.cloud_tournament && (tournament.status === "queued" || tournament.status === "running")) {
+        for (
+          let attempt = 0;
+          attempt < TOURNAMENT_POLL_ATTEMPTS && tournament.status !== "completed" && tournament.status !== "failed";
+          attempt += 1
+        ) {
+          await wait(TOURNAMENT_POLL_INTERVAL_MS);
+          tournament = await refreshDetectorTournament(tournament.tournament_id);
+          setDetectorTournament(tournament);
+          setServerlessSmokeResult(mergeSmokeCloudTournament(result, tournament));
+          setTournamentMessage(`${tournament.status.replaceAll("_", " ")}: ${tournament.summary}`);
+        }
+      }
     }, setTournamentMessage);
   }
 
@@ -829,6 +858,18 @@ export function NebiusControlPanelPage() {
           </InfrastructureMetricGrid>
           <p className="fallback-note">No credentials, Google login, or deployment are required in Local Demo. Benchmark results use deterministic mock data until Cloud mode is selected.</p>
           <UsageCostMonitor metrics={usageMetrics} />
+          <div className="nebius-button-row">
+            <button
+              className="secondary-button"
+              disabled={experimentBusyAction === "sync-evidence"}
+              onClick={() => void syncEvidenceArchive()}
+              type="button"
+            >
+              {experimentBusyAction === "sync-evidence" ? "Syncing evidence..." : "Sync evidence from S3"}
+            </button>
+            <span className="fallback-note">{nebiusEvidence.length} endpoint and Job evidence records</span>
+          </div>
+          <ExperimentArtifactLinks artifacts={evidenceArtifactsFrom(nebiusEvidence)} />
           <ExperimentArtifactLinks artifacts={experiment ? experimentArtifactsFrom(experiment, experimentSummary) : []} experimentId={experiment?.id} />
         </InfrastructureSection> : null}
       </section>
@@ -1845,6 +1886,44 @@ function experimentArtifactsFrom(experiment: ManagedExperiment, summary: Experim
 
 function artifactLinksFromTournament(tournament: DetectorTournamentResponse): Array<[string, string]> {
   return Object.entries(tournament.artifacts).filter(([, path]) => typeof path === "string" && path.length > 0);
+}
+
+function evidenceArtifactsFrom(records: NebiusEvidenceRecord[]): Array<[string, string]> {
+  const entries: Array<[string, string]> = [];
+  const seen = new Set<string>();
+  for (const record of records) {
+    for (const [name, path] of Object.entries(record.artifact_paths)) {
+      if (!path || seen.has(path)) continue;
+      seen.add(path);
+      entries.push([`${record.kind}_${record.operation}_${name}`, path]);
+    }
+  }
+  return entries.slice(0, 100);
+}
+
+function mergeSmokeCloudTournament(
+  result: ServerlessSmokeResponse,
+  tournament: DetectorTournamentResponse
+): ServerlessSmokeResponse {
+  const artifacts = [...result.artifacts];
+  const knownPaths = new Set(artifacts.map((artifact) => artifact.path));
+  for (const [name, path] of Object.entries(tournament.artifacts)) {
+    if (!path || knownPaths.has(path)) continue;
+    artifacts.push({ name: `cloud_${name}`, path, download_url: artifactDownloadUrl(path) });
+    knownPaths.add(path);
+  }
+  return {
+    ...result,
+    cloud_tournament: tournament,
+    serverless_job: {
+      ...result.serverless_job,
+      status: tournament.status,
+      message: tournament.summary,
+      artifacts: tournament.artifacts,
+      cloud_output_uri: tournament.metrics.cloud_output_uri ?? result.serverless_job.cloud_output_uri
+    },
+    artifacts
+  };
 }
 
 function metricValue(experiment: ManagedExperiment | null, key: string): number | null {

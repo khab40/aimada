@@ -38,6 +38,7 @@ class ServerlessSmokeResponse(BaseModel):
     explanation: IncidentExplanationResponse | None = None
     investigation: AIInvestigationTeamResponse | None = None
     tournament: DetectorTournamentResponse
+    cloud_tournament: DetectorTournamentResponse | None = None
     serverless_job: dict[str, Any]
     artifacts: list[SmokeArtifact]
     benefits: list[str] = Field(default_factory=list)
@@ -219,6 +220,7 @@ async def run_serverless_smoke_demo(
         explanation=explanation,
         investigation=investigation,
         tournament=local_tournament,
+        cloud_tournament=cloud_tournament,
         serverless_job=serverless_job,
         artifacts=artifacts,
         benefits=[
@@ -288,7 +290,7 @@ def _serverless_job_status(
             "cloud_tournament_id": cloud_tournament.tournament_id,
             "templates_configured": True,
             "artifact_collection_configured": artifact_collection_configured,
-            "cloud_output_uri": _cloud_output_uri(settings),
+            "cloud_output_uri": _cloud_tournament_output_uri(cloud_tournament, settings),
             "artifacts": cloud_tournament.artifacts,
         }
     return {
@@ -323,6 +325,11 @@ def _cloud_output_uri(settings: Any) -> str | None:
     if not base_uri:
         return None
     return f"{base_uri}/tournaments"
+
+
+def _cloud_tournament_output_uri(cloud_tournament: DetectorTournamentResponse, settings: Any) -> str | None:
+    configured = cloud_tournament.metrics.get("cloud_output_uri")
+    return str(configured) if configured else _cloud_output_uri(settings)
 
 
 def _cloud_job_message(

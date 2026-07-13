@@ -14,6 +14,7 @@ services:
       NEBIUS_OBJECT_STORAGE_SECRET_ACCESS_KEY: ${NEBIUS_OBJECT_STORAGE_SECRET_ACCESS_KEY:-}
       NEBIUS_OBJECT_STORAGE_SESSION_TOKEN: ${NEBIUS_OBJECT_STORAGE_SESSION_TOKEN:-}
       NEBIUS_OBJECT_STORAGE_REGION: ${NEBIUS_OBJECT_STORAGE_REGION:-eu-north1}
+      NEBIUS_EVIDENCE_ARCHIVE_ENABLED: ${NEBIUS_EVIDENCE_ARCHIVE_ENABLED:-true}
     volumes:
       - ${HOME}/.nebius/config.yaml:/root/.nebius/config.yaml:ro
       - ${HOME}/.nebius/credentials.yaml:/root/.nebius/credentials.yaml:ro

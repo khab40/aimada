@@ -19,6 +19,7 @@ from app.nebius.client import (
 )
 from app.experiments.nebius_orchestrator import summarize_experiment_jobs
 from app.nebius.investigation_team import AIInvestigationTeamRequest, AIInvestigationTeamResponse, analyze_with_client
+from app.nebius.evidence_archive import NebiusEvidenceArchive, NebiusEvidenceRecord, NebiusEvidenceSyncResponse
 from app.nebius.detector_tournament import (
     DetectorTournamentArtifactsResponse,
     DetectorTournamentResponse,
@@ -26,6 +27,7 @@ from app.nebius.detector_tournament import (
     complete_queued_tournament,
     get_tournament,
     queue_tournament,
+    refresh_tournament,
     tournament_artifacts,
 )
 from app.nebius.scenario_generator import (
@@ -46,6 +48,21 @@ nebius_cloud_adapter = MockNebiusCloudAdapter()
 @router.get("/status", response_model=NebiusIntegrationStatus)
 def nebius_status() -> NebiusIntegrationStatus:
     return nebius_client.integration_status()
+
+
+@router.get("/evidence", response_model=list[NebiusEvidenceRecord])
+def list_nebius_evidence(request: Request, limit: int = 200) -> list[NebiusEvidenceRecord]:
+    archive = NebiusEvidenceArchive(request.app.state.store, request.app.state.settings)
+    return archive.list_records(limit=max(1, min(limit, 2_000)))
+
+
+@router.post("/evidence/sync", response_model=NebiusEvidenceSyncResponse)
+def sync_nebius_evidence(request: Request) -> NebiusEvidenceSyncResponse:
+    archive = NebiusEvidenceArchive(request.app.state.store, request.app.state.settings)
+    try:
+        return archive.sync()
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
 @router.post("/serverless-smoke/run", response_model=ServerlessSmokeResponse)
@@ -376,6 +393,14 @@ def start_detector_tournament(
 @router.get("/tournament/{tournament_id}", response_model=DetectorTournamentResponse)
 def read_detector_tournament(tournament_id: str, request: Request) -> DetectorTournamentResponse:
     response = get_tournament(tournament_id, store=request.app.state.store)
+    if response is None:
+        raise HTTPException(status_code=404, detail=f"unknown tournament: {tournament_id}")
+    return response
+
+
+@router.post("/tournament/{tournament_id}/refresh", response_model=DetectorTournamentResponse)
+def refresh_detector_tournament(tournament_id: str, request: Request) -> DetectorTournamentResponse:
+    response = refresh_tournament(tournament_id, store=request.app.state.store)
     if response is None:
         raise HTTPException(status_code=404, detail=f"unknown tournament: {tournament_id}")
     return response

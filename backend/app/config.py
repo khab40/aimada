@@ -75,6 +75,10 @@ class Settings(BaseSettings):
         default="eu-north1",
         validation_alias=AliasChoices("NEBIUS_OBJECT_STORAGE_REGION", "AWS_DEFAULT_REGION"),
     )
+    nebius_evidence_archive_enabled: bool = Field(
+        default=False,
+        alias="NEBIUS_EVIDENCE_ARCHIVE_ENABLED",
+    )
     nebius_job_submit_command_template: str | None = Field(
         default=None,
         alias="NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE",

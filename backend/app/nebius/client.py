@@ -1,6 +1,7 @@
 import json
 import shutil
 import subprocess
+import time
 from typing import Any, Literal
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -15,6 +16,7 @@ from app.nebius.investigation_team import (
     normalize_response as normalize_investigation_team_response,
     prepare_payload as prepare_investigation_team_payload,
 )
+from app.nebius.evidence_archive import get_default_evidence_archive
 from app.nebius.scenario_generator import (
     CanonicalMarketAbuseScenario,
     MarketAbuseScenarioGenerationRequest,
@@ -374,6 +376,7 @@ class NebiusClient:
             return decoded
 
     def _post_json(self, url: str, payload: dict[str, Any]) -> dict[str, Any]:
+        started_at = time.perf_counter()
         headers = {"Content-Type": "application/json"}
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
@@ -383,12 +386,55 @@ class NebiusClient:
             headers=headers,
             method="POST",
         )
-        with urlopen(request, timeout=self.timeout_seconds) as response:
-            body = response.read().decode("utf-8")
-            decoded = json.loads(body)
-            if not isinstance(decoded, dict):
-                raise ValueError("Nebius endpoint returned a non-object JSON response")
-            return decoded
+        try:
+            with urlopen(request, timeout=self.timeout_seconds) as response:
+                body = response.read().decode("utf-8")
+                decoded = json.loads(body)
+                if not isinstance(decoded, dict):
+                    raise ValueError("Nebius endpoint returned a non-object JSON response")
+        except Exception as exc:
+            self._record_endpoint_evidence(
+                url=url,
+                request_payload=payload,
+                response_payload={"error_type": type(exc).__name__},
+                status="failed",
+                latency_seconds=round(time.perf_counter() - started_at, 6),
+                error=str(exc),
+            )
+            raise
+        self._record_endpoint_evidence(
+            url=url,
+            request_payload=payload,
+            response_payload=decoded,
+            status="completed",
+            latency_seconds=round(time.perf_counter() - started_at, 6),
+        )
+        return decoded
+
+    @staticmethod
+    def _record_endpoint_evidence(
+        *,
+        url: str,
+        request_payload: dict[str, Any],
+        response_payload: dict[str, Any],
+        status: str,
+        latency_seconds: float,
+        error: str | None = None,
+    ) -> None:
+        archive = get_default_evidence_archive()
+        if archive is None:
+            return
+        try:
+            archive.record_endpoint_call(
+                url=url,
+                request_payload=request_payload,
+                response_payload=response_payload,
+                status=status,
+                latency_seconds=latency_seconds,
+                error=error,
+            )
+        except (OSError, RuntimeError, ValueError):
+            return
 
     def _incident_payload(
         self,

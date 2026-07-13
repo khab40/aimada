@@ -20,6 +20,7 @@ from app.experiments.artifact_normalizer import (
 from app.experiments.attack_manifest import generate_attack_manifest
 from app.experiments.models import Experiment, utc_now
 from app.experiments.repository import ExperimentRepository
+from app.nebius.evidence_archive import NebiusEvidenceArchive
 
 
 JobBackend = Literal["local_parallel_batch", "nebius_serverless_job"]
@@ -109,6 +110,7 @@ class NebiusExperimentOrchestrator:
                 artifact_paths=base_artifact_paths,
             )
         self._append_job(job)
+        self._archive_job(job, operation="managed_experiment_submit")
         updated = experiment.model_copy(
             update={
                 "status": "failed" if job.status == "failed" else "submitted",
@@ -213,6 +215,9 @@ class NebiusExperimentOrchestrator:
             else:
                 refreshed.append(job)
         self._write_jobs(experiment_id, refreshed)
+        for job in refreshed:
+            if job.backend == "nebius_serverless_job":
+                self._archive_job(job, operation="managed_experiment_refresh")
         return refreshed
 
     def collect_artifacts(self, experiment_id: str) -> NebiusArtifactCollectionResponse | None:
@@ -286,7 +291,7 @@ class NebiusExperimentOrchestrator:
         self.repository.save(updated)
         if collected:
             self._mark_latest_cloud_job_completed(experiment.id, normalized.artifact_paths)
-        return NebiusArtifactCollectionResponse(
+        response = NebiusArtifactCollectionResponse(
             experiment_id=experiment.id,
             status="collected" if collected else "cloud_artifacts_pending",
             source_dir=str(source_dir),
@@ -302,6 +307,15 @@ class NebiusExperimentOrchestrator:
                 else "Nebius job artifact collection found partial output; missing expected files remain."
             ),
         )
+        latest_jobs = [job for job in self._read_jobs(experiment.id) if job.backend == "nebius_serverless_job"]
+        if latest_jobs:
+            self._archive_job(
+                latest_jobs[-1].model_copy(
+                    update={"artifact_paths": {**latest_jobs[-1].artifact_paths, **response.artifact_paths}}
+                ),
+                operation="managed_experiment_collect",
+            )
+        return response
 
     def _refresh_submitted_job(self, job: ExperimentJobRecord, *, now: str) -> ExperimentJobRecord:
         experiment = self.repository.get(job.experiment_id)
@@ -716,6 +730,20 @@ class NebiusExperimentOrchestrator:
             self._relative_jobs_path(job.experiment_id),
             job.model_dump(mode="json"),
         )
+
+    def _archive_job(self, job: ExperimentJobRecord, *, operation: str) -> None:
+        if self.settings is None or not self.settings.nebius_evidence_archive_enabled:
+            return
+        try:
+            NebiusEvidenceArchive(self.repository.store, self.settings).record_job(
+                operation=operation,
+                run_id=job.job_id,
+                status=job.status,
+                payload=job.model_dump(mode="json"),
+                artifact_paths=job.artifact_paths,
+            )
+        except (OSError, RuntimeError, ValueError):
+            return
 
     def _read_jobs(self, experiment_id: str) -> list[ExperimentJobRecord]:
         rows = self.repository.store.read_jsonl(self._relative_jobs_path(experiment_id), limit=None)

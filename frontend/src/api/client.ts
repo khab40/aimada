@@ -419,6 +419,32 @@ export type NebiusStatus = {
   cli_version?: string | null;
 };
 
+export type NebiusEvidenceRecord = {
+  evidence_id: string;
+  kind: "endpoint_call" | "job";
+  operation: string;
+  status: string;
+  created_at: string;
+  latency_seconds?: number | null;
+  run_id?: string | null;
+  endpoint?: string | null;
+  local_dir: string;
+  source_uri?: string | null;
+  s3_status: "uploaded" | "local_only" | "upload_failed";
+  artifact_paths: Record<string, string>;
+  error?: string | null;
+};
+
+export type NebiusEvidenceSyncResponse = {
+  status: "synced" | "local_only" | "failed";
+  source_uri?: string | null;
+  local_dir: string;
+  uploaded_pending: number;
+  record_count: number;
+  artifact_count: number;
+  message: string;
+};
+
 export type SmartScenarioResponse = {
   mode: "nebius" | "mock";
   endpoint: string;
@@ -612,6 +638,7 @@ export type ServerlessSmokeResponse = {
   explanation?: IncidentExplanation | null;
   investigation?: AIInvestigationTeamResponse | null;
   tournament: DetectorTournamentResponse;
+  cloud_tournament?: DetectorTournamentResponse | null;
   serverless_job: Record<string, unknown>;
   artifacts: ServerlessSmokeArtifact[];
   benefits: string[];
@@ -1086,6 +1113,22 @@ export async function getNebiusStatus(): Promise<NebiusStatus> {
   return response.json();
 }
 
+export async function listNebiusEvidence(): Promise<NebiusEvidenceRecord[]> {
+  const response = await fetch(`${API_BASE_URL}/api/nebius/evidence`);
+  if (!response.ok) {
+    throw new Error(`Nebius evidence listing failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function syncNebiusEvidence(): Promise<NebiusEvidenceSyncResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/nebius/evidence/sync`, { method: "POST" });
+  if (!response.ok) {
+    throw new Error(`Nebius evidence sync failed: ${response.status}`);
+  }
+  return response.json();
+}
+
 export async function getNebiusObservatory(): Promise<NebiusObservatory> {
   const response = await fetch(`${API_BASE_URL}/api/nebius/observatory`);
   if (!response.ok) {
@@ -1227,6 +1270,17 @@ export async function getDetectorTournament(tournamentId: string): Promise<Detec
   const response = await fetch(`${API_BASE_URL}/api/nebius/tournament/${encodeURIComponent(tournamentId)}`);
   if (!response.ok) {
     throw new Error(`AI detector tournament status failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function refreshDetectorTournament(tournamentId: string): Promise<DetectorTournamentResponse> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/nebius/tournament/${encodeURIComponent(tournamentId)}/refresh`,
+    { method: "POST" }
+  );
+  if (!response.ok) {
+    throw new Error(`AI detector tournament refresh failed: ${response.status}`);
   }
   return response.json();
 }

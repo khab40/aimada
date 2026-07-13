@@ -1,7 +1,9 @@
 import csv
 import json
+import os
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 import threading
@@ -14,6 +16,8 @@ from uuid import uuid4
 from pydantic import BaseModel, Field
 
 from app.config import get_settings
+from app.experiments.artifact_normalizer import ArtifactNormalizationResponse, normalize_batch_artifacts
+from app.nebius.evidence_archive import NebiusEvidenceArchive
 from app.storage.local_store import LocalStore
 
 
@@ -181,6 +185,101 @@ def get_tournament(tournament_id: str, *, store: LocalStore) -> DetectorTourname
     if not isinstance(decoded, dict):
         return None
     return DetectorTournamentResponse.model_validate(decoded)
+
+
+def refresh_tournament(tournament_id: str, *, store: LocalStore) -> DetectorTournamentResponse | None:
+    tournament = get_tournament(tournament_id, store=store)
+    if tournament is None or tournament.execution_mode != "nebius_serverless_job":
+        return tournament
+    if tournament.status in {"failed", "real_nebius_pending"}:
+        return tournament
+
+    settings = get_settings()
+    job_id = str(tournament.metrics.get("nebius_job_id") or "").strip()
+    status_template = settings.nebius_job_status_command_template
+    if not job_id or not status_template:
+        return tournament
+
+    artifact_dir = store.output_dir / "nebius" / "tournaments" / tournament_id
+    try:
+        status_result = _run_command_template(status_template, {"job_id": job_id})
+        status = _parse_job_status(status_result.stdout) or tournament.status
+    except RuntimeError as exc:
+        response = tournament.model_copy(
+            update={"summary": f"Nebius Job status refresh failed: {_redact(str(exc))}"}
+        )
+        _persist_tournament(store, response)
+        return response
+
+    artifacts = dict(tournament.artifacts)
+    if status in {"completed", "failed"} and settings.nebius_job_logs_command_template:
+        try:
+            logs_result = _run_command_template(settings.nebius_job_logs_command_template, {"job_id": job_id})
+            logs_path = artifact_dir / "nebius_job_logs.txt"
+            logs_path.write_text(_redact(logs_result.stdout), encoding="utf-8")
+            artifacts["nebius_job_logs"] = str(logs_path)
+        except RuntimeError:
+            pass
+
+    if status == "completed":
+        try:
+            collected = _collect_cloud_artifacts(tournament, artifact_dir=artifact_dir, settings=settings)
+        except RuntimeError as exc:
+            response = tournament.model_copy(
+                update={
+                    "status": "failed",
+                    "completed_at": _now(),
+                    "artifacts": artifacts,
+                    "summary": f"Nebius Job completed, but artifact collection failed: {_redact(str(exc))}",
+                }
+            )
+            _persist_tournament(store, response)
+            return response
+        if collected.missing:
+            response = tournament.model_copy(
+                update={
+                    "status": "running",
+                    "artifacts": {**artifacts, **collected.artifact_paths},
+                    "summary": "Nebius Job completed; waiting for the remaining S3 artifacts.",
+                }
+            )
+            _persist_tournament(store, response)
+            return response
+        metrics_path = Path(collected.artifact_paths["detector_metrics"])
+        leaderboard = _leaderboard_from_metrics(metrics_path)
+        response = tournament.model_copy(
+            update={
+                "status": "completed",
+                "completed_at": _now(),
+                "leaderboard": leaderboard,
+                "metrics": {
+                    **tournament.metrics,
+                    **_metrics_summary(
+                        leaderboard,
+                        scenarios=_scenario_names_from_metrics(leaderboard),
+                        runs_per_scenario=1,
+                    ),
+                    "artifact_count": collected.copied_count,
+                },
+                "artifacts": {**artifacts, **collected.artifact_paths},
+                "summary": (
+                    f"Nebius Serverless Job {job_id} completed; {collected.copied_count} S3 artifacts "
+                    "were synced to the backend and exposed to the UI."
+                ),
+            }
+        )
+        _persist_tournament(store, response)
+        return response
+
+    response = tournament.model_copy(
+        update={
+            "status": status,
+            "artifacts": artifacts,
+            "summary": f"Nebius Serverless Job {job_id} status is {status}.",
+        }
+    )
+    _persist_tournament(store, response)
+    return response
 
 
 def tournament_artifacts(tournament_id: str, *, store: LocalStore) -> DetectorTournamentArtifactsResponse | None:
@@ -358,18 +457,28 @@ def _submit_nebius_job(
     if not submit_template:
         return _pending_nebius_response(request, tournament_id=tournament_id, started_at=started_at, store=store)
 
+    cloud_output_uri = _tournament_cloud_output_uri(settings, tournament_id)
+    batch_args = [
+        "/job/serverless/jobs/run_batch_experiments.py",
+        "--runs",
+        str(request.number_of_scenarios),
+        "--batch-size",
+        str(min(request.number_of_scenarios, 100)),
+        "--scenarios",
+        ",".join(_scenario_names(request.manipulation_types)),
+        "--output",
+        f"/job/outputs/tournaments/{tournament_id}/local-batch",
+    ]
+    if cloud_output_uri:
+        batch_args.extend(["--s3-output-uri", cloud_output_uri])
+        if settings.nebius_object_storage_endpoint_url:
+            batch_args.extend(["--s3-endpoint-url", settings.nebius_object_storage_endpoint_url])
     context = {
         "config_path": str(request_path),
         "experiment_id": tournament_id,
         "image": settings.nebius_job_image,
         "output_dir": str(artifact_dir / "job-output"),
-        "job_args": shlex.quote(
-            "/job/serverless/jobs/run_batch_experiments.py "
-            f"--runs {request.number_of_scenarios} "
-            f"--batch-size {min(request.number_of_scenarios, 100)} "
-            f"--scenarios {','.join(_scenario_names(request.manipulation_types))} "
-            f"--output /job/outputs/tournaments/{tournament_id}/local-batch"
-        ),
+        "job_args": shlex.quote(shlex.join(batch_args)),
         "tournament_id": tournament_id,
         "subnet_id": settings.nebius_subnet_id or "",
         "subnet_id_arg": _optional_flag("--subnet-id", settings.nebius_subnet_id),
@@ -407,7 +516,7 @@ def _submit_nebius_job(
         )
 
     submit_stdout_path = artifact_dir / "nebius_submit_stdout.txt"
-    submit_stdout_path.write_text(completed.stdout, encoding="utf-8")
+    submit_stdout_path.write_text(_redact(completed.stdout), encoding="utf-8")
     job_id = _parse_job_id(completed.stdout) or f"NEB-SUBMITTED-{uuid4().hex[:8].upper()}"
     return DetectorTournamentResponse(
         tournament_id=tournament_id,
@@ -422,6 +531,7 @@ def _submit_nebius_job(
             "manipulation_types": request.manipulation_types,
             "difficulty_mix": request.difficulty_mix,
             "nebius_job_id": job_id,
+            "cloud_output_uri": cloud_output_uri,
         },
         artifacts={"request": str(request_path), "submit_stdout": str(submit_stdout_path)},
         summary=f"Nebius Serverless Job queued as {job_id}. Poll job status and artifacts from the configured Nebius path.",
@@ -474,6 +584,110 @@ def _object_storage_env_args(settings: Any) -> str:
     )
 
 
+def _tournament_cloud_output_uri(settings: Any, tournament_id: str) -> str | None:
+    base_uri = str(getattr(settings, "nebius_job_output_uri", "") or "").rstrip("/")
+    if not base_uri:
+        return None
+    return f"{base_uri}/tournaments/{tournament_id}/local-batch"
+
+
+def _collect_cloud_artifacts(
+    tournament: DetectorTournamentResponse,
+    *,
+    artifact_dir: Path,
+    settings: Any,
+) -> ArtifactNormalizationResponse:
+    cloud_output_uri = str(tournament.metrics.get("cloud_output_uri") or "").strip()
+    if not cloud_output_uri:
+        raise RuntimeError("tournament cloud output URI is not configured")
+    aws = shutil.which("aws")
+    if aws is None:
+        raise RuntimeError("aws CLI is required to sync tournament S3 artifacts")
+    source_dir = artifact_dir / "cloud-batch"
+    source_dir.mkdir(parents=True, exist_ok=True)
+    command = [aws]
+    if settings.nebius_object_storage_endpoint_url:
+        command.extend(["--endpoint-url", settings.nebius_object_storage_endpoint_url])
+    command.extend(["s3", "sync", cloud_output_uri, str(source_dir), "--only-show-errors"])
+    env = os.environ.copy()
+    if settings.nebius_object_storage_access_key_id:
+        env["AWS_ACCESS_KEY_ID"] = settings.nebius_object_storage_access_key_id
+    if settings.nebius_object_storage_secret_access_key:
+        env["AWS_SECRET_ACCESS_KEY"] = settings.nebius_object_storage_secret_access_key
+    if settings.nebius_object_storage_session_token:
+        env["AWS_SESSION_TOKEN"] = settings.nebius_object_storage_session_token
+    env["AWS_DEFAULT_REGION"] = settings.nebius_object_storage_region
+    env["AWS_EC2_METADATA_DISABLED"] = "true"
+    completed = subprocess.run(command, capture_output=True, check=False, text=True, timeout=300, env=env)
+    sync_log = artifact_dir / "nebius_artifact_sync.txt"
+    sync_log.write_text(_redact(completed.stdout or completed.stderr), encoding="utf-8")
+    if completed.returncode != 0:
+        raise RuntimeError(f"aws s3 sync exited {completed.returncode}: {completed.stderr or completed.stdout}")
+    normalized = normalize_batch_artifacts(
+        experiment_id=tournament.tournament_id,
+        artifact_dir=artifact_dir,
+        source_dir=source_dir,
+    )
+    normalized.artifact_paths["nebius_artifact_sync"] = str(sync_log)
+    return normalized
+
+
+def _run_command_template(template: str, context: dict[str, str]) -> subprocess.CompletedProcess[str]:
+    try:
+        command = template.format(**context)
+        completed = subprocess.run(shlex.split(command), capture_output=True, check=False, text=True, timeout=120)
+    except (KeyError, OSError, subprocess.SubprocessError, TimeoutError) as exc:
+        raise RuntimeError(str(exc)) from exc
+    if completed.returncode != 0:
+        raise RuntimeError(f"command exited {completed.returncode}: {completed.stderr or completed.stdout}")
+    return completed
+
+
+def _parse_job_status(output: str) -> TournamentStatus | None:
+    text = output.strip()
+    if not text:
+        return None
+    try:
+        parsed = json.loads(text)
+    except json.JSONDecodeError:
+        parsed = None
+    value: Any = parsed
+    if isinstance(parsed, dict):
+        value = parsed.get("status") or parsed.get("state")
+        if isinstance(value, dict):
+            value = value.get("state") or value.get("status")
+    if not isinstance(value, str):
+        match = re.search(r"\b(?:status|state)\b\s*[:=]\s*([A-Za-z_-]+)", text, flags=re.IGNORECASE)
+        value = match.group(1) if match else text
+    normalized = value.lower().replace("-", "_").replace(" ", "_")
+    if normalized in {"queued", "pending", "submitted", "provisioning", "starting"}:
+        return "queued"
+    if normalized in {"running", "in_progress", "started"}:
+        return "running"
+    if normalized in {"completed", "complete", "succeeded", "success", "done"}:
+        return "completed"
+    if normalized in {"failed", "failure", "error", "cancelled", "canceled"}:
+        return "failed"
+    return None
+
+
+def _redact(value: str) -> str:
+    redacted = re.sub(
+        r"(?i)(AWS_(?:ACCESS_KEY_ID|SECRET_ACCESS_KEY|SESSION_TOKEN)\s*=\s*)([^\s,\"']+)",
+        r"\1[REDACTED]",
+        value,
+    )
+    return re.sub(
+        r"(?i)(api[_-]?key|token|secret|authorization)(\s*[:=]\s*)([^\s\"']+)",
+        r"\1\2[REDACTED]",
+        redacted,
+    )
+
+
+def _scenario_names_from_metrics(leaderboard: list[DetectorTournamentLeaderboardRow]) -> list[str]:
+    return sorted({row.scenario for row in leaderboard}) or ["unknown"]
+
+
 def _mock_tournament_response(
     request: DetectorTournamentStartRequest,
     *,
@@ -521,6 +735,18 @@ def _persist_tournament(store: LocalStore, response: DetectorTournamentResponse)
     payload = response.model_dump(mode="json")
     store.write_json(f"nebius/tournaments/{response.tournament_id}/tournament.json", payload)
     store.append_jsonl("nebius/tournaments.jsonl", payload)
+    settings = get_settings()
+    if response.execution_mode == "nebius_serverless_job" and settings.nebius_evidence_archive_enabled:
+        try:
+            NebiusEvidenceArchive(store, settings).record_job(
+                operation=f"detector_tournament_{response.status}",
+                run_id=response.tournament_id,
+                status=response.status,
+                payload=payload,
+                artifact_paths=response.artifacts,
+            )
+        except (OSError, RuntimeError, ValueError):
+            pass
 
 
 def _leaderboard_from_metrics(path: Path) -> list[DetectorTournamentLeaderboardRow]:

@@ -91,6 +91,8 @@ def test_serverless_smoke_demo_reports_configured_nebius_job(monkeypatch: Any, t
     assert response.serverless_job["job_id"] == "job-smoke-123"
     assert response.serverless_job["templates_configured"] is True
     assert response.serverless_job["artifact_collection_configured"] is False
+    assert response.cloud_tournament is not None
+    assert response.cloud_tournament.tournament_id == response.serverless_job["cloud_tournament_id"]
     assert "NEBIUS_JOB_*_COMMAND_TEMPLATE" not in response.serverless_job["message"]
     assert "--subnet-id" in captured["argv"]
     assert "vpcsubnet-test" in captured["argv"]

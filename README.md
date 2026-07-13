@@ -401,13 +401,20 @@ export NEBIUS_JOB_IMAGE=ghcr.io/<your-org>/ai-market-abuse-detection-arena-jobs:
 ./scripts/create-nebius-ai-endpoint.sh
 ./scripts/create-nebius-ai-job.sh
 
-# Optional durable Job artifacts: private bucket -> backend -> UI.
+# Durable Job and Endpoint evidence: private bucket -> backend -> UI.
 ./scripts/configure-nebius-artifact-storage.sh \
   --project-id "${NEBIUS_PARENT_ID}" \
   --tenant-id <tenant-id> \
   --bucket-name <globally-unique-bucket-name> \
   --apply --restart
 ```
+
+In real Nebius mode this enables `NEBIUS_EVIDENCE_ARCHIVE_ENABLED=true`. Every
+AI Endpoint request/response and every managed-experiment or detector-tournament
+Job lifecycle snapshot is written under `outputs/nebius/evidence/`, uploaded to
+`{NEBIUS_JOB_OUTPUT_URI}/evidence/`, and exposed as UI download links. Use
+`POST /api/nebius/evidence/sync` (or **Sync evidence from S3** in Execution Trace)
+to retry pending uploads and restore the S3 archive to backend-local storage.
 
 Nebius H100 endpoint with local vLLM:
 

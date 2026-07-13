@@ -350,6 +350,7 @@ The command-template adapter lives only in `backend/app/experiments/nebius_orche
 | `NEBIUS_JOB_OUTPUT_URI` | Optional S3-compatible artifact root, for example `s3://bucket/aimada`. |
 | `NEBIUS_OBJECT_STORAGE_ENDPOINT_URL` | Nebius S3-compatible endpoint, for example `https://storage.eu-north1.nebius.cloud`. |
 | `NEBIUS_OBJECT_STORAGE_ACCESS_KEY_ID` / `NEBIUS_OBJECT_STORAGE_SECRET_ACCESS_KEY` | Object Storage credentials used by the job container to upload artifacts and by the backend to sync them. |
+| `NEBIUS_EVIDENCE_ARCHIVE_ENABLED` | Archives every AI Endpoint call and Serverless Job lifecycle snapshot locally and to Object Storage. Enabled by the real-Nebius Compose override. |
 
 Provision the private bucket, dedicated service account, access key, `.env` values, and backend validation with:
 
@@ -366,6 +367,15 @@ The command is dry-run-only without `--apply`, never prints credential values, a
 Supported template variables are `{config_path}`, `{experiment_id}`, `{job_id}`, `{image}`, `{output_dir}`, `{job_args}`, `{subnet_id_arg}`, `{parent_id_arg}`, `{volume_arg}`, `{cloud_output_uri}`, `{object_storage_endpoint_url_arg}`, and `{object_storage_env_args}`. Command stdout/stderr is redacted before persistence. A job is not marked `completed` just because submission succeeded; refresh only marks it completed after status reports completion and artifact collection succeeds.
 
 `POST /api/experiments/{id}/collect-nebius-artifacts` collects the existing job output format from mounted output, executes `NEBIUS_JOB_ARTIFACTS_COMMAND_TEMPLATE`, or syncs `{NEBIUS_JOB_OUTPUT_URI}/experiments/{id}/local-batch` with `aws s3 sync --endpoint-url`. It expects these files: `order_book_events.jsonl`, `trades.jsonl`, `attack_labels.jsonl`, `blue_team_alerts.jsonl`, `detector_metrics.csv`, `generated_report.md`, and `manifest.json`. The backend copies only files that exist into the canonical experiment layout, writes `artifact_index.json`, writes `cloud_artifact_evidence.json`, and exposes those files to the UI through existing artifact download endpoints; if no collection source is available, the experiment status becomes `cloud_artifacts_pending`.
+
+The shared evidence archive covers all application cloud paths: managed
+experiment Jobs, detector-tournament Jobs (including Polished E2E), and the six
+AI Endpoint inference routes. It stores redacted request, response, metadata,
+submit/status/log evidence locally under `outputs/nebius/evidence/` and mirrors
+it to `{NEBIUS_JOB_OUTPUT_URI}/evidence/`. `GET /api/nebius/evidence` lists the
+downloadable records; `POST /api/nebius/evidence/sync` retries failed uploads and
+restores the S3 archive to backend-local disk. The Execution Trace UI provides
+the same sync action and artifact links.
 
 Do not treat the local batch path, a queued submit record, or `real_nebius_pending` records as evidence of completed real cloud execution. Archive Nebius job logs, metrics, and produced artifacts before making cloud execution claims.
 
