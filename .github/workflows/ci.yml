@@ -19,10 +19,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
@@ -39,15 +39,15 @@ jobs:
         run: uv run --project backend ruff check backend serverless scripts
 
       - name: Run backend tests
-        run: uv run --project backend pytest -c backend/pyproject.toml backend/tests --junitxml=backend/test-results.xml
+        working-directory: backend
+        run: uv run pytest -c pyproject.toml tests --junitxml=test-results.xml
 
       - name: Upload backend test report
-        if: always()
-        uses: actions/upload-artifact@v4
+        if: ${{ always() && hashFiles('backend/test-results.xml') != '' }}
+        uses: actions/upload-artifact@v6
         with:
           name: backend-test-results
           path: backend/test-results.xml
-          if-no-files-found: error
 
   frontend:
     name: Frontend lint and build
@@ -57,10 +57,10 @@ jobs:
         working-directory: frontend
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "20"
           cache: npm
@@ -82,10 +82,10 @@ jobs:
       PYTHONPATH: backend
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
@@ -108,7 +108,7 @@ jobs:
         run: uv run --project backend python scripts/validate_ci_artifacts.py outputs/ci-eval
 
       - name: Upload deterministic evaluation artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: deterministic-evaluation
           path: outputs/ci-eval
@@ -120,10 +120,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
@@ -157,7 +157,7 @@ jobs:
             file: agent-runner/Dockerfile
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -177,7 +177,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Create safe local environment
         run: cp .env.example .env
@@ -208,7 +208,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out complete history
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
