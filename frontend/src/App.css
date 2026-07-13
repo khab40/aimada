@@ -2343,6 +2343,55 @@ body[data-sidebar-resizing="true"] {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.ai-scenario-generator-panel {
+  align-items: start;
+  grid-template-columns: minmax(320px, 0.8fr) minmax(0, 1.2fr);
+}
+
+.ai-scenario-generator-panel > .nebius-result-block,
+.generated-scenario-card {
+  display: grid;
+  gap: 14px;
+}
+
+.ai-scenario-panel-heading {
+  align-items: flex-start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.ai-scenario-panel-heading h3,
+.ai-scenario-panel-heading p {
+  margin: 0;
+}
+
+.ai-scenario-panel-heading p {
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.45;
+  margin-top: 5px;
+}
+
+.experiment-form-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.experiment-form-grid label {
+  color: var(--text-muted);
+  display: grid;
+  font-size: 12px;
+  gap: 6px;
+}
+
+.experiment-form-grid input,
+.experiment-form-grid select {
+  min-width: 0;
+  width: 100%;
+}
+
 .real-nebius-summary-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -2893,6 +2942,36 @@ body[data-sidebar-resizing="true"] {
   font-size: 13px;
   margin: 0;
   overflow-wrap: anywhere;
+}
+
+.artifact-link-list {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  margin: 8px 0 18px;
+}
+
+.artifact-link-list a {
+  background: rgba(34, 211, 238, 0.08);
+  border: 1px solid rgba(34, 211, 238, 0.16);
+  border-radius: 5px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  padding: 8px 10px;
+}
+
+.control-center-incident {
+  background: rgba(34, 211, 238, 0.08);
+  border: 1px solid rgba(34, 211, 238, 0.22);
+  border-radius: 6px;
+  margin-bottom: 12px;
+  padding: 12px;
+}
+
+.control-center-incident span,
+.control-center-incident strong {
+  display: block;
+  margin-bottom: 4px;
 }
 
 .compact-metric {

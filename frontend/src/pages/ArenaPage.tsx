@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { AttackBuilder } from "@/components/AttackBuilder";
 import { AttackTracker } from "@/components/AttackTracker";
 import { AgentTimeline } from "@/components/AgentTimeline";
@@ -11,6 +11,7 @@ import { MarketTimeline, type MarketTimelineFrame, type TimelineMarkerType } fro
 import { OrderBookLadder } from "@/components/OrderBookLadder";
 import { useArenaSource } from "@/hooks/useArenaSource";
 import { getProductDemoConfig, type ProductDemoConfig } from "@/demoModes";
+import { controlCenterIncidentPath, storeControlCenterIncident } from "@/controlCenterIncident";
 import { OrderBookTerrain } from "@/tabs/MarketBattlefield3D/components/OrderBookTerrain";
 import { arenaStateToFrame } from "@/tabs/MarketBattlefield3D/hooks/useMarketBattlefieldData";
 import type { BattlefieldFrame } from "@/tabs/MarketBattlefield3D/types";
@@ -41,6 +42,7 @@ function formatScenarioLabel(name?: string | null) {
 }
 
 export function ArenaPage() {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const demoConfig = getProductDemoConfig(searchParams.get("demo"));
   const { launchScenario, mode, pause, reset, running, sourceStatus, start, state, tick } = useArenaSource({
@@ -63,6 +65,12 @@ export function ArenaPage() {
   const loading = mode === "websocket" && sourceStatus === "connecting";
   const connected = mode === "demo" || mode === "mock" || sourceStatus === "connected";
   const canReset = tick > 0 || running || state.events.length > 0 || Boolean(state.active_scenario) || Boolean(state.incidents?.length);
+  const selectedIncident = incident ?? lastIncident;
+
+  const sendToControlCenter = useCallback((selected: Incident) => {
+    storeControlCenterIncident(selected);
+    navigate(controlCenterIncidentPath(selected));
+  }, [navigate]);
 
   useEffect(() => {
     if (incident) {
@@ -264,7 +272,7 @@ export function ArenaPage() {
               )}
             </div>
           </section>
-          <IncidentDrawer demoConfig={demoConfig} incident={incident ?? lastIncident} currentTick={tick} incidentTick={(incident ?? lastIncident)?.tick ?? tick} mode={incident ? incidentDetailsMode : "replay"} />
+          <IncidentDrawer demoConfig={demoConfig} incident={selectedIncident} currentTick={tick} incidentTick={selectedIncident?.tick ?? tick} mode={incident ? incidentDetailsMode : "replay"} onSendToControlCenter={sendToControlCenter} />
         </section>
       </div>
     </section>
@@ -357,7 +365,7 @@ function createIncident(state: ArenaState): Incident | null {
     return state.incidents[state.incidents.length - 1];
   }
 
-  const alert = state.detectors.alerts[0];
+  const alert = state.detectors.alerts[state.detectors.alerts.length - 1];
   const scenario = state.active_scenario;
   if (!alert || !scenario || !state.features) {
     return null;

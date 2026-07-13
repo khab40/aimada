@@ -72,6 +72,7 @@ describe("Core UI navigation and workflow contracts", () => {
   const runtimeModes = read("src/runtimeModes.ts");
   const css = read("src/App.css");
   const trace = read("src/components/NebiusExecutionTrace.tsx");
+  const incidentTransfer = read("src/controlCenterIncident.ts");
 
   it("keeps product navigation focused and removes implementation destinations", () => {
     expectIncludes(app, [
@@ -115,7 +116,24 @@ describe("Core UI navigation and workflow contracts", () => {
       "🕒 Timeline",
       "IncidentDrawer"
     ]);
+    expectIncludes(arena, ["storeControlCenterIncident", "controlCenterIncidentPath", "onSendToControlCenter"]);
     assert.doesNotMatch(arena, /aria-label="Market visualization"/);
+  });
+
+  it("transfers the selected Arena incident into the investigation workflow", () => {
+    expectIncludes(incidentTransfer, [
+      "aimada.control-center.incident",
+      "incidentInvestigationRequest",
+      "detector_outputs",
+      "market_metrics"
+    ]);
+    expectIncludes(nebius, [
+      "loadControlCenterIncident",
+      "Selected Arena incident",
+      "incidentInvestigationRequest(arenaIncident)",
+      "Investigate selected Arena incident"
+    ]);
+    assert.doesNotMatch(nebius, /Switch runtime: Local Demo|Switch runtime: Cloud|Test connection/);
   });
 
   it("keeps shared Nebius execution trace and cost latency fields complete", () => {
@@ -156,6 +174,8 @@ describe("Core UI navigation and workflow contracts", () => {
       "navigate(`/attack-scenarios?",
       "title=\"Scenario Generator\"",
       "Generate AI Scenario",
+      "AI Investigation unlocks after detector alerts are available",
+      "experimentHasAlerts",
       "Replay in Arena",
       "Ground truth",
       "generateMarketAbuseScenario",
@@ -173,12 +193,15 @@ describe("Core UI navigation and workflow contracts", () => {
       "Evidence timeline",
       "Recommended action",
       "runAIInvestigationTeam",
-      "Explain current incident",
+      "Explain benchmark alerts",
       "Switch to Cloud to run this explanation on a real endpoint.",
-      "Detector comparison",
-      "Model comparison",
       "Run Local Demo tournament",
       "Run serverless job",
+      "Latest execution",
+      "Detectors compared",
+      "Models compared",
+      "<th>Detector</th>",
+      "<th>Model</th>",
       "Execution graph",
       "Scenario",
       "Detector",
@@ -219,6 +242,7 @@ describe("Core UI navigation and workflow contracts", () => {
     assert.doesNotMatch(nebius, /title="GPU Runtime"/);
     assert.doesNotMatch(nebius, /title="Artifacts"/);
     assert.doesNotMatch(nebius, /title="Costs"/);
+    assert.doesNotMatch(nebius, /Compare models|Run Jobs|Detector comparison|Model comparison/);
     assert.doesNotMatch(nebius, /Managed Experiment Lab/);
   });
 
@@ -286,7 +310,10 @@ describe("Core UI navigation and workflow contracts", () => {
       "--layout-sidebar-width",
       "--layout-topbar-height",
       ".console-topbar",
-      ".command-center-service-grid"
+      ".command-center-service-grid",
+      ".artifact-link-list",
+      ".ai-scenario-generator-panel",
+      ".experiment-form-grid"
     ]);
   });
 });
@@ -302,8 +329,10 @@ describe("Demo surface feature flags", () => {
       "VITE_ENABLE_ADVANCED_ATTACK_CONTROLS",
       "VITE_ENABLE_LEGACY_PAGES"
     ]);
-    expectIncludes(attackBuilder, ["Scenario Setup", "Manipulation type", "Difficulty", "Send to Nebius investigation"]);
-    expectIncludes(attackPage, ["AI Scenario Generator", "featureFlags.enableAdvancedAttackControls"]);
+    expectIncludes(attackBuilder, ["Scenario Setup", "Manipulation type", "Difficulty", "Send to Nebius investigation", "storeControlCenterIncident", "controlCenterIncidentPath"]);
+    expectIncludes(attackPage, ["AI Scenario Generator", "featureFlags.enableAdvancedAttackControls", "sendToInvestigation", "storeControlCenterIncident"]);
+    assert.doesNotMatch(attackBuilder, /to="\/investigations/);
+    assert.doesNotMatch(attackPage, /to={`\/investigations/);
   });
 });
 

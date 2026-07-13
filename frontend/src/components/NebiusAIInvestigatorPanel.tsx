@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createInvestigationReport, explainIncident, type IncidentExplanation, type InvestigationReportResponse } from "@/api/client";
 import { AiCostLatencyCard, type NebiusExecutionTraceData } from "@/components/NebiusExecutionTrace";
 import type { ProductDemoConfig } from "@/demoModes";
@@ -18,8 +18,10 @@ export function NebiusAIInvestigatorPanel({
   const [runtimeMode, setRuntimeMode] = useState<RuntimeMode>(() => getStoredRuntimeMode());
   const [trace, setTrace] = useState<NebiusExecutionTraceData>(() => createInitialTrace(demoConfig, runtimeMode));
   const [state, setState] = useState<InvestigatorState>("idle");
+  const analysisRunRef = useRef(0);
 
   useEffect(() => {
+    analysisRunRef.current += 1;
     setExplanation(null);
     setTrace(createInitialTrace(demoConfig, runtimeMode));
     setState("idle");
@@ -47,6 +49,7 @@ export function NebiusAIInvestigatorPanel({
       return;
     }
 
+    const run = ++analysisRunRef.current;
     const startedAt = performance.now();
     setState("analyzing");
     setTrace((current) => ({ ...current, status: "running" }));
@@ -56,11 +59,13 @@ export function NebiusAIInvestigatorPanel({
         : incident.id.startsWith("MOCK-") || incident.id.startsWith("DEMO-")
           ? await mockExplainIncident(incident, demoConfig)
           : await explainIncident(incident.id);
+      if (run !== analysisRunRef.current) return;
       setExplanation(result);
       setTrace(createCompletedTrace(demoConfig, incident, result, startedAt, runtimeMode));
       setState("completed");
     } catch {
       const result = await mockExplainIncident(incident, demoConfig, "Nebius unavailable. Using cached demo explanation.");
+      if (run !== analysisRunRef.current) return;
       setExplanation(result);
       setTrace(createCompletedTrace(demoConfig, incident, result, startedAt, runtimeMode));
       setState("completed");

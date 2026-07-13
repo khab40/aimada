@@ -476,9 +476,9 @@ def test_aggregate_experiment_uses_sample_detector_metrics_csv(tmp_path: Path) -
     (artifact_dir / "detector_metrics.csv").write_text(
         "\n".join(
             [
-                "scenario,runs,alerts,precision,recall,f1,avg_detection_latency_ms",
-                "normal_market,2,0,1.0,0.0,0.0,",
-                "spoofing,2,2,0.75,0.5,0.6,450",
+                "scenario,detector,model,runs,alerts,precision,recall,f1,avg_detection_latency_ms",
+                "normal_market,baseline_rules,rules-v1,2,0,1.0,0.0,0.0,",
+                "spoofing,wall_detector,rules-v1,2,2,0.75,0.5,0.6,450",
             ]
         )
         + "\n",
@@ -514,8 +514,11 @@ def test_aggregate_experiment_uses_sample_detector_metrics_csv(tmp_path: Path) -
     assert summary.f1_by_scenario["spoofing"] == 0.6
     assert summary.avg_detection_latency_ms == 450
     assert leaderboard[1].scenario == "spoofing"
+    assert leaderboard[1].detector == "wall_detector"
+    assert leaderboard[1].model == "rules-v1"
     assert leaderboard[1].alert_count == 2
     assert "Experiment Benchmark Report" in report.body.decode("utf-8")
+    assert "| Scenario | Detector | Model |" in report.body.decode("utf-8")
     assert (artifact_dir / "experiment_summary.json").exists()
     assert (artifact_dir / "leaderboard.json").exists()
     assert (artifact_dir / "benchmark_report.md").exists()

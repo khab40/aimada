@@ -8,6 +8,8 @@ from pydantic import BaseModel, Field
 
 class LeaderboardRow(BaseModel):
     scenario: str
+    detector: str = "built-in detector suite"
+    model: str = "none (deterministic)"
     precision: float
     recall: float
     f1: float
@@ -108,6 +110,8 @@ def report_path(artifact_dir: Path) -> Path:
 def _leaderboard_row(row: dict[str, str]) -> LeaderboardRow:
     return LeaderboardRow(
         scenario=str(row.get("scenario") or "unknown"),
+        detector=str(row.get("detector") or "built-in detector suite"),
+        model=str(row.get("model") or "none (deterministic)"),
         precision=_float(row.get("precision")),
         recall=_float(row.get("recall")),
         f1=_float(row.get("f1")),
@@ -153,12 +157,15 @@ def _markdown_report(summary: ExperimentSummary, leaderboard: list[LeaderboardRo
         f"- Failed runs: {summary.failed_runs}",
         f"- Average detection latency ms: {summary.avg_detection_latency_ms if summary.avg_detection_latency_ms is not None else 'n/a'}",
         "",
-        "| Scenario | Precision | Recall | F1 | Avg latency ms | Alerts |",
-        "| --- | ---: | ---: | ---: | ---: | ---: |",
+        "| Scenario | Detector | Model | Precision | Recall | F1 | Avg latency ms | Alerts |",
+        "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |",
     ]
     for row in leaderboard:
         latency = row.avg_detection_latency_ms if row.avg_detection_latency_ms is not None else "n/a"
-        lines.append(f"| {row.scenario} | {row.precision} | {row.recall} | {row.f1} | {latency} | {row.alert_count} |")
+        lines.append(
+            f"| {row.scenario} | {row.detector} | {row.model} | {row.precision} | {row.recall} | "
+            f"{row.f1} | {latency} | {row.alert_count} |"
+        )
     lines.append("")
     return "\n".join(lines)
 

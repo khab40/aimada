@@ -1,7 +1,7 @@
 import asyncio
 import json
 from typing import Any
-from urllib.error import URLError
+from urllib.error import HTTPError, URLError
 
 from app.api.routes_incidents import build_compact_replay_payload, persist_explanation_result
 from app.arena.engine import SimulationEngine
@@ -219,6 +219,72 @@ def test_nebius_client_generates_mock_market_abuse_scenario_without_endpoint() -
     assert projection["id"] == scenario.scenario_id
     assert projection["attackType"] == "layering"
     assert projection["source"]["ground_truth"]["label"] == "layering"
+
+
+def test_nebius_client_uses_compatible_scenario_route_when_specialized_route_is_missing(monkeypatch: Any) -> None:
+    client = NebiusClient(
+        market_abuse_scenario_url="https://endpoint.example/generate-market-abuse-scenario",
+        scenario_generator_url="https://endpoint.example/generate-scenario",
+    )
+    calls: list[tuple[str, dict[str, Any]]] = []
+
+    def fake_post(url: str, payload: dict[str, Any]) -> dict[str, Any]:
+        calls.append((url, payload))
+        if url.endswith("/generate-market-abuse-scenario"):
+            raise HTTPError(url, 404, "Not Found", None, None)
+        return {
+            "description": "Endpoint-generated bounded scenario explanation.",
+            "model": "deployed-model",
+            "model_mode": "vllm",
+            "title": "Compatible endpoint scenario",
+        }
+
+    monkeypatch.setattr(client, "_post_json", fake_post)
+    scenario = client.generate_market_abuse_scenario(MarketAbuseScenarioGenerationRequest(seed=13))
+
+    assert [url for url, _ in calls] == [
+        "https://endpoint.example/generate-market-abuse-scenario",
+        "https://endpoint.example/generate-scenario",
+    ]
+    assert scenario.mode == "nebius"
+    assert scenario.endpoint.endswith("/generate-scenario")
+    assert scenario.title == "Compatible endpoint scenario"
+    assert scenario.events
+    assert scenario.fallback_reason is None
+
+
+def test_nebius_client_uses_deployed_orderbook_route_when_scenario_routes_are_missing(monkeypatch: Any) -> None:
+    client = NebiusClient(
+        market_abuse_scenario_url="https://endpoint.example/generate-market-abuse-scenario",
+        orderbook_alert_url="https://endpoint.example/orderbook-alert",
+        scenario_generator_url="https://endpoint.example/generate-scenario",
+    )
+    calls: list[str] = []
+
+    def fake_post(url: str, payload: dict[str, Any]) -> dict[str, Any]:
+        calls.append(url)
+        if not url.endswith("/orderbook-alert"):
+            raise HTTPError(url, 404, "Not Found", None, None)
+        assert payload["scenario_hint"] == "spoofing"
+        return {
+            "confidence": 0.9,
+            "detected_pattern": "Spoofing",
+            "model": "deployed-model",
+            "model_mode": "local_vllm",
+            "reasons": ["Endpoint analyzed the bounded synthetic order-book pattern."],
+            "recommended_action": "Review the synthetic replay and detector evidence.",
+            "suspicion_score": 0.7,
+        }
+
+    monkeypatch.setattr(client, "_post_json", fake_post)
+    scenario = client.generate_market_abuse_scenario(MarketAbuseScenarioGenerationRequest(seed=21))
+
+    assert calls[-1].endswith("/orderbook-alert")
+    assert scenario.mode == "nebius"
+    assert scenario.endpoint.endswith("/orderbook-alert")
+    assert scenario.source["compatibility_mode"] == "orderbook_alert_analysis"
+    assert scenario.source["model_mode"] == "local_vllm"
+    assert scenario.fallback_reason is None
 
 
 def test_nebius_client_status_reports_cli_shape(monkeypatch: Any) -> None:

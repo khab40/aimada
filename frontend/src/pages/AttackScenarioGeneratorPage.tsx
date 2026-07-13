@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   generateNebiusAttackScenario,
   generateNebiusAttackVariants,
@@ -12,6 +12,7 @@ import {
   type ReportsSummary
 } from "@/api/client";
 import { TeamMark } from "@/components/TeamMark";
+import { controlCenterIncidentPath, storeControlCenterIncident } from "@/controlCenterIncident";
 import { featureFlags } from "@/featureFlags";
 import type {
   AttackScenario,
@@ -21,6 +22,7 @@ import type {
   ScenarioGridConfig,
   ServerlessExperimentJob
 } from "@/features/nebius/types";
+import type { Incident } from "@/types/arena";
 
 const initialAttackInput: AttackScenarioInput = {
   attackDuration: "Medium",
@@ -131,6 +133,7 @@ const reusableScenarioTemplates: ReusableScenarioTemplate[] = [
 ];
 
 export function AttackScenarioGeneratorPage() {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const appliedDemoScenarioRef = useRef<string | null>(null);
   const [attackInput, setAttackInput] = useState<AttackScenarioInput>(initialAttackInput);
@@ -268,6 +271,30 @@ export function AttackScenarioGeneratorPage() {
     await refresh();
   }
 
+  function sendToInvestigation() {
+    if (!attackScenario) return;
+    const confidence = attackScenario.expectedDetectorDifficulty === "hard" ? 0.9 : attackScenario.expectedDetectorDifficulty === "medium" ? 0.78 : 0.62;
+    const incident: Incident = {
+      agent: attackScenario.redTeamAgents.join(", ") || "Scenario Generator",
+      confidence,
+      evidence: [
+        { key: "market_regime", label: "Market regime", value: attackScenario.marketRegime },
+        { key: "target_side", label: "Target side", value: attackScenario.targetSide },
+        { key: "duration_ticks", label: "Duration", value: attackScenario.durationTicks, unit: "ticks" },
+        { key: "expected_signals", label: "Expected signals", value: attackScenario.expectedSignals.join(", ") }
+      ],
+      explanation: `Generated ${attackScenario.attackType} scenario prepared for bounded Nebius investigation.`,
+      id: `SCENARIO-${attackScenario.id}-${Date.now()}`,
+      scenario_id: attackScenario.id,
+      severity: confidence >= 0.85 ? "Critical" : confidence >= 0.7 ? "High" : "Medium",
+      tick: attackScenario.startTick,
+      title: attackScenario.name,
+      type: attackScenario.attackType
+    };
+    storeControlCenterIncident(incident);
+    navigate(controlCenterIncidentPath(incident));
+  }
+
   async function generateGrid() {
     const scenarios = await generateNebiusScenarioGrid(scenarioConfig, attackScenario?.id);
     setGeneratedScenarios(scenarios);
@@ -350,9 +377,9 @@ export function AttackScenarioGeneratorPage() {
             {featureFlags.enableAdvancedAttackControls ? <button onClick={() => void runAction(generateVariants)} type="button">Generate 10 Variants</button> : null}
             {arenaRunReady ? <Link className="primary-link-button" to="/arena">Open Arena</Link> : null}
             {attackScenario ? (
-              <Link className="primary-link-button" to={`/investigations?scenario=${encodeURIComponent(attackScenario.id)}&action=investigate`}>
+              <button className="primary-link-button" onClick={sendToInvestigation} type="button">
                 Send to Nebius investigation
-              </Link>
+              </button>
             ) : (
               <button disabled type="button">Send to Nebius investigation</button>
             )}

@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { launchAttackExperiment, saveAttackExperiment, type AttackExperimentRequest } from "@/api/client";
+import { controlCenterIncidentPath, storeControlCenterIncident } from "@/controlCenterIncident";
 import { featureFlags } from "@/featureFlags";
 import type { ArenaScenarioType } from "@/hooks/useArenaSource";
+import type { Incident } from "@/types/arena";
 
 type CancelStyle = "instant" | "gradual" | "partial";
 type Difficulty = "Easy" | "Medium" | "Hard";
@@ -13,6 +15,7 @@ const cancelStyles: CancelStyle[] = ["instant", "gradual", "partial"];
 const noiseCovers: NoiseCover[] = ["none", "low", "high"];
 
 export function AttackBuilder({ onLaunchScenario }: { onLaunchScenario?: (type: ArenaScenarioType) => void }) {
+  const navigate = useNavigate();
   const [cancelStyle, setCancelStyle] = useState<CancelStyle>("instant");
   const [difficulty, setDifficulty] = useState<Difficulty>("Medium");
   const [distanceFromMidBps, setDistanceFromMidBps] = useState(12);
@@ -93,6 +96,27 @@ export function AttackBuilder({ onLaunchScenario }: { onLaunchScenario?: (type: 
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  function handleInvestigation() {
+    const incident: Incident = {
+      agent: "Arena Scenario Builder",
+      confidence: risk.score,
+      evidence: [
+        { key: "wall_size_multiplier", label: "Wall size multiplier", value: wallSizeMultiplier, unit: "x" },
+        { key: "distance_from_mid_bps", label: "Distance from mid", value: distanceFromMidBps, unit: "bps" },
+        { key: "lifetime_seconds", label: "Order lifetime", value: lifetimeSeconds, unit: "seconds" },
+        { key: "cancel_style", label: "Cancel style", value: cancelStyle },
+        { key: "noise_cover", label: "Noise cover", value: noiseCover }
+      ],
+      explanation: risk.explanation,
+      id: `ARENA-BUILDER-${Date.now()}`,
+      severity: risk.score >= 0.85 ? "Critical" : risk.score >= 0.7 ? "High" : risk.score >= 0.5 ? "Medium" : "Low",
+      title: `${scenarioType} scenario investigation`,
+      type: toArenaScenarioType(scenarioType)
+    };
+    storeControlCenterIncident(incident);
+    navigate(controlCenterIncidentPath(incident));
   }
 
   return (
@@ -188,9 +212,9 @@ export function AttackBuilder({ onLaunchScenario }: { onLaunchScenario?: (type: 
         <button disabled={isSubmitting} type="button" onClick={() => void handleLaunch()}>
           Run scenario
         </button>
-        <Link className="primary-link-button" to="/investigations">
+        <button className="primary-link-button" onClick={handleInvestigation} type="button">
           Send to Nebius investigation
-        </Link>
+        </button>
         {featureFlags.enableAdvancedAttackControls ? (
           <button disabled={isSubmitting} type="button" onClick={() => void handleSave()}>
             Save as experiment

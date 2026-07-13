@@ -193,6 +193,8 @@ def _aggregate_metrics(results: list[BatchResult]) -> list[dict[str, Any]]:
         rows.append(
             {
                 "scenario": scenario,
+                "detector": "built-in detector suite",
+                "model": "none (deterministic)",
                 "runs": len(scenario_results),
                 "alerts": detections,
                 "precision": round(precision, 4),
@@ -220,7 +222,17 @@ def _write_metrics(path: Path, rows: list[dict[str, Any]]) -> None:
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(
             handle,
-            fieldnames=["scenario", "runs", "alerts", "precision", "recall", "f1", "avg_detection_latency_ms"],
+            fieldnames=[
+                "scenario",
+                "detector",
+                "model",
+                "runs",
+                "alerts",
+                "precision",
+                "recall",
+                "f1",
+                "avg_detection_latency_ms",
+            ],
         )
         writer.writeheader()
         writer.writerows(rows)

@@ -223,6 +223,8 @@ export type ExperimentSummary = {
 
 export type ExperimentLeaderboardRow = {
   scenario: string;
+  detector: string;
+  model: string;
   precision: number;
   recall: number;
   f1: number;
@@ -825,7 +827,7 @@ export async function runManagedExperimentInvestigations(
     { method: "POST" }
   );
   if (!response.ok) {
-    throw new Error(`Run experiment investigations failed: ${response.status}`);
+    throw new Error(await apiErrorMessage(response, "Run experiment investigations failed"));
   }
   return response.json();
 }

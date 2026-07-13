@@ -31,13 +31,15 @@ export function IncidentDrawer({
   demoConfig,
   incident,
   incidentTick,
-  mode = "live"
+  mode = "live",
+  onSendToControlCenter
 }: {
   currentTick?: number;
   demoConfig?: ProductDemoConfig | null;
   incident?: Incident | null;
   incidentTick?: number;
   mode?: IncidentDetailsMode;
+  onSendToControlCenter?: (incident: Incident) => void;
 }) {
   const [closedIncidentId, setClosedIncidentId] = useState<string | null>(null);
   const [stepIndex, setStepIndex] = useState(0);
@@ -114,13 +116,14 @@ export function IncidentDrawer({
       </section>
 
       <div className="incident-replay-controls">
+        {onSendToControlCenter ? <button type="button" onClick={() => onSendToControlCenter(incident)}>Send to Control Center</button> : null}
         <button type="button" onClick={() => setStepIndex(0)}>Replay</button>
         <button type="button" onClick={() => setStepIndex((value) => Math.max(0, value - 1))}>Step Back</button>
         <button type="button" onClick={() => setStepIndex((value) => Math.min(replaySteps.length - 1, value + 1))}>Step Forward</button>
         <button type="button" onClick={() => setClosedIncidentId(incident.id)}>Close</button>
       </div>
 
-      <NebiusAIInvestigatorPanel demoConfig={demoConfig} incident={incident} />
+      <NebiusAIInvestigatorPanel key={incident.id} demoConfig={demoConfig} incident={incident} />
     </aside>
   );
 }

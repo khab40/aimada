@@ -295,7 +295,68 @@ class NebiusClient:
                 request=payload,
                 endpoint=self.market_abuse_scenario_url,
             )
-        except (HTTPError, URLError, TimeoutError, json.JSONDecodeError, ValueError) as exc:
+        except HTTPError as exc:
+            if exc.code == 404 and self.scenario_generator_url:
+                try:
+                    response = self._post_json(
+                        self.scenario_generator_url,
+                        {
+                            "prompt": (
+                                f"Create a bounded synthetic {payload.manipulation_type} scenario for {payload.symbol}. "
+                                "Explain the scenario only; deterministic code owns events, labels, and replay."
+                            ),
+                            "constraints": payload.model_dump(mode="json"),
+                        },
+                    )
+                    return self._parse_market_abuse_scenario_response(
+                        response,
+                        request=payload,
+                        endpoint=self.scenario_generator_url,
+                    )
+                except (HTTPError, URLError, TimeoutError, json.JSONDecodeError, ValueError) as compatibility_exc:
+                    exc = compatibility_exc
+            if self.orderbook_alert_url:
+                try:
+                    response = self._post_json(
+                        self.orderbook_alert_url,
+                        {
+                            "bids": [{"price": 100.0, "quantity": 5.0}],
+                            "asks": [{"price": 101.0, "quantity": 1.0}],
+                            "events": [{"type": "cancel", "side": "sell", "quantity": 20.0}],
+                            "features": {
+                                "cancel_ratio": 0.8,
+                                "difficulty": payload.difficulty,
+                                "duration_ticks": payload.duration_ticks,
+                            },
+                            "scenario_hint": payload.manipulation_type,
+                            "tick": payload.duration_ticks,
+                        },
+                    )
+                    reasons = response.get("reasons") if isinstance(response.get("reasons"), list) else []
+                    pattern = str(response.get("detected_pattern") or payload.manipulation_type).replace("_", " ")
+                    compatible_response = {
+                        "description": " ".join(str(reason) for reason in reasons),
+                        "explanation": response.get("recommended_action"),
+                        "model": response.get("model"),
+                        "model_mode": response.get("model_mode"),
+                        "source": {
+                            "compatibility_mode": "orderbook_alert_analysis",
+                            "provider": "nebius_serverless",
+                        },
+                        "title": f"{payload.symbol} {pattern.title()} Endpoint Scenario",
+                    }
+                    return self._parse_market_abuse_scenario_response(
+                        compatible_response,
+                        request=payload,
+                        endpoint=self.orderbook_alert_url,
+                    )
+                except (HTTPError, URLError, TimeoutError, json.JSONDecodeError, ValueError) as compatibility_exc:
+                    exc = compatibility_exc
+            return self._mock_market_abuse_scenario(
+                payload,
+                reason=f"Nebius market-abuse scenario generator fallback: {exc}",
+            )
+        except (URLError, TimeoutError, json.JSONDecodeError, ValueError) as exc:
             return self._mock_market_abuse_scenario(
                 payload,
                 reason=f"Nebius market-abuse scenario generator fallback: {exc}",
