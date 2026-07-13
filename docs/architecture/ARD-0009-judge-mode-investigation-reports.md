@@ -14,7 +14,7 @@ Implemented:
 - UI report/replay surfaces for incident-centered evidence review and generated investigation summaries.
 - Artifact workbench actions for exporting, replaying, comparing, and promoting report evidence.
 
-Not yet complete:
+Future work:
 
 - A dedicated Judge Mode timeline-window selector with bounded evidence bundling is not fully implemented.
 - Persisted report workflow exists through the artifact/report surfaces, but the full state machine in this ARD remains future work.

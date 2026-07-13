@@ -1,4 +1,4 @@
-# Jury evidence index
+# Benchmark evidence index
 
 Only curated evidence under this directory is allowed into Git; all other generated `outputs/` content remains ignored.
 

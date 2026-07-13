@@ -1,79 +1,161 @@
 # Building AIMADA: An Adversarial Market-Abuse Evaluation Arena with Nebius Serverless AI
 
-I built AIMADA for the #NebiusServerlessChallenge: a synthetic market-abuse simulation and evaluation platform built and validated using Nebius Serverless AI Jobs and Serverless AI Endpoints.
+<!-- IMAGE PLACEHOLDER 1 — Article cover / AIMADA hero
+Suggested repository path: assets/img/ai-mada.jpg
+LinkedIn caption: AIMADA is a synthetic arena for evaluating market-abuse detectors and AI-assisted investigations on Nebius Serverless AI.
+Alt text: AIMADA banner showing the AI Market Abuse Detection Arena identity.
+Recommended placement: Immediately below the article title.
+-->
 
-Repository: [https://github.com/khab40/ai-market-abuse-detection-arena](https://github.com/khab40/ai-market-abuse-detection-arena)
+I built AIMADA for the #NebiusServerlessChallenge: a synthetic market-abuse simulation and evaluation platform built and validated with Nebius Serverless AI Jobs and Serverless AI Endpoints.
 
-The problem I wanted to explore is common in technical AI demos: the interesting part of the domain is hard to show safely. Market surveillance involves sensitive data, specialized microstructure concepts, noisy event streams, and language that can become misleading if a system is presented as a real compliance tool.
+Repository: [https://github.com/khab40/aimada](https://github.com/khab40/aimada)
 
-I did not want to build a product that claims to detect real manipulation. Instead, I built an educational arena where synthetic normal agents and synthetic abuse-like agents interact inside a controlled limit-order-book simulation. That gives the project a concrete engineering surface: generate market events, inject labeled scenarios, run deterministic detectors, preserve evidence, and use AI to explain what the detector already found.
+The problem I wanted to explore is common in technical AI demos: the interesting part of the domain is difficult to show safely.
 
-The architecture has two main paths.
+Market surveillance involves sensitive data, specialized market-microstructure concepts, noisy event streams, and language that can become misleading when a prototype is presented as a real compliance tool.
 
-AIMADA was also validated on real Nebius production infrastructure. More than ten Nebius Serverless AI Job runs completed successfully, with successful execution visible in the Nebius production logs. I deployed a Nebius Serverless AI Endpoint with vLLM and successfully exercised multiple routes, including scenario generation, incident analysis, investigation reporting, and structured market-event explanation. Together, these runs produced job artifacts, detector metrics, reports, logs, and endpoint responses. This production validation complements the small checked-in smoke example described below; it does not turn the project into a real-market surveillance claim.
+I did not want to build a system that claims to detect real manipulation. Instead, I built an educational arena where synthetic normal agents and synthetic abuse-like agents interact inside a controlled limit-order-book simulation.
 
-The first path is interactive. A React and Vite frontend renders the live arena: order-book ladders, price and spread charts, liquidity heatmaps, agent activity, detector confidence, incident cards, and replay and report views.
+That creates a concrete engineering surface: generate market events, inject labeled scenarios, run deterministic detectors, preserve structured evidence, and use AI to explain what the detector already found.
 
-A FastAPI backend owns the control plane. The browser sends live commands over WebSocket, the backend runs the simulation, and the UI receives complete `arena_state` messages. This keeps the browser away from both simulation internals and Nebius endpoint credentials.
+The architecture has two main execution paths.
 
-### Agents workspace during interactive runs
+The interactive path uses a React and Vite frontend, a FastAPI control plane, a separate agents workspace, and a Nebius Serverless AI Endpoint. The batch path uses Nebius Serverless AI Jobs for repeatable synthetic workloads, detector evaluation, aggregation, and artifact generation.
 
-During an interactive run, AIMADA uses the separate `agent-runner/` agents workspace to generate normal synthetic market activity. At each simulation tick, the backend sends a read-only order-book snapshot to the workspace through its `/decide` API. The workspace returns typed `AgentIntent` objects rather than mutating the market directly. The backend validates and deterministically sorts those intents, remains the single authoritative writer, and applies accepted actions to the synthetic exchange and matching engine.
+<!-- IMAGE PLACEHOLDER 2 — Architecture diagram
+Suggested repository path: assets/screenshots/aimada-architecture.png
+LinkedIn caption: AIMADA separates the React interface, authoritative FastAPI runtime, agents workspace, and Nebius Endpoint and Job execution paths.
+Alt text: Architecture diagram connecting the frontend, backend, agent-runner workspace, Serverless Endpoint, Serverless Jobs, Object Storage, and evidence UI.
+Recommended placement: After the paragraph introducing the two execution paths.
+-->
 
-The workspace runs multiple kinds of trading agents. Top-of-book market makers refresh visible liquidity on both bid and ask sides. Deterministic noise traders make small, cadence-based changes at selected price levels. Periodic liquidity takers alternate bounded synthetic market buys and sells. Optional LangGraph agents use strategies such as liquidity rebalancing, choosing which side to quote from observed depth imbalance. Optional CPU-heavy agents exercise a more computationally expensive decision path for workload testing.
+AIMADA was validated on real Nebius production infrastructure. More than ten Nebius Serverless AI Job runs completed successfully, with execution visible in production logs. I also deployed a vLLM-backed Nebius Serverless AI Endpoint and exercised routes for scenario generation, incident analysis, investigation reporting, order-book alert analysis, and structured market-event explanation. Those runs produced Job artifacts, detector metrics, reports, logs, and Endpoint responses. This validation proves the execution contracts; it does not turn AIMADA into a real-market surveillance product.
 
-This separation lets the interactive frontend display agent activity while the backend preserves ordering, timeouts, validation, and reproducibility. None of these agents connects to a broker, exchange, or real market. They trade only inside AIMADA’s synthetic order book and cannot emit real trading signals or orders.
+Job lifecycle records and generated artifacts are archived to Nebius Object Storage. Endpoint execution metadata is archived through the same evidence layer without presenting private credentials or sensitive transport details to the browser. The backend can synchronize archived evidence from S3-compatible storage back to backend-local storage, and the UI exposes the synchronized records and downloadable artifacts. This creates a traceable path from production execution, through durable storage, to evidence that a reviewer can inspect.
 
-Inside the backend, the core loop is intentionally deterministic. A synthetic exchange, order book, and matching engine process actions from normal market-making, liquidity-taking, and noise agents. Scenario agents can then inject bounded spoofing-like, layering-like, quote-stuffing-like, liquidity-evaporation, or pump-and-cancel style behavior.
+<!-- IMAGE PLACEHOLDER 6 — Optional S3 evidence synchronization
+Suggested repository path: assets/screenshots/s3-evidence-sync.png
+LinkedIn caption: Production Job and Endpoint evidence is archived to Object Storage, synchronized by the backend, and exposed as reviewable UI records and downloads.
+Alt text: AIMADA execution trace showing S3 evidence synchronization and artifact download links.
+Recommended placement: Immediately after the Object Storage evidence paragraph.
+-->
 
-The key word is “bounded.” These are synthetic patterns for education and detector testing, not instructions for real market activity. AIMADA uses no real trading data and produces no trading signals.
+## The interactive path
 
-The second path is the batch benchmark path. This is where Nebius Serverless AI Jobs fit naturally. Instead of asking a live UI to run dozens or hundreds of simulations, the job path runs repeatable detector tournaments offline, generates synthetic datasets, extracts features, and writes benchmark artifacts.
+The frontend renders the live arena: order-book ladders, price and spread charts, liquidity heatmaps, agent activity, detector confidence, incident cards, replay, and report views.
 
-The outputs are designed to be reviewable: JSON results, CSV metrics, Markdown reports, logs, and chart-ready data. The metric vocabulary is simple but useful: precision, recall, F1, false positives, false negatives, and detection latency against known synthetic scenario labels.
+The browser sends commands over WebSocket. The FastAPI backend runs the simulation and publishes complete `arena_state` messages. This keeps the browser away from simulation internals, server credentials, and direct Endpoint access.
 
-Nebius Serverless AI Endpoints play a different role. They do not make the original detection decision. A deterministic detector produces structured evidence first: spread, depth, imbalance, message rate, cancel-to-trade ratio, wall size ratio, order lifetime, confidence scores, and scenario labels.
+<!-- IMAGE PLACEHOLDER 3 — Live Arena
+Suggested repository path: assets/screenshots/arena-cockpit.png
+LinkedIn caption: The Live Arena makes synthetic order flow, bounded adversarial scenarios, detector confidence, and incident evidence visible in one workflow.
+Alt text: AIMADA Live Arena with order book, market charts, detector signals, and incident evidence.
+Recommended placement: After the frontend and WebSocket control-plane description.
+-->
 
-The backend then sends a compact incident payload to the endpoint. The endpoint returns a readable explanation, recommended review actions, investigation assistance, or a bounded synthetic scenario draft. This split matters because it keeps the system auditable. AI is used for explanation, narration, investigation assistance, and bounded scenario generation; evidence remains structured and reproducible.
+During an interactive run, AIMADA uses the separate `agent-runner/` workspace to generate normal synthetic market activity.
 
-Implementation-wise, the repository is organized into six main areas.
+At each simulation tick, the backend sends a read-only order-book snapshot to the workspace through its `/decide` API. The workspace returns typed `AgentIntent` objects rather than mutating the market directly. The backend validates and deterministically sorts those intents, remains the single authoritative writer, and applies accepted actions to the synthetic exchange and matching engine.
 
-`backend/` contains the FastAPI application, simulation engine, exchange model, detectors, incident storage, Nebius client, and report generation.
+The workspace runs several kinds of trading agents. Top-of-book market makers refresh visible liquidity on both sides. Deterministic noise traders make small cadence-based changes at selected levels. Periodic liquidity takers alternate bounded synthetic buys and sells. Optional LangGraph agents can choose which side to quote from observed depth imbalance. Optional CPU-heavy agents exercise a more computationally expensive decision path for workload testing.
 
-`agent-runner/` contains the agents workspace service, its `/health`, `/agents`, and `/decide` API contracts, the normal synthetic agents, optional CPU-heavy agents, and bounded LangGraph strategies used by the interactive path.
+This separation lets the frontend display agent activity while the backend preserves ordering, timeouts, validation, and reproducibility.
 
-`frontend/` contains the React arena, Demo page, Detection workflow, Scenario Generator, Nebius AI page, and reusable visualization components.
+None of these agents connects to a broker, exchange, or real market. They trade only inside AIMADA’s synthetic order book and cannot emit real orders or trading signals.
 
-`serverless/` contains the Nebius endpoint application, job runners, Dockerfiles, and example configurations for endpoint and batch execution.
+Inside the backend, the core loop is intentionally deterministic. A synthetic exchange, order book, and matching engine process actions from market-making, liquidity-taking, and noise agents. Scenario agents can then inject bounded spoofing-like, layering-like, quote-stuffing-like, liquidity-evaporation, or pump-and-cancel behavior.
 
-`docs/` captures architecture records, deployment notes, the runtime model, benchmark methodology, safety framing, and challenge submission evidence.
+The key word is “bounded.” These are synthetic patterns for education and detector testing, not instructions for real market activity.
 
-`outputs/` stores generated artifacts such as events, incidents, labels, explanations, metrics, and benchmark reports.
+## Why detection and explanation are separate
 
-The most important design choice was separating “detect” from “explain.” In many AI prototypes, the model is asked to be both judge and storyteller. That is convenient, but difficult to test.
+Nebius Serverless AI Endpoints do not make AIMADA’s original detection decision.
 
-In AIMADA, detectors are deterministic functions over synthetic order-book state. They create incidents with explicit evidence. The AI layer translates that evidence into plain English for a reviewer, helps organize an investigation, narrates the result, or generates a bounded scenario. It does not silently replace the detector logic or become the source of ground truth.
+A deterministic detector produces structured evidence first: spread, visible depth, imbalance, message rate, cancel-to-trade ratio, wall-size ratio, order lifetime, confidence scores, and scenario labels.
 
-## Results and reproducibility
+The backend then sends a compact incident payload to the Endpoint. The Endpoint can return a readable explanation, investigation assistance, recommended review actions, or a bounded synthetic scenario draft.
 
-The main production result is validation of the complete batch workflow across more than ten successful Nebius Serverless AI Job runs. Those runs exercised container execution, synthetic scenario generation, detector evaluation, metric aggregation, report generation, logging, and artifact persistence on production infrastructure.
+This split matters because it keeps the workflow auditable. AI is used for explanation, narration, investigation assistance, and bounded scenario generation. Structured detector evidence remains the source of truth.
 
-The successful runs demonstrate that the batch contract operates beyond a local mock: a job can start from the packaged container, execute the synthetic workload, evaluate detector output against labels, aggregate results, persist artifacts, and expose enough logs for execution review. The deployed Serverless AI Endpoint separately validated the interactive AI contract across scenario generation, incident analysis, investigation reporting, and structured market-event explanation routes.
+<!-- IMAGE PLACEHOLDER 4 — AI Investigation Team / Endpoint result
+Suggested repository path: assets/screenshots/ai-investigation-team.png
+LinkedIn caption: The AI Investigation Team translates deterministic detector evidence into a structured, reviewable narrative without replacing the detector.
+Alt text: AIMADA AI Investigation Team result showing findings, evidence timeline, confidence, and recommended action.
+Recommended placement: After the explanation of the detection-versus-explanation boundary.
+-->
 
-The checked-in one-run smoke benchmark serves a narrower purpose. It is a small deterministic reproducibility and integration example that another practitioner can execute quickly. In that smoke benchmark, a one-run detector tournament covers spoofing-like and quote-stuffing scenarios. The matching detectors reach precision 1.0, recall 1.0, and F1 1.0 on those deliberately simple synthetic labels, with an average detection latency of 1,500 ms. Non-matching detectors remain at 0.0 for those scenario-detector pairs.
+## The batch path
 
-Those values validate the integration, label flow, detector routing, metric calculation, and artifact pipeline. They are not evidence of real-world market-surveillance accuracy, robustness, or compliance suitability. The smoke benchmark is intentionally small enough to reproduce quickly; it is not presented as the project’s main production benchmark.
+Nebius Serverless AI Jobs fit the offline evaluation path naturally. Instead of asking a live request to run dozens or hundreds of simulations, a Job can execute repeatable synthetic workloads, evaluate detector output against labels, aggregate metrics, and persist reports and artifacts before terminating.
 
-The broader result is a working research scaffold. A reviewer can start the local stack with Docker Compose, launch a live synthetic market arena, inject bounded scenarios, inspect detector evidence, request AI explanations, and review persisted artifacts. A practitioner can also follow the Nebius deployment notes to separate the interactive endpoint from offline Serverless AI Jobs.
+The outputs are designed to be reviewable: JSON records, CSV metrics, Markdown reports, logs, and chart-ready data. The metric vocabulary includes precision, recall, F1, false positives, false negatives, and detection latency against known synthetic labels.
 
-What I like about this project is that it treats AI infrastructure as part of an engineering workflow, not as a chatbot wrapper. Nebius Serverless AI Endpoints support interactive explanation and investigation flows. Nebius Serverless AI Jobs support repeatable evaluation work. The frontend makes the synthetic domain visible, the backend keeps control of state and evidence, and the batch path makes the evaluation inspectable.
+The repository is organized around those boundaries.
 
-The next research steps are to increase benchmark and scenario diversity, develop adaptive adversarial agents, and measure detector degradation as market regimes change. I also want to calibrate synthetic behavior using publicly available market distributions, build richer incident replay tools, and compare deterministic and learned detectors under the same ground-truth labels and evaluation contracts.
+`backend/` contains the FastAPI application, simulation engine, exchange model, detectors, incident storage, Nebius client, evidence synchronization, and report generation.
 
-That comparison is important. A learned detector should not receive a more forgiving evaluation path simply because its internals are more complex. Deterministic and learned approaches should consume compatible synthetic evidence, preserve the same labels, report the same metric families, and produce artifacts that can be inspected by another practitioner.
+`agent-runner/` contains the agents workspace service, its `/health`, `/agents`, and `/decide` contracts, normal synthetic agents, optional CPU-heavy agents, and bounded LangGraph strategies.
 
-Again, AIMADA is synthetic and educational. It uses no real trading data, does not detect real market manipulation, does not provide trading signals, and is not suitable for compliance decisions. It is a technical arena for exploring synthetic order-book behavior, deterministic detector design, serverless AI explanation, and benchmarkable adversarial evaluation.
+`frontend/` contains the React arena, Detection workflow, Scenario Generator, Nebius AI controls, evidence views, and visualization components.
 
-Repository: [https://github.com/khab40/ai-market-abuse-detection-arena](https://github.com/khab40/ai-market-abuse-detection-arena)
+`serverless/` contains the Endpoint application, Job runners, Dockerfiles, and example deployment configurations.
+
+`docs/` contains architecture decisions, deployment notes, benchmark methodology, safety framing, and challenge-submission material.
+
+`outputs/benchmark/` contains the public sanitized benchmark and production-evidence sample.
+
+## Four evidence layers
+
+I use four explicit names in the repository so small integration checks are not confused with production validation.
+
+### Smoke Contract Test
+
+The **Smoke Contract Test** is the smallest end-to-end integration check. It verifies that scenario generation, simulation, detector routing, investigation output, tournament execution, and artifact contracts connect correctly.
+
+The deliberately small one-run detector example covers spoofing-like and quote-stuffing scenarios. Matching detectors reach precision 1.0, recall 1.0, and F1 1.0, with an average detection latency of 1,500 ms in that fixture.
+
+Those perfect values are integration evidence only. They validate labels, routing, metric calculation, and artifact persistence on a deliberately simple deterministic fixture. They are not evidence of real-world surveillance accuracy, robustness, or compliance suitability.
+
+### Local Reproducibility Benchmark
+
+The **Local Reproducibility Benchmark** is the deterministic path another practitioner can run with Docker Compose. It generates labeled synthetic workloads and produces metrics, leaderboards, reports, and artifacts without requiring Nebius credentials.
+
+Its purpose is reproducibility: the same configuration and seed should preserve the evaluation contract and make failures inspectable. Local execution is not presented as proof that a cloud Job or Endpoint ran.
+
+### Production Execution Validation
+
+The **Production Execution Validation** covers the real Nebius infrastructure path. More than ten Serverless AI Job runs validated container startup, scenario execution, detector evaluation, aggregation, reporting, logging, and artifact persistence. The vLLM-backed Endpoint separately validated interactive routes.
+
+This layer answers a deployment question: do the packaged Job and Endpoint contracts operate on production infrastructure and produce reviewable outputs? It does not answer whether the synthetic detector generalizes to real markets.
+
+### Representative Production Run
+
+The **Representative Production Run** is the compact, sanitized evidence sample committed for review. It preserves Job records, normalized detector metrics, a detector/model leaderboard, investigation results, an evidence index, a benchmark report, a manifest, and checksums.
+
+The public bundle intentionally excludes credentials, authorization headers, private Endpoint hostnames, signed URLs, and raw environment-specific logs. It also discloses coverage differences rather than hiding them. A judge can inspect the evidence without access to the private Nebius account or Object Storage bucket.
+
+<!-- IMAGE PLACEHOLDER 5 — Detector Tournament and production evidence
+Suggested repository path: assets/screenshots/detector-tournament-evidence.png
+LinkedIn caption: Detector Tournament results connect labeled synthetic workloads to metrics, leaderboards, reports, and sanitized production-execution evidence.
+Alt text: AIMADA Detector Tournament leaderboard with production Job status and downloadable evidence artifacts.
+Recommended placement: After the Representative Production Run subsection.
+-->
+
+## What I learned
+
+The most important design choice was separating “detect” from “explain.” In many AI prototypes, the model is asked to be both judge and storyteller. That is convenient, but difficult to evaluate.
+
+In AIMADA, detectors are deterministic functions over synthetic order-book state. They create incidents with explicit evidence. The AI layer translates that evidence into plain language, helps organize an investigation, narrates the result, or generates a bounded scenario. It does not silently replace detector logic or become the source of ground truth.
+
+I also found that evidence transport is part of the product architecture. A successful cloud status is useful, but a reviewer needs the associated metrics, reports, logs, timestamps, and artifacts. Archiving to Object Storage, synchronizing through the backend, and exposing downloads in the UI turns an execution claim into an inspectable chain.
+
+The next research steps are to increase benchmark and scenario diversity, develop adaptive adversarial agents, and measure detector degradation as market regimes change. I also want to calibrate synthetic behavior using publicly available market distributions, build richer incident replay tools, and compare deterministic and learned detectors under the same labels and evaluation contracts.
+
+That comparison matters. A learned detector should not receive a more forgiving evaluation path because its internals are more complex. Deterministic and learned approaches should consume compatible evidence, preserve the same ground truth, report the same metric families, and produce artifacts another practitioner can inspect.
+
+Public repository: [https://github.com/khab40/aimada](https://github.com/khab40/aimada)
+
+Safety disclaimer: AIMADA is synthetic and educational. It uses no real trading data, does not detect real market manipulation, does not provide trading signals, and is not suitable for compliance decisions.
 
 #NebiusServerlessChallenge

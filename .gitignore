@@ -34,8 +34,8 @@ logs/
 # Local outputs
 outputs/*
 !outputs/.gitkeep
-!outputs/jury-evidence/
-!outputs/jury-evidence/**
+!outputs/benchmark/
+!outputs/benchmark/**
 aimada-latest.zip
 .coverage
 backend/.coverage

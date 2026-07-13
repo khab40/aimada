@@ -134,7 +134,7 @@ Update this file with each significant commit before pushing.
 - Reused smart-batch-compatible artifact path conventions and Reports history indexing without changing `/api/nebius/smart-batches`.
 - Added backend tests for managed experiment create, list, get, report visibility, delete behavior, deterministic attack manifests, attack counts, expected labels, a 3-run local batch, fake local-batch artifact normalization, mocked Nebius investigations, sample-CSV aggregation, and missing real Nebius config.
 - Verified a local 10-row mixed-scenario experiment end-to-end in mock mode through HTTP APIs, producing normalized experiment artifacts, original local-batch artifacts, aggregation outputs, and seven mock investigation reports.
-- Real Nebius Serverless Job execution remains TODO until actual Nebius job evidence, logs, and artifacts exist.
+- Superseded status: production Serverless Job execution, logs, S3 artifacts, and Endpoint evidence were subsequently validated and archived under `outputs/benchmark/`.
 
 ### Current - fix: sync arena tick widgets
 

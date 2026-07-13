@@ -5,13 +5,17 @@
 ![AI Market Abuse Detection Arena GitHub banner](assets/img/ai-mada.jpg)
 
 <p align="center">
+  <a href="https://github.com/khab40/aimada"><img src="https://img.shields.io/badge/GitHub-khab40%2Faimada-181717?logo=github&amp;logoColor=white" alt="AIMADA repository"></a>
   <a href="https://github.com/nebius"><img src="https://img.shields.io/badge/Nebius-Serverless_AI-6C47FF?logo=nebius&amp;logoColor=white" alt="Nebius Serverless AI"></a>
   <a href="https://github.com/python/cpython"><img src="https://img.shields.io/badge/Python-3.11-3776AB?logo=python&amp;logoColor=white" alt="Python 3.11"></a>
   <a href="https://github.com/fastapi/fastapi"><img src="https://img.shields.io/badge/FastAPI-Backend-009688?logo=fastapi&amp;logoColor=white" alt="FastAPI backend"></a>
   <a href="https://github.com/facebook/react"><img src="https://img.shields.io/badge/React-Frontend-61DAFB?logo=react&amp;logoColor=black" alt="React frontend"></a>
   <a href="https://github.com/vitejs/vite"><img src="https://img.shields.io/badge/Vite-Build-646CFF?logo=vite&amp;logoColor=white" alt="Vite build tooling"></a>
+  <a href="https://github.com/vllm-project/vllm"><img src="https://img.shields.io/badge/vLLM-Endpoint_Inference-7C3AED?logo=github&amp;logoColor=white" alt="vLLM endpoint inference"></a>
   <a href="https://github.com/langchain-ai/langgraph"><img src="https://img.shields.io/badge/LangGraph-Agents-1C3C3C?logo=langchain&amp;logoColor=white" alt="LangGraph agents"></a>
   <a href="https://github.com/docker/compose"><img src="https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&amp;logoColor=white" alt="Docker Compose"></a>
+  <a href="https://github.com/kubernetes/kubernetes"><img src="https://img.shields.io/badge/Kubernetes-Deployment-326CE5?logo=kubernetes&amp;logoColor=white" alt="Kubernetes deployment"></a>
+  <a href="https://github.com/khab40/aimada/actions/workflows/ci.yml"><img src="https://github.com/khab40/aimada/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI status"></a>
 </p>
 
 AIMADA is a Nebius AI Serverless-first market surveillance command center for synthetic market-abuse workloads. The Arena generates suspicious market activity; Nebius AI Serverless investigates incidents, generates scenarios, and runs detector tournaments.
@@ -78,7 +82,7 @@ Implemented:
 - Nebius endpoint and job scaffolds with local typed fallbacks, Docker/config files, scripts, and UI control surfaces, including `/investigation-team`, `/generate-market-abuse-scenario`, `/investigation-report`, `/orderbook-alert`, and `/generate-smart-scenario`.
 - Production validation completed more than ten Nebius Serverless AI Job runs and exercised a vLLM-backed Serverless AI Endpoint across scenario generation, incident analysis, investigation reporting, and structured market-event explanation routes.
 - Phase 4.5 Managed Experiments with deterministic attack manifests, local smart-batch execution, artifact normalization, aggregation, bounded AI Investigator reports, and Detection review of summaries, leaderboards, markdown reports, artifact indexes, and original local-batch files.
-- Commit-safe [jury evidence](outputs/jury-evidence/README.md) with completed Job records, Endpoint investigations, S3 evidence metadata, metrics, reports, a manifest, and SHA-256 checksums.
+- Commit-safe [benchmark evidence](outputs/benchmark/README.md) with completed Job records, Endpoint investigations, S3 evidence metadata, metrics, reports, a manifest, and SHA-256 checksums.
 - Reduced demo navigation around AI Command Center, Workload Generator, and Docs / Demo.
 - Demo page for three deterministic 3-minute product demo paths: Real Nebius AI Run, Two-Model Pipeline, and Streaming Explanation.
 - Arena split into Scenario / Attack Configuration, Market, and Detection sections, with Standard and Battlefield market visualization modes.
@@ -92,7 +96,7 @@ Before final submission:
 - Runtime/cost measurements and Nebius console screenshots linked from the judge-facing submission index.
 - Final screenshot assets for the README screenshot table beyond the About architecture diagram.
 
-Post-challenge engineering roadmap:
+Future work:
 
 - Dedicated Judge Mode timeline-window selector and formal benchmark artifact schema versioning.
 - Durable backend workspace/organization tables, case assignment APIs, and persisted audit-log APIs beyond the current frontend platform foundation.
@@ -541,8 +545,8 @@ Start with the guides above, then explore:
 | **Scenario** | A bounded abuse-like pattern (spoofing-like, layering-like, quote-stuffing-like) |
 | **AI Investigator** | Nebius AI or deterministic fallback workflow that explains incidents and generates narrative reports from persisted evidence |
 | **Nebius AI** | UI destination for model selection, inference, batch execution, GPU utilization, datasets, and Managed Experiment operations |
-| **Managed Experiment** | Durable experiment workflow: create manifest, generate attacks, run local batch, aggregate, investigate, and optionally record pending Nebius submission |
-| **Detection Outputs** | Detection workflow for selected experiment summary, leaderboard, markdown report, AI Investigator files, artifact index, and original local-batch artifacts |
+| **Managed Experiment** | Durable workflow for manifests, local or production Jobs, S3 synchronization, aggregation, and bounded investigations; missing cloud configuration remains explicitly pending |
+| **Detection Outputs** | UI workflow for summaries, leaderboards, reports, investigations, artifact indexes, and downloadable local or S3-synchronized evidence |
 | **Benchmark** | Evaluation of detector quality against labeled synthetic scenarios |
 | **UI Shell Preferences** | Local browser preferences for collapsed auth controls and day/night/system theme behavior |
 

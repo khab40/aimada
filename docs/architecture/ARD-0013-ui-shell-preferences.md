@@ -20,9 +20,12 @@ Implemented:
 - Theme-aware Liquidity Map canvas background, axis labels, grid line, low-liquidity cells, and bid/ask/abuser colors.
 - Liquidity Map/timeline frame updates gated by arena tick progression so paused or not-started state remains visually stable.
 
-Not yet complete:
+Before final submission:
 
 - Final screenshot set under `assets/screenshots/`.
+
+Future work:
+
 - Dedicated accessibility contrast audit for the final visual palette.
 
 ## Context

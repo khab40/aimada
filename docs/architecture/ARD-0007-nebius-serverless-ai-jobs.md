@@ -13,11 +13,14 @@ Implemented:
 - Detector tournament, batch benchmark, synthetic dataset factory, and parallel attack/detect batch scripts under `serverless/jobs/`.
 - Job Dockerfile, example configs, Nebius job config, image build script, and submit script with dry-run support.
 - Backend and UI paths for smart batch creation, artifact workbench access, usage evidence, and local parsing of benchmark artifacts.
-- Completed production Job records, collected S3 evidence, metrics, and reports are archived in the [jury bundle](../../outputs/jury-evidence/EXP-390EFAC2/README.md).
+- Completed production Job records, collected S3 evidence, metrics, and reports are archived in the [benchmark bundle](../../outputs/benchmark/EXP-390EFAC2/README.md).
 
-Not yet complete:
+Before final submission:
 
 - Console screenshots and consolidated billing/runtime records remain publication work.
+
+Future work:
+
 - Cost/runtime guardrails are documented but not enforced by a remote Job policy layer.
 
 ## Context

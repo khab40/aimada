@@ -13,11 +13,14 @@ Implemented:
 - Serverless endpoint app, endpoint Dockerfile/configs, prompt scaffolding, and endpoint contract tests.
 - FastAPI backend integration boundary with URL/env configuration, optional API key, timeout handling, and typed fallback responses.
 - UI flows for AI incident explanation, smart order-book alert scoring, investigation reports, and bounded red-team scenario drafting.
-- Real Endpoint investigations with latency, fallback, response, and S3 evidence are archived in the [jury bundle](../../outputs/jury-evidence/EXP-390EFAC2/README.md).
+- Real Endpoint investigations with latency, fallback, response, and S3 evidence are archived in the [benchmark bundle](../../outputs/benchmark/EXP-390EFAC2/README.md).
 
-Not yet complete:
+Before final submission:
 
 - Nebius console screenshots and a consolidated latency summary remain publication work.
+
+Scope boundary:
+
 - The endpoint path remains a demo/integration surface, not a production monitoring service.
 
 ## Context

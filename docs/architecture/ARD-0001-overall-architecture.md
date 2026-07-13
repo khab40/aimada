@@ -20,7 +20,7 @@ Implemented:
 - Multiuser platform foundation with demo fallback identity, workspace metadata, case ownership, report attribution, and audit trail records.
 - UI shell with AI-MADA banner asset, compact navigation control, collapsible auth widget, persisted day/night/system theme, Command Center orchestration, and paused-state-stable Liquidity Map behavior.
 - Serverless endpoint/job scaffolds, Dockerfiles, configs, scripts, and local mock/cloud-adapter paths.
-- Production Serverless Job and Endpoint evidence archived in the commit-safe [jury bundle](../../outputs/jury-evidence/README.md).
+- Production Serverless Job and Endpoint evidence archived in the commit-safe [benchmark bundle](../../outputs/benchmark/README.md).
 
 Before final submission:
 

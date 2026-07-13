@@ -14,7 +14,7 @@ Implemented:
 - Benchmark and dataset scripts write scenario/attack labels for detector evaluation.
 - Tests cover scenario launch, metadata preservation, and deterministic scenario behavior.
 
-Not yet complete:
+Future work:
 
 - Live-demo label records do not yet fully finalize every event/order ID linkage described in this ARD.
 - Reproducible replay packaging from a saved label set is still limited to local benchmark and dataset scripts.

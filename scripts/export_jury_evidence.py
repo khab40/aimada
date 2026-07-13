@@ -143,7 +143,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--api-base", default="http://localhost:8000")
     parser.add_argument("--experiment-id", required=True)
-    parser.add_argument("--output", type=Path, default=Path("outputs/jury-evidence"))
+    parser.add_argument("--output", type=Path, default=Path("outputs/benchmark"))
     args = parser.parse_args()
     print(export(args.api_base, args.experiment_id, args.output))
 

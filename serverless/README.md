@@ -100,11 +100,12 @@ ghcr.io/khab40/ai-market-abuse-detection-arena-endpoint:latest
 ghcr.io/khab40/ai-market-abuse-detection-arena-jobs:latest
 ```
 
-Anonymous registry verification on 2026-07-12 succeeded only for the jobs
-`latest` tag. The endpoint tag is not published; build it locally and push it
-to a registry namespace you control before endpoint deployment. The VM and
-Kubernetes deployment scripts likewise build and push their application images
-to the explicitly configured namespace; they do not rely on prepublished tags.
+Anonymous registry verification on 2026-07-13 confirmed the jobs `latest` and
+`artifacts-v2` tags and the Endpoint `vllm-qwen-v11` tag. Each published image
+includes `linux/amd64`; the Endpoint `latest` tag is not published. Local builds
+may still use `latest`, but production Endpoint deployment examples use the
+versioned public tag. VM and Kubernetes deployment scripts build and push their
+application images to the explicitly configured namespace.
 
 Smoke checks:
 

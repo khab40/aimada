@@ -6,7 +6,11 @@ Show AIMADA as a Nebius AI Serverless-powered market surveillance command center
 
 ## Setup
 
+Repository: [https://github.com/khab40/aimada](https://github.com/khab40/aimada)
+
 ```bash
+git clone https://github.com/khab40/aimada.git
+cd aimada
 cp .env.example .env
 docker compose up --build
 ```

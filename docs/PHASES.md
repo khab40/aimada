@@ -1,6 +1,6 @@
 # Project Phases
 
-AI Market Abuse Detection Arena will be built as:
+AI Market Abuse Detection Arena is built as:
 
 - React visual arena
 - FastAPI simulator
@@ -142,7 +142,7 @@ Deliverables:
 - `[done]` `ARENA_BASELINE_LIQUIDITY_*` and `ARENA_MAX_AGENT_QUOTE_SIZE` backend configuration.
 - `[done]` regression tests for empty-side reseeding, additive shared-price liquidity, quote clamping, and long-run bounded depth.
 
-Remaining gaps:
+Future work:
 
 - `[todo]` browser controls for ladder and quote-cap tuning.
 - `[todo]` dynamic reference-price model for drifting market regimes.
@@ -272,7 +272,7 @@ Exit criteria:
 - `[done]` Precision, recall, and F1 are reported by scenario family.
 - `[done]` The explanation endpoint returns structured summaries for incidents.
 - `[partial]` Deployment documentation includes commands; real Nebius logs/metrics screenshots are still needed for final review.
-- `[todo]` Run and archive one real end-to-end Nebius endpoint + job execution with outputs.
+- `[done]` Real Nebius Endpoint and Job execution is archived in the committed jury evidence bundle with S3 evidence metadata and checksums.
 
 ## Phase 4.5: Experiment Manager
 
@@ -299,14 +299,14 @@ Deliverables:
 - `[done]` `collect-nebius-artifacts` collects the existing Nebius job output file format from mounted output or `NEBIUS_JOB_ARTIFACTS_COMMAND_TEMPLATE` into the canonical experiment artifact layout without fabricating missing files.
 - `[done]` `/api/nebius/observatory` includes experiment job summary counts when experiment jobs exist.
 - `[done]` Reports summary includes managed experiment manifests alongside older attack-builder experiments.
-- `[done]` `/nebius` Managed Experiment Lab drives the managed experiment lifecycle through FastAPI: create, generate manifest, run local batch, optionally submit a pending Nebius job, aggregate, and run bounded AI Investigator reports.
+- `[done]` `/nebius` Managed Experiment Lab drives the lifecycle through FastAPI: create, generate manifest, run local or production Jobs, synchronize S3 artifacts, aggregate, run bounded AI Investigator reports, and expose evidence to the UI.
 - `[done]` `/nebius` Real Nebius Deployment panel exposes endpoint health checks, route smoke calls, rendered job config, submit-template readiness, latest cloud job status, and cloud artifact collection state without treating pending jobs as successful real-cloud runs.
 - `[done]` Detection shows managed experiments with selected summary, scenario leaderboard, markdown benchmark report viewer, AI Investigator reports, `artifact_index.json` links, and original `local-batch` artifacts.
 - `[done]` `/api/nebius/smart-batches` remains unchanged for Nebius AI smart-batch execution.
 - `[done]` tests for create, list, get, report visibility, delete, deterministic attack manifests, attack counts, expected labels, a 3-run local batch, fake local-batch artifact normalization, mocked Nebius investigations, sample-CSV aggregation, and missing real Nebius config.
 - `[done]` local HTTP verification created a 10-row mixed-scenario experiment in mock mode and confirmed manifest rows, normalized artifacts, original local-batch files, summary, leaderboard, benchmark report, and investigation artifacts under `outputs/experiments/<experiment_id>/`.
 - `[done]` more than ten production Nebius Serverless AI Job runs validated container execution, scenario generation, detector evaluation, metric aggregation, reporting, logging, and artifact persistence.
-- `[partial]` curate and link redacted production logs, runtime/cost summaries, console screenshots, and a compact artifact bundle for publication.
+- `[partial]` the compact artifact bundle is committed; consolidated runtime/cost records and console screenshots remain publication work.
 
 Current behavior:
 
@@ -350,7 +350,7 @@ Deliverables:
 - `[done]` blog post draft in `docs/linkedin-technical-blog-post.md`
 - `[partial]` demo narration scripts and captions under `assets/demo-video/`; rendered demo video is still missing.
 - `[done]` `docs/research-notes.md`
-- `[todo]` committed sample benchmark report under `outputs/benchmark/`
+- `[done]` committed benchmark report and production evidence under `outputs/benchmark/`
 - `[done]` final disclaimer and safety language in README/docs/UI
 - `[done]` professional UI shell controls: collapsible Google/auth widget, compact sidebar toggle, day/night/system theme selector, and paused-state-stable Liquidity Map
 - `[done]` multiuser platform foundation with demo fallback user/workspace, global workspace/user menu, case ownership metadata, report attribution, and audit trail records.
@@ -358,12 +358,17 @@ Deliverables:
 - `[done]` Command Center orchestrates endpoint status, scenario generation, AI investigation, detector tournaments, jobs, and artifacts
 - `[done]` Arena three-section layout: Scenario / Attack Configuration, Market, and Detection
 - `[done]` About and ARD-0001 architecture diagrams show Front, Back, Agent Runners Workspace, and Nebius Serverless Cloud
-- `[partial]` durable backend workspace/case/audit persistence APIs remain future work beyond the current frontend platform foundation.
+
+### Future work
+
+- Durable backend organization/workspace, case assignment, and audit-log persistence APIs.
+- Formal benchmark artifact schema versioning and advanced Judge Mode timeline selectors.
+- Richer multi-user workflows and additional scenario families.
 
 Exit criteria:
 
 - `[done]` A reviewer can understand the system from the README and docs.
 - `[done]` The demo can be started with documented commands.
 - `[done]` The architecture and runtime model are documented.
-- `[partial]` The project includes supporting research notes, a blog draft, GitHub banner, UI shell presentation controls, and demo narration assets; sample benchmark report, screenshot set, and rendered video still need to be generated and committed.
+- `[partial]` The project includes research notes, a blog draft, GitHub banner, UI controls, demo narration, and a committed benchmark evidence bundle; the screenshot set and rendered video remain publication work.
 - `[done]` The submission avoids claims about real market manipulation detection, trading signals, or compliance use.

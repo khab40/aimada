@@ -36,8 +36,9 @@ AIMADA is a synthetic market-surveillance arena that makes order-book abuse-like
 
 - **Job ID/status screenshot:** More than ten production jobs completed successfully and are visible in Nebius production logs; a curated screenshot index is still publication work.
 - **Endpoint screenshot:** A vLLM-backed endpoint executed scenario generation, incident analysis, investigation reporting, and structured market-event explanation routes; the curated screenshot link is still publication work.
-- **Logs:** The sanitized [Nebius evidence index](../outputs/jury-evidence/EXP-390EFAC2/nebius_evidence_index.json) records completed Job and Endpoint operations whose evidence bundles were uploaded to S3. Raw logs remain excluded because they can contain environment-specific values.
-- **Output artifacts:** The committed [jury evidence bundle](../outputs/jury-evidence/EXP-390EFAC2/README.md) includes job records, aggregate metrics, a detector/model leaderboard, seven Endpoint investigations, the benchmark report, a manifest, and SHA-256 checksums.
+- **Logs:** The sanitized [Nebius evidence index](../outputs/benchmark/EXP-390EFAC2/nebius_evidence_index.json) records completed Job and Endpoint operations whose evidence bundles were uploaded to S3. Raw logs remain excluded because they can contain environment-specific values.
+- **Output artifacts:** The committed [benchmark evidence bundle](../outputs/benchmark/EXP-390EFAC2/README.md) includes job records, aggregate metrics, a detector/model leaderboard, seven Endpoint investigations, the benchmark report, a manifest, and SHA-256 checksums.
+- **CI and secret scanning:** [GitHub Actions](../.github/workflows/ci.yml) runs backend, frontend, deterministic-evaluation, agent-workspace, Compose, image, and Gitleaks checks without building the long-running Nebius deployment images.
 
 ## Limitations
 

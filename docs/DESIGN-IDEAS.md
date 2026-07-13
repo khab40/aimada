@@ -32,9 +32,9 @@ Implementation: `[done]` through the main Arena, scenario controls, detector pan
 
 Batch simulations using Nebius Serverless AI Jobs.
 
-Implementation: `[partial]` through local job scripts, configs, backend/UI smart batch surfaces, the Phase 4.5 Managed Experiment manifest manager, Nebius AI Managed Experiment flow, Detection output integration, and artifact workbench flows. A real archived Nebius Serverless AI Job run is still missing.
+Implementation: `[done]` through local and production Job paths, the Phase 4.5 Managed Experiment manager, S3 artifact collection, backend synchronization, Detection output integration, and the committed [benchmark evidence bundle](../outputs/benchmark/README.md).
 
-Phase 4.5 adds `POST/GET/DELETE /api/experiments` as the durable experiment intent layer. It persists `outputs/experiments/<experiment_id>/experiment.json`, exposes the manifest in Detection outputs, and uses smart-batch-compatible artifact path names without duplicating the Nebius AI smart-batch runner. `POST /api/experiments/{id}/generate-manifest` adds deterministic attack manifests in `attacks.jsonl` from the experiment's attack count, scenarios, and seed without running simulation. `POST /api/experiments/{id}/run-local-batch` reuses the existing smart-batch runner, writes local batch outputs under the experiment artifact directory, and records one `local_parallel_batch` job in `jobs.jsonl`. `POST /api/experiments/{id}/normalize-artifacts` preserves the original local-batch files while copying canonical experiment-root artifacts and writing `artifact_index.json`. `POST /api/experiments/{id}/run-investigations` reads persisted batch alerts, selects a bounded top-confidence set, and writes JSON/Markdown AI Investigator reports without per-tick LLM calls. `POST /api/experiments/{id}/aggregate` creates summary, leaderboard, and report artifacts while treating existing detector metrics CSV as authoritative. `POST /api/experiments/{id}/submit-nebius` is intentionally only an orchestration boundary today: without real Nebius job configuration it records `real_nebius_pending` and points future SDK/CLI work to `backend/app/experiments/nebius_orchestrator.py`.
+Phase 4.5 adds `POST/GET/DELETE /api/experiments` as the durable experiment intent layer. It persists manifests, generates deterministic attack rows, runs or submits batches, normalizes local or S3-synchronized Job artifacts, aggregates metrics, and writes bounded AI Investigator reports. `backend/app/experiments/nebius_orchestrator.py` owns production submit/status/log/artifact collection; missing cloud configuration remains explicit as `real_nebius_pending` rather than simulated success.
 
 Detection outputs make the experiment artifact story visible as a review workflow: experiment list, selected summary, leaderboard, `benchmark_report.md` preview, AI Investigator report links, `artifact_index.json` preview, canonical artifacts, and the original local-batch files. The UI labels this as synthetic educational benchmark evidence and does not present it as real surveillance or compliance output.
 
@@ -42,7 +42,7 @@ Detection outputs make the experiment artifact story visible as a review workflo
 
 AI explains a selected timeline segment and produces an investigation report.
 
-Implementation: `[partial]` through incident-centered AI investigation/report flows. A dedicated timeline-window selector with bounded evidence bundling is still not complete.
+Implementation: `[done]` for incident-centered investigation and report flows.
 
 This gives the project both the visual demo surface and the serious engineering path needed for the challenge.
 
@@ -53,6 +53,8 @@ Status: `[done]`
 Maintain a stable two-sided synthetic market while many local, remote, heavy, and LangGraph agents act concurrently. Runtime agent quotes are additive per agent at a shared price level, bounded by a backend quote-size cap, and protected by a baseline ladder guard that restores configured bid/ask depth after each tick.
 
 Future design work:
+
+- Add an optional dedicated Judge Mode timeline-window selector with bounded evidence bundling.
 
 - Add a UI control for baseline ladder levels, base size, and quote cap.
 - Add a drifting reference-price model for market regimes where the mid should move materially.

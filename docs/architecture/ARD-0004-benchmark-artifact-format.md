@@ -13,9 +13,9 @@ Implemented:
 - Local detector tournament writes benchmark JSON, CSV, Markdown report, and optional chart artifacts.
 - Synthetic dataset factory writes events, incidents, labels, snapshots, and manifest artifacts, with a JSONL fallback when Parquet dependencies are unavailable.
 - Smart batch runner writes serverless-batch style artifacts for attack/detect experiments.
-- A sanitized production evidence sample is committed under [`outputs/jury-evidence/`](../../outputs/jury-evidence/README.md).
+- A sanitized production evidence sample is committed under [`outputs/benchmark/`](../../outputs/benchmark/README.md).
 
-Not yet complete:
+Future work:
 
 - The canonical ARD path shape is run-specific (`outputs/benchmark/<run_id>/...`), while the current local detector tournament path still uses flatter files such as `outputs/benchmark/results.json`, `metrics.csv`, and `benchmark_report.md`.
 - Artifact schema versioning is not yet formalized.

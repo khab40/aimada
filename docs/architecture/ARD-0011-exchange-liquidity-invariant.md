@@ -17,7 +17,7 @@ Implemented:
 - Regression tests for empty-side reseeding, shared-price additive liquidity, quote clamping, and long-run bounded depth.
 - Exchange regression tests for price-time priority, add/cancel flows, modify-like per-agent quote replacement, partial fills, and L2 snapshots.
 
-Not yet complete:
+Future work:
 
 - Dynamic reference-price tracking for regimes where the simulated mid should drift materially.
 - Per-agent inventory and risk limits beyond the current quote-size cap.

@@ -155,7 +155,7 @@ Phase 4.5 adds a Managed Experiment manifest control plane before execution. The
 | `events.jsonl` | Append-only stream of simulation events, agent actions, detector signals, and state changes. |
 | `experiments/<experiment_id>/experiment.json` | Phase 4.5 experiment manifest with requested scenarios, execution mode, status, artifact paths, optional smart-batch link, and metrics. |
 | `experiments/<experiment_id>/attacks.jsonl` | Deterministic attack plan rows with expected labels, detector family, timing, agent profile, and parameters for each planned run. |
-| `experiments/<experiment_id>/jobs.jsonl` | Experiment-scoped job records, including `local_parallel_batch` submissions and pending `nebius_serverless_job` orchestration records. |
+| `experiments/<experiment_id>/jobs.jsonl` | Experiment-scoped local and Nebius Job records, including queued, running, completed, failed, and explicitly unconfigured states. |
 | `experiments/<experiment_id>/local-batch/` | Local smart-batch outputs for the experiment, including order-book events, trades, labels, alerts, metrics, report, and batch manifest. |
 | `experiments/<experiment_id>/artifact_index.json` | Index mapping original local-batch artifact names to canonical experiment-root artifact names. |
 | `experiments/<experiment_id>/investigations/` | Per-alert AI Investigator reports as JSON and Markdown, generated from persisted top-confidence batch alerts. |
@@ -193,7 +193,7 @@ graph TD
 - Agent runners may decide remotely, but they must return intents only; they must not mutate exchange state directly.
 - The backend should be the integration boundary for live transport, persistence, scenario orchestration, and AI calls.
 - `/api/experiments` owns durable experiment manifests and report visibility; `/api/nebius/smart-batches` continues to own Nebius Control smart-batch execution.
-- Real Nebius Serverless Job calls must be added only inside `backend/app/experiments/nebius_orchestrator.py`; until then Nebius experiment submission records `real_nebius_pending`, and docs/UI must not claim real cloud execution.
+- Real Nebius Serverless Job submit, status, log, and artifact collection calls are isolated in `backend/app/experiments/nebius_orchestrator.py`; absent configuration records `real_nebius_pending`, while completion requires confirmed cloud status and collected artifacts.
 - Batch benchmark jobs should share simulation and detector code with the live path where practical, but should not depend on the interactive UI.
 - Persisted artifacts should be treated as replay and audit inputs, not only as transient logs.
 - Detection reports and generated AI Investigator text are synthetic educational evidence for this simulator, not real surveillance, trading, or compliance outputs.

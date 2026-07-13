@@ -19,7 +19,7 @@ Implemented:
 - Backward-compatible `X-AIMADA-Session-ID` session header plus `Authorization: Bearer <app-jwt>` support.
 - Frontend maps authenticated users into the platform identity model defined by ARD-0014; when Google is not configured, the UI uses the local `Demo Analyst` identity and `Aimada Surveillance Desk` workspace.
 
-Not yet complete:
+Future work:
 
 - JWT refresh-token rotation and revocation list.
 - Moving app JWT signing to an asymmetric key pair or external secret manager.

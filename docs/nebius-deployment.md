@@ -481,24 +481,14 @@ Keep run counts small for first deployment checks.
 
 ## Serverless Cost/Runtime Observatory
 
-The React `Nebius AI` page reads `/api/nebius/observatory` and displays
-submission evidence:
+The React `Nebius AI` page reads `/api/nebius/observatory` and displays measured
+request, latency, Job, and artifact data. Production Job and Endpoint records,
+including S3 upload state, are preserved in the committed
+[benchmark evidence bundle](../outputs/benchmark/README.md).
 
-```text
-Endpoint:
-- requests: 24
-- avg latency: 1.2s
-- purpose: incident explanation and order-book alert scoring
-
-Jobs:
-- simulations: 1,000
-- runtime: 7m 42s
-- output files: 7
-- artifacts: benchmark_report.md, detector_metrics.csv, generated_report.md, manifest.json
-```
-
-Before final review, replace placeholder evidence with real Nebius endpoint/job
-screenshots and archived logs/metrics.
+Before final review, add Nebius console screenshots and consolidated billing and
+runtime records to the [submission index](challenge-submission.md). Do not replace
+or relabel the archived production evidence as mock output.
 
 The current Phase 4.5 Detection output evidence is synthetic educational benchmark output from the simulator. It is useful for reproducibility and demo review, but it is not real market surveillance and is not compliance evidence.
 

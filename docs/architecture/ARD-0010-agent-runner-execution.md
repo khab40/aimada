@@ -17,7 +17,7 @@ Implemented:
 - Generic LangGraph-compatible remote agents built with `StateGraph` and compiled graphs.
 - Docker Compose separation between backend/exchange and agent-runner containers.
 
-Not yet complete:
+Future work:
 
 - Authentication or signing between backend and remote agent runners.
 - Durable queue transport for high-latency WAN runners.

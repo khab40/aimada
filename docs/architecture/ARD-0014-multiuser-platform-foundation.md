@@ -15,7 +15,7 @@ Implemented:
 - Detection page metadata for assigned analyst, reviewer, case status, generated-by, reviewed-by, timestamps, and audit trail.
 - Demo mode remains unblocked when Google Auth is unavailable.
 
-Not yet complete:
+Future work:
 
 - Durable backend workspace/organization tables.
 - Backend case assignment APIs.

@@ -30,7 +30,7 @@ Narration: For leadership, the value is clearer risk visibility and stronger sys
 112.0–125.0s | Caption: From simulation to explanation: a stronger compliance narrative.
 Narration: From simulation to explanation, it creates a stronger compliance narrative.
 
-125.0–131.0s | Closing: Simulate. Detect. Explain.
+125.0–131.0s | Closing: Simulate. Detect. Explain. https://github.com/khab40/aimada
 Narration: AI Market Abuse Detection Arena. Simulate the market. Expose the abuse. Prove the defence.
 
 Notes:

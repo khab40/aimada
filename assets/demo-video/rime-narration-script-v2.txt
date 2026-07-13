@@ -21,3 +21,5 @@ The About page shows the research foundation behind the project: agent-based mar
 For leadership, the value is simple: clearer risk visibility, faster experimentation, and a stronger compliance narrative.
 
 AI Market Abuse Detection Arena. Simulate the market. Expose the abuse. Prove the defence.
+
+Repository: https://github.com/khab40/aimada
