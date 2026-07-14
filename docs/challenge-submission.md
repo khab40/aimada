@@ -14,7 +14,7 @@ AIMADA is a synthetic market-surveillance arena that makes order-book abuse-like
 
 ## Nebius Serverless usage
 
-- **Endpoint:** Nebius H100 Serverless Endpoint (`gpu-h100`, `1gpu-16vcpu-200gb`) serving `Qwen/Qwen2.5-1.5B-Instruct` through local vLLM for investigation reports, alert explanations, and scenario generation. See [deployment configuration](nebius-deployment.md#nebius-ai-endpoints).
+- **Endpoint:** The archived representative challenge run used a Nebius H100 Serverless Endpoint (`gpu-h100`, `1gpu-16vcpu-200gb`) with `Qwen/Qwen2.5-1.5B-Instruct`. The current right-sized deployment configuration uses one L40S (`gpu-l40s-g`) with `Qwen/Qwen2.5-14B-Instruct`; see [deployment configuration](nebius-deployment.md#nebius-ai-endpoints) and [migration notes](l40s-migration.md).
 - **Job:** Nebius Serverless Job using the repository jobs image and the CPU `cpu-d3`, `4vcpu-16gb` preset for parallel simulations, detector evaluation, aggregation, and artifact generation. See [job configuration](../serverless/jobs/job_config.example.yaml).
 - **Why each execution model was selected:** Endpoint requests are short, interactive, and latency-sensitive. Tournament runs are finite, parallel, reproducible batch workloads that should terminate after persisting metrics and reports.
 

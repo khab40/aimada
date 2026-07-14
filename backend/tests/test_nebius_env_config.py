@@ -105,6 +105,33 @@ def test_serverless_endpoint_local_vllm_base_url_uses_host_and_port(monkeypatch:
     assert endpoint._local_vllm_base_url() == "http://127.0.0.1:8001/v1"
 
 
+def test_l40s_endpoint_deployment_is_single_gpu_and_memory_bounded() -> None:
+    repo_root = Path(__file__).resolve().parents[2]
+    startup = (repo_root / "serverless" / "endpoint" / "start.sh").read_text(encoding="utf-8")
+    deployment = (repo_root / "serverless" / "endpoint" / "endpoint_config.yaml").read_text(encoding="utf-8")
+    create_script = (repo_root / "scripts" / "create-nebius-ai-endpoint.sh").read_text(encoding="utf-8")
+
+    assert "platform: gpu-l40s-g" in deployment
+    assert "preset: 1gpu-16vcpu-200gb" in deployment
+    assert 'PLATFORM="${NEBIUS_ENDPOINT_PLATFORM:-gpu-l40s-g}"' in create_script
+    assert "Qwen/Qwen2.5-14B-Instruct" in startup
+    for flag in (
+        "--dtype",
+        "--gpu-memory-utilization",
+        "--max-model-len",
+        "--enable-prefix-caching",
+        "--max-num-seqs",
+        "--trust-remote-code",
+    ):
+        assert flag in startup
+
+    weight_gib = 14.7e9 * 2 / 1024**3
+    kv_cache_gib = 2 * 48 * 8 * 128 * 2 * 16384 / 1024**3
+    l40s_vllm_budget_gib = 48 * 0.90
+    assert weight_gib + kv_cache_gib < l40s_vllm_budget_gib
+    assert l40s_vllm_budget_gib - weight_gib - kv_cache_gib > 12
+
+
 def _load_endpoint_module() -> ModuleType:
     endpoint_dir = Path(__file__).resolve().parents[2] / "serverless" / "endpoint"
     module_path = endpoint_dir / "app.py"

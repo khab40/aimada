@@ -16,6 +16,16 @@ It exposes the AI surfaces used by the backend:
 - `POST /generate-smart-scenario`
 - `POST /generate-market-abuse-scenario`
 
+## Professional Surveillance Prompting
+
+Investigation routes use a strict, evidence-first prompt designed for
+Qwen2.5-14B-Instruct on one L40S GPU. The builder converts episode data into a
+bounded summary (maximum 24,000 serialized characters), never sends raw LOB
+streams, and validates the model's JSON before adapting it to the existing route
+response. vLLM runs only for high anomalies, detector disagreement, completed
+manipulation episodes, simulation summaries, and benchmark generation; ordinary events keep
+the deterministic path. See [prompting contracts, budgets, and examples](../../docs/surveillance-prompting.md).
+
 ## Modes
 
 - `NEBIUS_ENDPOINT_MODE=mock` returns deterministic structured responses.
@@ -28,11 +38,16 @@ Local vLLM env:
 ```bash
 NEBIUS_ENDPOINT_MODE=local_vllm
 LOCAL_VLLM_BASE_URL=http://127.0.0.1:8001/v1
-LOCAL_VLLM_MODEL=Qwen/Qwen2.5-1.5B-Instruct
+LOCAL_VLLM_MODEL=Qwen/Qwen2.5-14B-Instruct
 LOCAL_VLLM_HOST=127.0.0.1
 LOCAL_VLLM_PORT=8001
-LOCAL_VLLM_GPU_MEMORY_UTILIZATION=0.85
-LOCAL_VLLM_MAX_MODEL_LEN=4096
+LOCAL_VLLM_DTYPE=auto
+LOCAL_VLLM_GPU_MEMORY_UTILIZATION=0.90
+LOCAL_VLLM_MAX_MODEL_LEN=16384
+LOCAL_VLLM_ENABLE_PREFIX_CACHING=true
+LOCAL_VLLM_MAX_NUM_SEQS=16
+LOCAL_VLLM_TRUST_REMOTE_CODE=true
+NEBIUS_PROMPT_SEED=42
 ```
 
 In `local_vllm` mode, `/endpoint/start.sh` starts FastAPI/Uvicorn on
@@ -41,7 +56,7 @@ In `local_vllm` mode, `/endpoint/start.sh` starts FastAPI/Uvicorn on
 model, host, port, GPU memory utilization, max model length, readiness attempts,
 and FastAPI start line.
 
-## Deploy Local vLLM On H100
+## Deploy Local vLLM On L40S
 
 Build and push the endpoint image, then create a Nebius Serverless Endpoint that
 runs vLLM and FastAPI inside the container:
@@ -58,14 +73,18 @@ export NEBIUS_SUBNET_ID=<vpc-subnet-id>
 export ENDPOINT_TOKEN=<endpoint-bearer-token>
 export NEBIUS_ENDPOINT_IMAGE=ghcr.io/<your-org>/ai-market-abuse-detection-arena-endpoint:<tag>
 export NEBIUS_ENDPOINT_MODE=local_vllm
-export NEBIUS_ENDPOINT_PLATFORM=gpu-h100
+export NEBIUS_ENDPOINT_PLATFORM=gpu-l40s-g
 export NEBIUS_ENDPOINT_PRESET=1gpu-16vcpu-200gb
-export LOCAL_VLLM_MODEL=Qwen/Qwen2.5-1.5B-Instruct
+export LOCAL_VLLM_MODEL=Qwen/Qwen2.5-14B-Instruct
 export LOCAL_VLLM_HOST=127.0.0.1
 export LOCAL_VLLM_PORT=8001
 export LOCAL_VLLM_BASE_URL=http://127.0.0.1:8001/v1
-export LOCAL_VLLM_GPU_MEMORY_UTILIZATION=0.85
-export LOCAL_VLLM_MAX_MODEL_LEN=4096
+export LOCAL_VLLM_DTYPE=auto
+export LOCAL_VLLM_GPU_MEMORY_UTILIZATION=0.90
+export LOCAL_VLLM_MAX_MODEL_LEN=16384
+export LOCAL_VLLM_ENABLE_PREFIX_CACHING=true
+export LOCAL_VLLM_MAX_NUM_SEQS=16
+export LOCAL_VLLM_TRUST_REMOTE_CODE=true
 
 ./scripts/create-nebius-ai-endpoint.sh
 ```
@@ -81,7 +100,7 @@ python scripts/call_endpoint.py \
 
 ## Cloud Validation
 
-Apple Silicon Docker cannot realistically validate the H100 GPU path. Validate
+Apple Silicon Docker cannot realistically validate the L40S GPU path. Validate
 `local_vllm` in Nebius with a pushed `linux/amd64` image:
 
 ```bash
@@ -96,14 +115,18 @@ export NEBIUS_PARENT_ID=<project-id>
 export NEBIUS_SUBNET_ID=<vpc-subnet-id>
 export ENDPOINT_TOKEN=<endpoint-bearer-token>
 export NEBIUS_ENDPOINT_MODE=local_vllm
-export NEBIUS_ENDPOINT_PLATFORM=gpu-h100
+export NEBIUS_ENDPOINT_PLATFORM=gpu-l40s-g
 export NEBIUS_ENDPOINT_PRESET=1gpu-16vcpu-200gb
-export LOCAL_VLLM_MODEL=Qwen/Qwen2.5-1.5B-Instruct
+export LOCAL_VLLM_MODEL=Qwen/Qwen2.5-14B-Instruct
 export LOCAL_VLLM_HOST=127.0.0.1
 export LOCAL_VLLM_PORT=8001
 export LOCAL_VLLM_BASE_URL=http://127.0.0.1:8001/v1
-export LOCAL_VLLM_GPU_MEMORY_UTILIZATION=0.85
-export LOCAL_VLLM_MAX_MODEL_LEN=4096
+export LOCAL_VLLM_DTYPE=auto
+export LOCAL_VLLM_GPU_MEMORY_UTILIZATION=0.90
+export LOCAL_VLLM_MAX_MODEL_LEN=16384
+export LOCAL_VLLM_ENABLE_PREFIX_CACHING=true
+export LOCAL_VLLM_MAX_NUM_SEQS=16
+export LOCAL_VLLM_TRUST_REMOTE_CODE=true
 
 ./scripts/create-nebius-ai-endpoint.sh
 ```
@@ -127,7 +150,7 @@ Expected success:
 ```text
 endpoint_mode=local_vllm
 model_mode=local_vllm
-local_vllm_model=Qwen/Qwen2.5-1.5B-Instruct
+local_vllm_model=Qwen/Qwen2.5-14B-Instruct
 latency_ms > 0 for /orderbook-alert and /investigation-report
 ```
 
@@ -229,5 +252,5 @@ docker run --rm -p 9000:9000 nebius-market-abuse-endpoint
 ```
 
 The endpoint image is intended for Nebius `linux/amd64` GPU runtimes such as
-H100. Local Apple Silicon Docker inference testing is not required; Docker
+L40S. Local Apple Silicon Docker inference testing is not required; Docker
 Desktop does not expose Apple GPU/MPS to Linux containers.

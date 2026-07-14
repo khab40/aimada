@@ -52,6 +52,30 @@ def _chat_completion(content: str) -> dict[str, object]:
     return {"choices": [{"message": {"content": content}}]}
 
 
+def _professional_assessment(classification: str = "spoofing_like_wall") -> dict[str, object]:
+    return {
+        "classification": classification,
+        "confidence": 0.88,
+        "severity": "high",
+        "market_context": "Synthetic thin-liquidity episode with one-sided displayed pressure.",
+        "evidence": [
+            {
+                "observation": "Displayed wall dominated nearby depth.",
+                "metric": "wall_size_ratio",
+                "value": "8.2",
+                "reasoning": "The supplied ratio is elevated relative to the episode summary.",
+            }
+        ],
+        "counter_evidence": [],
+        "alternative_explanations": ["Legitimate temporary liquidity provision."],
+        "episode_timeline": ["Large displayed order appeared near the touch."],
+        "detector_disagreement": "No material disagreement in supplied detector scores.",
+        "recommended_actions": ["Review the summarized synthetic episode."],
+        "regulatory_assessment": "Educational triage only; no real-world compliance conclusion.",
+        "executive_summary": "The summarized evidence supports a spoofing-like classification with stated uncertainty.",
+    }
+
+
 def test_health_and_ready_use_fallback_mode_by_default() -> None:
     response = health()
 
@@ -202,24 +226,13 @@ def test_local_vllm_mode_uses_local_openai_compatible_endpoint_without_auth(
     monkeypatch.setenv("NEBIUS_ENDPOINT_MODE", "local_vllm")
     monkeypatch.setenv("LOCAL_VLLM_BASE_URL", "http://127.0.0.1:8001/v1")
     monkeypatch.setenv("LOCAL_VLLM_MODEL", "test-local-vllm-model")
-    captured: dict[str, str | None] = {}
+    captured: dict[str, object] = {}
 
     def fake_urlopen(request: object, timeout: float) -> FakeModelResponse:
         captured["authorization"] = request.get_header("Authorization")  # type: ignore[attr-defined]
         captured["url"] = request.full_url  # type: ignore[attr-defined]
-        return FakeModelResponse(
-            _chat_completion(
-                json.dumps(
-                    {
-                        "suspicion_score": 0.91,
-                        "detected_pattern": "spoofing_like_wall",
-                        "confidence": 0.88,
-                        "reasons": ["Local vLLM returned structured synthetic JSON."],
-                        "recommended_action": "Review the synthetic replay window.",
-                    }
-                )
-            )
-        )
+        captured["body"] = json.loads(request.data.decode("utf-8"))  # type: ignore[attr-defined]
+        return FakeModelResponse(_chat_completion(json.dumps(_professional_assessment())))
 
     monkeypatch.setattr(endpoint_app, "urlopen", fake_urlopen)
 
@@ -236,6 +249,34 @@ def test_local_vllm_mode_uses_local_openai_compatible_endpoint_without_auth(
     assert response.model == "test-local-vllm-model"
     assert captured["url"] == "http://127.0.0.1:8001/v1/chat/completions"
     assert captured["authorization"] is None
+    body = captured["body"]
+    assert isinstance(body, dict)
+    assert body["temperature"] == 0.0
+    assert body["seed"] == 42
+    assert body["max_tokens"] == 1200
+    user_prompt = json.loads(body["messages"][1]["content"])
+    assert "episode_summary" in user_prompt
+    assert "required_response_schema" in user_prompt
+    assert "bids" not in user_prompt["episode_summary"]["lob_summary"]["during"]
+
+
+def test_low_score_event_does_not_invoke_local_vllm(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("NEBIUS_ENDPOINT_MODE", "local_vllm")
+
+    def unexpected_urlopen(request: object, timeout: float) -> FakeModelResponse:
+        raise AssertionError("low-score event must not invoke vLLM")
+
+    monkeypatch.setattr(endpoint_app, "urlopen", unexpected_urlopen)
+    response = orderbook_alert(
+        OrderBookWindow(
+            bids=[{"price": 100.0, "quantity": 1.0}],
+            asks=[{"price": 100.1, "quantity": 1.0}],
+            features={"wall_size_ratio": 1.0, "message_rate": 2.0},
+        )
+    )
+
+    assert response.model_mode == "deterministic_fallback"
+    assert response.fallback_reason == "llm_not_triggered"
 
 
 def test_local_vllm_market_abuse_scenario_uses_compact_narrative_contract(
@@ -347,7 +388,7 @@ def test_unknown_endpoint_mode_falls_back_without_http_call(monkeypatch: pytest.
     )
 
     assert response.model_mode == "deterministic_fallback"
-    assert response.model == "Qwen/Qwen2.5-1.5B-Instruct"
+    assert response.model == "Qwen/Qwen2.5-14B-Instruct"
     assert response.latency_ms == 0.0
     assert response.fallback_reason == "unsupported_endpoint_mode"
 

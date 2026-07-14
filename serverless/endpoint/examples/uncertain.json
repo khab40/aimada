@@ -1,0 +1,41 @@
+{
+  "request": {
+    "schema_version": "aimada.surveillance.request.v1",
+    "analysis_type": "detector_disagreement",
+    "invocation_reason": "detector score spread 0.44 exceeds 0.30",
+    "simulation_metadata": {"episode_id": "UNCERTAIN-04", "scenario_family": "unknown", "status": "completed"},
+    "market_regime": {"liquidity": "thin", "volatility": "high"},
+    "instrument": {"symbol": "AIMD"},
+    "episode_duration": {"duration_ticks": 45},
+    "suspected_agent": {"agent_id": "AG-09"},
+    "order_statistics": {"placement_count": 18, "cancel_count": 13},
+    "trade_statistics": {"trade_count": 3},
+    "derived_market_features": {"wall_size_ratio": 4.2, "message_rate": 17.0, "depth_change_pct": 0.41},
+    "detector_scores": [
+      {"detector": "spoofing_like", "score": 0.78, "classification": "spoofing_like", "alert": true, "severity": "high"},
+      {"detector": "layering_like", "score": 0.34, "classification": "normal_market", "alert": false, "severity": "low"}
+    ],
+    "event_timeline": [{"sequence": 1, "time": 10, "event": "One-sided depth increased."}, {"sequence": 2, "time": 42, "event": "Depth was withdrawn after volatility increased."}],
+    "lob_summary": {"during": {"spread": 0.05, "depth_imbalance": -0.42}},
+    "cancellation_metrics": {"cancel_count": 13, "cancel_ratio": 0.72},
+    "execution_metrics": {"trade_count": 3, "execution_ratio": 0.18},
+    "price_movement": {"change_bps": -9.0, "reversion_bps": 1.0},
+    "ground_truth": null,
+    "previous_agent_behaviour": null,
+    "missing_fields": ["ground_truth", "previous_agent_behaviour", "lob_summary.before", "lob_summary.after"]
+  },
+  "response": {
+    "classification": "inconclusive_one_sided_liquidity_withdrawal",
+    "confidence": 0.56,
+    "severity": "medium",
+    "market_context": "Thin, high-volatility synthetic conditions can produce abrupt one-sided depth changes without manipulation-like intent.",
+    "evidence": [{"observation": "One-sided depth was withdrawn with limited execution.", "metric": "cancel_ratio", "value": "0.72", "reasoning": "This supports concern but is not decisive in a high-volatility regime."}],
+    "counter_evidence": [{"observation": "Price showed little reversion.", "metric": "reversion_bps", "value": "1.0", "reasoning": "Limited reversion weakens a spoofing-like price-impact hypothesis."}],
+    "alternative_explanations": ["Risk-driven quote withdrawal during volatility.", "A short-lived genuine change in liquidity supply."],
+    "episode_timeline": ["One-sided depth increased.", "Volatility increased.", "Depth was withdrawn."],
+    "detector_disagreement": "The spoofing detector alerts at 0.78 while layering remains below threshold at 0.34; missing before/after LOB summaries prevent resolution.",
+    "recommended_actions": ["Inspect order-level linkage and execution timing.", "Obtain before/after LOB summaries and prior agent behaviour."],
+    "regulatory_assessment": "Evidence is insufficient for synthetic escalation beyond manual review and cannot support a real-world compliance conclusion.",
+    "executive_summary": "The episode is uncertain: cancellation and one-sided pressure raise concern, but volatility, limited reversion, and missing context leave benign liquidity withdrawal plausible."
+  }
+}

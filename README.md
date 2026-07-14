@@ -204,7 +204,7 @@ frontend lint and production compilation, a three-run deterministic CPU
 evaluation, local Compose configuration, the backend/frontend/agent-runner
 images, and repository history with Gitleaks. CI needs no Nebius credentials,
 private data, GPU, or external private service. It does not build the long-running
-Nebius Serverless Endpoint or Serverless Job images and never runs vLLM/H100
+Nebius Serverless Endpoint or Serverless Job images and never runs vLLM/GPU
 inference, pushes images, or deploys infrastructure. Production execution
 evidence is indexed in [Challenge Submission](docs/challenge-submission.md).
 
@@ -333,17 +333,27 @@ The local experiment path writes synthetic benchmark evidence under `outputs/exp
 
 Nebius endpoint and job wiring is configured through environment variables. The cloud endpoint defaults to a GPU local-vLLM path; use mock mode only for local deterministic development.
 
+Investigation inference uses a bounded, evidence-first request schema and strict
+JSON response contract. Raw order-book streams are summarized before prompting,
+and the model is invoked only for meaningful episode or aggregate-analysis
+triggers. See [professional surveillance prompting](docs/surveillance-prompting.md).
+
 ```bash
 ENDPOINT_TOKEN=endpoint-auth-token
 NEBIUS_ENDPOINT_MODE=local_vllm        # local_vllm | mock
-NEBIUS_ENDPOINT_PLATFORM=gpu-h100
+NEBIUS_ENDPOINT_PLATFORM=gpu-l40s-g
 NEBIUS_ENDPOINT_PRESET=1gpu-16vcpu-200gb
 LOCAL_VLLM_BASE_URL=http://127.0.0.1:8001/v1
-LOCAL_VLLM_MODEL=Qwen/Qwen2.5-1.5B-Instruct
+LOCAL_VLLM_MODEL=Qwen/Qwen2.5-14B-Instruct
 LOCAL_VLLM_HOST=127.0.0.1
 LOCAL_VLLM_PORT=8001
-LOCAL_VLLM_GPU_MEMORY_UTILIZATION=0.85
-LOCAL_VLLM_MAX_MODEL_LEN=4096
+LOCAL_VLLM_DTYPE=auto
+LOCAL_VLLM_GPU_MEMORY_UTILIZATION=0.90
+LOCAL_VLLM_MAX_MODEL_LEN=16384
+LOCAL_VLLM_ENABLE_PREFIX_CACHING=true
+LOCAL_VLLM_MAX_NUM_SEQS=16
+LOCAL_VLLM_TRUST_REMOTE_CODE=true
+NEBIUS_PROMPT_SEED=42
 NEBIUS_ENDPOINT_BASE_URL=https://your-nebius-endpoint
 ```
 
@@ -423,7 +433,7 @@ Job lifecycle snapshot is written under `outputs/nebius/evidence/`, uploaded to
 `POST /api/nebius/evidence/sync` (or **Sync evidence from S3** in Execution Trace)
 to retry pending uploads and restore the S3 archive to backend-local storage.
 
-Nebius H100 endpoint with local vLLM:
+Right-sized Nebius L40S endpoint with local vLLM:
 
 ```bash
 export NEBIUS_PARENT_ID=<project-id>
@@ -431,17 +441,27 @@ export NEBIUS_SUBNET_ID=<vpc-subnet-id>
 export ENDPOINT_TOKEN=<endpoint-bearer-token>
 export NEBIUS_ENDPOINT_IMAGE=ghcr.io/<your-org>/ai-market-abuse-detection-arena-endpoint:<tag>
 export NEBIUS_ENDPOINT_MODE=local_vllm
-export NEBIUS_ENDPOINT_PLATFORM=gpu-h100
+export NEBIUS_ENDPOINT_PLATFORM=gpu-l40s-g
 export NEBIUS_ENDPOINT_PRESET=1gpu-16vcpu-200gb
-export LOCAL_VLLM_MODEL=Qwen/Qwen2.5-1.5B-Instruct
+export LOCAL_VLLM_MODEL=Qwen/Qwen2.5-14B-Instruct
 export LOCAL_VLLM_HOST=127.0.0.1
 export LOCAL_VLLM_PORT=8001
 export LOCAL_VLLM_BASE_URL=http://127.0.0.1:8001/v1
-export LOCAL_VLLM_GPU_MEMORY_UTILIZATION=0.85
-export LOCAL_VLLM_MAX_MODEL_LEN=4096
+export LOCAL_VLLM_DTYPE=auto
+export LOCAL_VLLM_GPU_MEMORY_UTILIZATION=0.90
+export LOCAL_VLLM_MAX_MODEL_LEN=16384
+export LOCAL_VLLM_ENABLE_PREFIX_CACHING=true
+export LOCAL_VLLM_MAX_NUM_SEQS=16
+export LOCAL_VLLM_TRUST_REMOTE_CODE=true
 
 ./scripts/create-nebius-ai-endpoint.sh
 ```
+
+The 14.7B-parameter model occupies about 27.4 GiB in BF16. A 16,384-token KV
+cache is about 3 GiB per fully occupied sequence, leaving practical headroom on
+the L40S 48 GB GPU for vLLM/CUDA overhead and shorter concurrent requests. See
+[L40S migration and benchmark estimates](docs/l40s-migration.md) for the memory
+calculation, H100 comparison, rollout, and rollback procedure.
 
 Frontend WebSocket connection:
 

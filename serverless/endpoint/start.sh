@@ -23,37 +23,62 @@ if [[ "${NEBIUS_ENDPOINT_MODE:-mock}" != "local_vllm" ]]; then
   exec python3 -m uvicorn app:app --host "${UVICORN_HOST}" --port "${UVICORN_PORT}"
 fi
 
-LOCAL_VLLM_MODEL="${LOCAL_VLLM_MODEL:-Qwen/Qwen2.5-1.5B-Instruct}"
+LOCAL_VLLM_MODEL="${LOCAL_VLLM_MODEL:-Qwen/Qwen2.5-14B-Instruct}"
 LOCAL_VLLM_HOST="${LOCAL_VLLM_HOST:-127.0.0.1}"
 LOCAL_VLLM_PORT="${LOCAL_VLLM_PORT:-8001}"
 LOCAL_VLLM_BASE_URL="${LOCAL_VLLM_BASE_URL:-}"
 if [[ -z "${LOCAL_VLLM_BASE_URL}" ]]; then
   LOCAL_VLLM_BASE_URL="http://${LOCAL_VLLM_HOST}:${LOCAL_VLLM_PORT}/v1"
 fi
-LOCAL_VLLM_GPU_MEMORY_UTILIZATION="${LOCAL_VLLM_GPU_MEMORY_UTILIZATION:-0.85}"
-LOCAL_VLLM_MAX_MODEL_LEN="${LOCAL_VLLM_MAX_MODEL_LEN:-4096}"
+LOCAL_VLLM_DTYPE="${LOCAL_VLLM_DTYPE:-auto}"
+LOCAL_VLLM_GPU_MEMORY_UTILIZATION="${LOCAL_VLLM_GPU_MEMORY_UTILIZATION:-0.90}"
+LOCAL_VLLM_MAX_MODEL_LEN="${LOCAL_VLLM_MAX_MODEL_LEN:-16384}"
+LOCAL_VLLM_ENABLE_PREFIX_CACHING="${LOCAL_VLLM_ENABLE_PREFIX_CACHING:-true}"
+LOCAL_VLLM_MAX_NUM_SEQS="${LOCAL_VLLM_MAX_NUM_SEQS:-16}"
+LOCAL_VLLM_TRUST_REMOTE_CODE="${LOCAL_VLLM_TRUST_REMOTE_CODE:-true}"
 LOCAL_VLLM_READY_TIMEOUT_SECONDS="${LOCAL_VLLM_READY_TIMEOUT_SECONDS:-900}"
 export LOCAL_VLLM_BASE_URL
 export LOCAL_VLLM_MODEL
 export LOCAL_VLLM_HOST
 export LOCAL_VLLM_PORT
+export LOCAL_VLLM_DTYPE
 export LOCAL_VLLM_GPU_MEMORY_UTILIZATION
 export LOCAL_VLLM_MAX_MODEL_LEN
+export LOCAL_VLLM_ENABLE_PREFIX_CACHING
+export LOCAL_VLLM_MAX_NUM_SEQS
+export LOCAL_VLLM_TRUST_REMOTE_CODE
 
 echo "Endpoint startup: mode=local_vllm"
 echo
-echo "vLLM startup: model=${LOCAL_VLLM_MODEL} host=${LOCAL_VLLM_HOST} port=${LOCAL_VLLM_PORT}"
+echo "vLLM startup: model=${LOCAL_VLLM_MODEL} host=${LOCAL_VLLM_HOST} port=${LOCAL_VLLM_PORT} dtype=${LOCAL_VLLM_DTYPE} gpu_memory_utilization=${LOCAL_VLLM_GPU_MEMORY_UTILIZATION} max_model_len=${LOCAL_VLLM_MAX_MODEL_LEN} max_num_seqs=${LOCAL_VLLM_MAX_NUM_SEQS} prefix_caching=${LOCAL_VLLM_ENABLE_PREFIX_CACHING} trust_remote_code=${LOCAL_VLLM_TRUST_REMOTE_CODE}"
 echo
 echo "vLLM readiness..."
 
 start_uvicorn
 
-python3 -m vllm.entrypoints.openai.api_server \
-  --model "${LOCAL_VLLM_MODEL}" \
-  --host "${LOCAL_VLLM_HOST}" \
-  --port "${LOCAL_VLLM_PORT}" \
-  --gpu-memory-utilization "${LOCAL_VLLM_GPU_MEMORY_UTILIZATION}" \
-  --max-model-len "${LOCAL_VLLM_MAX_MODEL_LEN}" &
+vllm_args=(
+  --model "${LOCAL_VLLM_MODEL}"
+  --host "${LOCAL_VLLM_HOST}"
+  --port "${LOCAL_VLLM_PORT}"
+  --dtype "${LOCAL_VLLM_DTYPE}"
+  --gpu-memory-utilization "${LOCAL_VLLM_GPU_MEMORY_UTILIZATION}"
+  --max-model-len "${LOCAL_VLLM_MAX_MODEL_LEN}"
+  --max-num-seqs "${LOCAL_VLLM_MAX_NUM_SEQS}"
+)
+
+case "${LOCAL_VLLM_ENABLE_PREFIX_CACHING,,}" in
+  1|true|yes|on) vllm_args+=(--enable-prefix-caching) ;;
+  0|false|no|off) ;;
+  *) echo "Invalid LOCAL_VLLM_ENABLE_PREFIX_CACHING=${LOCAL_VLLM_ENABLE_PREFIX_CACHING}" >&2; exit 2 ;;
+esac
+
+case "${LOCAL_VLLM_TRUST_REMOTE_CODE,,}" in
+  1|true|yes|on) vllm_args+=(--trust-remote-code) ;;
+  0|false|no|off) ;;
+  *) echo "Invalid LOCAL_VLLM_TRUST_REMOTE_CODE=${LOCAL_VLLM_TRUST_REMOTE_CODE}" >&2; exit 2 ;;
+esac
+
+python3 -m vllm.entrypoints.openai.api_server "${vllm_args[@]}" &
 
 VLLM_PID="$!"
 

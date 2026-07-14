@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/khab40/aimada/serverless/endpoint/schemas/surveillance-response.schema.json",
+  "title": "AIMADA Professional Surveillance Assessment Response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "classification",
+    "confidence",
+    "severity",
+    "market_context",
+    "evidence",
+    "counter_evidence",
+    "alternative_explanations",
+    "episode_timeline",
+    "detector_disagreement",
+    "recommended_actions",
+    "regulatory_assessment",
+    "executive_summary"
+  ],
+  "properties": {
+    "classification": {"type": "string"},
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+    "severity": {"enum": ["informational", "low", "medium", "high", "critical"]},
+    "market_context": {"type": "string"},
+    "evidence": {"type": "array", "maxItems": 12, "items": {"$ref": "#/$defs/evidence"}},
+    "counter_evidence": {"type": "array", "maxItems": 8, "items": {"$ref": "#/$defs/evidence"}},
+    "alternative_explanations": {"type": "array", "maxItems": 8, "items": {"type": "string"}},
+    "episode_timeline": {"type": "array", "maxItems": 16, "items": {"type": "string"}},
+    "detector_disagreement": {"type": "string"},
+    "recommended_actions": {"type": "array", "maxItems": 8, "items": {"type": "string"}},
+    "regulatory_assessment": {"type": "string"},
+    "executive_summary": {"type": "string"}
+  },
+  "$defs": {
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["observation", "metric", "value", "reasoning"],
+      "properties": {
+        "observation": {"type": "string"},
+        "metric": {"type": "string"},
+        "value": {"type": "string"},
+        "reasoning": {"type": "string"}
+      }
+    }
+  }
+}

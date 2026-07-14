@@ -166,7 +166,7 @@ docker build -f serverless/jobs/Dockerfile \
 4. Start the backend and frontend.
 5. In Arena, create an incident and click Nebius AI Investigator.
 
-Local-vLLM H100 endpoint:
+Local-vLLM L40S endpoint:
 
 ```bash
 export NEBIUS_PARENT_ID=<project-id>
@@ -174,14 +174,18 @@ export NEBIUS_SUBNET_ID=<vpc-subnet-id>
 export ENDPOINT_TOKEN=<endpoint-bearer-token>
 export NEBIUS_ENDPOINT_IMAGE=ghcr.io/<your-org>/ai-market-abuse-detection-arena-endpoint:<tag>
 export NEBIUS_ENDPOINT_MODE=local_vllm
-export NEBIUS_ENDPOINT_PLATFORM=gpu-h100
+export NEBIUS_ENDPOINT_PLATFORM=gpu-l40s-g
 export NEBIUS_ENDPOINT_PRESET=1gpu-16vcpu-200gb
 export LOCAL_VLLM_BASE_URL=http://127.0.0.1:8001/v1
-export LOCAL_VLLM_MODEL=Qwen/Qwen2.5-1.5B-Instruct
+export LOCAL_VLLM_MODEL=Qwen/Qwen2.5-14B-Instruct
 export LOCAL_VLLM_HOST=127.0.0.1
 export LOCAL_VLLM_PORT=8001
-export LOCAL_VLLM_GPU_MEMORY_UTILIZATION=0.85
-export LOCAL_VLLM_MAX_MODEL_LEN=4096
+export LOCAL_VLLM_DTYPE=auto
+export LOCAL_VLLM_GPU_MEMORY_UTILIZATION=0.90
+export LOCAL_VLLM_MAX_MODEL_LEN=16384
+export LOCAL_VLLM_ENABLE_PREFIX_CACHING=true
+export LOCAL_VLLM_MAX_NUM_SEQS=16
+export LOCAL_VLLM_TRUST_REMOTE_CODE=true
 
 ./scripts/create-nebius-ai-endpoint.sh
 ```

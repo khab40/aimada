@@ -101,12 +101,18 @@ PUSH=true IMAGE_NAMESPACE=ghcr.io/<your-org> TAG=<tag> ./scripts/build-serverles
 
 For the current project shape, deploy only the AI execution surfaces to Nebius:
 
-- Nebius AI Endpoint: GPU H100 local-vLLM inference for `/orderbook-alert`,
+- Nebius AI Endpoint: single-GPU L40S local-vLLM inference for `/orderbook-alert`,
   `/investigation-report`, and related explanation routes.
 - Nebius Serverless Jobs: on-demand detector tournaments and batch experiment
   runs using the pushed jobs image.
 - Local Docker Compose: frontend, FastAPI backend, and agent-runner remain local
   by default.
+
+Interactive investigation routes use the bounded request/response contracts in
+[professional surveillance prompting](surveillance-prompting.md). The endpoint
+summarizes episode evidence, excludes raw LOB streams, and gates Qwen inference
+to high anomalies, detector disagreement, completed manipulation episodes, simulation
+summaries, and benchmark generation.
 
 This is the best current split because the expensive and Nebius-specific work is
 model inference and batch execution. The UI/backend/agent-runner are lightweight,
@@ -179,7 +185,7 @@ export NEBIUS_JOB_IMAGE=ghcr.io/<your-org>/ai-market-abuse-detection-arena-jobs:
 ./scripts/create-nebius-ai-job.sh
 ```
 
-To deploy the endpoint with local vLLM on Nebius H100:
+To deploy the endpoint with local vLLM on one Nebius L40S:
 
 ```bash
 export NEBIUS_SUBNET_ID=<vpc-subnet-id>
@@ -187,14 +193,19 @@ export NEBIUS_PARENT_ID=<project-id>
 export ENDPOINT_TOKEN=<endpoint-bearer-token>
 export NEBIUS_ENDPOINT_IMAGE=ghcr.io/<your-org>/ai-market-abuse-detection-arena-endpoint:<tag>
 export NEBIUS_ENDPOINT_MODE=local_vllm
-export NEBIUS_ENDPOINT_PLATFORM=gpu-h100
+export NEBIUS_ENDPOINT_PLATFORM=gpu-l40s-g
 export NEBIUS_ENDPOINT_PRESET=1gpu-16vcpu-200gb
-export LOCAL_VLLM_MODEL=Qwen/Qwen2.5-1.5B-Instruct
+export LOCAL_VLLM_MODEL=Qwen/Qwen2.5-14B-Instruct
 export LOCAL_VLLM_HOST=127.0.0.1
 export LOCAL_VLLM_PORT=8001
 export LOCAL_VLLM_BASE_URL=http://127.0.0.1:8001/v1
-export LOCAL_VLLM_GPU_MEMORY_UTILIZATION=0.85
-export LOCAL_VLLM_MAX_MODEL_LEN=4096
+export LOCAL_VLLM_DTYPE=auto
+export LOCAL_VLLM_GPU_MEMORY_UTILIZATION=0.90
+export LOCAL_VLLM_MAX_MODEL_LEN=16384
+export LOCAL_VLLM_ENABLE_PREFIX_CACHING=true
+export LOCAL_VLLM_MAX_NUM_SEQS=16
+export LOCAL_VLLM_TRUST_REMOTE_CODE=true
+export NEBIUS_PROMPT_SEED=42
 
 ./scripts/create-nebius-ai-endpoint.sh
 ```
@@ -210,7 +221,7 @@ python scripts/call_endpoint.py \
 
 ### Cloud Validation For `local_vllm`
 
-Apple Silicon Docker does not validate the H100 path. Use Nebius as the source
+Apple Silicon Docker does not validate the L40S path. Use Nebius as the source
 of truth:
 
 ```bash
@@ -225,14 +236,18 @@ export NEBIUS_SUBNET_ID=<vpc-subnet-id>
 export NEBIUS_PARENT_ID=<project-id>
 export ENDPOINT_TOKEN=<endpoint-bearer-token>
 export NEBIUS_ENDPOINT_MODE=local_vllm
-export NEBIUS_ENDPOINT_PLATFORM=gpu-h100
+export NEBIUS_ENDPOINT_PLATFORM=gpu-l40s-g
 export NEBIUS_ENDPOINT_PRESET=1gpu-16vcpu-200gb
-export LOCAL_VLLM_MODEL=Qwen/Qwen2.5-1.5B-Instruct
+export LOCAL_VLLM_MODEL=Qwen/Qwen2.5-14B-Instruct
 export LOCAL_VLLM_HOST=127.0.0.1
 export LOCAL_VLLM_PORT=8001
 export LOCAL_VLLM_BASE_URL=http://127.0.0.1:8001/v1
-export LOCAL_VLLM_GPU_MEMORY_UTILIZATION=0.85
-export LOCAL_VLLM_MAX_MODEL_LEN=4096
+export LOCAL_VLLM_DTYPE=auto
+export LOCAL_VLLM_GPU_MEMORY_UTILIZATION=0.90
+export LOCAL_VLLM_MAX_MODEL_LEN=16384
+export LOCAL_VLLM_ENABLE_PREFIX_CACHING=true
+export LOCAL_VLLM_MAX_NUM_SEQS=16
+export LOCAL_VLLM_TRUST_REMOTE_CODE=true
 
 ./scripts/create-nebius-ai-endpoint.sh
 ```
@@ -255,7 +270,7 @@ Success criteria:
 
 - `endpoint_mode=local_vllm`
 - `model_mode=local_vllm`
-- `local_vllm_model=Qwen/Qwen2.5-1.5B-Instruct`
+- `local_vllm_model=Qwen/Qwen2.5-14B-Instruct`
 - `latency_ms > 0` on `/orderbook-alert` and `/investigation-report`
 
 After the endpoint, backend, and jobs image are available, run the deployment smoke workflow:
@@ -404,11 +419,15 @@ Set these on the deployed endpoint container:
 | `NEBIUS_ENDPOINT_MODE` | yes | `mock` for deterministic fallback or `local_vllm` to start and call a local OpenAI-compatible vLLM server. |
 | `NEBIUS_REQUEST_TIMEOUT_SECONDS` | no | Endpoint model-call timeout. |
 | `LOCAL_VLLM_BASE_URL` | only for `local_vllm` overrides | Local vLLM OpenAI-compatible base URL. Defaults to `http://127.0.0.1:8001/v1`. |
-| `LOCAL_VLLM_MODEL` | only for `local_vllm` overrides | Model name sent to vLLM. Defaults to `Qwen/Qwen2.5-1.5B-Instruct`. |
+| `LOCAL_VLLM_MODEL` | only for `local_vllm` overrides | Model name sent to vLLM. Defaults to `Qwen/Qwen2.5-14B-Instruct`. |
 | `LOCAL_VLLM_HOST` | no | Local vLLM bind host. Defaults to `127.0.0.1`. |
 | `LOCAL_VLLM_PORT` | no | Local vLLM port. Defaults to `8001`. |
-| `LOCAL_VLLM_GPU_MEMORY_UTILIZATION` | no | vLLM GPU memory utilization. Defaults to `0.85`. |
-| `LOCAL_VLLM_MAX_MODEL_LEN` | no | vLLM maximum model context length. Defaults to `4096`. |
+| `LOCAL_VLLM_DTYPE` | no | Model and activation dtype. Defaults to `auto`. |
+| `LOCAL_VLLM_GPU_MEMORY_UTILIZATION` | no | vLLM GPU memory utilization. Defaults to `0.90`. |
+| `LOCAL_VLLM_MAX_MODEL_LEN` | no | vLLM maximum model context length. Defaults to `16384`. |
+| `LOCAL_VLLM_ENABLE_PREFIX_CACHING` | no | Enables prefix caching. Defaults to `true`. |
+| `LOCAL_VLLM_MAX_NUM_SEQS` | no | Scheduler concurrency cap. Defaults to `16`. |
+| `LOCAL_VLLM_TRUST_REMOTE_CODE` | no | Passes vLLM `--trust-remote-code`. Defaults to `true`. |
 
 The endpoint exposes:
 

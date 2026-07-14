@@ -10,7 +10,16 @@ from urllib.request import Request, urlopen
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
-from prompts import INCIDENT_EXPLANATION_SYSTEM_PROMPT, SCENARIO_GENERATOR_SYSTEM_PROMPT
+from prompts import SCENARIO_GENERATOR_SYSTEM_PROMPT
+from surveillance import (
+    SURVEILLANCE_SYSTEM_PROMPT,
+    SurveillanceInvestigationResponse,
+    build_surveillance_request,
+    build_user_prompt,
+    choose_analysis_type,
+    output_token_budget,
+    parse_surveillance_response,
+)
 
 import logging
 
@@ -27,7 +36,7 @@ DISCLAIMER = (
 )
 DEFAULT_LOCAL_VLLM_HOST = "127.0.0.1"
 DEFAULT_LOCAL_VLLM_PORT = "8001"
-DEFAULT_LOCAL_VLLM_MODEL = "Qwen/Qwen2.5-1.5B-Instruct"
+DEFAULT_LOCAL_VLLM_MODEL = "Qwen/Qwen2.5-14B-Instruct"
 DEFAULT_ENDPOINT_MODEL = DEFAULT_LOCAL_VLLM_MODEL
 
 
@@ -274,161 +283,94 @@ def ready() -> dict[str, str | bool]:
 @app.post("/orderbook-alert", response_model=OrderBookAlertResponse)
 def orderbook_alert(request: OrderBookWindow) -> OrderBookAlertResponse:
     fallback = _deterministic_orderbook_alert(request)
-    model_response = _call_model_json(
-        system_prompt=(
-            JSON_ONLY_INSTRUCTION
-            + "You are an educational synthetic order-book surveillance assistant. "
-            "Return a JSON object with exactly these keys: "
-            "suspicion_score, detected_pattern, confidence, reasons, recommended_action. "
-            "suspicion_score and confidence must be numbers between 0 and 1. "
-            "detected_pattern and recommended_action must be strings. "
-            "reasons must be an array of strings. "
-            "Never claim real market surveillance capability. "
-            "Do not provide trading, compliance, legal, or enforcement advice."
-        ),
-        user_payload=request.model_dump(mode="json"),
-    )
-    payload = _validated_model_payload(
-        model_response,
+    model_response, assessment = _call_surveillance_analysis(
         {
-            "suspicion_score": "number",
-            "detected_pattern": str,
-            "confidence": "number",
-            "reasons": list,
-            "recommended_action": str,
+            "anomaly_score": fallback.suspicion_score,
+            "book": {"bids": request.model_dump(mode="json")["bids"], "asks": request.model_dump(mode="json")["asks"]},
+            "detector_scores": [
+                {
+                    "alert": fallback.suspicion_score >= 0.75,
+                    "classification": fallback.detected_pattern,
+                    "detector": "deterministic_orderbook_screen",
+                    "score": fallback.suspicion_score,
+                }
+            ],
+            "events": request.events,
+            "features": request.features,
+            "scenario": {"scenario_family": request.scenario_hint},
+            "end_tick": request.tick,
         },
+        operation="event_screening",
     )
-    if payload is None:
+    if assessment is None:
         _log_fallback("orderbook_alert", model_response)
         return _with_model_metadata(fallback, _fallback_model_result(model_response))
+    payload = _assessment_to_alert(assessment, fallback)
     return _merge_alert_response(fallback, payload, model_response)
 
 
 @app.post("/investigation-report", response_model=InvestigationReportResponse)
 def investigation_report(request: InvestigationReportRequest) -> InvestigationReportResponse:
     fallback = _deterministic_investigation_report(request)
-    model_response = _call_model_json(
-        system_prompt=(
-            JSON_ONLY_INSTRUCTION
-            + "You are a market-surveillance analyst assistant for educational synthetic data. "
-            "Return a JSON object with exactly these keys: "
-            "title, summary, timeline, detector_findings, limitations, recommended_next_steps. "
-            "title and summary must be strings. "
-            "timeline, detector_findings, limitations, and recommended_next_steps must be arrays of strings. "
-            "Avoid real-world enforcement, investment, legal, compliance, or trading advice."
-        ),
-        user_payload={
-            "task": "Create a concise synthetic market-abuse investigation report.",
-            "required_schema": {
-                "title": "string",
-                "summary": "string",
-                "timeline": ["string"],
-                "detector_findings": ["string"],
-                "limitations": ["string"],
-                "recommended_next_steps": ["string"],
-            },
-            "input": request.model_dump(mode="json"),
-        },
+    model_response, assessment = _call_surveillance_analysis(
+        request.model_dump(mode="json"),
+        operation="benchmark_generation",
     )
-    payload = _validated_model_payload(
-        model_response,
-        {
-            "title": str,
-            "summary": str,
-            "timeline": list,
-            "detector_findings": list,
-            "limitations": list,
-            "recommended_next_steps": list,
-        },
-    )
-    if payload is None:
+    if assessment is None:
         _log_fallback("investigation_report", model_response)
         return _with_model_metadata(fallback, _fallback_model_result(model_response))
+    payload = _assessment_to_report(assessment)
     return _merge_report_response(fallback, payload, model_response)
 
 
 @app.post("/investigation-team", response_model=AIInvestigationTeamResponse)
 def investigation_team(request: AIInvestigationTeamRequest) -> AIInvestigationTeamResponse:
     fallback = _deterministic_investigation_team(request)
-    model_response = _call_model_json(
-        system_prompt=(
-            JSON_ONLY_INSTRUCTION
-            + "You are an educational synthetic AI market-surveillance investigation team. "
-            "Return a JSON object with exactly these keys: "
-            "investigation_id, manipulation_type, risk_score, confidence, agents, consensus, "
-            "evidence_timeline, recommended_action, executive_summary. "
-            "risk_score and confidence must be numbers between 0 and 1. "
-            "agents must be an array of objects with exactly these keys: "
-            "name, role, finding, confidence, evidence. "
-            "evidence must be an array of objects with key, label, value, source. "
-            "Use these exact agent names: OrderBookExpertAgent, TradePatternAgent, StatisticsAgent, "
-            "ComplianceAgent, LeadInvestigatorAgent. "
-            "evidence_timeline must be an array of objects with sequence, event, tick, source, significance. "
-            "Never claim real market-abuse detection or real compliance capability."
-        ),
-        user_payload=request.model_dump(mode="json"),
+    model_response, assessment = _call_surveillance_analysis(
+        request.model_dump(mode="json"),
+        operation="episode_analysis",
     )
-    payload = _validated_model_payload(
-        model_response,
-        {
-            "investigation_id": str,
-            "manipulation_type": str,
-            "risk_score": "number",
-            "confidence": "number",
-            "agents": list,
-            "consensus": str,
-            "evidence_timeline": list,
-            "recommended_action": str,
-            "executive_summary": str,
-        },
-    )
-    if payload is None:
+    if assessment is None:
         _log_fallback("investigation_team", model_response)
         return _with_model_metadata(fallback, _fallback_model_result(model_response))
+    payload = _assessment_to_investigation_team(assessment, fallback)
     return _merge_investigation_team_response(fallback, payload, model_response)
 
 
 @app.post("/explain-event", response_model=IncidentExplanationResponse)
 def explain_event(request: IncidentExplanationRequest) -> IncidentExplanationResponse:
     fallback = _deterministic_explanation(request)
-    model_response = _call_model_json(
-        system_prompt=(
-            JSON_ONLY_INSTRUCTION
-            + INCIDENT_EXPLANATION_SYSTEM_PROMPT
-            + " Return a JSON object with exactly these keys: risk_level, plain_english_summary, evidence, recommended_action. "
-            "risk_level, plain_english_summary, and recommended_action must be strings. "
-            "evidence must be an array of strings."
-        ),
-        user_payload=request.model_dump(mode="json"),
+    source = request.model_dump(mode="json")
+    source["incident"] = {
+        "agent": request.agent,
+        "confidence": request.confidence,
+        "id": request.incident_id,
+        "scenario_family": request.scenario_family,
+        "scenario_id": request.scenario_id,
+        "severity": request.severity,
+        "title": request.title,
+        "type": request.type,
+    }
+    model_response, assessment = _call_surveillance_analysis(
+        source,
+        operation="episode_analysis",
     )
-    payload = _validated_model_payload(
-        model_response,
-        {
-            "risk_level": str,
-            "plain_english_summary": str,
-            "evidence": list,
-            "recommended_action": str,
-        },
-    )
-    if payload is None:
+    if assessment is None:
         _log_fallback("explain_event", model_response)
         return _with_model_metadata(fallback, _fallback_model_result(model_response))
+    payload = _assessment_to_explanation(assessment)
     return _merge_explanation_response(request, fallback, payload, model_response)
 
 
 @app.post("/explain-simulation")
 def explain_simulation(request: ExplainPayload) -> dict[str, Any]:
-    summary = _call_model_json(
-        system_prompt=(
-            JSON_ONLY_INSTRUCTION
-            + INCIDENT_EXPLANATION_SYSTEM_PROMPT
-            + " Return a concise JSON object summarizing the synthetic simulation."
-        ),
-        user_payload={"task": "explain_simulation", **request.payload},
+    summary, assessment = _call_surveillance_analysis(
+        request.payload,
+        operation="simulation_summary",
     )
-    if summary.payload is not None:
+    if assessment is not None:
         return {
-            "summary": summary.payload,
+            "summary": assessment.model_dump(mode="json"),
             "model_mode": summary.model_mode,
             "model": summary.model,
             "latency_ms": summary.latency_ms,
@@ -450,17 +392,13 @@ def explain_simulation(request: ExplainPayload) -> dict[str, Any]:
 @app.post("/generate-report")
 @app.post("/generate-incident-report")
 def generate_incident_report(request: ExplainPayload) -> dict[str, Any]:
-    summary = _call_model_json(
-        system_prompt=(
-            JSON_ONLY_INSTRUCTION
-            + INCIDENT_EXPLANATION_SYSTEM_PROMPT
-            + " Return a concise JSON object for an educational synthetic incident report."
-        ),
-        user_payload={"task": "generate_report", **request.payload},
+    summary, assessment = _call_surveillance_analysis(
+        request.payload,
+        operation="benchmark_generation",
     )
-    if summary.payload is not None:
+    if assessment is not None:
         return {
-            "report": summary.payload,
+            "report": assessment.model_dump(mode="json"),
             "model_mode": summary.model_mode,
             "model": summary.model,
             "latency_ms": summary.latency_ms,
@@ -553,6 +491,165 @@ class ModelCallResult:
     fallback_reason: str | None = None
 
 
+def _call_surveillance_analysis(
+    source: dict[str, Any],
+    *,
+    operation: str,
+) -> tuple[ModelCallResult, SurveillanceInvestigationResponse | None]:
+    analysis_type, reason = choose_analysis_type(source, operation=operation)
+    if analysis_type is None:
+        return (
+            ModelCallResult(
+                payload=None,
+                model_mode="deterministic_fallback",
+                model=_active_model_name(),
+                fallback_reason="llm_not_triggered",
+            ),
+            None,
+        )
+    try:
+        prompt_request = build_surveillance_request(
+            source,
+            analysis_type=analysis_type,
+            invocation_reason=reason,
+        )
+        user_prompt = build_user_prompt(prompt_request)
+    except ValueError:
+        logger.exception("Surveillance prompt construction failed")
+        return (
+            ModelCallResult(
+                payload=None,
+                model_mode="deterministic_fallback",
+                model=_active_model_name(),
+                fallback_reason="prompt_budget_exceeded",
+            ),
+            None,
+        )
+    result = _call_model_json(
+        system_prompt=SURVEILLANCE_SYSTEM_PROMPT,
+        user_payload=user_prompt,
+        max_tokens=output_token_budget(prompt_request),
+    )
+    return result, parse_surveillance_response(result.payload)
+
+
+def _assessment_to_alert(
+    assessment: SurveillanceInvestigationResponse,
+    fallback: OrderBookAlertResponse,
+) -> dict[str, Any]:
+    reasons = [
+        f"{item.observation} Metric {item.metric}={item.value}. {item.reasoning}"
+        for item in assessment.evidence[:5]
+    ]
+    reasons.extend(f"Counter-evidence: {item.observation}" for item in assessment.counter_evidence[:2])
+    return {
+        "suspicion_score": max(fallback.suspicion_score, assessment.confidence),
+        "detected_pattern": assessment.classification,
+        "confidence": assessment.confidence,
+        "reasons": reasons or [assessment.executive_summary],
+        "recommended_action": assessment.recommended_actions[0]
+        if assessment.recommended_actions
+        else fallback.recommended_action,
+    }
+
+
+def _assessment_to_report(assessment: SurveillanceInvestigationResponse) -> dict[str, Any]:
+    return {
+        "title": f"Synthetic episode assessment: {assessment.classification}",
+        "summary": assessment.executive_summary,
+        "timeline": assessment.episode_timeline,
+        "detector_findings": [
+            f"{item.observation} ({item.metric}={item.value}): {item.reasoning}"
+            for item in assessment.evidence
+        ] + [assessment.detector_disagreement],
+        "limitations": [
+            *(f"Counter-evidence: {item.observation}" for item in assessment.counter_evidence),
+            *(f"Alternative: {item}" for item in assessment.alternative_explanations),
+            assessment.regulatory_assessment,
+        ],
+        "recommended_next_steps": assessment.recommended_actions,
+    }
+
+
+def _assessment_to_explanation(assessment: SurveillanceInvestigationResponse) -> dict[str, Any]:
+    return {
+        "risk_level": assessment.severity,
+        "plain_english_summary": assessment.executive_summary,
+        "evidence": [
+            f"{item.observation} ({item.metric}={item.value}): {item.reasoning}"
+            for item in assessment.evidence
+        ],
+        "recommended_action": assessment.recommended_actions[0]
+        if assessment.recommended_actions
+        else "Review the synthetic episode and retain the summarized evidence.",
+    }
+
+
+def _assessment_to_investigation_team(
+    assessment: SurveillanceInvestigationResponse,
+    fallback: AIInvestigationTeamResponse,
+) -> dict[str, Any]:
+    evidence = [
+        {
+            "key": f"assessment_{index}",
+            "label": item.metric,
+            "value": item.value,
+            "source": "professional_surveillance_assessment",
+        }
+        for index, item in enumerate(assessment.evidence[:5], start=1)
+    ]
+    findings = [
+        assessment.market_context,
+        assessment.executive_summary,
+        assessment.detector_disagreement,
+        assessment.regulatory_assessment,
+        f"Classification {assessment.classification}; confidence {assessment.confidence:.2f}.",
+    ]
+    agents = []
+    for index, agent in enumerate(fallback.agents):
+        agents.append(
+            {
+                "name": agent.name,
+                "role": agent.role,
+                "finding": findings[index],
+                "confidence": assessment.confidence,
+                "evidence": evidence,
+            }
+        )
+    return {
+        "investigation_id": fallback.investigation_id,
+        "manipulation_type": assessment.classification,
+        "risk_score": _severity_score(assessment.severity),
+        "confidence": assessment.confidence,
+        "agents": agents,
+        "consensus": assessment.executive_summary,
+        "evidence_timeline": [
+            {
+                "sequence": index,
+                "event": item,
+                "tick": None,
+                "source": "professional_surveillance_assessment",
+                "significance": "episode reconstruction",
+            }
+            for index, item in enumerate(assessment.episode_timeline, start=1)
+        ],
+        "recommended_action": assessment.recommended_actions[0]
+        if assessment.recommended_actions
+        else fallback.recommended_action,
+        "executive_summary": assessment.executive_summary,
+    }
+
+
+def _severity_score(severity: str) -> float:
+    return {
+        "informational": 0.1,
+        "low": 0.25,
+        "medium": 0.5,
+        "high": 0.75,
+        "critical": 0.95,
+    }.get(severity, 0.5)
+
+
 def _endpoint_mode() -> str:
     return os.environ.get("NEBIUS_ENDPOINT_MODE", "mock").strip().lower() or "mock"
 
@@ -577,9 +674,14 @@ def _active_model_name() -> str:
     return DEFAULT_ENDPOINT_MODEL
 
 
-def _call_model_json(system_prompt: str, user_payload: dict[str, Any]) -> ModelCallResult:
+def _call_model_json(
+    system_prompt: str,
+    user_payload: dict[str, Any],
+    *,
+    max_tokens: int = 400,
+) -> ModelCallResult:
     if _local_vllm_enabled():
-        return _call_local_vllm_json(system_prompt, user_payload)
+        return _call_local_vllm_json(system_prompt, user_payload, max_tokens=max_tokens)
     return ModelCallResult(
         payload=None,
         model_mode="deterministic_fallback",
@@ -588,14 +690,19 @@ def _call_model_json(system_prompt: str, user_payload: dict[str, Any]) -> ModelC
     )
 
 
-def _call_local_vllm_json(system_prompt: str, user_payload: dict[str, Any]) -> ModelCallResult:
+def _call_local_vllm_json(
+    system_prompt: str,
+    user_payload: dict[str, Any],
+    *,
+    max_tokens: int,
+) -> ModelCallResult:
     return _call_openai_compatible_json(
         base_url=_local_vllm_base_url(),
         model=_local_vllm_model(),
         model_mode="local_vllm",
         failure_reason="local_vllm_failed",
         temperature=0.0,
-        max_tokens=400,
+        max_tokens=max_tokens,
         system_prompt=system_prompt,
         user_payload=user_payload,
         headers={"Content-Type": "application/json"},
@@ -618,6 +725,7 @@ def _call_openai_compatible_json(
     body = {
         "model": model,
         "temperature": temperature,
+        "seed": _int_env("NEBIUS_PROMPT_SEED", 42),
         "max_tokens": max_tokens,
         "response_format": {"type": "json_object"},
         "messages": [

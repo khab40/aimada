@@ -2,7 +2,7 @@ name: market-abuse-arena-ai-endpoint
 container_port: 9000
 public: true
 auth: token
-platform: gpu-h100-sxm
+platform: gpu-l40s-g
 preset: 1gpu-16vcpu-200gb
 disk_size: 200Gi
 
@@ -13,11 +13,15 @@ image:
 env:
   NEBIUS_ENDPOINT_MODE: local_vllm
   LOCAL_VLLM_BASE_URL: http://127.0.0.1:8001/v1
-  LOCAL_VLLM_MODEL: Qwen/Qwen2.5-1.5B-Instruct
+  LOCAL_VLLM_MODEL: Qwen/Qwen2.5-14B-Instruct
   LOCAL_VLLM_HOST: 127.0.0.1
   LOCAL_VLLM_PORT: "8001"
-  LOCAL_VLLM_GPU_MEMORY_UTILIZATION: "0.85"
-  LOCAL_VLLM_MAX_MODEL_LEN: "4096"
+  LOCAL_VLLM_DTYPE: auto
+  LOCAL_VLLM_GPU_MEMORY_UTILIZATION: "0.90"
+  LOCAL_VLLM_MAX_MODEL_LEN: "16384"
+  LOCAL_VLLM_ENABLE_PREFIX_CACHING: "true"
+  LOCAL_VLLM_MAX_NUM_SEQS: "16"
+  LOCAL_VLLM_TRUST_REMOTE_CODE: "true"
   NEBIUS_REQUEST_TIMEOUT_SECONDS: "12"
 
 routes:

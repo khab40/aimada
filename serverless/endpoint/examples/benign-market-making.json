@@ -1,0 +1,41 @@
+{
+  "request": {
+    "schema_version": "aimada.surveillance.request.v1",
+    "analysis_type": "benchmark_generation",
+    "invocation_reason": "benchmark report generation requested",
+    "simulation_metadata": {"episode_id": "BENIGN-MM-03", "scenario_family": "normal_market", "status": "completed"},
+    "market_regime": {"liquidity": "normal", "volatility": "medium"},
+    "instrument": {"symbol": "AIMD"},
+    "episode_duration": {"duration_ticks": 120},
+    "suspected_agent": {"agent_id": "MM-04", "role": "market_maker"},
+    "order_statistics": {"placement_count": 80, "cancel_count": 36, "buy_events": 40, "sell_events": 40},
+    "trade_statistics": {"trade_count": 31, "total_executed_quantity": 4200},
+    "derived_market_features": {"mean_spread": 0.02, "depth_imbalance": 0.03, "side_switch_count": 1},
+    "detector_scores": [
+      {"detector": "spoofing_like", "score": 0.14, "classification": "normal_market", "alert": false, "severity": "low"},
+      {"detector": "layering_like", "score": 0.11, "classification": "normal_market", "alert": false, "severity": "low"}
+    ],
+    "event_timeline": [{"sequence": 1, "time": 1, "event": "Agent quoted both sides near the touch."}, {"sequence": 2, "time": 120, "event": "Two-sided quoting continued with regular executions."}],
+    "lob_summary": {"during": {"spread": 0.02, "depth_imbalance": 0.03, "bid_depth_top_levels": 5200, "ask_depth_top_levels": 5100}},
+    "cancellation_metrics": {"cancel_count": 36, "cancel_ratio": 0.45, "cancel_to_trade_ratio": 1.16},
+    "execution_metrics": {"trade_count": 31, "execution_ratio": 0.52},
+    "price_movement": {"change_bps": 1.1},
+    "ground_truth": {"label": "normal_market"},
+    "previous_agent_behaviour": [{"episodes": 20, "median_execution_ratio": 0.49, "alerts": 0}],
+    "missing_fields": []
+  },
+  "response": {
+    "classification": "benign_market_making",
+    "confidence": 0.9,
+    "severity": "informational",
+    "market_context": "Normal synthetic liquidity with balanced two-sided quoting and a stable spread.",
+    "evidence": [{"observation": "Quotes were balanced and regularly executed.", "metric": "execution_ratio", "value": "0.52", "reasoning": "Meaningful execution and two-sided activity support genuine liquidity provision."}],
+    "counter_evidence": [{"observation": "Some quotes were cancelled.", "metric": "cancel_ratio", "value": "0.45", "reasoning": "Cancellation alone is not suspicious when paired with balanced quoting and execution."}],
+    "alternative_explanations": ["Routine inventory and quote-risk management."],
+    "episode_timeline": ["Two-sided quoting remained stable and generated regular executions."],
+    "detector_disagreement": "Both supplied detectors classify the episode as normal market activity.",
+    "recommended_actions": ["Retain as a benign benchmark control."],
+    "regulatory_assessment": "No synthetic escalation is supported; this is not a real-world compliance conclusion.",
+    "executive_summary": "The short episode summary is consistent with benign market making, not manipulation-like conduct."
+  }
+}

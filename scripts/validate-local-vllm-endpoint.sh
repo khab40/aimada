@@ -5,7 +5,7 @@ COMMAND="${1:-validate}"
 ENDPOINT_BASE_URL="${NEBIUS_ENDPOINT_BASE_URL:-}"
 ENDPOINT_TOKEN="${ENDPOINT_TOKEN:-}"
 OUTPUT_DIR="${LOCAL_VLLM_VALIDATION_DIR:-outputs/local-vllm-endpoint-validation}"
-EXPECTED_MODEL="${LOCAL_VLLM_MODEL:-Qwen/Qwen2.5-1.5B-Instruct}"
+EXPECTED_MODEL="${LOCAL_VLLM_MODEL:-Qwen/Qwen2.5-14B-Instruct}"
 CURL_MAX_TIME="${ENDPOINT_CURL_MAX_TIME_SECONDS:-600}"
 PYTHON_BIN="${PYTHON:-python}"
 if ! command -v "${PYTHON_BIN}" >/dev/null 2>&1 && command -v python3 >/dev/null 2>&1; then
