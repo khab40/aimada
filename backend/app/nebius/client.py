@@ -164,7 +164,7 @@ class NebiusClient:
         investigation_team_url: str | None = None,
         market_abuse_scenario_url: str | None = None,
         api_key: str | None = None,
-        timeout_seconds: float = 5.0,
+        timeout_seconds: float | None = None,
     ) -> None:
         settings = get_settings()
         self.incident_explainer_url = (
@@ -198,7 +198,7 @@ class NebiusClient:
             else settings.nebius_market_abuse_scenario_endpoint_url
         )
         self.api_key = api_key if api_key is not None else settings.endpoint_token
-        self.timeout_seconds = timeout_seconds
+        self.timeout_seconds = timeout_seconds or settings.nebius_inference_timeout_seconds
 
     def explain_incident(
         self,

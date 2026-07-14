@@ -1,0 +1,2 @@
+declared_image=vllm/vllm-openai:v0.10.1.1
+runtime_cli=not installed on collection host

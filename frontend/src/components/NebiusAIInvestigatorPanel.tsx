@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { createInvestigationReport, explainIncident, type IncidentExplanation, type InvestigationReportResponse } from "@/api/client";
+import { explainIncidentPayload, type IncidentExplanation } from "@/api/client";
 import { AiCostLatencyCard, type NebiusExecutionTraceData } from "@/components/NebiusExecutionTrace";
 import type { ProductDemoConfig } from "@/demoModes";
 import { getStoredRuntimeMode, RUNTIME_MODE_EVENT, type RuntimeMode } from "@/runtimeModes";
@@ -54,21 +54,27 @@ export function NebiusAIInvestigatorPanel({
     setState("analyzing");
     setTrace((current) => ({ ...current, status: "running" }));
     try {
-      const result = demoConfig?.id === "real"
-        ? toIncidentExplanation(await createInvestigationReport(), incident)
-        : incident.id.startsWith("MOCK-") || incident.id.startsWith("DEMO-")
-          ? await mockExplainIncident(incident, demoConfig)
-          : await explainIncident(incident.id);
+      const result = runtimeMode === "nebius-cloud"
+        ? await explainIncidentPayload(incident)
+        : await mockExplainIncident(
+          incident,
+          demoConfig,
+          "Local Demo mode selected; no Nebius endpoint call was made."
+        );
       if (run !== analysisRunRef.current) return;
       setExplanation(result);
       setTrace(createCompletedTrace(demoConfig, incident, result, startedAt, runtimeMode));
       setState("completed");
     } catch {
-      const result = await mockExplainIncident(incident, demoConfig, "Nebius unavailable. Using cached demo explanation.");
       if (run !== analysisRunRef.current) return;
-      setExplanation(result);
-      setTrace(createCompletedTrace(demoConfig, incident, result, startedAt, runtimeMode));
-      setState("completed");
+      setExplanation(null);
+      setTrace((current) => ({
+        ...current,
+        fallback: "simulated",
+        latency: `${Math.max(0.2, (performance.now() - startedAt) / 1000).toFixed(1)}s`,
+        status: "Endpoint request failed"
+      }));
+      setState("error");
     }
   }
 
@@ -213,7 +219,7 @@ function createCompletedTrace(
 function mockExplainIncident(
   incident: Incident,
   demoConfig?: ProductDemoConfig | null,
-  fallbackReason = "Simulated fallback. Using cached demo explanation."
+  fallbackReason = "Local Demo mode selected; no Nebius endpoint call was made."
 ): Promise<IncidentExplanation> {
   return new Promise((resolve) => {
     window.setTimeout(() => {
@@ -235,17 +241,4 @@ function mockExplainIncident(
       });
     }, 850);
   });
-}
-
-function toIncidentExplanation(report: InvestigationReportResponse, incident: Incident): IncidentExplanation {
-  return {
-    endpoint: report.endpoint,
-    evidence: report.detector_findings.length ? report.detector_findings : report.timeline,
-    fallback_reason: report.fallback_reason,
-    incident_id: incident.id,
-    mode: report.mode,
-    plain_english_summary: report.summary,
-    recommended_action: report.recommended_next_steps.join(" "),
-    risk_level: incident.severity === "Critical" ? "critical" : incident.severity === "High" ? "high" : "medium"
-  };
 }

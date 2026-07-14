@@ -736,7 +736,7 @@ def _call_openai_compatible_json(
     request = Request(url, data=json.dumps(body).encode("utf-8"), headers=headers, method="POST")
     started = perf_counter()
     try:
-        with urlopen(request, timeout=_float_env("NEBIUS_REQUEST_TIMEOUT_SECONDS", 12.0)) as response:
+        with urlopen(request, timeout=_float_env("NEBIUS_REQUEST_TIMEOUT_SECONDS", 180.0)) as response:
             decoded = json.loads(response.read().decode("utf-8"))
     except (HTTPError, URLError, TimeoutError, json.JSONDecodeError, ValueError) as ex:
         logger.exception("OpenAI-compatible model call failed: mode=%s url=%s error=%s", model_mode, url, ex)

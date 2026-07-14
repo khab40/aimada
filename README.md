@@ -225,6 +225,17 @@ make secrets-check
 gitleaks git --redact --verbose
 ```
 
+Freeze a credential-free, timestamped deployment evidence bundle with Git,
+Docker, Nebius Endpoint, environment, model, prompt, architecture, screenshot,
+and benchmark metadata:
+
+```bash
+./scripts/freeze-release.sh
+```
+
+The bundle is written to `evidence/deployment-YYYY-MM-DD-HHMM/`. Use
+`--offline` when Docker, the local backend, or the Nebius CLI is unavailable.
+
 ```bash
 make backend-dev              # Run backend with auto-reload
 make frontend-dev             # Run frontend dev server
@@ -354,6 +365,8 @@ LOCAL_VLLM_ENABLE_PREFIX_CACHING=true
 LOCAL_VLLM_MAX_NUM_SEQS=16
 LOCAL_VLLM_TRUST_REMOTE_CODE=true
 NEBIUS_PROMPT_SEED=42
+NEBIUS_REQUEST_TIMEOUT_SECONDS=180
+NEBIUS_INFERENCE_TIMEOUT_SECONDS=180
 NEBIUS_ENDPOINT_BASE_URL=https://your-nebius-endpoint
 ```
 

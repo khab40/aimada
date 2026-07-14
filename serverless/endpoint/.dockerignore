@@ -1,0 +1,12 @@
+.dockerignore
+.pytest_cache
+.ruff_cache
+__pycache__
+*.py[cod]
+.env
+.env.*
+README.md
+endpoint_config*.yaml
+examples
+schemas
+test_*.py

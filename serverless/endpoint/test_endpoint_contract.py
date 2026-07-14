@@ -229,6 +229,7 @@ def test_local_vllm_mode_uses_local_openai_compatible_endpoint_without_auth(
     captured: dict[str, object] = {}
 
     def fake_urlopen(request: object, timeout: float) -> FakeModelResponse:
+        captured["timeout"] = timeout
         captured["authorization"] = request.get_header("Authorization")  # type: ignore[attr-defined]
         captured["url"] = request.full_url  # type: ignore[attr-defined]
         captured["body"] = json.loads(request.data.decode("utf-8"))  # type: ignore[attr-defined]
@@ -249,6 +250,7 @@ def test_local_vllm_mode_uses_local_openai_compatible_endpoint_without_auth(
     assert response.model == "test-local-vllm-model"
     assert captured["url"] == "http://127.0.0.1:8001/v1/chat/completions"
     assert captured["authorization"] is None
+    assert captured["timeout"] == 180.0
     body = captured["body"]
     assert isinstance(body, dict)
     assert body["temperature"] == 0.0

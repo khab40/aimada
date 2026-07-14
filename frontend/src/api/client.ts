@@ -1,4 +1,4 @@
-import type { BenchmarkResult, ScenarioConfig } from "@/types/arena";
+import type { BenchmarkResult, Incident, ScenarioConfig } from "@/types/arena";
 import type {
   AttackScenario,
   AttackScenarioInput,
@@ -43,6 +43,18 @@ export type IncidentExplanation = {
 
 export async function explainIncident(incidentId: string): Promise<IncidentExplanation> {
   const response = await fetch(`${API_BASE_URL}/api/incidents/${incidentId}/explain`, {
+    method: "POST"
+  });
+  if (!response.ok) {
+    throw new Error(`Incident explanation failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function explainIncidentPayload(incident: Incident): Promise<IncidentExplanation> {
+  const response = await fetch(`${API_BASE_URL}/api/incidents/explain`, {
+    body: JSON.stringify({ incident }),
+    headers: { "Content-Type": "application/json" },
     method: "POST"
   });
   if (!response.ok) {

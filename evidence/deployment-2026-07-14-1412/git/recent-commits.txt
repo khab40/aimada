@@ -1,0 +1,20 @@
+dadf19d9a68555486d64ed14735f30b21f66862d	2026-07-14T12:48:37+04:00	Khab40	feat: migrate from H100 to L40S; improve shallow prompts and responses
+d3f84231456a13606a18e976615e13821103794f	2026-07-14T12:28:05+04:00	Alexey Khabalov	fix: Add PYTHONPATH to backend CI job
+d7c1eda04bdd6c47d52434a47a95dcdf80c53c30	2026-07-14T10:56:02+04:00	Khab40	fix: live probes for Nebius cloud and UI updates
+6ce4f0597c98654dc7e5ae6718014f791e6bfecc	2026-07-14T07:33:57+04:00	Khab40	fix: stale suspect order visible in LoB after incident completion
+a54460e52999e2d71a2efcc227b8b898668ac1aa	2026-07-14T07:18:59+04:00	Khab40	fix: real bugs in simulations and detection logics
+d1745204e4d507b0b08dcb1108e3331253c106fd	2026-07-14T07:05:29+04:00	Alexey Khabalov	docs: add calculations and workflow explanations
+666af151ea35f69d09a3b6e12e14d53841cc2cf0	2026-07-13T21:39:48+04:00	Khab40	fix: CI
+21f44841375dd42c84358d4885ca6b6108b62af3	2026-07-13T21:34:14+04:00	Alexey Khabalov	docs: add real screenshot capture and redaction checklist
+10923f553d9fc61678d3038494510f89c77fb20c	2026-07-13T21:34:00+04:00	Alexey Khabalov	docs: add GitHub social preview capture specification
+01b97ad3f5352ddf9da8f16584a7e29b2e97ee55	2026-07-13T21:33:40+04:00	Alexey Khabalov	docs: add publication image audit and capture plan
+9844800224f589d8966f2e409b7eb0506fa47fcf	2026-07-13T21:33:04+04:00	Khab40	fix: removed agents instructions
+947df839958af828bfa4630fdd3d372011ef06bc	2026-07-13T21:33:02+04:00	Khab40	fix: documentation updates before submission
+b5c898e84130c230460eb2484a57a84ea24c5607	2026-07-13T19:11:55+04:00	Khab40	fix: prepare to submission
+1e2b8b6a5dd90fb5af79bfbdb55616f3475a82be	2026-07-13T19:01:38+04:00	Khab40	fix: Nebius Control Panel fixes, stale functionality removal
+f83080d8de0a202600200c86833e8d02c6c78060	2026-07-13T16:05:01+04:00	Khab40	fix: S3 to backend sync, evidence
+9209b2b9fa4cd98c59e912aa6860f459aa9f6e60	2026-07-13T15:05:56+04:00	Khab40	feat: S3 bucket, E2E jobs run and evidence collection
+8778f38763e53fc3bf4bed1dbb95bfa67da08fe3	2026-07-12T16:46:47+04:00	Khab40	fix: security test and CI failure
+a760e26e43deb692f4f30c86abb21d70c735b523	2026-07-12T16:20:24+04:00	Khab40	feat: added CI, more tests, fixed docs, ARDs, diagrams, duplicates
+cff5cb3e88edf38bc412ca71a77d95c63cd23e04	2026-07-12T13:36:44+04:00	Khab40	feat: evidence provisioning from Nebius S3; k8s enabler for Agents Runner; docs update
+6d9f8d27ab786aee6219362770b3874c0878d859	2026-07-12T13:00:59+04:00	Khab40	fix: make code and docs relevant to the current system state; fix UI

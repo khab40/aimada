@@ -3,7 +3,7 @@ from typing import Any
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.nebius.client import IncidentExplanationResponse, NebiusClient
 from app.schemas.arena import AgentEvent, ArenaState, AttackTrackerState, Incident, MarketFeatures, PriceLevel
@@ -12,6 +12,11 @@ from app.storage.local_store import LocalStore
 
 router = APIRouter(prefix="/api/incidents", tags=["incidents"])
 nebius_client = NebiusClient()
+
+
+class IncidentExplanationPayload(BaseModel):
+    incident: Incident
+    replay: dict[str, Any] = Field(default_factory=dict)
 
 
 @router.get("", response_model=list[Incident])
@@ -38,6 +43,22 @@ async def explain_incident(incident_id: str, request: Request) -> IncidentExplan
     return persist_explanation_result(
         store=request.app.state.store,
         incident=incident,
+        explanation=explanation,
+        replay_payload=replay_payload,
+    )
+
+
+@router.post("/explain", response_model=IncidentExplanationResponse)
+async def explain_incident_payload(
+    payload: IncidentExplanationPayload,
+    request: Request,
+) -> IncidentExplanationResponse:
+    state = await request.app.state.simulation.get_state()
+    replay_payload = payload.replay or build_compact_replay_payload(payload.incident, state)
+    explanation = nebius_client.explain_incident(payload.incident, replay_payload=replay_payload)
+    return persist_explanation_result(
+        store=request.app.state.store,
+        incident=payload.incident,
         explanation=explanation,
         replay_payload=replay_payload,
     )
@@ -113,6 +134,14 @@ def persist_explanation_result(
 
 
 def build_compact_replay_payload(incident: Incident, state: ArenaState) -> dict[str, Any]:
+    features = {
+        **_compact_features(state.features),
+        **{
+            item.key: item.value
+            for item in incident.evidence
+            if isinstance(item.value, (str, int, float, bool))
+        },
+    }
     return {
         "window": {
             "basis": "latest_in_memory_state",
@@ -130,7 +159,7 @@ def build_compact_replay_payload(incident: Incident, state: ArenaState) -> dict[
             "bids": [_compact_level(level) for level in state.book.bids[:5]],
             "asks": [_compact_level(level) for level in state.book.asks[:5]],
         },
-        "features": _compact_features(state.features),
+        "features": features,
         "detectors": [
             {
                 "name": score.name,

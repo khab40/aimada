@@ -1,0 +1,149 @@
+{
+  "request": {
+    "analysis_type": "completed_episode",
+    "cancellation_metrics": {
+      "cancel_count": 35,
+      "cancel_ratio": 0.833
+    },
+    "derived_market_features": {
+      "depth_change_pct": 0.62,
+      "distance_from_touch_ticks": 3,
+      "layer_count": 4
+    },
+    "detector_scores": [
+      {
+        "alert": true,
+        "classification": "layering_like",
+        "detector": "layering_like",
+        "score": 0.89,
+        "severity": "high"
+      }
+    ],
+    "episode_duration": {
+      "duration_ticks": 55,
+      "end_tick": 275,
+      "start_tick": 220
+    },
+    "event_timeline": [
+      {
+        "agent": "AG-31",
+        "event": "Agent placed sell orders across four price levels.",
+        "sequence": 1,
+        "side": "sell",
+        "time": 220
+      },
+      {
+        "agent": "AG-31",
+        "event": "The layered levels were replenished as the touch moved.",
+        "sequence": 2,
+        "side": "sell",
+        "time": 258
+      },
+      {
+        "agent": "AG-31",
+        "event": "The layered orders were cancelled in sequence.",
+        "sequence": 3,
+        "side": "sell",
+        "time": 274
+      }
+    ],
+    "execution_metrics": {
+      "execution_ratio": 0.074,
+      "trade_count": 4
+    },
+    "ground_truth": {
+      "label": "layering"
+    },
+    "instrument": {
+      "symbol": "AIMD"
+    },
+    "invocation_reason": "episode status indicates completion",
+    "lob_summary": {
+      "after": {
+        "depth_imbalance": -0.05
+      },
+      "before": {
+        "depth_imbalance": 0.02
+      },
+      "during": {
+        "depth_imbalance": -0.58,
+        "levels_occupied": 4
+      }
+    },
+    "market_regime": {
+      "liquidity": "normal",
+      "volatility": "low"
+    },
+    "missing_fields": [
+      "previous_agent_behaviour"
+    ],
+    "order_statistics": {
+      "cancel_count": 35,
+      "placement_count": 42,
+      "replenishment_count": 9,
+      "side_switch_count": 2
+    },
+    "previous_agent_behaviour": null,
+    "price_movement": {
+      "change_bps": -7.2,
+      "reversion_bps": 5.9
+    },
+    "schema_version": "aimada.surveillance.request.v1",
+    "simulation_metadata": {
+      "episode_id": "INC-LAYER-02",
+      "scenario_family": "layering",
+      "status": "completed"
+    },
+    "suspected_agent": {
+      "agent_id": "AG-31"
+    },
+    "trade_statistics": {
+      "total_executed_quantity": 320,
+      "trade_count": 4
+    }
+  },
+  "response": {
+    "alternative_explanations": [
+      "A market maker repriced multiple resting quotes as the touch moved."
+    ],
+    "classification": "layering_like",
+    "confidence": 0.88,
+    "counter_evidence": [
+      {
+        "metric": "trade_count",
+        "observation": "Four trades executed during the episode.",
+        "reasoning": "Some execution is consistent with genuine liquidity and reduces certainty about intent.",
+        "value": "4"
+      }
+    ],
+    "detector_disagreement": "Only the layering detector score was supplied, so cross-detector agreement cannot be assessed.",
+    "episode_timeline": [
+      "Four sell-side layers appeared.",
+      "Layers were replenished.",
+      "Most layers were cancelled sequentially.",
+      "Price partially reverted."
+    ],
+    "evidence": [
+      {
+        "metric": "layer_count",
+        "observation": "Orders occupied four sell-side levels and were replenished.",
+        "reasoning": "Coordinated multi-level placement and replenishment is more consistent with layering-like pressure than one isolated large order.",
+        "value": "4"
+      },
+      {
+        "metric": "cancel_ratio",
+        "observation": "The displayed layers were mostly cancelled.",
+        "reasoning": "Sequential cancellation with low execution supports the layering-like hypothesis.",
+        "value": "0.833"
+      }
+    ],
+    "executive_summary": "The completed episode is most consistent with layering-like conduct because coordinated multi-level pressure was replenished and then largely cancelled with limited execution.",
+    "market_context": "A low-volatility synthetic market showed a temporary four-level sell-side depth imbalance.",
+    "recommended_actions": [
+      "Inspect participant and order linkage across the four levels.",
+      "Compare replenishment timing with executions and touch changes."
+    ],
+    "regulatory_assessment": "Synthetic escalation is reasonable, but the supplied evidence cannot establish intent or a real compliance breach.",
+    "severity": "high"
+  }
+}

@@ -1,0 +1,212 @@
+{
+  "$defs": {
+    "detector_score": {
+      "additionalProperties": false,
+      "properties": {
+        "alert": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "classification": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "detector": {
+          "type": "string"
+        },
+        "score": {
+          "maximum": 1,
+          "minimum": 0,
+          "type": "number"
+        },
+        "severity": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "detector",
+        "score"
+      ],
+      "type": "object"
+    },
+    "timeline_observation": {
+      "additionalProperties": false,
+      "properties": {
+        "agent": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "event": {
+          "type": "string"
+        },
+        "price": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "quantity": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "sequence": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "side": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "stage": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "time": {
+          "type": [
+            "string",
+            "integer",
+            "number",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "sequence",
+        "event"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "https://github.com/khab40/aimada/serverless/endpoint/schemas/surveillance-request.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "analysis_type": {
+      "enum": [
+        "high_anomaly",
+        "detector_disagreement",
+        "completed_episode",
+        "simulation_summary",
+        "benchmark_generation"
+      ]
+    },
+    "cancellation_metrics": {
+      "type": "object"
+    },
+    "derived_market_features": {
+      "maxProperties": 32,
+      "type": "object"
+    },
+    "detector_scores": {
+      "items": {
+        "$ref": "#/$defs/detector_score"
+      },
+      "maxItems": 16,
+      "type": "array"
+    },
+    "episode_duration": {
+      "type": "object"
+    },
+    "event_timeline": {
+      "items": {
+        "$ref": "#/$defs/timeline_observation"
+      },
+      "maxItems": 32,
+      "type": "array"
+    },
+    "execution_metrics": {
+      "type": "object"
+    },
+    "ground_truth": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "instrument": {
+      "type": "object"
+    },
+    "invocation_reason": {
+      "type": "string"
+    },
+    "lob_summary": {
+      "description": "Aggregated before/during/after LOB statistics; never raw order-book streams.",
+      "type": "object"
+    },
+    "market_regime": {
+      "type": "object"
+    },
+    "missing_fields": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "order_statistics": {
+      "type": "object"
+    },
+    "previous_agent_behaviour": {
+      "items": {
+        "type": "object"
+      },
+      "maxItems": 12,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "price_movement": {
+      "type": "object"
+    },
+    "schema_version": {
+      "const": "aimada.surveillance.request.v1"
+    },
+    "simulation_metadata": {
+      "type": "object"
+    },
+    "suspected_agent": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "trade_statistics": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "schema_version",
+    "analysis_type",
+    "invocation_reason",
+    "simulation_metadata",
+    "market_regime",
+    "instrument",
+    "episode_duration",
+    "order_statistics",
+    "trade_statistics",
+    "derived_market_features",
+    "detector_scores",
+    "event_timeline",
+    "lob_summary",
+    "cancellation_metrics",
+    "execution_metrics",
+    "price_movement"
+  ],
+  "title": "AIMADA Summarized Surveillance Episode Request",
+  "type": "object"
+}

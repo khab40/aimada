@@ -1,0 +1,3 @@
+$HOME/Documents/STUDY/nebius-ai-performance-engineering/code/[REDACTED]/backend/.venv/bin/python: No module named pip
+
+[command exited with status 1]

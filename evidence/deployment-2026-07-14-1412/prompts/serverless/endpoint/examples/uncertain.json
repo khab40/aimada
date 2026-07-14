@@ -1,0 +1,129 @@
+{
+  "request": {
+    "analysis_type": "detector_disagreement",
+    "cancellation_metrics": {
+      "cancel_count": 13,
+      "cancel_ratio": 0.72
+    },
+    "derived_market_features": {
+      "depth_change_pct": 0.41,
+      "message_rate": 17.0,
+      "wall_size_ratio": 4.2
+    },
+    "detector_scores": [
+      {
+        "alert": true,
+        "classification": "spoofing_like",
+        "detector": "spoofing_like",
+        "score": 0.78,
+        "severity": "high"
+      },
+      {
+        "alert": false,
+        "classification": "normal_market",
+        "detector": "layering_like",
+        "score": 0.34,
+        "severity": "low"
+      }
+    ],
+    "episode_duration": {
+      "duration_ticks": 45
+    },
+    "event_timeline": [
+      {
+        "event": "One-sided depth increased.",
+        "sequence": 1,
+        "time": 10
+      },
+      {
+        "event": "Depth was withdrawn after volatility increased.",
+        "sequence": 2,
+        "time": 42
+      }
+    ],
+    "execution_metrics": {
+      "execution_ratio": 0.18,
+      "trade_count": 3
+    },
+    "ground_truth": null,
+    "instrument": {
+      "symbol": "AIMD"
+    },
+    "invocation_reason": "detector score spread 0.44 exceeds 0.30",
+    "lob_summary": {
+      "during": {
+        "depth_imbalance": -0.42,
+        "spread": 0.05
+      }
+    },
+    "market_regime": {
+      "liquidity": "thin",
+      "volatility": "high"
+    },
+    "missing_fields": [
+      "ground_truth",
+      "previous_agent_behaviour",
+      "lob_summary.before",
+      "lob_summary.after"
+    ],
+    "order_statistics": {
+      "cancel_count": 13,
+      "placement_count": 18
+    },
+    "previous_agent_behaviour": null,
+    "price_movement": {
+      "change_bps": -9.0,
+      "reversion_bps": 1.0
+    },
+    "schema_version": "aimada.surveillance.request.v1",
+    "simulation_metadata": {
+      "episode_id": "UNCERTAIN-04",
+      "scenario_family": "unknown",
+      "status": "completed"
+    },
+    "suspected_agent": {
+      "agent_id": "AG-09"
+    },
+    "trade_statistics": {
+      "trade_count": 3
+    }
+  },
+  "response": {
+    "alternative_explanations": [
+      "Risk-driven quote withdrawal during volatility.",
+      "A short-lived genuine change in liquidity supply."
+    ],
+    "classification": "inconclusive_one_sided_liquidity_withdrawal",
+    "confidence": 0.56,
+    "counter_evidence": [
+      {
+        "metric": "reversion_bps",
+        "observation": "Price showed little reversion.",
+        "reasoning": "Limited reversion weakens a spoofing-like price-impact hypothesis.",
+        "value": "1.0"
+      }
+    ],
+    "detector_disagreement": "The spoofing detector alerts at 0.78 while layering remains below threshold at 0.34; missing before/after LOB summaries prevent resolution.",
+    "episode_timeline": [
+      "One-sided depth increased.",
+      "Volatility increased.",
+      "Depth was withdrawn."
+    ],
+    "evidence": [
+      {
+        "metric": "cancel_ratio",
+        "observation": "One-sided depth was withdrawn with limited execution.",
+        "reasoning": "This supports concern but is not decisive in a high-volatility regime.",
+        "value": "0.72"
+      }
+    ],
+    "executive_summary": "The episode is uncertain: cancellation and one-sided pressure raise concern, but volatility, limited reversion, and missing context leave benign liquidity withdrawal plausible.",
+    "market_context": "Thin, high-volatility synthetic conditions can produce abrupt one-sided depth changes without manipulation-like intent.",
+    "recommended_actions": [
+      "Inspect order-level linkage and execution timing.",
+      "Obtain before/after LOB summaries and prior agent behaviour."
+    ],
+    "regulatory_assessment": "Evidence is insufficient for synthetic escalation beyond manual review and cannot support a real-world compliance conclusion.",
+    "severity": "medium"
+  }
+}

@@ -74,6 +74,8 @@ describe("Core UI navigation and workflow contracts", () => {
   const css = read("src/App.css");
   const trace = read("src/components/NebiusExecutionTrace.tsx");
   const incidentTransfer = read("src/controlCenterIncident.ts");
+  const investigator = read("src/components/NebiusAIInvestigatorPanel.tsx");
+  const apiClient = read("src/api/client.ts");
 
   it("keeps product navigation focused and removes implementation destinations", () => {
     expectIncludes(app, [
@@ -157,6 +159,18 @@ describe("Core UI navigation and workflow contracts", () => {
     ]);
   });
 
+  it("uses the real endpoint for client-side incidents in Nebius Cloud mode", () => {
+    expectIncludes(investigator, [
+      "runtimeMode === \"nebius-cloud\"",
+      "explainIncidentPayload(incident)",
+      "Endpoint request failed",
+      "Local Demo mode selected; no Nebius endpoint call was made."
+    ]);
+    expectIncludes(apiClient, ["/api/incidents/explain", "JSON.stringify({ incident })"]);
+    assert.doesNotMatch(investigator, /incident\.id\.startsWith\("MOCK-"\)/);
+    assert.doesNotMatch(investigator, /Simulated fallback\. Using cached demo explanation\./);
+  });
+
   it("keeps the AI command center focused on runtime, investigation, benchmark, and trace", () => {
     expectIncludes(nebius, [
       "Command Center workflow",
@@ -183,9 +197,10 @@ describe("Core UI navigation and workflow contracts", () => {
       "injectNebiusAttackScenario",
       "title=\"Investigation Team\"",
       "title=\"Detector Tournament\"",
-      "Run Nebius AI Detector Tournament",
+      "Nebius AI Detector Tournament",
       "Powered by Nebius Serverless Jobs",
-      "startDetectorTournament",
+      "Create benchmark",
+      "Generate manifest",
       "Run local or serverless detector tournaments",
       "title=\"Execution Trace\"",
       "Run Nebius AI Investigation Team",
@@ -198,6 +213,7 @@ describe("Core UI navigation and workflow contracts", () => {
       "Switch to Cloud to run this explanation on a real endpoint.",
       "Run Local Demo tournament",
       "Run serverless job",
+      "Aggregate",
       "Latest execution",
       "Detectors compared",
       "Models compared",
@@ -236,6 +252,8 @@ describe("Core UI navigation and workflow contracts", () => {
       "No credentials, Google login, or deployment are required in Local Demo",
       "deterministic mock results"
     ]);
+    assert.doesNotMatch(nebius, /Run Nebius AI Detector Tournament/);
+    assert.equal((nebius.match(/<h2>Nebius AI Detector Tournament<\/h2>/g) ?? []).length, 1);
     assert.equal((nebius.match(/<InfrastructureSection/g) ?? []).length, 5);
     assert.doesNotMatch(nebius, /title="Models"/);
     assert.doesNotMatch(nebius, /title="Inference"/);
@@ -253,7 +271,7 @@ describe("Core UI navigation and workflow contracts", () => {
       "probeSucceeded(nebiusStatus?.job_health)",
       "probeSucceeded(nebiusStatus?.storage_health)",
       "Requires successful live Endpoint and Serverless Jobs probes",
-      "Nebius Serverless Jobs live probe has not succeeded",
+      "configured submit command, and successful live Jobs probe",
       "Object Storage is ${storageHealthStatus",
       "Required Nebius services did not pass their live probes",
       "not metered",

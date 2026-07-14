@@ -1,0 +1,7 @@
+commit dadf19d9a68555486d64ed14735f30b21f66862d
+Author:     Khab40 <alexey.khabalov@gmail.com>
+AuthorDate: Tue Jul 14 12:48:37 2026 +0400
+Commit:     Khab40 <alexey.khabalov@gmail.com>
+CommitDate: Tue Jul 14 12:48:39 2026 +0400
+
+    feat: migrate from H100 to L40S; improve shallow prompts and responses

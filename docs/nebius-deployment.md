@@ -417,7 +417,8 @@ Set these on the deployed endpoint container:
 | Variable | Required | Purpose |
 | --- | --- | --- |
 | `NEBIUS_ENDPOINT_MODE` | yes | `mock` for deterministic fallback or `local_vllm` to start and call a local OpenAI-compatible vLLM server. |
-| `NEBIUS_REQUEST_TIMEOUT_SECONDS` | no | Endpoint model-call timeout. |
+| `NEBIUS_REQUEST_TIMEOUT_SECONDS` | no | Endpoint-to-vLLM inference timeout; default `180` seconds for Qwen2.5-14B on one L40S. |
+| `NEBIUS_INFERENCE_TIMEOUT_SECONDS` | no | Backend-to-Endpoint inference timeout; default `180` seconds. |
 | `LOCAL_VLLM_BASE_URL` | only for `local_vllm` overrides | Local vLLM OpenAI-compatible base URL. Defaults to `http://127.0.0.1:8001/v1`. |
 | `LOCAL_VLLM_MODEL` | only for `local_vllm` overrides | Model name sent to vLLM. Defaults to `Qwen/Qwen2.5-14B-Instruct`. |
 | `LOCAL_VLLM_HOST` | no | Local vLLM bind host. Defaults to `127.0.0.1`. |

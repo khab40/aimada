@@ -1,0 +1,32 @@
+## master...origin/master
+ M .dockerignore
+ M .env.example
+ M README.md
+ M backend/app/api/routes_incidents.py
+ M backend/app/config.py
+ M backend/app/nebius/client.py
+ M backend/tests/test_incidents.py
+ M backend/tests/test_nebius_env_config.py
+ M deployments/modes/nebius-cloud-demo.env
+ M deployments/modes/production-nebius.env
+ M docker-compose.yml
+ M docs/architecture/ARD-0017-ai-detector-tournament.md
+ M docs/demo-script.md
+ M docs/nebius-deployment.md
+ M docs/to-do.md
+ M frontend/src/api/client.ts
+ M frontend/src/components/NebiusAIInvestigatorPanel.tsx
+ M frontend/src/pages/NebiusControlPanelPage.tsx
+ M frontend/test/ui-contracts.test.mjs
+ M scripts/build-serverless-images.sh
+ M scripts/create-nebius-ai-endpoint.sh
+ M serverless/deployment.env.example
+ M serverless/endpoint/README.md
+ M serverless/endpoint/app.py
+ M serverless/endpoint/endpoint_config.example.yaml
+ M serverless/endpoint/endpoint_config.yaml
+ M serverless/endpoint/test_endpoint_contract.py
+?? backend/tests/test_freeze_release_script.py
+?? backend/tests/test_serverless_docker_build_contexts.py
+?? scripts/freeze-release.sh
+?? serverless/endpoint/.dockerignore

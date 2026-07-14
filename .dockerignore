@@ -1,5 +1,10 @@
 .git
 .github
+.env
+.env.*
+!.env.example
+!**/.env.example
+.DS_Store
 .venv
 **/.venv
 **/__pycache__
@@ -10,5 +15,6 @@
 **/build
 **/coverage
 outputs
+evidence
 attachments
 *.log

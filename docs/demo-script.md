@@ -76,20 +76,16 @@ Screenshot: `Nebius AI Investigation Team` result.
 
 ## Step 4: Run Detector Tournament
 
-1. In `Nebius AI Detector Tournament`, keep `Local Mock` for the reliable demo path.
-2. Set:
-   - scenarios: `100`
-   - manipulation types: `spoofing`, `layering`, `quote stuffing`
-   - detectors: `spoofing like`, `layering like`, `quote stuffing`
-   - seed: `42`
-3. Click `Run Nebius AI Detector Tournament`.
-4. Show:
+1. In `Nebius AI Detector Tournament`, keep the default `100` workloads, batch size `20`, scenarios, and seed `42`.
+2. Click `Create benchmark`, then `Generate manifest`.
+3. Click `Run Local Demo tournament` for the deterministic path, or `Run serverless job` in Cloud mode.
+4. Click `Aggregate` after execution completes.
+5. Show:
    - `Powered by Nebius Serverless Jobs`
-   - execution mode
-   - status
-   - macro F1
-   - false positives
-   - false negatives
+   - latest execution and Job status
+   - detectors and models compared
+   - precision, recall, F1, and latency leaderboard
+   - downloadable artifacts
 
 Screenshot: Detector Tournament status and metrics.
 

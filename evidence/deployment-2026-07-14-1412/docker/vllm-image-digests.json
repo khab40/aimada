@@ -1,0 +1,4 @@
+
+Error response from daemon: No such image: vllm/vllm-openai:v0.10.1.1
+
+[command exited with status 1]

@@ -1,0 +1,175 @@
+{
+  "request": {
+    "analysis_type": "high_anomaly",
+    "cancellation_metrics": {
+      "cancel_count": 21,
+      "cancel_ratio": 0.875,
+      "cancel_to_trade_ratio": 10.5
+    },
+    "derived_market_features": {
+      "distance_from_touch_ticks": 1,
+      "replenishment_count": 5,
+      "wall_size_ratio": 8.7
+    },
+    "detector_scores": [
+      {
+        "alert": true,
+        "classification": "spoofing_like",
+        "detector": "spoofing_like",
+        "score": 0.94,
+        "severity": "high"
+      },
+      {
+        "alert": false,
+        "classification": "liquidity_shock",
+        "detector": "liquidity_shock",
+        "score": 0.48,
+        "severity": "medium"
+      }
+    ],
+    "episode_duration": {
+      "duration_ticks": 38,
+      "end_tick": 138,
+      "start_tick": 100
+    },
+    "event_timeline": [
+      {
+        "agent": "MM-17",
+        "event": "Large sell-side depth appeared one tick from the touch.",
+        "sequence": 1,
+        "side": "sell",
+        "stage": "pressure",
+        "time": 100
+      },
+      {
+        "agent": "MM-17",
+        "event": "Displayed pressure was replenished after partial cancellation.",
+        "sequence": 2,
+        "side": "sell",
+        "stage": "pressure",
+        "time": 126
+      },
+      {
+        "agent": "MM-17",
+        "event": "Most displayed quantity was cancelled with little execution.",
+        "sequence": 3,
+        "side": "sell",
+        "stage": "cancel",
+        "time": 136
+      }
+    ],
+    "execution_metrics": {
+      "execution_ratio": 0.019,
+      "trade_count": 2
+    },
+    "ground_truth": {
+      "attack_window": [
+        100,
+        138
+      ],
+      "label": "spoofing"
+    },
+    "instrument": {
+      "symbol": "AIMD",
+      "tick_size": 0.01
+    },
+    "invocation_reason": "maximum detector score 0.94 crossed 0.75",
+    "lob_summary": {
+      "after": {
+        "depth_imbalance": -0.08,
+        "spread": 0.02
+      },
+      "before": {
+        "depth_imbalance": 0.04,
+        "spread": 0.02
+      },
+      "during": {
+        "ask_depth_top_levels": 10200,
+        "depth_imbalance": -0.76,
+        "spread": 0.02
+      }
+    },
+    "market_regime": {
+      "liquidity": "thin",
+      "volatility": "medium"
+    },
+    "missing_fields": [],
+    "order_statistics": {
+      "cancel_count": 21,
+      "max_order_quantity": 9000,
+      "placement_count": 24,
+      "sell_events": 24
+    },
+    "previous_agent_behaviour": [
+      {
+        "cancel_ratio": 0.81,
+        "classification": "reviewed",
+        "episode": "prior-12"
+      }
+    ],
+    "price_movement": {
+      "mid_after": 99.99,
+      "mid_before": 100.0,
+      "mid_during": 99.93,
+      "reversion_bps": 6.0
+    },
+    "schema_version": "aimada.surveillance.request.v1",
+    "simulation_metadata": {
+      "episode_id": "INC-SPOOF-01",
+      "scenario_family": "spoofing",
+      "status": "completed"
+    },
+    "suspected_agent": {
+      "agent_id": "MM-17",
+      "role": "synthetic participant"
+    },
+    "trade_statistics": {
+      "total_executed_quantity": 180,
+      "trade_count": 2
+    }
+  },
+  "response": {
+    "alternative_explanations": [
+      "Short-lived legitimate liquidity provision followed by inventory withdrawal."
+    ],
+    "classification": "spoofing_like",
+    "confidence": 0.91,
+    "counter_evidence": [
+      {
+        "metric": "spread",
+        "observation": "The spread did not widen.",
+        "reasoning": "Stable spread weakens a broad liquidity-stress explanation but does not establish intent.",
+        "value": "0.02"
+      }
+    ],
+    "detector_disagreement": "The spoofing detector is high while liquidity-shock is below threshold; the low execution ratio and reversion favour the spoofing-like hypothesis.",
+    "episode_timeline": [
+      "Sell-side depth appeared near the touch.",
+      "Pressure was replenished.",
+      "Most size was cancelled before meaningful execution.",
+      "The mid-price largely reverted."
+    ],
+    "evidence": [
+      {
+        "metric": "wall_size_ratio",
+        "observation": "Displayed sell depth reached 8.7 times nearby size.",
+        "reasoning": "Large near-touch size created visible pressure disproportionate to surrounding depth.",
+        "value": "8.7"
+      },
+      {
+        "metric": "execution_ratio",
+        "observation": "Most displayed quantity was cancelled and little executed.",
+        "reasoning": "Low execution relative to placement and cancellation supports a non-bona-fide liquidity hypothesis.",
+        "value": "0.019"
+      }
+    ],
+    "executive_summary": "The episode is most consistent with spoofing-like displayed pressure because large near-touch orders were repeatedly replenished and cancelled with minimal execution, followed by price reversion.",
+    "market_context": "Thin synthetic liquidity amplified the effect of one-sided displayed pressure while the spread remained stable.",
+    "recommended_actions": [
+      "Review agent-linked orders and cancellations in the summarized attack window.",
+      "Compare with prior synthetic episodes for repeated near-touch replenishment."
+    ],
+    "regulatory_assessment": "Synthetic evidence supports educational escalation only; it does not establish manipulative intent or a real-world violation.",
+    "severity": "high"
+  }
+}

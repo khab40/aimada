@@ -1,0 +1,22 @@
+services:
+  backend:
+    build:
+      args:
+        INSTALL_NEBIUS_CLI: "true"
+    environment:
+      NEBIUS_ENDPOINT_MODE: ${NEBIUS_ENDPOINT_MODE:-local_vllm}
+      NEBIUS_ENDPOINT_BASE_URL: ${NEBIUS_ENDPOINT_BASE_URL:?Set NEBIUS_ENDPOINT_BASE_URL for real Nebius mode}
+      NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE: ${NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE:-nebius ai job create --async --image {image} --container-command python --args {job_args} --platform cpu-d3 --preset 4vcpu-16gb --disk-size 100Gi --timeout 1h {subnet_id_arg} {parent_id_arg} {volume_arg} {object_storage_env_args} --restart-policy never --format json}
+      NEBIUS_JOB_STATUS_COMMAND_TEMPLATE: ${NEBIUS_JOB_STATUS_COMMAND_TEMPLATE:-nebius ai job get {job_id} --format json}
+      NEBIUS_JOB_LOGS_COMMAND_TEMPLATE: ${NEBIUS_JOB_LOGS_COMMAND_TEMPLATE:-nebius ai job logs {job_id}}
+      NEBIUS_JOB_ARTIFACTS_COMMAND_TEMPLATE: ${NEBIUS_JOB_ARTIFACTS_COMMAND_TEMPLATE:-}
+      NEBIUS_JOB_HEALTH_COMMAND: ${NEBIUS_JOB_HEALTH_COMMAND:-}
+      NEBIUS_CLOUD_PROBE_TIMEOUT_SECONDS: ${NEBIUS_CLOUD_PROBE_TIMEOUT_SECONDS:-5}
+      NEBIUS_OBJECT_STORAGE_ACCESS_KEY_ID: [REDACTED]
+      NEBIUS_OBJECT_STORAGE_SECRET_ACCESS_KEY: [REDACTED]
+      NEBIUS_OBJECT_STORAGE_SESSION_TOKEN: [REDACTED]
+      NEBIUS_OBJECT_STORAGE_REGION: ${NEBIUS_OBJECT_STORAGE_REGION:-eu-north1}
+      NEBIUS_EVIDENCE_ARCHIVE_ENABLED: ${NEBIUS_EVIDENCE_ARCHIVE_ENABLED:-true}
+    volumes:
+      - ${HOME}/.nebius/config.yaml:/root/.nebius/config.yaml:ro
+      - ${HOME}/.nebius/credentials.yaml:/root/.nebius/credentials.yaml:ro

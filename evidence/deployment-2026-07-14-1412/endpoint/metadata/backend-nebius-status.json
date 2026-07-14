@@ -1,0 +1,45 @@
+{
+  "checked_at": "2026-07-14T14:12:45.384055+00:00",
+  "cli_installed": true,
+  "cli_path": "/root/.nebius/bin/nebius",
+  "cli_version": "0.12.242",
+  "endpoint_base_url": "https://port9000-fa5s6tzba68w1mm.tunnel.applications.eu-north1.nebius.cloud",
+  "endpoint_base_url_configured": true,
+  "endpoint_health": {
+    "credentials_configured": "[REDACTED]",
+    "endpoint_mode": "local_vllm",
+    "local_vllm_base_url": "http://127.0.0.1:8001/v1",
+    "local_vllm_model": "Qwen/Qwen2.5-14B-Instruct",
+    "model": "Qwen/Qwen2.5-14B-Instruct",
+    "model_mode": "local_vllm",
+    "service": "[REDACTED]-endpoint",
+    "status": "ok"
+  },
+  "endpoint_mode": "local_vllm",
+  "endpoint_token_configured": "[REDACTED]",
+  "incident_explainer_configured": true,
+  "investigation_report_configured": true,
+  "investigation_team_configured": true,
+  "job_artifacts_collection_configured": true,
+  "job_artifacts_template_configured": false,
+  "job_health": {
+    "checked_at": "2026-07-14T14:12:44.536998+00:00",
+    "detail": "Nebius Serverless Jobs responded successfully.",
+    "status": "ok"
+  },
+  "job_image": "ghcr.io/khab40/[REDACTED]-jobs:artifacts-v2",
+  "job_logs_template_configured": true,
+  "job_resource_configured": true,
+  "job_status_template_configured": true,
+  "job_submit_template_configured": true,
+  "market_abuse_scenario_configured": true,
+  "model": "Qwen/Qwen2.5-14B-Instruct",
+  "orderbook_alert_configured": true,
+  "scenario_generator_configured": true,
+  "storage_health": {
+    "checked_at": "2026-07-14T14:12:44.537602+00:00",
+    "detail": "Nebius Object Storage responded successfully.",
+    "status": "ok"
+  },
+  "tenant_id_configured": true
+}

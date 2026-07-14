@@ -164,6 +164,7 @@ def test_compact_replay_payload_contains_bounded_market_context() -> None:
         assert len(payload["book"]["asks"]) <= 5
         assert len(payload["recent_events"]) <= 10
         assert payload["detectors"]
+        assert all(item.key in payload["features"] for item in incident.evidence)
         assert "events" not in payload
 
     asyncio.run(run())

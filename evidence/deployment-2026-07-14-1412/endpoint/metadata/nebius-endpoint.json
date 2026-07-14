@@ -1,0 +1,97 @@
+{
+  "metadata": {
+    "created_at": "2026-07-14T13:12:45.892983Z",
+    "id": "aiendpoint-e00zf6kgf76w2fshnb",
+    "name": "market-abuse-arena-ai-endpoint",
+    "parent_id": "project-e00g6zvxpr00waz8t3y51k",
+    "resource_version": "1",
+    "updated_at": "2026-07-14T13:12:45.892983Z"
+  },
+  "spec": {
+    "auth_token": "[REDACTED]",
+    "disk": {
+      "size_bytes": "214748364800",
+      "type": "NETWORK_SSD"
+    },
+    "environment_variables": [
+      {
+        "name": "NEBIUS_ENDPOINT_MODE",
+        "value": "local_vllm"
+      },
+      {
+        "name": "NEBIUS_REQUEST_TIMEOUT_SECONDS",
+        "value": "180"
+      },
+      {
+        "name": "LOCAL_VLLM_BASE_URL",
+        "value": "http://127.0.0.1:8001/v1"
+      },
+      {
+        "name": "LOCAL_VLLM_MODEL",
+        "value": "Qwen/Qwen2.5-14B-Instruct"
+      },
+      {
+        "name": "LOCAL_VLLM_HOST",
+        "value": "127.0.0.1"
+      },
+      {
+        "name": "LOCAL_VLLM_PORT",
+        "value": "8001"
+      },
+      {
+        "name": "LOCAL_VLLM_DTYPE",
+        "value": "auto"
+      },
+      {
+        "name": "LOCAL_VLLM_GPU_MEMORY_UTILIZATION",
+        "value": "0.90"
+      },
+      {
+        "name": "LOCAL_VLLM_MAX_MODEL_LEN",
+        "value": "16384"
+      },
+      {
+        "name": "LOCAL_VLLM_ENABLE_PREFIX_CACHING",
+        "value": "true"
+      },
+      {
+        "name": "LOCAL_VLLM_MAX_NUM_SEQS",
+        "value": "16"
+      },
+      {
+        "name": "LOCAL_VLLM_TRUST_REMOTE_CODE",
+        "value": "true"
+      }
+    ],
+    "image": "ghcr.io/khab40/[REDACTED]-endpoint:vllm-qwen14b-l40s-d-v1",
+    "platform": "gpu-l40s-d",
+    "ports": [
+      {
+        "container_port": 9000,
+        "host_port": 9000,
+        "protocol": "HTTP"
+      }
+    ],
+    "preset": "1gpu-16vcpu-96gb",
+    "public_ip": true,
+    "shm_size_bytes": "17179869184",
+    "subnet_id": "vpcsubnet-e00ppzc4353dxv210j"
+  },
+  "status": {
+    "instances": [
+      {
+        "compute_instance_id": "computeinstance-e00sv0gy4f513h4qqv",
+        "compute_instance_state": "RUNNING",
+        "private_ip": "[REDACTED]",
+        "public_ip": "195.242.13.250",
+        "state": "RUNNING"
+      }
+    ],
+    "private_endpoints": "[REDACTED]",
+    "public_endpoints": [
+      "195.242.13.250:9000",
+      "https://port9000-fa5s6tzba68w1mm.tunnel.applications.eu-north1.nebius.cloud"
+    ],
+    "state": "RUNNING"
+  }
+}

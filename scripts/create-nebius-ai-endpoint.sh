@@ -37,7 +37,7 @@ args=(
   --public
   --auth "${AUTH}"
   --env "NEBIUS_ENDPOINT_MODE=${MODE}"
-  --env "NEBIUS_REQUEST_TIMEOUT_SECONDS=${NEBIUS_REQUEST_TIMEOUT_SECONDS:-12}"
+  --env "NEBIUS_REQUEST_TIMEOUT_SECONDS=${NEBIUS_REQUEST_TIMEOUT_SECONDS:-180}"
   --env "LOCAL_VLLM_BASE_URL=${LOCAL_VLLM_BASE_URL}"
   --env "LOCAL_VLLM_MODEL=${LOCAL_VLLM_MODEL}"
   --env "LOCAL_VLLM_HOST=${LOCAL_VLLM_HOST}"
@@ -73,4 +73,11 @@ if [[ -n "${NEBIUS_VOLUME:-}" ]]; then
 fi
 
 printf "%s\n" "Creating Nebius Serverless AI Endpoint ${NAME}"
-"${args[@]}"
+set +e
+response="$("${args[@]}" 2>&1)"
+status=$?
+set -e
+printf "%s\n" "${response}" | sed -E \
+  -e 's/("auth_token"[[:space:]]*:[[:space:]]*)"[^"]*"/\1"[redacted]"/' \
+  -e 's/^(Token:[[:space:]]*).*/\1[redacted]/'
+exit "${status}"

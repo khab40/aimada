@@ -1,0 +1,113 @@
+{
+  "$defs": {
+    "evidence": {
+      "additionalProperties": false,
+      "properties": {
+        "metric": {
+          "type": "string"
+        },
+        "observation": {
+          "type": "string"
+        },
+        "reasoning": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "observation",
+        "metric",
+        "value",
+        "reasoning"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "https://github.com/khab40/aimada/serverless/endpoint/schemas/surveillance-response.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "alternative_explanations": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 8,
+      "type": "array"
+    },
+    "classification": {
+      "type": "string"
+    },
+    "confidence": {
+      "maximum": 1,
+      "minimum": 0,
+      "type": "number"
+    },
+    "counter_evidence": {
+      "items": {
+        "$ref": "#/$defs/evidence"
+      },
+      "maxItems": 8,
+      "type": "array"
+    },
+    "detector_disagreement": {
+      "type": "string"
+    },
+    "episode_timeline": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 16,
+      "type": "array"
+    },
+    "evidence": {
+      "items": {
+        "$ref": "#/$defs/evidence"
+      },
+      "maxItems": 12,
+      "type": "array"
+    },
+    "executive_summary": {
+      "type": "string"
+    },
+    "market_context": {
+      "type": "string"
+    },
+    "recommended_actions": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 8,
+      "type": "array"
+    },
+    "regulatory_assessment": {
+      "type": "string"
+    },
+    "severity": {
+      "enum": [
+        "informational",
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    }
+  },
+  "required": [
+    "classification",
+    "confidence",
+    "severity",
+    "market_context",
+    "evidence",
+    "counter_evidence",
+    "alternative_explanations",
+    "episode_timeline",
+    "detector_disagreement",
+    "recommended_actions",
+    "regulatory_assessment",
+    "executive_summary"
+  ],
+  "title": "AIMADA Professional Surveillance Assessment Response",
+  "type": "object"
+}

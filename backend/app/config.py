@@ -111,6 +111,12 @@ class Settings(BaseSettings):
         le=5.0,
         alias="NEBIUS_HEALTH_TIMEOUT_SECONDS",
     )
+    nebius_inference_timeout_seconds: float = Field(
+        default=180.0,
+        ge=5.0,
+        le=600.0,
+        alias="NEBIUS_INFERENCE_TIMEOUT_SECONDS",
+    )
     nebius_local_tournament_scenario_limit: int = Field(
         default=24,
         ge=1,

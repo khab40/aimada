@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: aimada
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: ghcr.io/your-org/[REDACTED]-frontend:k8s
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: aimada-config
+          ports:
+            - containerPort: 5173
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5173
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 5173
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: aimada
+spec:
+  type: LoadBalancer
+  selector:
+    app: frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 5173

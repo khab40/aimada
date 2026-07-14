@@ -25,12 +25,10 @@ import {
   runManagedExperimentInvestigations,
   runServerlessSmokeDemo,
   runManagedExperimentLocalBatch,
-  startDetectorTournament,
   submitManagedExperimentNebius,
   syncNebiusEvidence,
   type AIInvestigationTeamResponse,
   type DetectorTournamentResponse,
-  type DetectorTournamentStartRequest,
   type ExperimentJobRecord,
   type ExperimentLeaderboardRow,
   type ExperimentSummary,
@@ -110,7 +108,6 @@ type ExperimentAction =
   | "aggregate"
   | "run-investigations"
   | "run-investigation-team"
-  | "run-ai-tournament"
   | "sync-evidence"
   | "replay-ai-scenario";
 
@@ -148,15 +145,6 @@ const initialScenarioForm: MarketAbuseScenarioGenerationRequest = {
   seed: 42,
   symbol: "AIMD",
   volatility_regime: "high"
-};
-
-const initialTournamentForm: DetectorTournamentStartRequest = {
-  detector_set: ["spoofing_like", "layering_like", "quote_stuffing"],
-  difficulty_mix: { adversarial: 0.1, easy: 0.2, hard: 0.2, medium: 0.5 },
-  execution_mode: "local_mock",
-  manipulation_types: ["spoofing", "layering", "quote_stuffing"],
-  number_of_scenarios: 100,
-  random_seed: 42
 };
 
 const demoScenarios: DemoScenario[] = [
@@ -208,10 +196,7 @@ export function NebiusControlPanelPage() {
   const [scenarioForm, setScenarioForm] = useState<MarketAbuseScenarioGenerationRequest>(initialScenarioForm);
   const [generatedScenario, setGeneratedScenario] = useState<MarketAbuseScenarioResponse | null>(null);
   const [scenarioMessage, setScenarioMessage] = useState<string | null>(null);
-  const [tournamentForm, setTournamentForm] = useState<DetectorTournamentStartRequest>(initialTournamentForm);
-  const [detectorTournament, setDetectorTournament] = useState<DetectorTournamentResponse | null>(null);
   const [serverlessSmokeResult, setServerlessSmokeResult] = useState<ServerlessSmokeResponse | null>(null);
-  const [tournamentMessage, setTournamentMessage] = useState<string | null>(null);
   const [investigationTeamReport, setInvestigationTeamReport] = useState<AIInvestigationTeamResponse | null>(null);
   const [experimentMessage, setExperimentMessage] = useState<string | null>(null);
   const [experimentBusyAction, setExperimentBusyAction] = useState<ExperimentAction | null>(null);
@@ -400,34 +385,6 @@ export function NebiusControlPanelPage() {
     }));
   }
 
-  function updateTournamentForm<K extends keyof DetectorTournamentStartRequest>(
-    key: K,
-    value: DetectorTournamentStartRequest[K]
-  ) {
-    setTournamentForm((current) => ({
-      ...current,
-      [key]: value
-    }));
-  }
-
-  function toggleTournamentManipulation(value: DetectorTournamentStartRequest["manipulation_types"][number]) {
-    setTournamentForm((current) => {
-      const selected = current.manipulation_types.includes(value)
-        ? current.manipulation_types.filter((item) => item !== value)
-        : [...current.manipulation_types, value];
-      return { ...current, manipulation_types: selected.length ? selected : [value] };
-    });
-  }
-
-  function toggleTournamentDetector(value: DetectorTournamentStartRequest["detector_set"][number]) {
-    setTournamentForm((current) => {
-      const selected = current.detector_set.includes(value)
-        ? current.detector_set.filter((item) => item !== value)
-        : [...current.detector_set, value];
-      return { ...current, detector_set: selected.length ? selected : [value] };
-    });
-  }
-
   async function createExperimentFromForm() {
     await runExperimentAction("create-experiment", async () => {
       const created = await createManagedExperiment({
@@ -563,35 +520,12 @@ export function NebiusControlPanelPage() {
     }, setScenarioMessage);
   }
 
-  async function runAiDetectorTournament() {
-    await runExperimentAction("run-ai-tournament", async () => {
-      let tournament = await startDetectorTournament(tournamentForm);
-      setDetectorTournament(tournament);
-      setTournamentMessage(`${tournament.status.replaceAll("_", " ")}: ${tournament.summary}`);
-      if (tournament.status === "queued" || tournament.status === "running") {
-        for (
-          let attempt = 0;
-          attempt < TOURNAMENT_POLL_ATTEMPTS && tournament.status !== "completed" && tournament.status !== "failed";
-          attempt += 1
-        ) {
-          await wait(TOURNAMENT_POLL_INTERVAL_MS);
-          tournament = await refreshDetectorTournament(tournament.tournament_id);
-          setDetectorTournament(tournament);
-          setTournamentMessage(`${tournament.status.replaceAll("_", " ")}: ${tournament.summary}`);
-        }
-      }
-      await refreshControlPlane();
-    }, setTournamentMessage);
-  }
-
   async function runServerlessSmoke() {
     await runExperimentAction("run-serverless-smoke", async () => {
       const result = await runServerlessSmokeDemo();
       setServerlessSmokeResult(result);
       let tournament = result.cloud_tournament ?? result.tournament;
-      setDetectorTournament(tournament);
       setInvestigationTeamReport(result.investigation ?? null);
-      setTournamentMessage(`${result.mode.replaceAll("_", " ")}: ${result.summary}`);
       if (result.cloud_tournament && (tournament.status === "queued" || tournament.status === "running")) {
         for (
           let attempt = 0;
@@ -600,12 +534,10 @@ export function NebiusControlPanelPage() {
         ) {
           await wait(TOURNAMENT_POLL_INTERVAL_MS);
           tournament = await refreshDetectorTournament(tournament.tournament_id);
-          setDetectorTournament(tournament);
           setServerlessSmokeResult(mergeSmokeCloudTournament(result, tournament));
-          setTournamentMessage(`${tournament.status.replaceAll("_", " ")}: ${tournament.summary}`);
         }
       }
-    }, setTournamentMessage);
+    }, setDeploymentPanelMessage);
   }
 
   function switchRuntimeMode(nextMode: RuntimeMode) {
@@ -829,17 +761,6 @@ export function NebiusControlPanelPage() {
           title="Detector Tournament"
           description="Run local or serverless detector tournaments over generated market workloads and compare detector outcomes."
         >
-          <DetectorTournamentPanel
-            busyAction={experimentBusyAction}
-            form={tournamentForm}
-            message={tournamentMessage}
-            onRun={() => void runAiDetectorTournament()}
-            onToggleDetector={toggleTournamentDetector}
-            onToggleManipulation={toggleTournamentManipulation}
-            onUpdate={updateTournamentForm}
-            tournament={detectorTournament}
-            jobAvailable={jobHealthy}
-          />
           <ExperimentLab
             busyAction={experimentBusyAction}
             experiment={experiment}
@@ -1383,137 +1304,6 @@ function runtimeFrom(status: NebiusStatus, observatory: NebiusObservatory): Nebi
   };
 }
 
-function DetectorTournamentPanel({
-  busyAction,
-  form,
-  jobAvailable,
-  message,
-  onRun,
-  onToggleDetector,
-  onToggleManipulation,
-  onUpdate,
-  tournament
-}: {
-  busyAction: ExperimentAction | null;
-  form: DetectorTournamentStartRequest;
-  jobAvailable: boolean;
-  message: string | null;
-  onRun: () => void;
-  onToggleDetector: (value: DetectorTournamentStartRequest["detector_set"][number]) => void;
-  onToggleManipulation: (value: DetectorTournamentStartRequest["manipulation_types"][number]) => void;
-  onUpdate: <K extends keyof DetectorTournamentStartRequest>(key: K, value: DetectorTournamentStartRequest[K]) => void;
-  tournament: DetectorTournamentResponse | null;
-}) {
-  const manipulationOptions: DetectorTournamentStartRequest["manipulation_types"] = ["spoofing", "layering", "wash_trading", "quote_stuffing"];
-  const detectorOptions: DetectorTournamentStartRequest["detector_set"] = ["spoofing_like", "layering_like", "quote_stuffing", "liquidity_shock"];
-  return (
-    <section className="nebius-result-block detector-tournament-panel" aria-label="AI Detector Tournament">
-      <div className="nebius-card-heading">
-        <div>
-          <span>Powered by Nebius Serverless Jobs</span>
-          <h2>Run Nebius AI Detector Tournament</h2>
-          <p className="nebius-card-purpose">Compare detectors against synthetic ground truth with local fallback or a Nebius Serverless Job path.</p>
-        </div>
-        <span className={`runtime-status ${tournament?.execution_mode ?? "local_mock"}`}>{tournament?.execution_mode.replaceAll("_", " ") ?? "local mock"}</span>
-      </div>
-      <div className="experiment-lab-layout">
-        <div className="experiment-form-card">
-          <div className="experiment-number-grid">
-            <label>
-              <span>Scenarios</span>
-              <input
-                min={1}
-                max={1000}
-                type="number"
-                value={form.number_of_scenarios}
-                onChange={(event) => onUpdate("number_of_scenarios", Number(event.target.value))}
-              />
-            </label>
-            <label>
-              <span>Seed</span>
-              <input
-                type="number"
-                value={form.random_seed}
-                onChange={(event) => onUpdate("random_seed", Number(event.target.value))}
-              />
-            </label>
-            <label>
-              <span>Execution</span>
-              <select
-                value={form.execution_mode}
-                onChange={(event) => onUpdate("execution_mode", event.target.value as DetectorTournamentStartRequest["execution_mode"])}
-              >
-                <option value="local_mock">Local Mock</option>
-                <option value="local">Local Job Runner</option>
-                <option value="nebius">Nebius Job</option>
-              </select>
-            </label>
-          </div>
-          <div className="experiment-scenario-picker" aria-label="Tournament manipulation types">
-            {manipulationOptions.map((option) => (
-              <button
-                className={form.manipulation_types.includes(option) ? "scenario-pill selected" : "scenario-pill"}
-                key={option}
-                onClick={() => onToggleManipulation(option)}
-                type="button"
-              >
-                {option.replaceAll("_", " ")}
-              </button>
-            ))}
-          </div>
-          <div className="experiment-scenario-picker" aria-label="Tournament detectors">
-            {detectorOptions.map((option) => (
-              <button
-                className={form.detector_set.includes(option) ? "scenario-pill selected" : "scenario-pill"}
-                key={option}
-                onClick={() => onToggleDetector(option)}
-                type="button"
-              >
-                {option.replaceAll("_", " ")}
-              </button>
-            ))}
-          </div>
-          <button className="primary-button" disabled={(form.execution_mode === "nebius" && !jobAvailable) || busyAction === "run-ai-tournament"} onClick={onRun} title={form.execution_mode === "nebius" && !jobAvailable ? "Nebius Serverless Jobs live probe has not succeeded." : undefined} type="button">
-            {busyAction === "run-ai-tournament" ? "Running..." : "Run Nebius AI Detector Tournament"}
-          </button>
-          {message ? <p className="experiment-message">{message}</p> : null}
-        </div>
-        <div className="experiment-progress-card">
-          <div className="experiment-active-summary">
-            <span>Latest Tournament</span>
-            <strong>{tournament?.tournament_id ?? "No tournament run yet"}</strong>
-            <p>{tournament?.summary ?? "Local Mock mode runs fully without Nebius credentials. Nebius Job mode keeps the cloud path visible and isolated."}</p>
-          </div>
-          {tournament ? (
-            <>
-              <InfrastructureMetricGrid>
-                <MetricBlock label="Status" value={tournament.status.replaceAll("_", " ")} />
-                <MetricBlock label="Macro F1" value={metricDisplay(tournament.metrics.macro_f1)} />
-                <MetricBlock label="False positives" value={metricDisplay(tournament.metrics.false_positives)} />
-                <MetricBlock label="False negatives" value={metricDisplay(tournament.metrics.false_negatives)} />
-              </InfrastructureMetricGrid>
-              <ExperimentLeaderboardTable
-                leaderboard={tournament.leaderboard.slice(0, 8).map((row) => ({
-                  alert_count: row.false_positives + row.false_negatives,
-                  avg_detection_latency_ms: row.avg_detection_latency_ms,
-                  f1: row.f1 ?? Number.NaN,
-                  detector: row.detector,
-                  model: "none (deterministic)",
-                  precision: row.precision ?? Number.NaN,
-                  recall: row.recall ?? Number.NaN,
-                  scenario: row.scenario
-                }))}
-              />
-              <ExperimentArtifactLinks artifacts={artifactLinksFromTournament(tournament)} />
-              {tournament.fallback_reason ? <p className="fallback-note">{tournament.fallback_reason}</p> : null}
-            </>
-          ) : null}
-        </div>
-      </div>
-    </section>
-  );
-}
-
 function ExperimentLab({
   busyAction,
   experiment,
@@ -1564,7 +1354,9 @@ function ExperimentLab({
     <section className="experiment-lab-panel">
       <div className="nebius-card-heading">
         <div>
-          <h2>Detector Tournament</h2>
+          <span>Powered by Nebius Serverless Jobs</span>
+          <h2>Nebius AI Detector Tournament</h2>
+          <p className="nebius-card-purpose">Create one benchmark, run it locally or on Nebius, aggregate its evidence, and compare detector and model results.</p>
         </div>
         <div className="nebius-button-row">
           <span className={`runtime-status ${experiment?.status ?? "missing"}`}>{experiment?.status.replaceAll("_", " ") ?? "no benchmark"}</span>
@@ -1955,10 +1747,6 @@ function experimentArtifactsFrom(experiment: ManagedExperiment, summary: Experim
     seen.add(path);
     return true;
   });
-}
-
-function artifactLinksFromTournament(tournament: DetectorTournamentResponse): Array<[string, string]> {
-  return Object.entries(tournament.artifacts).filter(([, path]) => typeof path === "string" && path.length > 0);
 }
 
 function evidenceArtifactsFrom(records: NebiusEvidenceRecord[]): Array<[string, string]> {

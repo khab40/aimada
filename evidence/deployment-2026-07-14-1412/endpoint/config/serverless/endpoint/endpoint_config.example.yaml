@@ -1,0 +1,46 @@
+name: market-abuse-arena-ai-endpoint
+container_port: 9000
+public: true
+auth: token
+platform: gpu-l40s-g
+preset: 1gpu-16vcpu-200gb
+subnet_name: default-subnet
+
+image:
+  repository: ghcr.io/your-org/[REDACTED]-endpoint
+  tag: latest
+
+env:
+  # local_vllm = call local OpenAI-compatible vLLM server inside the endpoint runtime.
+  # mock = deterministic fallback.
+  NEBIUS_ENDPOINT_MODE: local_vllm
+  LOCAL_VLLM_BASE_URL: http://127.0.0.1:8001/v1
+  LOCAL_VLLM_MODEL: Qwen/Qwen2.5-14B-Instruct
+  LOCAL_VLLM_HOST: 127.0.0.1
+  LOCAL_VLLM_PORT: "8001"
+  LOCAL_VLLM_DTYPE: auto
+  LOCAL_VLLM_GPU_MEMORY_UTILIZATION: "0.90"
+  LOCAL_VLLM_MAX_MODEL_LEN: "16384"
+  LOCAL_VLLM_ENABLE_PREFIX_CACHING: "true"
+  LOCAL_VLLM_MAX_NUM_SEQS: "16"
+  LOCAL_VLLM_TRUST_REMOTE_CODE: "true"
+  NEBIUS_REQUEST_TIMEOUT_SECONDS: "180"
+
+secrets:
+  [REDACTED]
+  ENDPOINT_AUTH_TOKEN: [REDACTED]
+
+routes:
+  - GET /health
+  - POST /explain-event
+  - POST /explain-simulation
+  - POST /generate-report
+  - POST /generate-incident-report
+  - POST /generate-scenario
+  - POST /investigation-team
+
+backend_wiring:
+  NEBIUS_INCIDENT_EXPLAINER_URL: http://<endpoint-public-ip>/explain-event
+  NEBIUS_SCENARIO_GENERATOR_URL: http://<endpoint-public-ip>/generate-scenario
+  NEBIUS_INVESTIGATION_TEAM_URL: http://<endpoint-public-ip>/investigation-team
+  ENDPOINT_TOKEN: [REDACTED]

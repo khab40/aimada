@@ -1,0 +1,134 @@
+{
+  "request": {
+    "analysis_type": "benchmark_generation",
+    "cancellation_metrics": {
+      "cancel_count": 36,
+      "cancel_ratio": 0.45,
+      "cancel_to_trade_ratio": 1.16
+    },
+    "derived_market_features": {
+      "depth_imbalance": 0.03,
+      "mean_spread": 0.02,
+      "side_switch_count": 1
+    },
+    "detector_scores": [
+      {
+        "alert": false,
+        "classification": "normal_market",
+        "detector": "spoofing_like",
+        "score": 0.14,
+        "severity": "low"
+      },
+      {
+        "alert": false,
+        "classification": "normal_market",
+        "detector": "layering_like",
+        "score": 0.11,
+        "severity": "low"
+      }
+    ],
+    "episode_duration": {
+      "duration_ticks": 120
+    },
+    "event_timeline": [
+      {
+        "event": "Agent quoted both sides near the touch.",
+        "sequence": 1,
+        "time": 1
+      },
+      {
+        "event": "Two-sided quoting continued with regular executions.",
+        "sequence": 2,
+        "time": 120
+      }
+    ],
+    "execution_metrics": {
+      "execution_ratio": 0.52,
+      "trade_count": 31
+    },
+    "ground_truth": {
+      "label": "normal_market"
+    },
+    "instrument": {
+      "symbol": "AIMD"
+    },
+    "invocation_reason": "benchmark report generation requested",
+    "lob_summary": {
+      "during": {
+        "ask_depth_top_levels": 5100,
+        "bid_depth_top_levels": 5200,
+        "depth_imbalance": 0.03,
+        "spread": 0.02
+      }
+    },
+    "market_regime": {
+      "liquidity": "normal",
+      "volatility": "medium"
+    },
+    "missing_fields": [],
+    "order_statistics": {
+      "buy_events": 40,
+      "cancel_count": 36,
+      "placement_count": 80,
+      "sell_events": 40
+    },
+    "previous_agent_behaviour": [
+      {
+        "alerts": 0,
+        "episodes": 20,
+        "median_execution_ratio": 0.49
+      }
+    ],
+    "price_movement": {
+      "change_bps": 1.1
+    },
+    "schema_version": "aimada.surveillance.request.v1",
+    "simulation_metadata": {
+      "episode_id": "BENIGN-MM-03",
+      "scenario_family": "normal_market",
+      "status": "completed"
+    },
+    "suspected_agent": {
+      "agent_id": "MM-04",
+      "role": "market_maker"
+    },
+    "trade_statistics": {
+      "total_executed_quantity": 4200,
+      "trade_count": 31
+    }
+  },
+  "response": {
+    "alternative_explanations": [
+      "Routine inventory and quote-risk management."
+    ],
+    "classification": "benign_market_making",
+    "confidence": 0.9,
+    "counter_evidence": [
+      {
+        "metric": "cancel_ratio",
+        "observation": "Some quotes were cancelled.",
+        "reasoning": "Cancellation alone is not suspicious when paired with balanced quoting and execution.",
+        "value": "0.45"
+      }
+    ],
+    "detector_disagreement": "Both supplied detectors classify the episode as normal market activity.",
+    "episode_timeline": [
+      "Two-sided quoting remained stable and generated regular executions."
+    ],
+    "evidence": [
+      {
+        "metric": "execution_ratio",
+        "observation": "Quotes were balanced and regularly executed.",
+        "reasoning": "Meaningful execution and two-sided activity support genuine liquidity provision.",
+        "value": "0.52"
+      }
+    ],
+    "executive_summary": "The short episode summary is consistent with benign market making, not manipulation-like conduct.",
+    "market_context": "Normal synthetic liquidity with balanced two-sided quoting and a stable spread.",
+    "recommended_actions": [
+      "Retain as a benign benchmark control."
+    ],
+    "regulatory_assessment": "No synthetic escalation is supported; this is not a real-world compliance conclusion.",
+    "severity": "informational"
+  }
+}
