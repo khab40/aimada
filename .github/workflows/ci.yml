@@ -177,7 +177,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   compose:
-    name: Validate local Compose configuration
+    name: Validate Compose configurations
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -188,6 +188,11 @@ jobs:
 
       - name: Validate Compose configuration
         run: docker compose config --quiet
+
+      - name: Validate Nebius Compose override
+        env:
+          NEBIUS_ENDPOINT_BASE_URL: https://example.invalid
+        run: docker compose -f docker-compose.yml -f docker-compose.nebius.yml config --quiet
 
       - name: Verify local mode ignores cloud command templates
         env:
