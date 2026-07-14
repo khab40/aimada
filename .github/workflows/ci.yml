@@ -17,6 +17,9 @@ jobs:
   backend:
     name: Backend lint and tests
     runs-on: ubuntu-latest
+    # ensure Python can import top-level packages like `serverless`
+    env:
+      PYTHONPATH: ${{ github.workspace }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
