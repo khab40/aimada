@@ -13,6 +13,9 @@ Market surveillance involves sensitive data, specialized market-microstructure c
 
 I did not want to build a system that claims to detect real manipulation. Instead, I built an educational arena where synthetic normal agents and synthetic abuse-like agents interact inside a controlled limit-order-book simulation.
 
+![Red and blue synthetic agents interacting through the authoritative AIMADA backend](../assets/article/aimada-diagrams/02-red-vs-blue-agents.jpg)
+*Synthetic market makers, liquidity takers, and abuse-like scenario agents trade only inside AIMADA's bounded simulated order book.*
+
 That creates a concrete engineering surface: generate market events, inject labeled scenarios, run deterministic detectors, preserve structured evidence, and use AI to explain what the detector already found.
 
 The architecture has two main execution paths.
@@ -25,9 +28,6 @@ The interactive path uses a React and Vite frontend, a FastAPI control plane, a 
 AIMADA was validated on real Nebius production infrastructure. More than ten Nebius Serverless AI Job runs completed successfully, with execution visible in production logs. I also deployed a vLLM-backed Nebius Serverless AI Endpoint and exercised routes for scenario generation, incident analysis, investigation reporting, order-book alert analysis, and structured market-event explanation. Those runs produced Job artifacts, detector metrics, reports, logs, and Endpoint responses. This validation proves the execution contracts; it does not turn AIMADA into a real-market surveillance product.
 
 Job lifecycle records and generated artifacts are archived to Nebius Object Storage. Endpoint execution metadata is archived through the same evidence layer without presenting private credentials or sensitive transport details to the browser. The backend can synchronize archived evidence from S3-compatible storage back to backend-local storage, and the UI exposes the synchronized records and downloadable artifacts. This creates a traceable path from production execution, through durable storage, to evidence that a reviewer can inspect.
-
-![Nebius deployment and evidence flow from production execution to synchronized review artifacts](../assets/article/aimada-diagrams/05-nebius-deployment.jpg)
-*Production Job and Endpoint evidence is archived to Object Storage, synchronized by the backend, and exposed as reviewable UI records and downloads.*
 
 ## The interactive path
 
@@ -43,9 +43,6 @@ During an interactive run, AIMADA uses the separate `agent-runner/` workspace to
 At each simulation tick, the backend sends a read-only order-book snapshot to the workspace through its `/decide` API. The workspace returns typed `AgentIntent` objects rather than mutating the market directly. The backend validates and deterministically sorts those intents, remains the single authoritative writer, and applies accepted actions to the synthetic exchange and matching engine.
 
 The workspace runs several kinds of trading agents. Top-of-book market makers refresh visible liquidity on both sides. Deterministic noise traders make small cadence-based changes at selected levels. Periodic liquidity takers alternate bounded synthetic buys and sells. Optional LangGraph agents can choose which side to quote from observed depth imbalance. Optional CPU-heavy agents exercise a more computationally expensive decision path for workload testing.
-
-![Red and blue synthetic agents interacting through the authoritative AIMADA backend](../assets/article/aimada-diagrams/02-red-vs-blue-agents.jpg)
-*Synthetic market makers, liquidity takers, and abuse-like scenario agents trade only inside AIMADA's bounded simulated order book.*
 
 This separation lets the frontend display agent activity while the backend preserves ordering, timeouts, validation, and reproducibility.
 
@@ -63,10 +60,10 @@ A deterministic detector produces structured evidence first: spread, visible dep
 
 The backend then sends a compact incident payload to the Endpoint. The Endpoint can return a readable explanation, investigation assistance, recommended review actions, or a bounded synthetic scenario draft.
 
-This split matters because it keeps the workflow auditable. AI is used for explanation, narration, investigation assistance, and bounded scenario generation. Structured detector evidence remains the source of truth.
-
 ![AI Investigation Team workflow translating detector evidence into a structured review narrative](../assets/article/aimada-diagrams/04-ai-investigation-workflow.jpg)
 *The AI Investigation Team translates deterministic detector evidence into a structured, reviewable narrative without replacing the detector.*
+
+This split matters because it keeps the workflow auditable. AI is used for explanation, narration, investigation assistance, and bounded scenario generation. Structured detector evidence remains the source of truth.
 
 ![Structured JSON contract for surveillance-style LLM output](../assets/article/aimada-diagrams/07-structured-json-output.jpg)
 *Endpoint responses are parsed as structured JSON so the UI can separate classification, confidence, evidence, counter-evidence, and recommended actions.*
@@ -74,6 +71,9 @@ This split matters because it keeps the workflow auditable. AI is used for expla
 ## The batch path
 
 Nebius Serverless AI Jobs fit the offline evaluation path naturally. Instead of asking a live request to run dozens or hundreds of simulations, a Job can execute repeatable synthetic workloads, evaluate detector output against labels, aggregate metrics, and persist reports and artifacts before terminating.
+
+![Nebius deployment and evidence flow from production execution to synchronized review artifacts](../assets/article/aimada-diagrams/05-nebius-deployment.jpg)
+*Production Job and Endpoint evidence is archived to Object Storage, synchronized by the backend, and exposed as reviewable UI records and downloads.*
 
 The outputs are designed to be reviewable: JSON records, CSV metrics, Markdown reports, logs, and chart-ready data. The metric vocabulary includes precision, recall, F1, false positives, false negatives, and detection latency against known synthetic labels.
 
