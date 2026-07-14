@@ -408,6 +408,9 @@ export type NebiusStatus = {
   endpoint_base_url?: string | null;
   endpoint_base_url_configured?: boolean;
   endpoint_health?: Record<string, unknown> | null;
+  job_health?: Record<string, unknown>;
+  storage_health?: Record<string, unknown>;
+  checked_at?: string;
   base_url_configured?: boolean;
   model_configured?: boolean;
   model?: string | null;
@@ -711,6 +714,9 @@ export type NebiusObservatory = {
   orderbook_alert_configured: boolean;
   investigation_report_configured: boolean;
   endpoint_health?: Record<string, unknown> | null;
+  job_health: Record<string, unknown>;
+  storage_health: Record<string, unknown>;
+  checked_at: string;
   endpoint_mode: string;
   screenshots: { title: string; status: string; path: string }[];
   benchmark_artifacts: Record<string, string>;

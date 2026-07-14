@@ -69,6 +69,7 @@ describe("Core UI navigation and workflow contracts", () => {
   const arena = read("src/pages/ArenaPage.tsx");
   const identity = read("src/platform/identity.ts");
   const nebius = read("src/pages/NebiusControlPanelPage.tsx");
+  const mockNebiusClients = read("src/features/nebius/services/mockNebiusClients.ts");
   const runtimeModes = read("src/runtimeModes.ts");
   const css = read("src/App.css");
   const trace = read("src/components/NebiusExecutionTrace.tsx");
@@ -246,6 +247,21 @@ describe("Core UI navigation and workflow contracts", () => {
     assert.doesNotMatch(nebius, /Managed Experiment Lab/);
   });
 
+  it("gates every Nebius-only control on live service probes", () => {
+    expectIncludes(nebius, [
+      "probeSucceeded(nebiusStatus?.endpoint_health)",
+      "probeSucceeded(nebiusStatus?.job_health)",
+      "probeSucceeded(nebiusStatus?.storage_health)",
+      "Requires successful live Endpoint and Serverless Jobs probes",
+      "Nebius Serverless Jobs live probe has not succeeded",
+      "Object Storage is ${storageHealthStatus",
+      "Required Nebius services did not pass their live probes",
+      "not metered",
+      "not reported"
+    ]);
+    assert.doesNotMatch(mockNebiusClients, /status: "healthy"|status: "connected"|status: "ready"/);
+  });
+
   it("keeps demo runtime as the default auth experience", () => {
     expectIncludes(app, [
       "className=\"global-workspace-header\"",
@@ -255,7 +271,10 @@ describe("Core UI navigation and workflow contracts", () => {
       "Local Demo",
       "Nebius Cloud",
       "testNebiusConnection",
-      "Falling back to mock AI",
+      "Checking live Nebius services",
+      "runtimeProbeStatus",
+      "status.job_health",
+      "status.storage_health",
       "Connect Google Account",
       "Continue in Demo Mode"
     ]);
@@ -276,6 +295,8 @@ describe("Core UI navigation and workflow contracts", () => {
       "Endpoint unavailable",
       "Error"
     ]);
+    assert.doesNotMatch(runtimeModes, /"AI Endpoint": "Connected"/);
+    assert.doesNotMatch(runtimeModes, /Jobs: "Connected"/);
     expectIncludes(identity, ["Demo Analyst", "Local Demo"]);
     assert.equal((app.match(/google-login-button/g) ?? []).length, 1);
     assert.doesNotMatch(app, /Switch to Hybrid/);

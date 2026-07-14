@@ -1,5 +1,4 @@
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any, Protocol
 
 
@@ -17,10 +16,9 @@ class NebiusCloudAdapter(Protocol):
         self,
         *,
         cli_installed: bool,
-        endpoint_configured: bool,
-        token_configured: bool,
-        output_dir: Path,
-        latest_batch: dict[str, Any] | None,
+        endpoint_health: dict[str, Any] | None,
+        job_health: dict[str, Any],
+        storage_health: dict[str, Any],
     ) -> list[dict[str, str]]:
         ...
 
@@ -64,15 +62,18 @@ class MockNebiusCloudAdapter:
         ]
 
     def usage_snapshot(self, latest_batch: dict[str, Any] | None) -> dict[str, Any]:
-        elapsed = float(latest_batch.get("elapsed_seconds", 462.0)) if latest_batch else 462.0
+        elapsed = float(latest_batch.get("elapsed_seconds", 0.0)) if latest_batch else 0.0
+        runs = int(latest_batch.get("runs", 0)) if latest_batch else 0
+        artifacts = latest_batch.get("artifact_paths", {}) if latest_batch else {}
+        artifact_names = list(artifacts) if isinstance(artifacts, dict) else []
         return {
-            "endpoint_requests": 24,
-            "endpoint_avg_latency_seconds": 1.2,
+            "endpoint_requests": 0,
+            "endpoint_avg_latency_seconds": 0.0,
             "endpoint_purpose": "incident explanation and order-book alert scoring",
-            "job_simulations": int(latest_batch.get("runs", 1000)) if latest_batch else 1000,
+            "job_simulations": runs,
             "job_runtime": _format_runtime(elapsed),
-            "job_output_files": 7,
-            "job_artifacts": ["benchmark_report.md", "detector_metrics.csv", "generated_report.md", "manifest.json"],
+            "job_output_files": len(artifact_names),
+            "job_artifacts": artifact_names,
             "evidence_status": "local" if latest_batch else "nebius_needed",
         }
 
@@ -80,44 +81,47 @@ class MockNebiusCloudAdapter:
         self,
         *,
         cli_installed: bool,
-        endpoint_configured: bool,
-        token_configured: bool,
-        output_dir: Path,
-        latest_batch: dict[str, Any] | None,
+        endpoint_health: dict[str, Any] | None,
+        job_health: dict[str, Any],
+        storage_health: dict[str, Any],
     ) -> list[dict[str, str]]:
         now = datetime.now(timezone.utc).isoformat()
+        endpoint = _runtime_probe("Nebius AI Endpoint", endpoint_health, now)
+        jobs = _runtime_probe("Nebius Serverless Jobs", job_health, now)
+        storage = _runtime_probe("Nebius Object Storage", storage_health, now)
         return [
             {
                 "name": "Nebius CLI",
-                "status": "healthy" if cli_installed else "not_detected",
-                "detail": "Local CLI is available for endpoint/job creation." if cli_installed else "Install or authenticate the Nebius CLI before cloud deployment.",
+                "status": "installed" if cli_installed else "not_detected",
+                "detail": "CLI binary detected; cloud access is reported separately by the live Jobs probe." if cli_installed else "Nebius CLI binary was not detected.",
                 "checked_at": now,
             },
-            {
-                "name": "AI endpoint wiring",
-                "status": "configured" if endpoint_configured else "mock_fallback",
-                "detail": "Backend can call configured endpoint routes." if endpoint_configured else "Backend uses typed mock responses until endpoint URLs are set.",
-                "checked_at": now,
-            },
-            {
-                "name": "Endpoint auth token",
-                "status": "configured" if token_configured else "not_configured",
-                "detail": "Bearer token is available for protected endpoint calls." if token_configured else "No token is configured; local mock mode remains usable.",
-                "checked_at": now,
-            },
-            {
-                "name": "Serverless job runner",
-                "status": "recent_run" if latest_batch else "ready",
-                "detail": f"Latest batch: {latest_batch.get('id')}" if latest_batch else "No batch has been run in this local artifact store yet.",
-                "checked_at": now,
-            },
-            {
-                "name": "Artifact store",
-                "status": "mounted" if output_dir.exists() else "missing",
-                "detail": str(output_dir),
-                "checked_at": now,
-            },
+            endpoint,
+            jobs,
+            storage,
         ]
+
+
+def _runtime_probe(
+    name: str,
+    probe: dict[str, Any] | None,
+    checked_at: str,
+) -> dict[str, str]:
+    if not probe:
+        return {
+            "name": name,
+            "status": "not_configured",
+            "detail": f"{name} is not configured.",
+            "checked_at": checked_at,
+        }
+    status = str(probe.get("status") or "unavailable")
+    detail = str(probe.get("detail") or probe.get("fallback_reason") or f"Live probe returned {status}.")
+    return {
+        "name": name,
+        "status": status,
+        "detail": detail,
+        "checked_at": str(probe.get("checked_at") or checked_at),
+    }
 
 
 def _format_runtime(seconds: float) -> str:

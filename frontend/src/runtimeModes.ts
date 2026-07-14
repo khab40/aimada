@@ -1,5 +1,14 @@
 export type RuntimeMode = "local-demo" | "nebius-cloud";
-export type RuntimeStatus = "Ready" | "Mock" | "Connected" | "Not configured" | "Endpoint unavailable" | "Error";
+export type RuntimeStatus =
+  | "Ready"
+  | "Mock"
+  | "Connected"
+  | "Checking"
+  | "Degraded"
+  | "Unavailable"
+  | "Not configured"
+  | "Endpoint unavailable"
+  | "Error";
 export type RuntimeComponent = "Frontend" | "Backend" | "Runner" | "AI Endpoint" | "Jobs" | "Storage";
 
 export const RUNTIME_MODE_KEY = "aimada.runtimeMode";
@@ -25,12 +34,12 @@ export const runtimeOptions: { description: string; label: string; marker: strin
     description: "Production-style cloud runtime across app, workers, AI, jobs, and artifacts.",
     label: "Nebius Cloud",
     matrix: {
-      "AI Endpoint": "Connected",
-      Backend: "Ready",
+      "AI Endpoint": "Checking",
+      Backend: "Checking",
       Frontend: "Ready",
-      Jobs: "Connected",
-      Runner: "Connected",
-      Storage: "Connected"
+      Jobs: "Checking",
+      Runner: "Checking",
+      Storage: "Checking"
     },
     marker: "🟣",
     value: "nebius-cloud"

@@ -282,13 +282,13 @@ function planStepsFor({
 
 export class MockDeploymentHealthClient implements NebiusDeploymentHealthClient {
   private services: ServiceHealth[] = [
-    { name: "Frontend", status: "healthy", lastCheckedAt: now() },
-    { name: "Backend API", status: "healthy", lastCheckedAt: now() },
-    { name: "Simulation Engine", status: "running", lastCheckedAt: now() },
-    { name: "WebSocket Stream", status: "connected", lastCheckedAt: now() },
-    { name: "Nebius AI Proxy", status: "ready", lastCheckedAt: now() },
-    { name: "Managed Experiment Runner", status: "ready", lastCheckedAt: now() },
-    { name: "Object Storage", status: "connected", lastCheckedAt: now() }
+    { name: "Frontend", status: "mock", lastCheckedAt: now() },
+    { name: "Backend API", status: "mock", lastCheckedAt: now() },
+    { name: "Simulation Engine", status: "mock", lastCheckedAt: now() },
+    { name: "WebSocket Stream", status: "mock", lastCheckedAt: now() },
+    { name: "Nebius AI Proxy", status: "mock", lastCheckedAt: now() },
+    { name: "Managed Experiment Runner", status: "mock", lastCheckedAt: now() },
+    { name: "Object Storage", status: "mock", lastCheckedAt: now() }
   ];
 
   async listServices(): Promise<ServiceHealth[]> {
@@ -296,19 +296,19 @@ export class MockDeploymentHealthClient implements NebiusDeploymentHealthClient 
   }
 
   async pingAi(): Promise<ServiceHealth> {
-    return this.update("Nebius AI Proxy", "ready");
+    return this.update("Nebius AI Proxy", "mock");
   }
 
   async testServerlessJob(): Promise<ServiceHealth> {
-    return this.update("Managed Experiment Runner", "running");
+    return this.update("Managed Experiment Runner", "mock");
   }
 
   async testStorageWrite(): Promise<ServiceHealth> {
-    return this.update("Object Storage", "connected");
+    return this.update("Object Storage", "mock");
   }
 
   async restartSimulationEngine(): Promise<ServiceHealth> {
-    return this.update("Simulation Engine", "running");
+    return this.update("Simulation Engine", "mock");
   }
 
   private update(name: string, status: ServiceHealth["status"]) {

@@ -95,6 +95,16 @@ class Settings(BaseSettings):
         default=None,
         alias="NEBIUS_JOB_ARTIFACTS_COMMAND_TEMPLATE",
     )
+    nebius_job_health_command: str | None = Field(
+        default=None,
+        alias="NEBIUS_JOB_HEALTH_COMMAND",
+    )
+    nebius_cloud_probe_timeout_seconds: float = Field(
+        default=5.0,
+        ge=0.5,
+        le=30.0,
+        alias="NEBIUS_CLOUD_PROBE_TIMEOUT_SECONDS",
+    )
     nebius_health_timeout_seconds: float = Field(
         default=0.5,
         ge=0.05,

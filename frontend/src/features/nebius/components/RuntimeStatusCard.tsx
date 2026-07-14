@@ -3,34 +3,34 @@ import type { NebiusRuntimeStatus, NebiusUsageMetrics } from "@/features/nebius/
 export function RuntimeStatusCard({ status, usage }: { status: NebiusRuntimeStatus; usage: NebiusUsageMetrics }) {
   const cards = [
     {
-      cost: `$${usage.estimatedCostUsd.toFixed(2)}`,
-      gpu: status.mode === "nebius-cloud" ? "available" : "not attached",
+      cost: "not metered",
+      gpu: "not reported",
       lastExecution: status.activeSimulation,
-      latency: "regional",
+      latency: "live probes",
       status: status.cloudStatus,
       title: "Nebius Cloud"
     },
     {
-      cost: `$${(usage.aiEndpointCallsToday * 0.002).toFixed(2)}`,
+      cost: "not metered",
       gpu: "model endpoint",
-      lastExecution: `${usage.aiEndpointCallsToday} calls`,
-      latency: `${usage.averageLlmLatencySec.toFixed(2)}s`,
+      lastExecution: usage.aiEndpointCallsToday > 0 ? `${usage.aiEndpointCallsToday} calls` : "not reported",
+      latency: usage.averageLlmLatencySec > 0 ? `${usage.averageLlmLatencySec.toFixed(2)}s` : "not reported",
       status: status.aiEndpointStatus,
       title: "Nebius AI"
     },
     {
-      cost: `$${(usage.serverlessJobsRun * 0.21).toFixed(2)}`,
-      gpu: status.serverlessStatus === "running" ? "active" : "ready",
+      cost: "not metered",
+      gpu: "not reported",
       lastExecution: `${status.ticksProcessed.toLocaleString()} steps`,
-      latency: `${status.eventsPerSecond.toLocaleString()}/sec`,
+      latency: status.eventsPerSecond > 0 ? `${status.eventsPerSecond.toLocaleString()}/sec` : "not reported",
       status: status.serverlessStatus,
       title: "Managed Experiment Jobs"
     },
     {
-      cost: "included",
+      cost: "not metered",
       gpu: "not required",
       lastExecution: `${usage.replayStorageMb.toFixed(0)} MB stored`,
-      latency: status.websocketStatus === "live" ? "connected" : "offline",
+      latency: status.storageStatus === "synced" ? "live probe succeeded" : "unavailable",
       status: status.storageStatus,
       title: "Artifacts"
     }

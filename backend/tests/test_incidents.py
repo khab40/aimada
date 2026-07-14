@@ -1,5 +1,6 @@
 import asyncio
 import json
+import subprocess
 from typing import Any
 from urllib.error import HTTPError, URLError
 
@@ -7,8 +8,25 @@ from app.api.routes_incidents import build_compact_replay_payload, persist_expla
 from app.arena.engine import SimulationEngine
 from app.config import get_settings
 from app.nebius.client import AIInvestigationTeamRequest, InvestigationReportRequest, NebiusClient, OrderBookAlertRequest
+from app.nebius.adapters import MockNebiusCloudAdapter
 from app.nebius.scenario_generator import MarketAbuseScenarioGenerationRequest, project_attack_scenario
 from app.storage.local_store import LocalStore
+
+
+def test_runtime_health_uses_live_probe_results_without_ready_defaults() -> None:
+    health = MockNebiusCloudAdapter().runtime_health(
+        cli_installed=True,
+        endpoint_health={"status": "unreachable", "fallback_reason": "probe failed"},
+        job_health={"status": "ok", "detail": "live probe succeeded"},
+        storage_health={"status": "not_configured", "detail": "missing output URI"},
+    )
+    by_name = {item["name"]: item for item in health}
+
+    assert by_name["Nebius CLI"]["status"] == "installed"
+    assert by_name["Nebius AI Endpoint"]["status"] == "unreachable"
+    assert by_name["Nebius Serverless Jobs"]["status"] == "ok"
+    assert by_name["Nebius Object Storage"]["status"] == "not_configured"
+    assert all(item["status"] != "ready" for item in health)
 
 
 def test_incident_is_created_when_detector_crosses_threshold() -> None:
@@ -289,6 +307,9 @@ def test_nebius_client_uses_deployed_orderbook_route_when_scenario_routes_are_mi
 
 def test_nebius_client_status_reports_cli_shape(monkeypatch: Any) -> None:
     monkeypatch.setenv("NEBIUS_ENDPOINT_BASE_URL", "")
+    monkeypatch.setenv("NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE", "")
+    monkeypatch.setenv("NEBIUS_JOB_STATUS_COMMAND_TEMPLATE", "")
+    monkeypatch.setenv("NEBIUS_JOB_OUTPUT_URI", "")
     get_settings.cache_clear()
 
     try:
@@ -311,6 +332,9 @@ def test_nebius_endpoint_base_url_derives_backend_routes(monkeypatch: Any) -> No
     monkeypatch.setenv("NEBIUS_ORDERBOOK_ALERT_URL", "")
     monkeypatch.setenv("NEBIUS_INVESTIGATION_REPORT_URL", "")
     monkeypatch.setenv("ENDPOINT_TOKEN", "test-token")
+    monkeypatch.setenv("NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE", "")
+    monkeypatch.setenv("NEBIUS_JOB_STATUS_COMMAND_TEMPLATE", "")
+    monkeypatch.setenv("NEBIUS_JOB_OUTPUT_URI", "")
     get_settings.cache_clear()
 
     captured: dict[str, Any] = {}
@@ -366,6 +390,42 @@ def test_nebius_endpoint_base_url_derives_backend_routes(monkeypatch: Any) -> No
         assert captured["authorization"] == "Bearer test-token"
     finally:
         get_settings.cache_clear()
+
+
+def test_nebius_job_health_requires_successful_live_probe(monkeypatch: Any) -> None:
+    monkeypatch.setenv("NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE", "submit-job")
+    monkeypatch.setenv("NEBIUS_JOB_STATUS_COMMAND_TEMPLATE", "status-job {job_id}")
+    monkeypatch.setenv("NEBIUS_JOB_HEALTH_COMMAND", "nebius ai job list --format json")
+    monkeypatch.setattr(
+        "app.nebius.client.subprocess.run",
+        lambda command, **_kwargs: subprocess.CompletedProcess(command, 1, stdout="private-output", stderr="secret"),
+    )
+    get_settings.cache_clear()
+    try:
+        health = NebiusClient().job_health(cli_path="/usr/bin/nebius")
+    finally:
+        get_settings.cache_clear()
+
+    assert health["status"] == "unreachable"
+    assert "private-output" not in health["detail"]
+    assert "secret" not in health["detail"]
+
+
+def test_nebius_job_health_reports_connected_only_after_success(monkeypatch: Any) -> None:
+    monkeypatch.setenv("NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE", "submit-job")
+    monkeypatch.setenv("NEBIUS_JOB_STATUS_COMMAND_TEMPLATE", "status-job {job_id}")
+    monkeypatch.setenv("NEBIUS_JOB_HEALTH_COMMAND", "nebius ai job list --format json")
+    monkeypatch.setattr(
+        "app.nebius.client.subprocess.run",
+        lambda command, **_kwargs: subprocess.CompletedProcess(command, 0, stdout="{}", stderr=""),
+    )
+    get_settings.cache_clear()
+    try:
+        health = NebiusClient().job_health(cli_path="/usr/bin/nebius")
+    finally:
+        get_settings.cache_clear()
+
+    assert health["status"] == "ok"
 
 
 def test_nebius_endpoint_explicit_urls_override_base_url(monkeypatch: Any) -> None:

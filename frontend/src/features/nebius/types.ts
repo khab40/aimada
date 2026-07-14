@@ -1,8 +1,8 @@
 export type NebiusRuntimeStatus = {
-  cloudStatus: "online" | "offline" | "degraded";
-  aiEndpointStatus: "ready" | "busy" | "offline";
-  serverlessStatus: "idle" | "running" | "error";
-  storageStatus: "synced" | "pending" | "error";
+  cloudStatus: "checking" | "online" | "offline" | "degraded";
+  aiEndpointStatus: "checking" | "ready" | "busy" | "offline" | "not-configured";
+  serverlessStatus: "checking" | "idle" | "running" | "error" | "not-configured";
+  storageStatus: "checking" | "synced" | "pending" | "error" | "not-configured";
   region: string;
   mode: "local" | "nebius-cloud";
   activeSimulation: string;
@@ -188,7 +188,7 @@ export type NebiusUsageMetrics = {
 
 export type ServiceHealth = {
   name: string;
-  status: "healthy" | "running" | "connected" | "ready" | "degraded" | "error";
+  status: "healthy" | "running" | "connected" | "ready" | "degraded" | "error" | "mock";
   lastCheckedAt: string;
 };
 

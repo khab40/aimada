@@ -458,70 +458,89 @@ function AuthToggleIcon({ expanded }: { expanded: boolean }) {
 function RuntimePanel() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [runtimeMode, setRuntimeMode] = useState<RuntimeMode>(() => getStoredRuntimeMode());
-  const [runtimeMessage, setRuntimeMessage] = useState("Local Demo is ready. Mock AI fallback is active.");
+  const [cloudMessage, setCloudMessage] = useState("Checking live Nebius services...");
   const [runtimeOverrides, setRuntimeOverrides] = useState<Partial<Record<RuntimeMode, Partial<Record<RuntimeComponent, RuntimeStatus>>>>>({});
   const runtime = visibleRuntimeOptions.find((option) => option.value === runtimeMode) ?? visibleRuntimeOptions[0];
-  const currentMatrix = { ...runtime.matrix, ...runtimeOverrides[runtimeMode] };
+  const runtimeMessage = runtimeMode === "local-demo"
+    ? "Local Demo is ready. Mock AI fallback is active."
+    : cloudMessage;
 
   useEffect(() => {
     storeRuntimeMode(runtimeMode);
-    if (runtimeMode !== "local-demo") {
-      void refreshNebiusRuntimeStatus(runtimeMode);
-    }
+    void refreshNebiusRuntimeStatus();
   }, [runtimeMode]);
 
   function switchRuntime(mode: RuntimeMode) {
     setRuntimeMode(mode);
-    if (mode === "local-demo") {
-      setRuntimeOverrides({});
-      setRuntimeMessage("Switched to Local Demo. Mock AI fallback is active.");
-      return;
+    if (mode === "nebius-cloud") {
+      setCloudMessage("Checking live Nebius services...");
     }
-    setRuntimeMessage("Checking Nebius endpoint status...");
   }
 
-  async function refreshNebiusRuntimeStatus(mode: RuntimeMode) {
+  async function refreshNebiusRuntimeStatus() {
+    setRuntimeOverrides((current) => ({
+      ...current,
+      "nebius-cloud": {
+        "AI Endpoint": "Checking",
+        Backend: "Checking",
+        Frontend: "Ready",
+        Jobs: "Checking",
+        Runner: "Checking",
+        Storage: "Checking"
+      }
+    }));
     try {
       const status = await getNebiusStatus();
       const endpointReady = status.endpoint_health?.status === "ok";
-      const endpointConfigured = Boolean(
-        status.incident_explainer_configured
-        || status.scenario_generator_configured
-        || status.orderbook_alert_configured
-        || status.investigation_report_configured
-      );
-      const connected = endpointReady || endpointConfigured || status.endpoint_token_configured || status.api_key_configured || status.cli_installed;
+      const endpointStatus: RuntimeStatus = endpointReady
+        ? "Connected"
+        : status.endpoint_base_url_configured
+          ? "Endpoint unavailable"
+          : "Not configured";
+      const jobsStatus = runtimeProbeStatus(status.job_health);
+      const storageStatus = runtimeProbeStatus(status.storage_health);
+      const runnerStatus: RuntimeStatus = jobsStatus === "Connected"
+        ? "Ready"
+        : jobsStatus === "Not configured"
+          ? "Not configured"
+          : "Unavailable";
       setRuntimeOverrides((current) => ({
         ...current,
-        [mode]: {
-          ...current[mode],
-          "AI Endpoint": endpointReady ? "Ready" : endpointConfigured ? "Connected" : "Endpoint unavailable"
+        "nebius-cloud": {
+          "AI Endpoint": endpointStatus,
+          Backend: "Ready",
+          Frontend: "Ready",
+          Jobs: jobsStatus,
+          Runner: runnerStatus,
+          Storage: storageStatus
         }
       }));
-      setRuntimeMessage(
-        connected
-          ? `Nebius endpoint ${endpointReady ? "healthy" : "configured"}${status.endpoint_base_url ? `: ${status.endpoint_base_url}` : "."}`
-          : "Nebius unavailable or not configured. Falling back to mock AI."
+      setCloudMessage(
+        `Live check: Endpoint ${runtimeStatusText(endpointStatus)}; Jobs ${runtimeStatusText(jobsStatus)}; Storage ${runtimeStatusText(storageStatus)}.`
       );
     } catch (error) {
       setRuntimeOverrides((current) => ({
         ...current,
-        [mode]: {
-          ...current[mode],
-          "AI Endpoint": "Endpoint unavailable"
+        "nebius-cloud": {
+          "AI Endpoint": "Unavailable",
+          Backend: "Unavailable",
+          Frontend: "Ready",
+          Jobs: "Unavailable",
+          Runner: "Unavailable",
+          Storage: "Unavailable"
         }
       }));
-      setRuntimeMessage(error instanceof Error ? error.message : "Nebius status check failed.");
+      setCloudMessage(error instanceof Error ? error.message : "Nebius live status check failed.");
     }
   }
 
   async function testNebiusConnection() {
     if (runtimeMode === "local-demo") {
-      setRuntimeMessage("Switch to Nebius Cloud before testing the Nebius endpoint.");
+      setCloudMessage("Switch to Nebius Cloud to view the live probe result.");
       return;
     }
-    setRuntimeMessage("Checking Nebius endpoint status...");
-    await refreshNebiusRuntimeStatus(runtimeMode);
+    setCloudMessage("Checking live Nebius services...");
+    await refreshNebiusRuntimeStatus();
   }
 
   return (
@@ -552,7 +571,8 @@ function RuntimePanel() {
                 <tr key={component}>
                   <th>{component}</th>
                   {visibleRuntimeOptions.map((option) => {
-                    const status = option.value === runtimeMode ? currentMatrix[component] : option.matrix[component];
+                    const optionMatrix = { ...option.matrix, ...runtimeOverrides[option.value] };
+                    const status = optionMatrix[component];
                     return <td className={option.value === runtimeMode ? "current" : ""} key={option.value}><span className={`runtime-status ${status.toLowerCase().replace(/\s+/g, "-")}`}>{status}</span></td>;
                   })}
                 </tr>
@@ -583,6 +603,18 @@ function RuntimePanel() {
       ) : null}
     </section>
   );
+}
+
+function runtimeProbeStatus(probe: Record<string, unknown> | undefined): RuntimeStatus {
+  const status = String(probe?.status ?? "unavailable").toLowerCase();
+  if (status === "ok") return "Connected";
+  if (status === "not_configured") return "Not configured";
+  if (status === "degraded") return "Degraded";
+  return "Unavailable";
+}
+
+function runtimeStatusText(status: RuntimeStatus): string {
+  return status.toLowerCase();
 }
 
 function IdentityPanel() {

@@ -1033,6 +1033,22 @@ body[data-sidebar-resizing="true"] {
   color: var(--warning-text);
 }
 
+.runtime-status.checking {
+  background: rgba(59, 130, 246, 0.13);
+  color: #93c5fd;
+}
+
+.runtime-status.degraded {
+  background: rgba(245, 184, 65, 0.13);
+  color: var(--warning-text);
+}
+
+.runtime-status.unavailable,
+.runtime-status.error {
+  background: rgba(239, 68, 68, 0.13);
+  color: #fca5a5;
+}
+
 .runtime-status.error,
 .runtime-status.failed {
   background: rgba(244, 63, 94, 0.14);

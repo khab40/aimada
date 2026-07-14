@@ -220,6 +220,9 @@ class NebiusObservatoryResponse(BaseModel):
     orderbook_alert_configured: bool
     investigation_report_configured: bool
     endpoint_health: dict[str, Any] | None = None
+    job_health: dict[str, Any]
+    storage_health: dict[str, Any]
+    checked_at: str
     endpoint_mode: str
     screenshots: list[dict[str, str]]
     benchmark_artifacts: dict[str, str]
@@ -699,15 +702,9 @@ def observatory(request: Request) -> NebiusObservatoryResponse:
             NebiusRuntimeHealth(**item)
             for item in nebius_cloud_adapter.runtime_health(
                 cli_installed=integration.cli_installed,
-                endpoint_configured=(
-                    integration.incident_explainer_configured
-                    or integration.scenario_generator_configured
-                    or integration.orderbook_alert_configured
-                    or integration.investigation_report_configured
-                ),
-                token_configured=integration.endpoint_token_configured,
-                output_dir=store.output_dir,
-                latest_batch=latest_batch,
+                endpoint_health=integration.endpoint_health,
+                job_health=integration.job_health,
+                storage_health=integration.storage_health,
             )
         ],
         usage=usage,
@@ -715,6 +712,9 @@ def observatory(request: Request) -> NebiusObservatoryResponse:
         orderbook_alert_configured=integration.orderbook_alert_configured,
         investigation_report_configured=integration.investigation_report_configured,
         endpoint_health=integration.endpoint_health,
+        job_health=integration.job_health,
+        storage_health=integration.storage_health,
+        checked_at=integration.checked_at,
         endpoint_mode=integration.endpoint_mode,
         screenshots=[
             {

@@ -1,7 +1,11 @@
 import json
+import os
+import shlex
 import shutil
 import subprocess
 import time
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
 from typing import Any, Literal
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -134,6 +138,9 @@ class NebiusIntegrationStatus(BaseModel):
     endpoint_base_url: str | None = None
     endpoint_base_url_configured: bool
     endpoint_health: dict[str, Any] | None = None
+    job_health: dict[str, Any]
+    storage_health: dict[str, Any]
+    checked_at: str
     model: str | None = None
     job_image: str
     job_submit_template_configured: bool
@@ -381,6 +388,11 @@ class NebiusClient:
                 cli_version = (completed.stdout or completed.stderr).strip() or None
             except (OSError, subprocess.SubprocessError, TimeoutError):
                 cli_version = None
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            job_probe = executor.submit(self.job_health, cli_path=cli_path)
+            storage_probe = executor.submit(self.storage_health)
+            job_health = job_probe.result()
+            storage_health = storage_probe.result()
 
         return NebiusIntegrationStatus(
             tenant_id_configured=bool(settings.nebius_tenant_id),
@@ -395,6 +407,9 @@ class NebiusClient:
             endpoint_base_url=settings.nebius_endpoint_base_url,
             endpoint_base_url_configured=bool(settings.nebius_endpoint_base_url),
             endpoint_health=endpoint_health,
+            job_health=job_health,
+            storage_health=storage_health,
+            checked_at=datetime.now(timezone.utc).isoformat(),
             model=model,
             job_image=settings.nebius_job_image,
             job_submit_template_configured=bool(settings.nebius_job_submit_command_template),
@@ -423,6 +438,90 @@ class NebiusClient:
                 "url_configured": True,
                 "fallback_reason": f"endpoint health probe failed: {exc}",
             }
+
+    def job_health(self, *, cli_path: str | None = None) -> dict[str, Any]:
+        settings = get_settings()
+        checked_at = datetime.now(timezone.utc).isoformat()
+        configured = bool(
+            settings.nebius_job_submit_command_template
+            and settings.nebius_job_status_command_template
+        )
+        if not configured:
+            return {
+                "status": "not_configured",
+                "detail": "Nebius Job submit and status commands are not both configured.",
+                "checked_at": checked_at,
+            }
+        executable = cli_path or shutil.which("nebius")
+        if not executable:
+            return {
+                "status": "unavailable",
+                "detail": "Nebius CLI is not available to probe Serverless Jobs.",
+                "checked_at": checked_at,
+            }
+        if settings.nebius_job_health_command:
+            command = shlex.split(settings.nebius_job_health_command)
+        else:
+            command = [executable, "ai", "job", "list"]
+            if settings.nebius_parent_id:
+                command.extend(["--parent-id", settings.nebius_parent_id])
+            command.extend(
+                [
+                    "--format",
+                    "json",
+                    "--no-browser",
+                    "--no-check-update",
+                    "--timeout",
+                    "3s",
+                    "--per-retry-timeout",
+                    "2s",
+                    "--retries",
+                    "1",
+                ]
+            )
+        return _command_health(
+            command,
+            service="Nebius Serverless Jobs",
+            timeout_seconds=settings.nebius_cloud_probe_timeout_seconds,
+            env=os.environ.copy(),
+        )
+
+    def storage_health(self) -> dict[str, Any]:
+        settings = get_settings()
+        checked_at = datetime.now(timezone.utc).isoformat()
+        output_uri = str(settings.nebius_job_output_uri or "").strip()
+        if not output_uri:
+            return {
+                "status": "not_configured",
+                "detail": "Nebius Object Storage output URI is not configured.",
+                "checked_at": checked_at,
+            }
+        aws = shutil.which("aws")
+        if not aws:
+            return {
+                "status": "unavailable",
+                "detail": "AWS CLI is not available to probe Nebius Object Storage.",
+                "checked_at": checked_at,
+            }
+        command = [aws]
+        if settings.nebius_object_storage_endpoint_url:
+            command.extend(["--endpoint-url", settings.nebius_object_storage_endpoint_url])
+        command.extend(["s3", "ls", output_uri])
+        env = os.environ.copy()
+        if settings.nebius_object_storage_access_key_id:
+            env["AWS_ACCESS_KEY_ID"] = settings.nebius_object_storage_access_key_id
+        if settings.nebius_object_storage_secret_access_key:
+            env["AWS_SECRET_ACCESS_KEY"] = settings.nebius_object_storage_secret_access_key
+        if settings.nebius_object_storage_session_token:
+            env["AWS_SESSION_TOKEN"] = settings.nebius_object_storage_session_token
+        env["AWS_DEFAULT_REGION"] = settings.nebius_object_storage_region
+        env["AWS_EC2_METADATA_DISABLED"] = "true"
+        return _command_health(
+            command,
+            service="Nebius Object Storage",
+            timeout_seconds=settings.nebius_cloud_probe_timeout_seconds,
+            env=env,
+        )
 
     def _get_json(self, url: str, *, timeout_seconds: float | None = None) -> dict[str, Any]:
         headers: dict[str, str] = {}
@@ -801,6 +900,48 @@ def _health_string(health: dict[str, Any] | None, key: str) -> str | None:
         return None
     text = str(value).strip()
     return text or None
+
+
+def _command_health(
+    command: list[str],
+    *,
+    service: str,
+    timeout_seconds: float,
+    env: dict[str, str],
+) -> dict[str, Any]:
+    checked_at = datetime.now(timezone.utc).isoformat()
+    try:
+        completed = subprocess.run(
+            command,
+            capture_output=True,
+            check=False,
+            env=env,
+            text=True,
+            timeout=timeout_seconds,
+        )
+    except subprocess.TimeoutExpired:
+        return {
+            "status": "unreachable",
+            "detail": f"{service} probe timed out after {timeout_seconds:g} seconds.",
+            "checked_at": checked_at,
+        }
+    except (OSError, subprocess.SubprocessError) as exc:
+        return {
+            "status": "unreachable",
+            "detail": f"{service} probe could not run: {type(exc).__name__}.",
+            "checked_at": checked_at,
+        }
+    if completed.returncode != 0:
+        return {
+            "status": "unreachable",
+            "detail": f"{service} probe exited with status {completed.returncode}.",
+            "checked_at": checked_at,
+        }
+    return {
+        "status": "ok",
+        "detail": f"{service} responded successfully.",
+        "checked_at": checked_at,
+    }
 
 
 def _job_artifact_collection_configured(settings: Settings) -> bool:
