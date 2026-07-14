@@ -149,6 +149,24 @@ def test_agent_level_updates_are_additive_per_agent_at_same_price() -> None:
     assert book.get_l2_snapshot()["asks"][0] == {"price": 101.0, "quantity": 3.0}
 
 
+def test_partial_cancel_recomputes_shared_level_owner() -> None:
+    book = OrderBook(mid_price=100.0, levels=2, tick_size=1.0, base_size=3.5)
+    book.update_agent_level(
+        "ask",
+        101.0,
+        48.0,
+        agent_id="ABUSER_01",
+        owner="abuser",
+        order_id="attack-wall",
+    )
+
+    assert book.get_l2_snapshot()["asks"][0]["owner"] == "abuser"
+
+    book.cancel_order("attack-wall")
+
+    assert book.get_l2_snapshot()["asks"][0] == {"price": 101.0, "quantity": 3.5}
+
+
 def test_ensure_level_minimum_adds_only_missing_baseline_quantity() -> None:
     book = OrderBook()
     book.add_limit_order(Order("existing", "maker", "sell", 1.0, 101.0))

@@ -18,6 +18,7 @@ class Order:
     scenario_id: str | None = None
     scenario_name: str | None = None
     scenario_family: str | None = None
+    owner: str = "normal"
 
 
 @dataclass(frozen=True)

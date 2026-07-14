@@ -91,6 +91,7 @@ class OrderBook:
             side="buy" if book_side == "bid" else "sell",
             quantity=size,
             price=price,
+            owner=owner,
         )
         levels[price] = [order]
         self.orders[order.order_id] = order
@@ -136,12 +137,11 @@ class OrderBook:
             scenario_id=scenario_id,
             scenario_name=scenario_name,
             scenario_family=scenario_family,
+            owner=owner,
         )
         levels[price] = [*kept_orders, order]
         self.orders[order.order_id] = order
-        existing_owner = self.level_owners.get((book_side, price))
-        if owner != "normal" or existing_owner is None:
-            self.level_owners[(book_side, price)] = owner
+        self._recompute_level_owner(book_side, price)
         self.recalculate()
 
     def ensure_level_minimum(
@@ -176,7 +176,7 @@ class OrderBook:
         levels = self.bids if order.side == "buy" else self.asks
         levels[order.price].append(order)
         self.orders[order.order_id] = order
-        self.level_owners.setdefault(("bid" if order.side == "buy" else "ask", order.price), "normal")
+        self._recompute_level_owner("bid" if order.side == "buy" else "ask", order.price)
         self.recalculate()
 
     def add(self, order: Order) -> None:
@@ -188,9 +188,12 @@ class OrderBook:
             return None
         levels = self.bids if order.side == "buy" else self.asks
         levels[order.price] = [item for item in levels[order.price] if item.order_id != order_id]
+        book_side = "bid" if order.side == "buy" else "ask"
         if not levels[order.price]:
             del levels[order.price]
-            self.level_owners.pop(("bid" if order.side == "buy" else "ask", order.price), None)
+            self.level_owners.pop((book_side, order.price), None)
+        else:
+            self._recompute_level_owner(book_side, order.price)
         self.recalculate()
         return order
 
@@ -247,6 +250,7 @@ class OrderBook:
 
             if updated_level:
                 opposite_levels[price] = updated_level
+                self._recompute_level_owner("ask" if order.side == "buy" else "bid", price)
             else:
                 opposite_levels.pop(price, None)
                 self.level_owners.pop(("ask" if order.side == "buy" else "bid", price), None)
@@ -298,6 +302,16 @@ class OrderBook:
             price=price,
             quantity=self._level_quantity(side, price),
             owner=self.level_owners.get((side, price)),
+        )
+
+    def _recompute_level_owner(self, side: BookSide, price: float) -> None:
+        orders = self._levels_for_side(side).get(price, [])
+        if not orders:
+            self.level_owners.pop((side, price), None)
+            return
+        self.level_owners[(side, price)] = next(
+            (order.owner for order in orders if order.owner != "normal"),
+            "normal",
         )
 
     def snapshot(self, depth: int = 5) -> dict[str, object]:
