@@ -121,11 +121,22 @@ def build_surveillance_request(
     analysis_type: AnalysisType,
     invocation_reason: str,
 ) -> SurveillanceInvestigationRequest:
+    # The public investigation-team contract carries a compact, structured
+    # episode summary. Promote its fields before deriving the canonical prompt
+    # so the model receives replay context without raw stream payloads.
+    episode_summary = _mapping(source.get("episode_summary"))
+    if episode_summary:
+        source = {**episode_summary, **dict(source)}
     incident = _mapping(source.get("incident"))
     replay = _mapping(source.get("replay"))
     trace = _mapping(source.get("scenario_trace"))
     scenario = _first_mapping(source.get("scenario"), replay.get("scenario"), trace)
-    market = _first_mapping(source.get("market"), replay.get("market"), source.get("market_metrics"))
+    market = _first_mapping(
+        source.get("market"),
+        source.get("market_regime"),
+        replay.get("market"),
+        source.get("market_metrics"),
+    )
     features = _first_mapping(
         source.get("derived_market_features"),
         source.get("features"),
@@ -133,6 +144,11 @@ def build_surveillance_request(
         source.get("market_metrics"),
         source.get("metrics"),
     )
+    features = {
+        **_mapping(source.get("derived_market_features")),
+        **_mapping(source.get("market_metrics")),
+        **features,
+    }
     detector_rows = _detector_rows(source, replay)
     timeline_source = _first_list(
         source.get("event_timeline"),
@@ -142,8 +158,9 @@ def build_surveillance_request(
     )
     trades = _first_list(source.get("trades"), replay.get("trades"))
     book = _first_mapping(source.get("book"), replay.get("book"), source.get("order_book_context"))
+    suspected_agent = _mapping(source.get("suspected_agent"))
     suspected_agent_id = _first_value(
-        source.get("suspected_agent"),
+        suspected_agent.get("agent_id"),
         incident.get("agent"),
         incident.get("agent_id"),
         scenario.get("agent_id"),
@@ -157,16 +174,22 @@ def build_surveillance_request(
 
     order_statistics = _order_statistics(timeline_source, features, suspected_agent_id)
     trade_statistics = _trade_statistics(trades, features, suspected_agent_id)
-    cancellation_metrics = _metric_subset(
+    cancellation_metrics = {
+        **_mapping(source.get("cancellation_metrics")),
+        **_metric_subset(
         features,
         ("cancel_count", "cancel_ratio", "cancel_to_trade_ratio", "cancel_probability", "median_order_lifetime_ms"),
-    )
+        ),
+    }
     if "cancel_count" in order_statistics:
         cancellation_metrics.setdefault("cancel_count", order_statistics["cancel_count"])
-    execution_metrics = _metric_subset(
+    execution_metrics = {
+        **_mapping(source.get("execution_metrics")),
+        **_metric_subset(
         features,
         ("execution_count", "execution_ratio", "fill_ratio", "executed_quantity", "trade_count"),
-    )
+        ),
+    }
     if "trade_count" in trade_statistics:
         execution_metrics.setdefault("trade_count", trade_statistics["trade_count"])
 
@@ -185,24 +208,40 @@ def build_surveillance_request(
         ),
         market_regime=_clean_mapping(
             {
-                "liquidity": _first_value(source.get("liquidity_regime"), scenario.get("liquidity_regime"), features.get("liquidity_regime")),
-                "volatility": _first_value(source.get("volatility_regime"), scenario.get("volatility_regime"), features.get("volatility_regime")),
-                "session": _first_value(source.get("session"), features.get("session")),
+                "liquidity": _first_value(
+                    source.get("liquidity_regime"),
+                    market.get("liquidity"),
+                    scenario.get("liquidity_regime"),
+                    features.get("liquidity_regime"),
+                ),
+                "volatility": _first_value(
+                    source.get("volatility_regime"),
+                    market.get("volatility"),
+                    scenario.get("volatility_regime"),
+                    features.get("volatility_regime"),
+                ),
+                "session": _first_value(source.get("session"), market.get("session"), features.get("session")),
             }
         ),
         instrument=_clean_mapping(
             {
-                "symbol": _first_value(source.get("symbol"), incident.get("symbol"), scenario.get("symbol"), market.get("symbol")),
+                "symbol": _first_value(
+                    source.get("symbol"),
+                    _mapping(source.get("instrument")).get("symbol"),
+                    incident.get("symbol"),
+                    scenario.get("symbol"),
+                    market.get("symbol"),
+                ),
                 "tick_size": _first_value(source.get("tick_size"), market.get("tick_size")),
                 "currency": _first_value(source.get("currency"), market.get("currency")),
             }
         ),
         episode_duration=_clean_mapping(
             {
-                "start_tick": _first_value(source.get("start_tick"), scenario.get("start_tick")),
-                "end_tick": _first_value(source.get("end_tick"), incident.get("tick"), replay.get("window", {}).get("current_tick") if isinstance(replay.get("window"), dict) else None),
-                "duration_ticks": _first_value(source.get("duration_ticks"), scenario.get("duration_ticks")),
-                "duration_ms": source.get("duration_ms"),
+                "start_tick": _first_value(source.get("start_tick"), _mapping(source.get("episode_duration")).get("start_tick"), scenario.get("start_tick")),
+                "end_tick": _first_value(source.get("end_tick"), _mapping(source.get("episode_duration")).get("end_tick"), incident.get("tick"), replay.get("window", {}).get("current_tick") if isinstance(replay.get("window"), dict) else None),
+                "duration_ticks": _first_value(source.get("duration_ticks"), _mapping(source.get("episode_duration")).get("duration_ticks"), scenario.get("duration_ticks")),
+                "duration_ms": _first_value(source.get("duration_ms"), _mapping(source.get("episode_duration")).get("duration_ms")),
             }
         ),
         suspected_agent=suspected_agent,

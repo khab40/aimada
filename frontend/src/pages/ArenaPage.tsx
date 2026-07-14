@@ -11,7 +11,7 @@ import { MarketTimeline, type MarketTimelineFrame, type TimelineMarkerType } fro
 import { OrderBookLadder } from "@/components/OrderBookLadder";
 import { useArenaSource } from "@/hooks/useArenaSource";
 import { getProductDemoConfig, type ProductDemoConfig } from "@/demoModes";
-import { controlCenterIncidentPath, storeControlCenterIncident } from "@/controlCenterIncident";
+import { controlCenterIncidentPath, investigationContextFromArenaState, storeControlCenterIncident } from "@/controlCenterIncident";
 import { OrderBookTerrain } from "@/tabs/MarketBattlefield3D/components/OrderBookTerrain";
 import { arenaStateToFrame } from "@/tabs/MarketBattlefield3D/hooks/useMarketBattlefieldData";
 import type { BattlefieldFrame } from "@/tabs/MarketBattlefield3D/types";
@@ -68,9 +68,13 @@ export function ArenaPage() {
   const selectedIncident = incident ?? lastIncident;
 
   const sendToControlCenter = useCallback((selected: Incident) => {
-    storeControlCenterIncident(selected);
-    navigate(controlCenterIncidentPath(selected));
-  }, [navigate]);
+    const enriched = {
+      ...selected,
+      investigation_context: investigationContextFromArenaState(state)
+    };
+    storeControlCenterIncident(enriched);
+    navigate(controlCenterIncidentPath(enriched));
+  }, [navigate, state]);
 
   useEffect(() => {
     if (incident) {

@@ -140,6 +140,35 @@ def test_missing_episode_data_is_not_presented_as_observed_zero() -> None:
     assert "trade_statistics" in request.missing_fields
 
 
+def test_structured_episode_summary_is_promoted_into_the_prompt_contract() -> None:
+    request = build_surveillance_request(
+        {
+            "incident": {"id": "INC-42", "confidence": 0.91},
+            "detector_outputs": [{"detector": "spoofing_like", "score": 0.91, "alert": True}],
+            "order_book_context": {"events": [{"type": "cancel", "agent_id": "A1"}]},
+            "trades": [{"trade_id": "T1", "quantity": 2.0}],
+            "market_metrics": {"cancel_to_trade_ratio": 7.0},
+            "episode_summary": {
+                "simulation_metadata": {"episode_id": "INC-42", "scenario_family": "spoofing"},
+                "market_regime": {"liquidity": "thin", "volatility": "low"},
+                "instrument": {"symbol": "AIMD"},
+                "event_timeline": [{"sequence": 1, "event": "wall placed"}],
+                "lob_summary": {"during": {"mid": 100.0}},
+                "cancellation_metrics": {"cancel_probability": 0.96},
+                "execution_metrics": {"execution_ratio": 0.04},
+            },
+        },
+        analysis_type="high_anomaly",
+        invocation_reason="structured context test",
+    )
+
+    assert request.market_regime["liquidity"] == "thin"
+    assert request.instrument["symbol"] == "AIMD"
+    assert request.event_timeline[0].event == "wall placed"
+    assert request.cancellation_metrics["cancel_probability"] == 0.96
+    assert request.execution_metrics["execution_ratio"] == 0.04
+
+
 def test_committed_json_schemas_match_runtime_contracts() -> None:
     schema_dir = Path(__file__).with_name("schemas")
     request_schema = json.loads((schema_dir / "surveillance-request.schema.json").read_text(encoding="utf-8"))

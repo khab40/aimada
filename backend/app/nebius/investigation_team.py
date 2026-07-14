@@ -32,6 +32,7 @@ class AIInvestigationTeamRequest(BaseModel):
     order_book_context: dict[str, Any] = Field(default_factory=dict)
     trades: list[dict[str, Any]] = Field(default_factory=list)
     market_metrics: dict[str, Any] = Field(default_factory=dict)
+    episode_summary: dict[str, Any] = Field(default_factory=dict)
 
 
 class AIInvestigationTeamResponse(BaseModel):
@@ -48,6 +49,7 @@ class AIInvestigationTeamResponse(BaseModel):
     executive_summary: str
     fallback_reason: str | None = None
     raw_response: dict[str, Any] | None = None
+    structured_assessment: dict[str, Any] | None = None
 
 
 class InvestigationTeamClient(Protocol):
@@ -72,6 +74,7 @@ def prepare_payload(request: AIInvestigationTeamRequest) -> AIInvestigationTeamR
         order_book_context=dict(request.order_book_context),
         trades=[dict(item) for item in request.trades],
         market_metrics=dict(request.market_metrics),
+        episode_summary=dict(request.episode_summary),
     )
 
 
@@ -96,6 +99,11 @@ def normalize_response(
         recommended_action=str(response.get("recommended_action") or "Review the synthetic incident."),
         executive_summary=str(response.get("executive_summary") or "AI investigation completed."),
         raw_response=response if mode == "nebius" else None,
+        structured_assessment=(
+            response.get("structured_assessment")
+            if isinstance(response.get("structured_assessment"), dict)
+            else None
+        ),
     )
 
 

@@ -529,6 +529,7 @@ export type AIInvestigationTeamRequest = {
   order_book_context: Record<string, unknown>;
   trades: Record<string, unknown>[];
   market_metrics: Record<string, unknown>;
+  episode_summary?: Record<string, unknown>;
 };
 
 export type AIInvestigationTeamResponse = {
@@ -545,6 +546,7 @@ export type AIInvestigationTeamResponse = {
   executive_summary: string;
   fallback_reason?: string | null;
   raw_response?: Record<string, unknown> | null;
+  structured_assessment?: Record<string, unknown> | null;
 };
 
 export type MarketAbuseScenarioGenerationRequest = {

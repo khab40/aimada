@@ -602,6 +602,10 @@ def test_nebius_client_posts_investigation_team_to_deployed_endpoint(monkeypatch
         AIInvestigationTeamRequest(
             incident={"incident_id": "INC-1", "type": "spoofing", "confidence": 0.9},
             detector_outputs=[{"detector": "wall", "confidence": 0.91}],
+            episode_summary={
+                "market_regime": {"liquidity": "thin"},
+                "event_timeline": [{"sequence": 1, "event": "wall placed"}],
+            },
             market_metrics={"wall_size_ratio": 8.2},
         )
     )
@@ -610,6 +614,7 @@ def test_nebius_client_posts_investigation_team_to_deployed_endpoint(monkeypatch
     assert captured["method"] == "POST"
     assert captured["authorization"] == "Bearer test-token"
     assert captured["payload"]["incident"]["incident_id"] == "INC-1"
+    assert captured["payload"]["episode_summary"]["market_regime"]["liquidity"] == "thin"
     assert response.mode == "nebius"
     assert response.investigation_id == "INV-1"
     assert response.agents[0].name == "OrderBookExpertAgent"

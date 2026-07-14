@@ -70,6 +70,23 @@ export type EvidenceItem = {
   interpretation?: string;
 };
 
+export type InvestigationContext = {
+  simulation_metadata?: Record<string, unknown>;
+  market_regime?: Record<string, unknown>;
+  instrument?: Record<string, unknown>;
+  episode_duration?: Record<string, unknown>;
+  suspected_agent?: Record<string, unknown>;
+  order_book_context?: Record<string, unknown>;
+  trades?: Record<string, unknown>[];
+  event_timeline?: Record<string, unknown>[];
+  market_metrics?: Record<string, unknown>;
+  cancellation_metrics?: Record<string, unknown>;
+  execution_metrics?: Record<string, unknown>;
+  price_movement?: Record<string, unknown>;
+  ground_truth?: Record<string, unknown> | null;
+  previous_agent_behaviour?: Record<string, unknown>[];
+};
+
 export type Incident = {
   id: string;
   title: string;
@@ -82,6 +99,7 @@ export type Incident = {
   scenario_id?: string;
   scenario_family?: string;
   tick?: number;
+  investigation_context?: InvestigationContext;
 };
 
 export type AttackStage =

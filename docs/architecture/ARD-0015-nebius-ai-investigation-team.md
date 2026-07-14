@@ -54,7 +54,7 @@ graph TD
 
 ## Objective
 
-Turn detector outputs, incident context, order-book evidence, trades, and market metrics into a structured multi-agent investigation through Nebius AI Serverless, while preserving deterministic fallback for local demos.
+Turn a compact replay summary into a structured multi-agent investigation through Nebius AI Serverless, while preserving deterministic fallback for local demos. The request carries simulation metadata, regime/instrument context, episode timing, summarized order-book state, trades, event timeline, derived features, cancellation/execution metrics, detector scores, and optional ground truth; it never sends an unbounded raw stream.
 
 ## Current Code To Reuse
 
@@ -109,15 +109,25 @@ Request to backend:
   ],
   "order_book_context": {
     "symbol": "AIMD",
-    "window": "last_120_ticks"
+    "window": "last_120_ticks",
+    "events": [],
+    "snapshot": {}
   },
   "trades": [],
-  "metrics": {
+  "market_metrics": {
     "cancel_to_trade_ratio": 8.4,
     "wall_size_ratio": 5.6
+  },
+  "episode_summary": {
+    "event_timeline": [],
+    "cancellation_metrics": {},
+    "execution_metrics": {},
+    "price_movement": {}
   }
 }
 ```
+
+The endpoint validates the model's professional surveillance object (`classification`, `severity`, evidence and counter-evidence, alternatives, timeline, detector disagreement, recommended actions, and regulatory framing) and returns it as `structured_assessment` alongside the legacy team fields. This keeps existing clients compatible while making the structured contract available to new consumers.
 
 Response from backend:
 

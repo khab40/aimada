@@ -229,6 +229,7 @@ class AIInvestigationTeamRequest(BaseModel):
     order_book_context: dict[str, Any] = Field(default_factory=dict)
     trades: list[dict[str, Any]] = Field(default_factory=list)
     market_metrics: dict[str, Any] = Field(default_factory=dict)
+    episode_summary: dict[str, Any] = Field(default_factory=dict)
 
 
 class AIInvestigationTeamResponse(BaseModel):
@@ -245,6 +246,9 @@ class AIInvestigationTeamResponse(BaseModel):
     model: str = DEFAULT_ENDPOINT_MODEL
     latency_ms: float = 0.0
     fallback_reason: str | None = None
+    # The validated surveillance assessment is preserved alongside the legacy
+    # investigator-team view so callers can consume the structured contract.
+    structured_assessment: dict[str, Any] | None = None
     disclaimer: str = DISCLAIMER
 
 
@@ -637,6 +641,7 @@ def _assessment_to_investigation_team(
         if assessment.recommended_actions
         else fallback.recommended_action,
         "executive_summary": assessment.executive_summary,
+        "structured_assessment": assessment.model_dump(mode="json"),
     }
 
 
@@ -1177,9 +1182,33 @@ def _merge_investigation_team_response(
         evidence_timeline=_timeline_items(response.get("evidence_timeline"), fallback.evidence_timeline),
         recommended_action=str(response.get("recommended_action") or fallback.recommended_action),
         executive_summary=str(response.get("executive_summary") or fallback.executive_summary),
+        structured_assessment=_structured_assessment(response),
         disclaimer=str(response.get("disclaimer") or DISCLAIMER),
     )
     return _with_model_metadata(merged, model_result)
+
+
+def _structured_assessment(response: dict[str, Any]) -> dict[str, Any] | None:
+    nested = response.get("structured_assessment")
+    if isinstance(nested, dict):
+        return nested
+    required = (
+        "classification",
+        "confidence",
+        "severity",
+        "market_context",
+        "evidence",
+        "counter_evidence",
+        "alternative_explanations",
+        "episode_timeline",
+        "detector_disagreement",
+        "recommended_actions",
+        "regulatory_assessment",
+        "executive_summary",
+    )
+    if not all(key in response for key in required):
+        return None
+    return {key: response[key] for key in required}
 
 
 def _deterministic_scenario(request: ScenarioGenerationRequest) -> ScenarioGenerationResponse:

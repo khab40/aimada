@@ -220,6 +220,27 @@ def test_investigation_team_returns_agent_contract() -> None:
     assert response.evidence_timeline
 
 
+def test_investigation_team_preserves_the_structured_assessment(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("NEBIUS_ENDPOINT_MODE", "local_vllm")
+    monkeypatch.setattr(
+        endpoint_app,
+        "urlopen",
+        lambda request, timeout: FakeModelResponse(_chat_completion(json.dumps(_professional_assessment()))),
+    )
+
+    response = investigation_team(
+        AIInvestigationTeamRequest(
+            incident={"incident_id": "INC-STRUCTURED", "type": "spoofing", "confidence": 0.9},
+            detector_outputs=[{"detector": "spoofing_like", "score": 0.9}],
+            episode_summary={"event_timeline": [{"sequence": 1, "event": "wall placed"}]},
+        )
+    )
+
+    assert response.model_mode == "local_vllm"
+    assert response.structured_assessment is not None
+    assert response.structured_assessment["classification"] == "spoofing_like_wall"
+
+
 def test_local_vllm_mode_uses_local_openai_compatible_endpoint_without_auth(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
