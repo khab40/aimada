@@ -40,6 +40,7 @@ flowchart LR
     subgraph Cloud["Nebius Serverless Cloud"]
         Endpoint["AI Endpoint<br/>explain + investigate + generate"]
         Jobs["AI Jobs<br/>batch evaluation"]
+        ObjectStorage["Object Storage<br/>evidence archive"]
     end
 
     UI -->|"REST"| API
@@ -55,7 +56,9 @@ flowchart LR
     WS --> UI
     API <-->|"structured evidence / response"| Endpoint
     API -->|"submit + refresh"| Jobs
-    Jobs -->|"metrics + artifacts"| Incidents
+    Endpoint -->|"execution metadata"| ObjectStorage
+    Jobs -->|"metrics + artifacts"| ObjectStorage
+    ObjectStorage -->|"S3 sync"| Incidents
     Incidents --> API
 ```
 
@@ -122,6 +125,8 @@ graph LR
     Charts["Charts - F1, confidence, latency"]
     Report["benchmark_report.md"]
     Results["benchmark_results.json - detector_metrics.csv - incidents.jsonl"]
+    ObjectStorage["Object Storage - Job evidence archive"]
+    BackendEvidence["Backend evidence sync - UI download links"]
 
     ExperimentAPI --> ExperimentManifest
     ExperimentManifest --> Config
@@ -134,6 +139,9 @@ graph LR
     Metrics --> Charts
     Metrics --> Report
     Metrics --> Results
+    Results --> ObjectStorage
+    Report --> ObjectStorage
+    ObjectStorage --> BackendEvidence
 ```
 
 The batch path is intended for repeatable detector evaluation rather than live interaction. A serverless job runs many synthetic simulations, injects labeled abuse-like patterns, collects detector outputs, and compares them against the known scenario labels.

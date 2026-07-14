@@ -17,7 +17,7 @@ Status as of 2026-07-13:
 | [ARD-0005](ARD-0005-nebius-endpoint-contract.md) | `[partial]` | Real endpoint execution is archived; production hardening remains |
 | [ARD-0006](ARD-0006-scenario-labeling-and-reproducibility.md) | `[partial]` | Live label finalization and full event/order ID linkage remain incomplete |
 | [ARD-0007](ARD-0007-nebius-serverless-ai-jobs.md) | `[partial]` | Completed Job records and S3 evidence are archived; cost/runtime policy remains |
-| [ARD-0008](ARD-0008-nebius-serverless-ai-endpoints.md) | `[partial]` | Endpoint investigations and latency evidence are archived; console screenshots remain publication work |
+| [ARD-0008](ARD-0008-nebius-serverless-ai-endpoints.md) | `[partial]` | Endpoint investigations, latency evidence, and sanitized screenshots are archived |
 | [ARD-0009](ARD-0009-judge-mode-investigation-reports.md) | `[partial]` | Dedicated Judge Mode timeline selector is not fully implemented |
 | [ARD-0010](ARD-0010-agent-runner-execution.md) | `[done]` | Auth/signing and durable transport for remote runners are future work |
 | [ARD-0011](ARD-0011-exchange-liquidity-invariant.md) | `[done]` | Dynamic reference-price tracking and UI tuning are future work |

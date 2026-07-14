@@ -45,15 +45,15 @@ The `EXP-390EFAC2` run did not drop 20 workloads. The checked-in `labels.jsonl` 
 
 ## Proof of execution
 
-- **Job ID/status screenshot:** More than ten production jobs completed successfully and are visible in Nebius production logs; a curated screenshot index is still publication work.
-- **Endpoint screenshot:** A vLLM-backed endpoint executed scenario generation, incident analysis, investigation reporting, and structured market-event explanation routes; the curated screenshot link is still publication work.
-- **Logs:** The sanitized [Nebius evidence index](../outputs/benchmark/EXP-390EFAC2/nebius_evidence_index.json) records completed Job and Endpoint operations whose evidence bundles were uploaded to S3. Raw logs remain excluded because they can contain environment-specific values.
-- **Output artifacts:** The committed [benchmark evidence bundle](../outputs/benchmark/EXP-390EFAC2/README.md) includes job records, aggregate metrics, a detector/model leaderboard, seven Endpoint investigations, the benchmark report, a manifest, and SHA-256 checksums.
+- **Job ID/status screenshot:** More than ten production jobs completed successfully and are visible in Nebius production logs; sanitized UI screenshots are listed in the [screenshot checklist](../assets/screenshots/README.md).
+- **Endpoint screenshot:** A vLLM-backed endpoint executed scenario generation, incident analysis, investigation reporting, and structured market-event explanation routes; see the [runtime status screenshot](../assets/screenshots/Screenshot%202026-07-14%20at%2019.06.53.png) and [investigation screenshot](../assets/screenshots/Screenshot%202026-07-14%20at%2017.41.43.png).
+- **Logs:** The sanitized [Nebius evidence index](../outputs/benchmark/EXP-18E88EAF/nebius_evidence_index.json) records completed Job operations whose evidence bundles were uploaded to S3. Raw logs remain excluded because they can contain environment-specific values.
+- **Output artifacts:** The committed [benchmark evidence bundle](../outputs/benchmark/EXP-18E88EAF/README.md) includes job records, aggregate metrics, a detector/model leaderboard, Endpoint request/response examples, the benchmark report, a manifest, and SHA-256 checksums. The frozen `EXP-390EFAC2` evidence remains available under [deployment evidence](../evidence/deployment-2026-07-14-1412/benchmarks/outputs/benchmark/EXP-390EFAC2/README.md).
 - **CI and secret scanning:** [GitHub Actions](../.github/workflows/ci.yml) runs backend, frontend, deterministic-evaluation, agent-workspace, Compose, image, and Gitleaks checks without building the long-running Nebius deployment images.
 
 ## Limitations
 
-- Production execution is validated, a compact redacted evidence bundle is committed, and the runtime/cost statement above records the measured cloud run used for publication. Direct console screenshot links remain publication work.
+- Production execution is validated, compact redacted evidence bundles are committed, and the runtime/cost statement above records the measured cloud run used for publication. Private console screenshots are intentionally not required to reproduce the public evidence chain.
 - The rendered demo video and published article URL remain missing.
 - The committed 100-workload evidence contains 80 labeled attack rows and 20 normal-market control rows; this is a denominator distinction, not an unexplained data loss.
 - Results cover five synthetic scenario labels with one deterministic detector suite/model dimension; broader seeds and learned-detector comparisons are required before comparative claims are credible.

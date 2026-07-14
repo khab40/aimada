@@ -306,7 +306,7 @@ Deliverables:
 - `[done]` tests for create, list, get, report visibility, delete, deterministic attack manifests, attack counts, expected labels, a 3-run local batch, fake local-batch artifact normalization, mocked Nebius investigations, sample-CSV aggregation, and missing real Nebius config.
 - `[done]` local HTTP verification created a 10-row mixed-scenario experiment in mock mode and confirmed manifest rows, normalized artifacts, original local-batch files, summary, leaderboard, benchmark report, and investigation artifacts under `outputs/experiments/<experiment_id>/`.
 - `[done]` more than ten production Nebius Serverless AI Job runs validated container execution, scenario generation, detector evaluation, metric aggregation, reporting, logging, and artifact persistence.
-- `[partial]` the compact artifact bundle is committed and the judge-facing submission index includes measured runtime/cost records; console screenshots remain publication work.
+- `[done]` the compact artifact bundle is committed and the judge-facing submission index includes measured runtime/cost records plus sanitized UI screenshot evidence.
 
 Current behavior:
 
@@ -370,5 +370,5 @@ Exit criteria:
 - `[done]` A reviewer can understand the system from the README and docs.
 - `[done]` The demo can be started with documented commands.
 - `[done]` The architecture and runtime model are documented.
-- `[partial]` The project includes research notes, a blog draft, GitHub banner, UI controls, demo narration, and a committed benchmark evidence bundle; the screenshot set and rendered video remain publication work.
+- `[partial]` The project includes research notes, a blog draft, GitHub banner, UI controls, demo narration, sanitized screenshots, and committed benchmark evidence; the rendered video and published article URL remain publication work.
 - `[done]` The submission avoids claims about real market manipulation detection, trading signals, or compliance use.

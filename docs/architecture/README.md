@@ -6,18 +6,18 @@ ARDs capture architecture decisions, context, tradeoffs, implementation phases, 
 
 ## Implementation Summary
 
-Status as of 2026-07-13:
+Status as of 2026-07-14:
 
 | ARD | Implementation | Notes |
 |-----|----------------|-------|
-| [ARD-0001](ARD-0001-overall-architecture.md) | `[partial]` | Production execution evidence is archived; roadmap features remain |
+| [ARD-0001](ARD-0001-overall-architecture.md) | `[partial]` | Production execution evidence, runtime/cost notes, and screenshots are archived; roadmap features remain |
 | [ARD-0002](ARD-0002-websocket-state-schema.md) | `[done]` | Optional exported JSON schema and load-test throttling |
 | [ARD-0003](ARD-0003-detector-evidence-model.md) | `[done]` | Broader threshold calibration against historical-style replay datasets |
 | [ARD-0004](ARD-0004-benchmark-artifact-format.md) | `[partial]` | A committed evidence bundle exists; canonical schema versioning remains incomplete |
 | [ARD-0005](ARD-0005-nebius-endpoint-contract.md) | `[partial]` | Real endpoint execution is archived; production hardening remains |
 | [ARD-0006](ARD-0006-scenario-labeling-and-reproducibility.md) | `[partial]` | Live label finalization and full event/order ID linkage remain incomplete |
-| [ARD-0007](ARD-0007-nebius-serverless-ai-jobs.md) | `[partial]` | Completed Job records and S3 evidence are archived; cost/runtime policy remains |
-| [ARD-0008](ARD-0008-nebius-serverless-ai-endpoints.md) | `[partial]` | Endpoint investigations and latency evidence are archived; console screenshots remain publication work |
+| [ARD-0007](ARD-0007-nebius-serverless-ai-jobs.md) | `[partial]` | Completed Job records, S3 evidence, and runtime/cost notes are archived; remote policy guardrails remain future work |
+| [ARD-0008](ARD-0008-nebius-serverless-ai-endpoints.md) | `[partial]` | Endpoint investigations, latency evidence, and sanitized screenshots are archived |
 | [ARD-0009](ARD-0009-judge-mode-investigation-reports.md) | `[partial]` | Dedicated Judge Mode timeline selector is not fully implemented |
 | [ARD-0010](ARD-0010-agent-runner-execution.md) | `[done]` | Auth/signing and durable transport for remote runners are future work |
 | [ARD-0011](ARD-0011-exchange-liquidity-invariant.md) | `[done]` | Dynamic reference-price tracking and UI tuning are future work |

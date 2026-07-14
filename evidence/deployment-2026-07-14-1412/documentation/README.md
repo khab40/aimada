@@ -82,7 +82,7 @@ Implemented:
 - Nebius endpoint and job scaffolds with local typed fallbacks, Docker/config files, scripts, and UI control surfaces, including `/investigation-team`, `/generate-market-abuse-scenario`, `/investigation-report`, `/orderbook-alert`, and `/generate-smart-scenario`.
 - Production validation completed more than ten Nebius Serverless AI Job runs and exercised a vLLM-backed Serverless AI Endpoint across scenario generation, incident analysis, investigation reporting, and structured market-event explanation routes.
 - Phase 4.5 Managed Experiments with deterministic attack manifests, local smart-batch execution, artifact normalization, aggregation, bounded AI Investigator reports, and Detection review of summaries, leaderboards, markdown reports, artifact indexes, and original local-batch files.
-- Commit-safe [benchmark evidence](outputs/benchmark/README.md) with completed Job records, Endpoint investigations, S3 evidence metadata, metrics, reports, a manifest, and SHA-256 checksums.
+- Commit-safe [benchmark evidence](outputs/benchmark/EXP-18E88EAF/README.md) with completed Job records, Endpoint investigations, S3 evidence metadata, metrics, reports, a manifest, and SHA-256 checksums.
 - Reduced demo navigation around AI Command Center, Workload Generator, and Docs / Demo.
 - Demo page for three deterministic 3-minute product demo paths: Real Nebius AI Run, Two-Model Pipeline, and Streaming Explanation.
 - Arena split into Scenario / Attack Configuration, Market, and Detection sections, with Standard and Battlefield market visualization modes.

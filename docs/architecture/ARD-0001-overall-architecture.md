@@ -6,7 +6,7 @@ Date: 2026-05-31
 
 ## Implementation Status
 
-Status as of 2026-07-13: `[partial]`
+Status as of 2026-07-14: `[partial]`
 
 Implemented:
 
@@ -20,11 +20,8 @@ Implemented:
 - Multiuser platform foundation with demo fallback identity, workspace metadata, case ownership, report attribution, and audit trail records.
 - UI shell with AI-MADA banner asset, compact navigation control, collapsible auth widget, persisted day/night/system theme, Command Center orchestration, and paused-state-stable Liquidity Map behavior.
 - Serverless endpoint/job scaffolds, Dockerfiles, configs, scripts, and local mock/cloud-adapter paths.
-- Production Serverless Job and Endpoint evidence archived in the commit-safe [benchmark bundle](../../outputs/benchmark/README.md).
-
-Before final submission:
-
-- Measured runtime/cost records and Nebius console screenshots linked from the submission index.
+- Production Serverless Job and Endpoint evidence archived in the commit-safe [benchmark bundle](../../outputs/benchmark/EXP-18E88EAF/README.md) and frozen deployment evidence.
+- Measured runtime/cost records are linked from the submission index; sanitized UI screenshots are committed under `assets/screenshots/`.
 
 Production-grade surveillance integrations, real market data ingestion, compliance workflows, and trading signals remain intentionally out of scope.
 
@@ -53,6 +50,7 @@ graph TD
     Runners["Agent Runners Workspace - normal, heavy, and LangGraph agents"]
     Nebius["Nebius Serverless Cloud - model selection, inference, batch jobs, GPU runtime, datasets, artifacts"]
     Store["Artifacts - events, snapshots, incidents, reports, benchmark outputs"]
+    ObjectStore["Object Storage - S3-compatible evidence archive"]
     Identity["Platform Identity - user, workspace, role, case ownership, audit"]
 
     Front -->|REST and WebSocket| Back
@@ -62,6 +60,8 @@ graph TD
     Runners -->|bounded AgentIntent| Back
     Back -->|LLM calls and managed jobs| Nebius
     Nebius -->|explanations, metrics, artifacts| Back
+    Nebius -->|Job and Endpoint evidence| ObjectStore
+    ObjectStore -->|sync to backend-local evidence| Back
     Back --> Store
 ```
 

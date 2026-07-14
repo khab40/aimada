@@ -1,6 +1,6 @@
 # Building AIMADA: An Adversarial Market-Abuse Evaluation Arena with Nebius Serverless AI
 
-![AIMADA dashboard concept showing the synthetic market-abuse evaluation arena]
+![AIMADA dashboard concept showing the synthetic market-abuse evaluation arena](../assets/article/aimada-diagrams/08-dashboard-concept.jpg)
 *AIMADA is a synthetic arena for evaluating market-abuse detectors and AI-assisted investigations on Nebius Serverless AI.*
 
 I built AIMADA for the #NebiusServerlessChallenge: a synthetic market-abuse simulation and evaluation platform built and validated with Nebius Serverless AI Jobs and Serverless AI Endpoints.
@@ -44,6 +44,9 @@ At each simulation tick, the backend sends a read-only order-book snapshot to th
 
 The workspace runs several kinds of trading agents. Top-of-book market makers refresh visible liquidity on both sides. Deterministic noise traders make small cadence-based changes at selected levels. Periodic liquidity takers alternate bounded synthetic buys and sells. Optional LangGraph agents can choose which side to quote from observed depth imbalance. Optional CPU-heavy agents exercise a more computationally expensive decision path for workload testing.
 
+![Red and blue synthetic agents interacting through the authoritative AIMADA backend](../assets/article/aimada-diagrams/02-red-vs-blue-agents.jpg)
+*Synthetic market makers, liquidity takers, and abuse-like scenario agents trade only inside AIMADA's bounded simulated order book.*
+
 This separation lets the frontend display agent activity while the backend preserves ordering, timeouts, validation, and reproducibility.
 
 None of these agents connects to a broker, exchange, or real market. They trade only inside AIMADA’s synthetic order book and cannot emit real orders or trading signals.
@@ -64,6 +67,9 @@ This split matters because it keeps the workflow auditable. AI is used for expla
 
 ![AI Investigation Team workflow translating detector evidence into a structured review narrative](../assets/article/aimada-diagrams/04-ai-investigation-workflow.jpg)
 *The AI Investigation Team translates deterministic detector evidence into a structured, reviewable narrative without replacing the detector.*
+
+![Structured JSON contract for surveillance-style LLM output](../assets/article/aimada-diagrams/07-structured-json-output.jpg)
+*Endpoint responses are parsed as structured JSON so the UI can separate classification, confidence, evidence, counter-evidence, and recommended actions.*
 
 ## The batch path
 
