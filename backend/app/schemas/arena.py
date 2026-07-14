@@ -87,6 +87,16 @@ class MarketFeatures(BaseModel):
     order_lifetime_ms: float
     wall_size_ratio: float
     depth_change_pct: float
+    distance_from_touch_bps: float = 0.0
+    cancel_probability: float = 0.0
+    execution_ratio: float = 0.0
+    replenishment_rate: float = 0.0
+    side_switching_rate: float = 0.0
+    participant_order_linkage: float = 0.0
+    linked_participant_ids: str = ""
+    linked_order_ids: str = ""
+    linked_event_ids: str = ""
+    large_level_count: float = 0.0
 
 
 class DetectorScore(BaseModel):
@@ -106,6 +116,7 @@ class AgentEvent(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     type: str
+    event_id: str | None = None
     timestamp: float | None = None
     order_id: str | None = None
     aggressor_order_id: str | None = None
@@ -173,6 +184,9 @@ class ScenarioLabel(BaseModel):
     actual_end_tick: int | None = None
     agent_ids: list[str]
     event_ids: list[str] = Field(default_factory=list)
+    order_ids: list[str] = Field(default_factory=list)
+    manipulation_windows: list[dict[str, int | None]] = Field(default_factory=list)
+    phase_windows: dict[str, dict[str, int | None]] = Field(default_factory=dict)
     parameters: dict[str, Any] = Field(default_factory=dict)
 
 

@@ -212,9 +212,9 @@ export type ExperimentSummary = {
   total_attacks: number;
   total_alerts: number;
   scenarios: string[];
-  precision_by_scenario: Record<string, number>;
-  recall_by_scenario: Record<string, number>;
-  f1_by_scenario: Record<string, number>;
+  precision_by_scenario: Record<string, number | null>;
+  recall_by_scenario: Record<string, number | null>;
+  f1_by_scenario: Record<string, number | null>;
   avg_detection_latency_ms?: number | null;
   investigation_count: number;
   failed_runs: number;
@@ -225,9 +225,11 @@ export type ExperimentLeaderboardRow = {
   scenario: string;
   detector: string;
   model: string;
-  precision: number;
-  recall: number;
-  f1: number;
+  precision: number | null;
+  recall: number | null;
+  f1: number | null;
+  specificity?: number | null;
+  false_positive_rate?: number | null;
   avg_detection_latency_ms?: number | null;
   alert_count: number;
 };
@@ -603,12 +605,22 @@ export type DetectorTournamentStartRequest = {
 export type DetectorTournamentLeaderboardRow = {
   detector: string;
   scenario: string;
-  precision: number;
-  recall: number;
-  f1: number;
+  precision: number | null;
+  recall: number | null;
+  f1: number | null;
+  specificity?: number | null;
+  false_positive_rate?: number | null;
   false_positives: number;
   false_negatives: number;
   avg_detection_latency_ms?: number | null;
+  runs?: number;
+  temporal_overlap?: number | null;
+  event_precision?: number | null;
+  event_recall?: number | null;
+  participant_precision?: number | null;
+  participant_recall?: number | null;
+  order_precision?: number | null;
+  order_recall?: number | null;
 };
 
 export type DetectorTournamentResponse = {

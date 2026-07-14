@@ -10,9 +10,11 @@ class LeaderboardRow(BaseModel):
     scenario: str
     detector: str = "built-in detector suite"
     model: str = "none (deterministic)"
-    precision: float
-    recall: float
-    f1: float
+    precision: float | None
+    recall: float | None
+    f1: float | None
+    specificity: float | None = None
+    false_positive_rate: float | None = None
     avg_detection_latency_ms: float | None = None
     alert_count: int
 
@@ -22,9 +24,9 @@ class ExperimentSummary(BaseModel):
     total_attacks: int
     total_alerts: int
     scenarios: list[str]
-    precision_by_scenario: dict[str, float]
-    recall_by_scenario: dict[str, float]
-    f1_by_scenario: dict[str, float]
+    precision_by_scenario: dict[str, float | None]
+    recall_by_scenario: dict[str, float | None]
+    f1_by_scenario: dict[str, float | None]
     avg_detection_latency_ms: float | None = None
     investigation_count: int
     failed_runs: int
@@ -112,9 +114,11 @@ def _leaderboard_row(row: dict[str, str]) -> LeaderboardRow:
         scenario=str(row.get("scenario") or "unknown"),
         detector=str(row.get("detector") or "built-in detector suite"),
         model=str(row.get("model") or "none (deterministic)"),
-        precision=_float(row.get("precision")),
-        recall=_float(row.get("recall")),
-        f1=_float(row.get("f1")),
+        precision=_optional_float(row.get("precision")),
+        recall=_optional_float(row.get("recall")),
+        f1=_optional_float(row.get("f1")),
+        specificity=_optional_float(row.get("specificity")),
+        false_positive_rate=_optional_float(row.get("false_positive_rate")),
         avg_detection_latency_ms=_optional_float(row.get("avg_detection_latency_ms")),
         alert_count=int(_float(row.get("alerts"))),
     )
@@ -163,8 +167,8 @@ def _markdown_report(summary: ExperimentSummary, leaderboard: list[LeaderboardRo
     for row in leaderboard:
         latency = row.avg_detection_latency_ms if row.avg_detection_latency_ms is not None else "n/a"
         lines.append(
-            f"| {row.scenario} | {row.detector} | {row.model} | {row.precision} | {row.recall} | "
-            f"{row.f1} | {latency} | {row.alert_count} |"
+            f"| {row.scenario} | {row.detector} | {row.model} | {_metric(row.precision)} | "
+            f"{_metric(row.recall)} | {_metric(row.f1)} | {latency} | {row.alert_count} |"
         )
     lines.append("")
     return "\n".join(lines)
@@ -194,3 +198,7 @@ def _average(values: list[float]) -> float | None:
     if not values:
         return None
     return round(sum(values) / len(values), 4)
+
+
+def _metric(value: float | None) -> float | str:
+    return value if value is not None else "n/a"

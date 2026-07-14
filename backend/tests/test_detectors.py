@@ -95,6 +95,7 @@ def test_layering_like_features_trigger_layering_alert() -> None:
             order_lifetime_ms=8_000.0,
             cancel_to_trade_ratio=1.0,
             message_rate_per_sec=6.0,
+            large_level_count=3,
         )
     )
 

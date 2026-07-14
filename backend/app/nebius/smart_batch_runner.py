@@ -78,8 +78,11 @@ def _batch_script(repo_root: Path) -> Path:
 
 
 def _batch_python_command(repo_root: Path) -> list[str]:
-    uv = shutil.which("uv")
     backend_project = repo_root / "backend"
+    venv_python = backend_project / ".venv" / "bin" / "python"
+    if venv_python.is_file():
+        return [str(venv_python)]
+    uv = shutil.which("uv")
     if uv and (backend_project / "pyproject.toml").exists():
         return [uv, "run", "--project", str(backend_project), "python"]
     return [sys.executable]

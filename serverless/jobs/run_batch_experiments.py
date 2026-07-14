@@ -28,6 +28,14 @@ def _add_backend_to_path() -> None:
 _add_backend_to_path()
 
 from app.arena.engine import SimulationEngine  # noqa: E402
+from app.evaluation.ground_truth import evaluate_detection, evidence_attribution  # noqa: E402
+from app.evaluation.run_planning import (  # noqa: E402
+    DEFAULT_DIFFICULTY_MIX,
+    engine_profile,
+    exact_balanced_plan,
+    exact_weighted_plan,
+    parse_difficulty_mix,
+)
 
 
 SCENARIOS = ["normal_market", "spoofing", "layering", "quote_stuffing", "pump_and_cancel"]
@@ -44,6 +52,8 @@ SCENARIO_TO_ENGINE = {
 class BatchResult:
     run_id: str
     scenario: str
+    difficulty: str
+    seed: int
     events: list[dict[str, Any]]
     trades: list[dict[str, Any]]
     labels: list[dict[str, Any]]
@@ -57,6 +67,8 @@ def main() -> None:
     parser.add_argument("--runs", type=int, default=1000)
     parser.add_argument("--batch-size", type=int, default=100)
     parser.add_argument("--scenarios", default=",".join(SCENARIOS))
+    parser.add_argument("--random-seed", type=int, default=42)
+    parser.add_argument("--difficulty-mix", default=json.dumps(DEFAULT_DIFFICULTY_MIX))
     parser.add_argument("--output", type=Path, default=Path("outputs/serverless-batch"))
     parser.add_argument("--s3-output-uri", default="")
     parser.add_argument("--s3-endpoint-url", default="")
@@ -65,13 +77,24 @@ def main() -> None:
     output = args.output
     output.mkdir(parents=True, exist_ok=True)
     scenarios = [item.strip() for item in args.scenarios.split(",") if item.strip()]
+    if not scenarios:
+        parser.error("at least one scenario is required")
     runs = max(1, args.runs)
     batch_size = max(1, min(args.batch_size, 500))
+    difficulty_mix = parse_difficulty_mix(args.difficulty_mix)
+    scenario_plan = exact_balanced_plan(runs, scenarios, seed=args.random_seed)
+    difficulty_plan = exact_weighted_plan(runs, difficulty_mix, seed=args.random_seed + 1)
 
     results: list[BatchResult] = []
     with ThreadPoolExecutor(max_workers=batch_size) as executor:
         futures = [
-            executor.submit(_run_one, index, scenarios[index % len(scenarios)])
+            executor.submit(
+                _run_one,
+                index,
+                scenario_plan[index],
+                difficulty_plan[index],
+                args.random_seed,
+            )
             for index in range(runs)
         ]
         for future in as_completed(futures):
@@ -91,6 +114,10 @@ def main() -> None:
         "runs": runs,
         "batch_size": batch_size,
         "scenarios": scenarios,
+        "scenario_counts": _counts(scenario_plan),
+        "random_seed": args.random_seed,
+        "difficulty_mix": difficulty_mix,
+        "difficulty_counts": _counts(difficulty_plan),
         "artifacts": {
             "order_book_event_logs": str(output / "order_book_events.jsonl"),
             "trades": str(output / "trades.jsonl"),
@@ -106,9 +133,15 @@ def main() -> None:
     print(json.dumps(manifest, indent=2))
 
 
-def _run_one(index: int, scenario: str) -> BatchResult:
+def _run_one(
+    index: int,
+    scenario: str,
+    difficulty: str = "medium",
+    random_seed: int = 42,
+) -> BatchResult:
     run_id = f"batch-{index:06d}"
-    engine = SimulationEngine(seed=10_000 + index)
+    run_seed = random_seed + index
+    engine = SimulationEngine(seed=run_seed, **engine_profile(difficulty))
     engine_scenario = SCENARIO_TO_ENGINE.get(scenario)
     if engine_scenario is not None:
         engine.launch_scenario(engine_scenario)
@@ -120,6 +153,11 @@ def _run_one(index: int, scenario: str) -> BatchResult:
     max_confidence = 0.0
     detected_pattern = "normal_market"
     first_alert_tick: int | None = None
+    alert_ticks: list[int] = []
+    predicted_participants: set[str] = set()
+    predicted_orders: set[str] = set()
+    predicted_events: set[str] = set()
+    final_label: dict[str, Any] | None = None
 
     for _ in range(16):
         state = engine.step()
@@ -132,13 +170,24 @@ def _run_one(index: int, scenario: str) -> BatchResult:
                 trades.append(row)
         active = state.get("active_scenario")
         if active and active.get("label"):
-            labels[str(active["label"]["label_id"])] = {"run_id": run_id, **active["label"]}
+            final_label = {
+                "run_id": run_id,
+                "difficulty": difficulty,
+                "has_attack": True,
+                **active["label"],
+            }
+            labels[str(active["label"]["label_id"])] = final_label
         for score in state["detectors"]["scores"]:
             confidence = float(score["confidence"])
             if confidence > max_confidence:
                 max_confidence = confidence
                 detected_pattern = str(score["name"])
             if confidence >= 0.75:
+                alert_ticks.append(int(state["tick"]))
+                participants, orders, linked_events = evidence_attribution(score.get("evidence") or [])
+                predicted_participants.update(participants)
+                predicted_orders.update(orders)
+                predicted_events.update(linked_events)
                 alert_id = f"{run_id}-{score['name']}"
                 alerts[alert_id] = {
                     "alert_id": alert_id,
@@ -148,25 +197,49 @@ def _run_one(index: int, scenario: str) -> BatchResult:
                     "detector": score["name"],
                     "confidence": confidence,
                     "evidence": score.get("evidence") or [],
+                    "participant_ids": sorted(participants),
+                    "order_ids": sorted(orders),
+                    "event_ids": sorted(linked_events),
                 }
                 first_alert_tick = first_alert_tick or int(state["tick"])
 
+    evaluation = evaluate_detection(
+        alert_ticks=alert_ticks,
+        label=final_label if scenario != "normal_market" else None,
+        predicted_participant_ids=predicted_participants,
+        predicted_order_ids=predicted_orders,
+        predicted_event_ids=predicted_events,
+    )
     metrics = {
         "run_id": run_id,
         "scenario": scenario,
+        "difficulty": difficulty,
+        "seed": run_seed,
         "detected_pattern": detected_pattern,
         "max_confidence": round(max_confidence, 4),
         "alert_count": len(alerts),
         "first_alert_tick": first_alert_tick,
         "detected": bool(alerts),
+        **evaluation,
     }
     return BatchResult(
         run_id=run_id,
         scenario=scenario,
+        difficulty=difficulty,
+        seed=run_seed,
         events=events,
         trades=trades,
         labels=list(labels.values())
-        or [{"run_id": run_id, "scenario": scenario, "scenario_family": scenario, "has_attack": scenario != "normal_market"}],
+        or [
+            {
+                "run_id": run_id,
+                "scenario": scenario,
+                "scenario_family": scenario,
+                "difficulty": difficulty,
+                "seed": run_seed,
+                "has_attack": scenario != "normal_market",
+            }
+        ],
         alerts=list(alerts.values()),
         metrics=metrics,
         report=f"{run_id}: {scenario} -> {detected_pattern} at confidence {max_confidence:.2f}",
@@ -182,9 +255,17 @@ def _aggregate_metrics(results: list[BatchResult]) -> list[dict[str, Any]]:
     for scenario, scenario_results in sorted(by_scenario.items()):
         attack = scenario != "normal_market"
         detections = sum(1 for result in scenario_results if result.metrics["detected"])
-        precision = 1.0 if attack and detections else 0.0 if detections else 1.0
-        recall = detections / len(scenario_results) if attack else 0.0
-        f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
+        false_positives = detections if not attack else 0
+        true_negatives = len(scenario_results) - detections if not attack else 0
+        precision = 1.0 if attack and detections else None
+        recall = detections / len(scenario_results) if attack else None
+        f1 = (
+            2 * precision * recall / (precision + recall)
+            if precision is not None and recall is not None and precision + recall
+            else 0.0 if recall == 0 else None
+        )
+        specificity = true_negatives / (true_negatives + false_positives) if not attack else None
+        false_positive_rate = false_positives / len(scenario_results) if not attack else None
         alert_ticks = [
             result.metrics["first_alert_tick"]
             for result in scenario_results
@@ -197,15 +278,68 @@ def _aggregate_metrics(results: list[BatchResult]) -> list[dict[str, Any]]:
                 "model": "none (deterministic)",
                 "runs": len(scenario_results),
                 "alerts": detections,
-                "precision": round(precision, 4),
-                "recall": round(recall, 4),
-                "f1": round(f1, 4),
+                "precision": _rounded(precision),
+                "recall": _rounded(recall),
+                "f1": _rounded(f1),
+                "specificity": _rounded(specificity),
+                "false_positive_rate": _rounded(false_positive_rate),
                 "avg_detection_latency_ms": round((sum(alert_ticks) / len(alert_ticks)) * 500, 2)
                 if alert_ticks
                 else "",
+                "temporal_overlap": _average_metric(scenario_results, "temporal_overlap"),
+                "event_precision": _average_metric(scenario_results, "event_precision"),
+                "event_recall": _average_metric(scenario_results, "event_recall"),
+                "participant_precision": _average_metric(scenario_results, "participant_precision"),
+                "participant_recall": _average_metric(scenario_results, "participant_recall"),
+                "order_precision": _average_metric(scenario_results, "order_precision"),
+                "order_recall": _average_metric(scenario_results, "order_recall"),
+                "early_detections": sum(row.metrics["detection_timing"] == "early" for row in scenario_results),
+                "on_time_detections": sum(row.metrics["detection_timing"] == "on_time" for row in scenario_results),
+                "late_detections": sum(row.metrics["detection_timing"] == "late" for row in scenario_results),
+                "missed_detections": sum(row.metrics["detection_timing"] == "missed" for row in scenario_results),
+                "phase_detection": json.dumps(_phase_rates(scenario_results), sort_keys=True),
             }
         )
     return rows
+
+
+def _counts(values: list[str]) -> dict[str, int]:
+    return {value: values.count(value) for value in sorted(set(values))}
+
+
+def _rounded(value: float | None) -> float | None:
+    return round(value, 4) if value is not None else None
+
+
+def _display(value: object) -> object:
+    return value if value is not None and value != "" else "n/a"
+
+
+def _average_metric(results: list[BatchResult], name: str) -> float | None:
+    values = [
+        value
+        for result in results
+        if (value := result.metrics.get(name)) is not None
+    ]
+    return round(sum(values) / len(values), 4) if values else None
+
+
+def _phase_rates(results: list[BatchResult]) -> dict[str, float]:
+    phases = sorted(
+        {
+            phase
+            for result in results
+            for phase in result.metrics.get("phase_detection", {})
+        }
+    )
+    return {
+        phase: round(
+            sum(bool(result.metrics.get("phase_detection", {}).get(phase)) for result in results)
+            / len(results),
+            4,
+        )
+        for phase in phases
+    }
 
 
 def _write_jsonl(path: Path, rows: Any) -> None:
@@ -231,7 +365,21 @@ def _write_metrics(path: Path, rows: list[dict[str, Any]]) -> None:
                 "precision",
                 "recall",
                 "f1",
+                "specificity",
+                "false_positive_rate",
                 "avg_detection_latency_ms",
+                "temporal_overlap",
+                "event_precision",
+                "event_recall",
+                "participant_precision",
+                "participant_recall",
+                "order_precision",
+                "order_recall",
+                "early_detections",
+                "on_time_detections",
+                "late_detections",
+                "missed_detections",
+                "phase_detection",
             ],
         )
         writer.writeheader()
@@ -266,8 +414,9 @@ def _build_report(results: list[BatchResult], metrics: list[dict[str, Any]], bat
     ]
     for row in metrics:
         lines.append(
-            f"| {row['scenario']} | {row['runs']} | {row['alerts']} | {row['precision']} | "
-            f"{row['recall']} | {row['f1']} | {row['avg_detection_latency_ms'] or 'n/a'} |"
+            f"| {row['scenario']} | {row['runs']} | {row['alerts']} | {_display(row['precision'])} | "
+            f"{_display(row['recall'])} | {_display(row['f1'])} | "
+            f"{_display(row['avg_detection_latency_ms'])} |"
         )
     lines.extend(["", "## Sample Reports", ""])
     for result in results[:12]:

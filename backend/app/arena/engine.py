@@ -64,6 +64,7 @@ class SimulationEngine:
         self._incident_counter = 0
         self._incident_keys: set[tuple[str, str]] = set()
         self._persisted_label_payloads: dict[str, dict[str, object]] = {}
+        self._order_first_seen_ticks: dict[str, int] = {}
         self.running = False
         self._task: asyncio.Task[None] | None = None
         self._lock = asyncio.Lock()
@@ -109,6 +110,7 @@ class SimulationEngine:
             self._incident_counter = 0
             self._incident_keys.clear()
             self._persisted_label_payloads.clear()
+            self._order_first_seen_ticks.clear()
             self.state = self._build_state(running=False)
             return self.state
 
@@ -355,6 +357,7 @@ class SimulationEngine:
             tick_interval_seconds=self.tick_interval_seconds,
             active_scenario=active_scenario,
             current_tick=self.clock.tick,
+            order_first_seen_ticks=self._order_first_seen_ticks,
         )
         detector_scores = self.detectors.detect(features)
         evidence = flatten_evidence(detector_scores)

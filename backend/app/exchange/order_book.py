@@ -105,9 +105,14 @@ class OrderBook:
         *,
         agent_id: str,
         owner: str = "normal",
+        order_id: str | None = None,
+        timestamp: int = 0,
+        scenario_id: str | None = None,
+        scenario_name: str | None = None,
+        scenario_family: str | None = None,
     ) -> None:
         book_side = self._normalize_side(side)
-        order_id = self._agent_level_order_id(book_side, price, agent_id)
+        order_id = order_id or self._agent_level_order_id(book_side, price, agent_id)
         if size <= 0:
             self.cancel_order(order_id)
             return
@@ -127,6 +132,10 @@ class OrderBook:
             side="buy" if book_side == "bid" else "sell",
             quantity=size,
             price=price,
+            timestamp=timestamp,
+            scenario_id=scenario_id,
+            scenario_name=scenario_name,
+            scenario_family=scenario_family,
         )
         levels[price] = [*kept_orders, order]
         self.orders[order.order_id] = order

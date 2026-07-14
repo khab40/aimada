@@ -16,8 +16,13 @@ python serverless/jobs/detector_tournament.py \
   --runs 100 \
   --scenarios spoofing,layering,quote_stuffing,liquidity_evaporation \
   --detectors spoofing_like,layering_like,quote_stuffing,liquidity_shock \
+  --random-seed 42 \
+  --difficulty-mix '{"easy":0.2,"medium":0.5,"hard":0.2,"adversarial":0.1}' \
   --output outputs/benchmark
 ```
+
+`--runs` is the exact total scenario count, distributed reproducibly across
+scenario families and difficulty levels.
 
 Outputs:
 
@@ -34,6 +39,8 @@ Metrics:
 - recall
 - F1
 - average detection latency in milliseconds
+- specificity and false-positive rate for normal-market negative controls
+- temporal overlap, event attribution, participant/order attribution, and phase detection
 
 ## Synthetic Dataset Factory
 
@@ -94,6 +101,8 @@ python serverless/jobs/run_batch_experiments.py \
   --runs 1000 \
   --batch-size 100 \
   --scenarios normal_market,spoofing,layering,quote_stuffing,pump_and_cancel \
+  --random-seed 42 \
+  --difficulty-mix '{"easy":0.2,"medium":0.5,"hard":0.2,"adversarial":0.1}' \
   --output outputs/serverless-batch
 ```
 

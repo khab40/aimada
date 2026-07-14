@@ -45,13 +45,17 @@ class ScenarioBase:
         StageRule(AttackStage.DONE, 9, 0.95),
     ]
 
-    def __init__(self, scenario_id: str, start_tick: int) -> None:
+    def __init__(self, scenario_id: str, start_tick: int, seed: int = 0) -> None:
         self.scenario_id = scenario_id
         self.start_tick = start_tick
+        self.seed = seed
         self.current_stage = AttackStage.ARMED
         self.stage_ticks: dict[AttackStage, int] = {AttackStage.ARMED: start_tick}
         self.stage_timestamps: dict[AttackStage, float] = {AttackStage.ARMED: self._now_ms()}
         self._applied_stages: set[AttackStage] = set()
+        self._event_counter = 0
+        self._event_ids: set[str] = set()
+        self._order_ids: set[str] = set()
 
     @property
     def done(self) -> bool:
@@ -66,6 +70,11 @@ class ScenarioBase:
 
         events = self._apply_stage_once(book, tick)
         events.extend(self.on_tick(book, tick))
+        for event in events:
+            if event.event_id:
+                self._event_ids.add(event.event_id)
+            if event.order_id:
+                self._order_ids.add(event.order_id)
         return events
 
     def label_record(self, *, run_id: str, seed: int) -> ScenarioLabel:
@@ -81,6 +90,15 @@ class ScenarioBase:
             expected_end_tick=self.start_tick + final_rule.at_tick,
             actual_end_tick=self.stage_ticks.get(AttackStage.DONE),
             agent_ids=[self.agent_id],
+            event_ids=sorted(self._event_ids),
+            order_ids=sorted(self._order_ids),
+            manipulation_windows=[
+                {
+                    "start_tick": self.start_tick + self._rule(AttackStage.WALL_PLACED).at_tick,
+                    "end_tick": self.start_tick + self._rule(AttackStage.WALL_CANCELLED).at_tick,
+                }
+            ],
+            phase_windows=self._phase_windows(),
             parameters={"scenario_name": self._label_scenario_name()},
         )
 
@@ -136,8 +154,10 @@ class ScenarioBase:
         return snapshots
 
     def _event(self, tick: int, message: str, *, stage: AttackStage | None = None, **extra: object) -> AgentEvent:
+        self._event_counter += 1
         return AgentEvent(
             type="red_team",
+            event_id=f"{self.scenario_id}-event-{self._event_counter:04d}",
             timestamp=self._now_ms(),
             agent_id=self.agent_id,
             scenario_id=self.scenario_id,
@@ -148,6 +168,19 @@ class ScenarioBase:
             message=message,
             **extra,
         )
+
+    def _rule(self, stage: AttackStage) -> StageRule:
+        return next(rule for rule in self.stage_rules if rule.stage == stage)
+
+    def _phase_windows(self) -> dict[str, dict[str, int | None]]:
+        windows: dict[str, dict[str, int | None]] = {}
+        for index, rule in enumerate(self.stage_rules):
+            next_rule = self.stage_rules[index + 1] if index + 1 < len(self.stage_rules) else None
+            windows[rule.stage.value] = {
+                "start_tick": self.stage_ticks.get(rule.stage, self.start_tick + rule.at_tick),
+                "end_tick": self.start_tick + next_rule.at_tick - 1 if next_rule else self.stage_ticks.get(rule.stage),
+            }
+        return windows
 
     def _label_scenario_name(self) -> str:
         names = {

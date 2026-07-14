@@ -978,7 +978,7 @@ function ServerlessSmokeDemoPanel({
                     <tr key={`${row.detector}-${row.scenario}`}>
                       <td>{row.detector}</td>
                       <td>{row.scenario}</td>
-                      <td>{row.f1.toFixed(2)}</td>
+                      <td>{formatScore(row.f1)}</td>
                       <td>{row.false_positives}</td>
                       <td>{row.false_negatives}</td>
                     </tr>
@@ -1454,11 +1454,11 @@ function DetectorTournamentPanel({
                 leaderboard={tournament.leaderboard.slice(0, 8).map((row) => ({
                   alert_count: row.false_positives + row.false_negatives,
                   avg_detection_latency_ms: row.avg_detection_latency_ms,
-                  f1: row.f1,
+                  f1: row.f1 ?? Number.NaN,
                   detector: row.detector,
                   model: "none (deterministic)",
-                  precision: row.precision,
-                  recall: row.recall,
+                  precision: row.precision ?? Number.NaN,
+                  recall: row.recall ?? Number.NaN,
                   scenario: row.scenario
                 }))}
               />
@@ -1966,8 +1966,8 @@ function metricDisplay(value: unknown): string {
   return "n/a";
 }
 
-function formatScore(value: number) {
-  return Number.isFinite(value) ? value.toFixed(3) : "n/a";
+function formatScore(value: number | null | undefined) {
+  return typeof value === "number" && Number.isFinite(value) ? value.toFixed(3) : "n/a";
 }
 
 function latestExperiment(experiments: ManagedExperiment[]) {

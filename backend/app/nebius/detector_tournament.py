@@ -40,12 +40,22 @@ class DetectorTournamentStartRequest(BaseModel):
 class DetectorTournamentLeaderboardRow(BaseModel):
     detector: str
     scenario: str
-    precision: float = Field(ge=0.0, le=1.0)
-    recall: float = Field(ge=0.0, le=1.0)
-    f1: float = Field(ge=0.0, le=1.0)
+    precision: float | None = Field(default=None, ge=0.0, le=1.0)
+    recall: float | None = Field(default=None, ge=0.0, le=1.0)
+    f1: float | None = Field(default=None, ge=0.0, le=1.0)
+    specificity: float | None = Field(default=None, ge=0.0, le=1.0)
+    false_positive_rate: float | None = Field(default=None, ge=0.0, le=1.0)
     false_positives: int = Field(ge=0)
     false_negatives: int = Field(ge=0)
     avg_detection_latency_ms: float | None = None
+    runs: int = Field(default=0, ge=0)
+    temporal_overlap: float | None = Field(default=None, ge=0.0, le=1.0)
+    event_precision: float | None = Field(default=None, ge=0.0, le=1.0)
+    event_recall: float | None = Field(default=None, ge=0.0, le=1.0)
+    participant_precision: float | None = Field(default=None, ge=0.0, le=1.0)
+    participant_recall: float | None = Field(default=None, ge=0.0, le=1.0)
+    order_precision: float | None = Field(default=None, ge=0.0, le=1.0)
+    order_recall: float | None = Field(default=None, ge=0.0, le=1.0)
 
 
 class DetectorTournamentResponse(BaseModel):
@@ -256,8 +266,7 @@ def refresh_tournament(tournament_id: str, *, store: LocalStore) -> DetectorTour
                     **tournament.metrics,
                     **_metrics_summary(
                         leaderboard,
-                        scenarios=_scenario_names_from_metrics(leaderboard),
-                        runs_per_scenario=1,
+                        total_scenarios=int(tournament.metrics.get("requested_scenarios") or 0),
                     ),
                     "artifact_count": collected.copied_count,
                 },
@@ -314,7 +323,6 @@ def _run_local_tournament(
     detectors = _detectors(request.detector_set)
     scenario_limit = get_settings().nebius_local_tournament_scenario_limit
     effective_scenarios = min(request.number_of_scenarios, scenario_limit)
-    runs_per_scenario = max(1, (effective_scenarios + max(len(scenarios), 1) - 1) // max(len(scenarios), 1))
     if request.number_of_scenarios > effective_scenarios:
         cap_reason = (
             f"local tournament capped at {effective_scenarios} scenarios; use Nebius Serverless Jobs "
@@ -325,11 +333,15 @@ def _run_local_tournament(
         sys.executable,
         str(repo_root / "serverless" / "jobs" / "detector_tournament.py"),
         "--runs",
-        str(runs_per_scenario),
+        str(effective_scenarios),
         "--scenarios",
         ",".join(scenarios),
         "--detectors",
         ",".join(detectors),
+        "--random-seed",
+        str(request.random_seed),
+        "--difficulty-mix",
+        json.dumps(request.difficulty_mix, separators=(",", ":")),
         "--output",
         str(output_dir),
     ]
@@ -371,10 +383,10 @@ def _run_local_tournament(
         completed_at=_now(),
         detectors=detectors,
         leaderboard=leaderboard,
-        metrics=_metrics_summary(leaderboard, scenarios=scenarios, runs_per_scenario=runs_per_scenario),
+        metrics=_metrics_summary(leaderboard, total_scenarios=effective_scenarios),
         artifacts=artifacts,
         summary=(
-            f"Detector tournament completed locally over {runs_per_scenario * len(scenarios)} "
+            f"Detector tournament completed locally over exactly {effective_scenarios} "
             "synthetic scenario replays using the Nebius Serverless Job runner contract."
         ),
         fallback_reason=fallback_reason,
@@ -466,6 +478,10 @@ def _submit_nebius_job(
         str(min(request.number_of_scenarios, 100)),
         "--scenarios",
         ",".join(_scenario_names(request.manipulation_types)),
+        "--random-seed",
+        str(request.random_seed),
+        "--difficulty-mix",
+        json.dumps(request.difficulty_mix, separators=(",", ":")),
         "--output",
         f"/job/outputs/tournaments/{tournament_id}/local-batch",
     ]
@@ -701,19 +717,17 @@ def _mock_tournament_response(
     detectors = _detectors(request.detector_set)
     rows: list[DetectorTournamentLeaderboardRow] = []
     for scenario in scenarios:
-        expected = _expected_detector(scenario)
         for detector in detectors:
-            matched = detector == expected
             rows.append(
                 DetectorTournamentLeaderboardRow(
                     detector=detector,
                     scenario=scenario,
-                    precision=0.88 if matched else 0.18,
-                    recall=0.82 if matched else 0.0,
-                    f1=0.8494 if matched else 0.0,
-                    false_positives=0 if matched else 2,
-                    false_negatives=1 if matched else 0,
-                    avg_detection_latency_ms=1200.0 if matched else None,
+                    precision=0.82,
+                    recall=0.82,
+                    f1=0.82,
+                    false_positives=0,
+                    false_negatives=1,
+                    avg_detection_latency_ms=1200.0,
                 )
             )
     return DetectorTournamentResponse(
@@ -724,7 +738,7 @@ def _mock_tournament_response(
         completed_at=completed_at,
         detectors=detectors,
         leaderboard=rows,
-        metrics=_metrics_summary(rows, scenarios=scenarios, runs_per_scenario=1),
+        metrics=_metrics_summary(rows, total_scenarios=request.number_of_scenarios),
         artifacts=artifacts,
         summary="Deterministic mock detector tournament completed after local runner fallback.",
         fallback_reason=fallback_reason,
@@ -759,12 +773,22 @@ def _leaderboard_from_metrics(path: Path) -> list[DetectorTournamentLeaderboardR
                 DetectorTournamentLeaderboardRow(
                     detector=str(row.get("detector") or "unknown"),
                     scenario=str(row.get("scenario") or "unknown"),
-                    precision=_float(row.get("precision")),
-                    recall=_float(row.get("recall")),
-                    f1=_float(row.get("f1")),
+                    precision=_nullable_float(row.get("precision")),
+                    recall=_nullable_float(row.get("recall")),
+                    f1=_nullable_float(row.get("f1")),
+                    specificity=_nullable_float(row.get("specificity")),
+                    false_positive_rate=_nullable_float(row.get("false_positive_rate")),
                     false_positives=int(_float(row.get("false_positive"))),
                     false_negatives=int(_float(row.get("false_negative"))),
                     avg_detection_latency_ms=_optional_float(row.get("avg_detection_latency_ms")),
+                    runs=int(_float(row.get("runs"))),
+                    temporal_overlap=_nullable_float(row.get("temporal_overlap")),
+                    event_precision=_nullable_float(row.get("event_precision")),
+                    event_recall=_nullable_float(row.get("event_recall")),
+                    participant_precision=_nullable_float(row.get("participant_precision")),
+                    participant_recall=_nullable_float(row.get("participant_recall")),
+                    order_precision=_nullable_float(row.get("order_precision")),
+                    order_recall=_nullable_float(row.get("order_recall")),
                 )
             )
     return rows
@@ -773,15 +797,14 @@ def _leaderboard_from_metrics(path: Path) -> list[DetectorTournamentLeaderboardR
 def _metrics_summary(
     leaderboard: list[DetectorTournamentLeaderboardRow],
     *,
-    scenarios: list[str],
-    runs_per_scenario: int,
+    total_scenarios: int,
 ) -> dict[str, Any]:
-    f1_values = [row.f1 for row in leaderboard]
+    f1_values = [row.f1 for row in leaderboard if row.f1 is not None]
     latencies = [row.avg_detection_latency_ms for row in leaderboard if row.avg_detection_latency_ms is not None]
     return {
-        "total_scenarios": len(scenarios) * runs_per_scenario,
-        "scenario_families": scenarios,
-        "macro_f1": round(sum(f1_values) / len(f1_values), 4) if f1_values else 0.0,
+        "total_scenarios": total_scenarios,
+        "scenario_families": _scenario_names_from_metrics(leaderboard),
+        "macro_f1": round(sum(f1_values) / len(f1_values), 4) if f1_values else None,
         "false_positives": sum(row.false_positives for row in leaderboard),
         "false_negatives": sum(row.false_negatives for row in leaderboard),
         "avg_detection_latency_ms": round(sum(latencies) / len(latencies), 2) if latencies else None,
@@ -813,15 +836,6 @@ def _scenario_names(values: list[ManipulationType]) -> list[str]:
 
 def _detectors(values: list[DetectorName]) -> list[str]:
     return [str(value) for value in values] or ["spoofing_like", "layering_like", "quote_stuffing"]
-
-
-def _expected_detector(scenario: str) -> str:
-    return {
-        "spoofing": "spoofing_like",
-        "layering": "layering_like",
-        "quote_stuffing": "quote_stuffing",
-        "pump_and_cancel": "liquidity_shock",
-    }.get(scenario, "")
 
 
 def _parse_job_id(output: str) -> str | None:
@@ -856,6 +870,12 @@ def _float(value: Any) -> float:
 
 def _optional_float(value: Any) -> float | None:
     if value in {None, ""}:
+        return None
+    return _float(value)
+
+
+def _nullable_float(value: Any) -> float | None:
+    if value is None or str(value).strip().lower() in {"", "none", "null", "n/a"}:
         return None
     return _float(value)
 

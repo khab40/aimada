@@ -23,7 +23,7 @@ class ScenarioController:
         scenario_class = self._scenario_class(scenario_name)
         self._counter += 1
         scenario_id = f"{scenario_class.scenario_family}-{self._counter:04d}"
-        self.active = scenario_class(scenario_id=scenario_id, start_tick=tick + 1)
+        self.active = scenario_class(scenario_id=scenario_id, start_tick=tick + 1, seed=seed)
         return self.active.tracker_state(run_id=run_id, seed=seed)
 
     def advance(self, book: OrderBook, tick: int) -> list[AgentEvent]:
