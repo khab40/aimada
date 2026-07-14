@@ -93,7 +93,7 @@ Implemented:
 
 Before final submission:
 
-- Runtime/cost measurements and Nebius console screenshots linked from the judge-facing submission index.
+- Nebius console screenshots linked from the judge-facing submission index.
 - Final screenshot assets for the README screenshot table beyond the About architecture diagram.
 
 Future work:

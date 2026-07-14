@@ -16,7 +16,7 @@ Images and logs in Evidence.md
 Using transcript that already exists
 
 ## Suggestions from AI
-Remaining publication work: Measured runtime/cost records and final Nebius/UI screenshots only.
+Remaining publication work: final Nebius/UI screenshots only.
 
 # Codex Prompt 2 — Build the Judge-Facing Production Evidence Bundle
 

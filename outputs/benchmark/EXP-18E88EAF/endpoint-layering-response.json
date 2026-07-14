@@ -1,0 +1,298 @@
+{
+  "investigation_id": "INC-LAYER-02",
+  "manipulation_type": "layering_like",
+  "risk_score": 0.75,
+  "confidence": 0.89,
+  "agents": [
+    {
+      "name": "OrderBookExpertAgent",
+      "role": "Order book microstructure reviewer",
+      "finding": "Normal liquidity and low volatility regime with a synthetic layering scenario.",
+      "confidence": 0.89,
+      "evidence": [
+        {
+          "key": "assessment_1",
+          "label": "Order Statistics",
+          "value": "sell_events: 3",
+          "source": "professional_surveillance_assessment"
+        },
+        {
+          "key": "assessment_2",
+          "label": "Event Timeline",
+          "value": "Sequence 2, Time 258",
+          "source": "professional_surveillance_assessment"
+        },
+        {
+          "key": "assessment_3",
+          "label": "Event Timeline",
+          "value": "Sequence 3, Time 274",
+          "source": "professional_surveillance_assessment"
+        },
+        {
+          "key": "assessment_4",
+          "label": "LOB Summary",
+          "value": "during: depth_imbalance: -0.58",
+          "source": "professional_surveillance_assessment"
+        },
+        {
+          "key": "assessment_5",
+          "label": "Derived Market Features",
+          "value": "mid_price_change_bps: -7.2",
+          "source": "professional_surveillance_assessment"
+        }
+      ]
+    },
+    {
+      "name": "TradePatternAgent",
+      "role": "Trade and cancellation pattern reviewer",
+      "finding": "The episode shows characteristics of layering behavior, with systematic placement and cancellation of sell orders across multiple price levels. However, the lack of trade statistics and high cancellation rate introduce uncertainty. Further investigation into the agent's trading history and additional trade data is recommended.",
+      "confidence": 0.89,
+      "evidence": [
+        {
+          "key": "assessment_1",
+          "label": "Order Statistics",
+          "value": "sell_events: 3",
+          "source": "professional_surveillance_assessment"
+        },
+        {
+          "key": "assessment_2",
+          "label": "Event Timeline",
+          "value": "Sequence 2, Time 258",
+          "source": "professional_surveillance_assessment"
+        },
+        {
+          "key": "assessment_3",
+          "label": "Event Timeline",
+          "value": "Sequence 3, Time 274",
+          "source": "professional_surveillance_assessment"
+        },
+        {
+          "key": "assessment_4",
+          "label": "LOB Summary",
+          "value": "during: depth_imbalance: -0.58",
+          "source": "professional_surveillance_assessment"
+        },
+        {
+          "key": "assessment_5",
+          "label": "Derived Market Features",
+          "value": "mid_price_change_bps: -7.2",
+          "source": "professional_surveillance_assessment"
+        }
+      ]
+    },
+    {
+      "name": "StatisticsAgent",
+      "role": "Metric anomaly reviewer",
+      "finding": "None",
+      "confidence": 0.89,
+      "evidence": [
+        {
+          "key": "assessment_1",
+          "label": "Order Statistics",
+          "value": "sell_events: 3",
+          "source": "professional_surveillance_assessment"
+        },
+        {
+          "key": "assessment_2",
+          "label": "Event Timeline",
+          "value": "Sequence 2, Time 258",
+          "source": "professional_surveillance_assessment"
+        },
+        {
+          "key": "assessment_3",
+          "label": "Event Timeline",
+          "value": "Sequence 3, Time 274",
+          "source": "professional_surveillance_assessment"
+        },
+        {
+          "key": "assessment_4",
+          "label": "LOB Summary",
+          "value": "during: depth_imbalance: -0.58",
+          "source": "professional_surveillance_assessment"
+        },
+        {
+          "key": "assessment_5",
+          "label": "Derived Market Features",
+          "value": "mid_price_change_bps: -7.2",
+          "source": "professional_surveillance_assessment"
+        }
+      ]
+    },
+    {
+      "name": "ComplianceAgent",
+      "role": "Synthetic compliance framing reviewer",
+      "finding": "Not applicable for this synthetic episode.",
+      "confidence": 0.89,
+      "evidence": [
+        {
+          "key": "assessment_1",
+          "label": "Order Statistics",
+          "value": "sell_events: 3",
+          "source": "professional_surveillance_assessment"
+        },
+        {
+          "key": "assessment_2",
+          "label": "Event Timeline",
+          "value": "Sequence 2, Time 258",
+          "source": "professional_surveillance_assessment"
+        },
+        {
+          "key": "assessment_3",
+          "label": "Event Timeline",
+          "value": "Sequence 3, Time 274",
+          "source": "professional_surveillance_assessment"
+        },
+        {
+          "key": "assessment_4",
+          "label": "LOB Summary",
+          "value": "during: depth_imbalance: -0.58",
+          "source": "professional_surveillance_assessment"
+        },
+        {
+          "key": "assessment_5",
+          "label": "Derived Market Features",
+          "value": "mid_price_change_bps: -7.2",
+          "source": "professional_surveillance_assessment"
+        }
+      ]
+    },
+    {
+      "name": "LeadInvestigatorAgent",
+      "role": "Consensus owner",
+      "finding": "Classification layering_like; confidence 0.89.",
+      "confidence": 0.89,
+      "evidence": [
+        {
+          "key": "assessment_1",
+          "label": "Order Statistics",
+          "value": "sell_events: 3",
+          "source": "professional_surveillance_assessment"
+        },
+        {
+          "key": "assessment_2",
+          "label": "Event Timeline",
+          "value": "Sequence 2, Time 258",
+          "source": "professional_surveillance_assessment"
+        },
+        {
+          "key": "assessment_3",
+          "label": "Event Timeline",
+          "value": "Sequence 3, Time 274",
+          "source": "professional_surveillance_assessment"
+        },
+        {
+          "key": "assessment_4",
+          "label": "LOB Summary",
+          "value": "during: depth_imbalance: -0.58",
+          "source": "professional_surveillance_assessment"
+        },
+        {
+          "key": "assessment_5",
+          "label": "Derived Market Features",
+          "value": "mid_price_change_bps: -7.2",
+          "source": "professional_surveillance_assessment"
+        }
+      ]
+    }
+  ],
+  "consensus": "The episode shows characteristics of layering behavior, with systematic placement and cancellation of sell orders across multiple price levels. However, the lack of trade statistics and high cancellation rate introduce uncertainty. Further investigation into the agent's trading history and additional trade data is recommended.",
+  "evidence_timeline": [
+    {
+      "sequence": 1,
+      "event": "Agent placed sell orders across four price levels.",
+      "tick": null,
+      "source": "professional_surveillance_assessment",
+      "significance": "episode reconstruction"
+    },
+    {
+      "sequence": 2,
+      "event": "Layered levels were replenished as the touch moved.",
+      "tick": null,
+      "source": "professional_surveillance_assessment",
+      "significance": "episode reconstruction"
+    },
+    {
+      "sequence": 3,
+      "event": "Layered orders were cancelled in sequence.",
+      "tick": null,
+      "source": "professional_surveillance_assessment",
+      "significance": "episode reconstruction"
+    }
+  ],
+  "recommended_action": "Review agent's trading history for similar patterns.",
+  "executive_summary": "The episode shows characteristics of layering behavior, with systematic placement and cancellation of sell orders across multiple price levels. However, the lack of trade statistics and high cancellation rate introduce uncertainty. Further investigation into the agent's trading history and additional trade data is recommended.",
+  "model_mode": "local_vllm",
+  "model": "Qwen/Qwen2.5-14B-Instruct",
+  "latency_ms": 28783.35,
+  "fallback_reason": null,
+  "structured_assessment": {
+    "classification": "layering_like",
+    "confidence": 0.89,
+    "severity": "high",
+    "market_context": "Normal liquidity and low volatility regime with a synthetic layering scenario.",
+    "evidence": [
+      {
+        "observation": "Agent AG-31 placed sell orders across four price levels.",
+        "metric": "Order Statistics",
+        "value": "sell_events: 3",
+        "reasoning": "This indicates the agent is placing multiple sell orders at different price levels."
+      },
+      {
+        "observation": "Layered levels were replenished as the touch moved.",
+        "metric": "Event Timeline",
+        "value": "Sequence 2, Time 258",
+        "reasoning": "This suggests the agent is maintaining their order structure despite market movement."
+      },
+      {
+        "observation": "Layered orders were cancelled in sequence.",
+        "metric": "Event Timeline",
+        "value": "Sequence 3, Time 274",
+        "reasoning": "This implies the agent is systematically removing their orders after some period of time."
+      },
+      {
+        "observation": "Depth imbalance shifted from 0.02 to -0.58 during the episode.",
+        "metric": "LOB Summary",
+        "value": "during: depth_imbalance: -0.58",
+        "reasoning": "A significant negative depth imbalance indicates a large number of sell orders compared to buy orders."
+      },
+      {
+        "observation": "Mid-price change was -7.2 bps.",
+        "metric": "Derived Market Features",
+        "value": "mid_price_change_bps: -7.2",
+        "reasoning": "This small mid-price movement is consistent with layering behavior where the agent aims to influence the market without causing large price movements."
+      }
+    ],
+    "counter_evidence": [
+      {
+        "observation": "No trade statistics available.",
+        "metric": "Trade Statistics",
+        "value": "N/A",
+        "reasoning": "Lack of trade data limits our ability to assess the impact of these orders on actual trades."
+      },
+      {
+        "observation": "Cancellation ratio is high (0.833).",
+        "metric": "Cancellation Metrics",
+        "value": "cancel_ratio: 0.833",
+        "reasoning": "High cancellation rates could indicate normal order management rather than manipulative behavior."
+      }
+    ],
+    "alternative_explanations": [
+      "Inventory rebalancing",
+      "News/volatility response",
+      "Data limitations"
+    ],
+    "episode_timeline": [
+      "Agent placed sell orders across four price levels.",
+      "Layered levels were replenished as the touch moved.",
+      "Layered orders were cancelled in sequence."
+    ],
+    "detector_disagreement": "None",
+    "recommended_actions": [
+      "Review agent's trading history for similar patterns.",
+      "Request additional trade data if available."
+    ],
+    "regulatory_assessment": "Not applicable for this synthetic episode.",
+    "executive_summary": "The episode shows characteristics of layering behavior, with systematic placement and cancellation of sell orders across multiple price levels. However, the lack of trade statistics and high cancellation rate introduce uncertainty. Further investigation into the agent's trading history and additional trade data is recommended."
+  },
+  "disclaimer": "Educational synthetic simulation only. This does not detect real market manipulation, does not provide trading signals, and must not be used for compliance decisions."
+}

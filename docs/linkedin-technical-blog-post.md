@@ -1,11 +1,7 @@
 # Building AIMADA: An Adversarial Market-Abuse Evaluation Arena with Nebius Serverless AI
 
-<!-- IMAGE PLACEHOLDER 1 — Article cover / AIMADA hero
-Suggested repository path: assets/img/ai-mada.jpg
-LinkedIn caption: AIMADA is a synthetic arena for evaluating market-abuse detectors and AI-assisted investigations on Nebius Serverless AI.
-Alt text: AIMADA banner showing the AI Market Abuse Detection Arena identity.
-Recommended placement: Immediately below the article title.
--->
+![AIMADA dashboard concept showing the synthetic market-abuse evaluation arena]
+*AIMADA is a synthetic arena for evaluating market-abuse detectors and AI-assisted investigations on Nebius Serverless AI.*
 
 I built AIMADA for the #NebiusServerlessChallenge: a synthetic market-abuse simulation and evaluation platform built and validated with Nebius Serverless AI Jobs and Serverless AI Endpoints.
 
@@ -23,23 +19,15 @@ The architecture has two main execution paths.
 
 The interactive path uses a React and Vite frontend, a FastAPI control plane, a separate agents workspace, and a Nebius Serverless AI Endpoint. The batch path uses Nebius Serverless AI Jobs for repeatable synthetic workloads, detector evaluation, aggregation, and artifact generation.
 
-<!-- IMAGE PLACEHOLDER 2 — Architecture diagram
-Suggested repository path: assets/screenshots/aimada-architecture.png
-LinkedIn caption: AIMADA separates the React interface, authoritative FastAPI runtime, agents workspace, and Nebius Endpoint and Job execution paths.
-Alt text: Architecture diagram connecting the frontend, backend, agent-runner workspace, Serverless Endpoint, Serverless Jobs, Object Storage, and evidence UI.
-Recommended placement: After the paragraph introducing the two execution paths.
--->
+![Architecture diagram connecting the frontend, backend, agent-runner workspace, Nebius Serverless Endpoint and Jobs, Object Storage, and evidence UI](../assets/article/aimada-diagrams/01-overall-architecture.jpg)
+*AIMADA separates the React interface, authoritative FastAPI runtime, agents workspace, and Nebius Endpoint and Job execution paths.*
 
 AIMADA was validated on real Nebius production infrastructure. More than ten Nebius Serverless AI Job runs completed successfully, with execution visible in production logs. I also deployed a vLLM-backed Nebius Serverless AI Endpoint and exercised routes for scenario generation, incident analysis, investigation reporting, order-book alert analysis, and structured market-event explanation. Those runs produced Job artifacts, detector metrics, reports, logs, and Endpoint responses. This validation proves the execution contracts; it does not turn AIMADA into a real-market surveillance product.
 
 Job lifecycle records and generated artifacts are archived to Nebius Object Storage. Endpoint execution metadata is archived through the same evidence layer without presenting private credentials or sensitive transport details to the browser. The backend can synchronize archived evidence from S3-compatible storage back to backend-local storage, and the UI exposes the synchronized records and downloadable artifacts. This creates a traceable path from production execution, through durable storage, to evidence that a reviewer can inspect.
 
-<!-- IMAGE PLACEHOLDER 6 — Optional S3 evidence synchronization
-Suggested repository path: assets/screenshots/s3-evidence-sync.png
-LinkedIn caption: Production Job and Endpoint evidence is archived to Object Storage, synchronized by the backend, and exposed as reviewable UI records and downloads.
-Alt text: AIMADA execution trace showing S3 evidence synchronization and artifact download links.
-Recommended placement: Immediately after the Object Storage evidence paragraph.
--->
+![Nebius deployment and evidence flow from production execution to synchronized review artifacts](../assets/article/aimada-diagrams/05-nebius-deployment.jpg)
+*Production Job and Endpoint evidence is archived to Object Storage, synchronized by the backend, and exposed as reviewable UI records and downloads.*
 
 ## The interactive path
 
@@ -47,12 +35,8 @@ The frontend renders the live arena: order-book ladders, price and spread charts
 
 The browser sends commands over WebSocket. The FastAPI backend runs the simulation and publishes complete `arena_state` messages. This keeps the browser away from simulation internals, server credentials, and direct Endpoint access.
 
-<!-- IMAGE PLACEHOLDER 3 — Live Arena
-Suggested repository path: assets/screenshots/arena-cockpit.png
-LinkedIn caption: The Live Arena makes synthetic order flow, bounded adversarial scenarios, detector confidence, and incident evidence visible in one workflow.
-Alt text: AIMADA Live Arena with order book, market charts, detector signals, and incident evidence.
-Recommended placement: After the frontend and WebSocket control-plane description.
--->
+![AIMADA Live Arena showing synthetic order flow, bounded scenarios, detector signals, and incident evidence](../assets/article/aimada-diagrams/03-lob-simulation.jpg)
+*The Live Arena makes synthetic order flow, bounded adversarial scenarios, detector confidence, and incident evidence visible in one workflow.*
 
 During an interactive run, AIMADA uses the separate `agent-runner/` workspace to generate normal synthetic market activity.
 
@@ -78,12 +62,8 @@ The backend then sends a compact incident payload to the Endpoint. The Endpoint 
 
 This split matters because it keeps the workflow auditable. AI is used for explanation, narration, investigation assistance, and bounded scenario generation. Structured detector evidence remains the source of truth.
 
-<!-- IMAGE PLACEHOLDER 4 — AI Investigation Team / Endpoint result
-Suggested repository path: assets/screenshots/ai-investigation-team.png
-LinkedIn caption: The AI Investigation Team translates deterministic detector evidence into a structured, reviewable narrative without replacing the detector.
-Alt text: AIMADA AI Investigation Team result showing findings, evidence timeline, confidence, and recommended action.
-Recommended placement: After the explanation of the detection-versus-explanation boundary.
--->
+![AI Investigation Team workflow translating detector evidence into a structured review narrative](../assets/article/aimada-diagrams/04-ai-investigation-workflow.jpg)
+*The AI Investigation Team translates deterministic detector evidence into a structured, reviewable narrative without replacing the detector.*
 
 ## The batch path
 
@@ -133,14 +113,10 @@ This layer answers a deployment question: do the packaged Job and Endpoint contr
 
 The **Representative Production Run** is the compact, sanitized evidence sample committed for review. It preserves Job records, normalized detector metrics, a detector/model leaderboard, investigation results, an evidence index, a benchmark report, a manifest, and checksums.
 
-The public bundle intentionally excludes credentials, authorization headers, private Endpoint hostnames, signed URLs, and raw environment-specific logs. It also discloses coverage differences rather than hiding them. A judge can inspect the evidence without access to the private Nebius account or Object Storage bucket.
+The public bundle intentionally excludes credentials, authorization headers, private Endpoint hostnames, signed URLs, and raw environment-specific logs. It also reconciles the benchmark denominator explicitly: the representative 100-workload run contains 80 labeled attack rows and 20 normal-market control rows. A judge can inspect the evidence without access to the private Nebius account or Object Storage bucket.
 
-<!-- IMAGE PLACEHOLDER 5 — Detector Tournament and production evidence
-Suggested repository path: assets/screenshots/detector-tournament-evidence.png
-LinkedIn caption: Detector Tournament results connect labeled synthetic workloads to metrics, leaderboards, reports, and sanitized production-execution evidence.
-Alt text: AIMADA Detector Tournament leaderboard with production Job status and downloadable evidence artifacts.
-Recommended placement: After the Representative Production Run subsection.
--->
+![AIMADA detection pipeline connecting labeled workloads to metrics, reports, and production evidence](../assets/article/aimada-diagrams/06-detection-pipeline.jpg)
+*Detector Tournament results connect labeled synthetic workloads to metrics, leaderboards, reports, and sanitized production-execution evidence.*
 
 ## What I learned
 

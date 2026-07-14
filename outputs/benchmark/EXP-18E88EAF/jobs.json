@@ -1,0 +1,31 @@
+[
+  {
+    "artifact_paths": {
+      "alerts": "outputs/experiments/EXP-18E88EAF/alerts.jsonl",
+      "artifact_index": "outputs/experiments/EXP-18E88EAF/artifact_index.json",
+      "attacks": "outputs/experiments/EXP-18E88EAF/attacks.jsonl",
+      "batch_manifest": "outputs/experiments/EXP-18E88EAF/batch_manifest.json",
+      "benchmark_report": "outputs/experiments/EXP-18E88EAF/benchmark_report.md",
+      "cloud_artifact_evidence": "outputs/experiments/EXP-18E88EAF/cloud_artifact_evidence.json",
+      "detector_metrics": "outputs/experiments/EXP-18E88EAF/detector_metrics.csv",
+      "events": "outputs/experiments/EXP-18E88EAF/events.jsonl",
+      "experiment": "outputs/experiments/EXP-18E88EAF/experiment.json",
+      "jobs": "outputs/experiments/EXP-18E88EAF/jobs.jsonl",
+      "labels": "outputs/experiments/EXP-18E88EAF/labels.jsonl",
+      "nebius_job_config": "outputs/experiments/EXP-18E88EAF/nebius_job_config.rendered.yaml",
+      "nebius_job_logs": "outputs/experiments/EXP-18E88EAF/nebius_job_logs.json",
+      "submit_stdout": "outputs/experiments/EXP-18E88EAF/nebius_submit_stdout.txt",
+      "trades": "outputs/experiments/EXP-18E88EAF/trades.jsonl"
+    },
+    "attack_count": 5,
+    "backend": "nebius_serverless_job",
+    "batch_end": 5,
+    "batch_start": 0,
+    "created_at": "2026-07-14T17:33:35.335438+00:00",
+    "experiment_id": "EXP-18E88EAF",
+    "job_id": "aijob-e00q7cdpz32jyk0bsg",
+    "message": "Nebius job completed; S3-compatible artifacts were synced and normalized from s3://aimada-artifacts-e00g6zvxpr00/aimada/experiments/EXP-18E88EAF/local-batch.",
+    "status": "completed",
+    "updated_at": "2026-07-14T17:36:36.004757+00:00"
+  }
+]

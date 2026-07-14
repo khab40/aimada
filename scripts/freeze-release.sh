@@ -279,6 +279,15 @@ copy_tracked "documentation" 'README.md'
 copy_tracked "screenshots" 'assets/screenshots/**' 'assets/social/**' 'docs/evidence/screenshots/**' 'frontend/public/img/**'
 copy_tracked "benchmarks" 'outputs/benchmark/**'
 
+if [[ ! -f "${STAGING_DIR}/benchmarks/outputs/benchmark/README.md" ]]; then
+  mkdir -p "${STAGING_DIR}/benchmarks/outputs/benchmark"
+  {
+    printf '# Benchmark Outputs\n\n'
+    printf 'No tracked benchmark index was available in this checkout. '
+    printf 'Commit-safe benchmark bundles, when present, are copied here from `outputs/benchmark/`.\n'
+  } >"${STAGING_DIR}/benchmarks/outputs/benchmark/README.md"
+fi
+
 python3 - "${STAGING_DIR}/README.md" "${TIMESTAMP}" "${OFFLINE}" <<'PY'
 import sys
 from pathlib import Path

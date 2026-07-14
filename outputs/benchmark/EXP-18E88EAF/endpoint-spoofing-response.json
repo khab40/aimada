@@ -1,0 +1,227 @@
+{
+  "investigation_id": "INC-SPOOF-01",
+  "manipulation_type": "spoofing_like",
+  "risk_score": 0.75,
+  "confidence": 0.85,
+  "agents": [
+    {
+      "name": "OrderBookExpertAgent",
+      "role": "Order book microstructure reviewer",
+      "finding": "The market regime was characterized by thin liquidity and medium volatility, which can exacerbate the impact of spoofing-like behavior.",
+      "confidence": 0.85,
+      "evidence": [
+        {
+          "key": "assessment_1",
+          "label": "depth_imbalance",
+          "value": "-0.76",
+          "source": "professional_surveillance_assessment"
+        },
+        {
+          "key": "assessment_2",
+          "label": "replenishment_count",
+          "value": "5",
+          "source": "professional_surveillance_assessment"
+        },
+        {
+          "key": "assessment_3",
+          "label": "cancel_to_trade_ratio",
+          "value": "10.5",
+          "source": "professional_surveillance_assessment"
+        }
+      ]
+    },
+    {
+      "name": "TradePatternAgent",
+      "role": "Trade and cancellation pattern reviewer",
+      "finding": "The episode exhibits characteristics indicative of spoofing-like behavior, particularly through large sell-side depth placement and repeated cancellations. However, counter-evidence and alternative explanations suggest caution before definitive classification.",
+      "confidence": 0.85,
+      "evidence": [
+        {
+          "key": "assessment_1",
+          "label": "depth_imbalance",
+          "value": "-0.76",
+          "source": "professional_surveillance_assessment"
+        },
+        {
+          "key": "assessment_2",
+          "label": "replenishment_count",
+          "value": "5",
+          "source": "professional_surveillance_assessment"
+        },
+        {
+          "key": "assessment_3",
+          "label": "cancel_to_trade_ratio",
+          "value": "10.5",
+          "source": "professional_surveillance_assessment"
+        }
+      ]
+    },
+    {
+      "name": "StatisticsAgent",
+      "role": "Metric anomaly reviewer",
+      "finding": "Detectors agreed on spoofing-like behavior (score 0.94) but differed on liquidity shock (score 0.48).",
+      "confidence": 0.85,
+      "evidence": [
+        {
+          "key": "assessment_1",
+          "label": "depth_imbalance",
+          "value": "-0.76",
+          "source": "professional_surveillance_assessment"
+        },
+        {
+          "key": "assessment_2",
+          "label": "replenishment_count",
+          "value": "5",
+          "source": "professional_surveillance_assessment"
+        },
+        {
+          "key": "assessment_3",
+          "label": "cancel_to_trade_ratio",
+          "value": "10.5",
+          "source": "professional_surveillance_assessment"
+        }
+      ]
+    },
+    {
+      "name": "ComplianceAgent",
+      "role": "Synthetic compliance framing reviewer",
+      "finding": "Further investigation warranted given high anomaly score and detector agreement.",
+      "confidence": 0.85,
+      "evidence": [
+        {
+          "key": "assessment_1",
+          "label": "depth_imbalance",
+          "value": "-0.76",
+          "source": "professional_surveillance_assessment"
+        },
+        {
+          "key": "assessment_2",
+          "label": "replenishment_count",
+          "value": "5",
+          "source": "professional_surveillance_assessment"
+        },
+        {
+          "key": "assessment_3",
+          "label": "cancel_to_trade_ratio",
+          "value": "10.5",
+          "source": "professional_surveillance_assessment"
+        }
+      ]
+    },
+    {
+      "name": "LeadInvestigatorAgent",
+      "role": "Consensus owner",
+      "finding": "Classification spoofing_like; confidence 0.85.",
+      "confidence": 0.85,
+      "evidence": [
+        {
+          "key": "assessment_1",
+          "label": "depth_imbalance",
+          "value": "-0.76",
+          "source": "professional_surveillance_assessment"
+        },
+        {
+          "key": "assessment_2",
+          "label": "replenishment_count",
+          "value": "5",
+          "source": "professional_surveillance_assessment"
+        },
+        {
+          "key": "assessment_3",
+          "label": "cancel_to_trade_ratio",
+          "value": "10.5",
+          "source": "professional_surveillance_assessment"
+        }
+      ]
+    }
+  ],
+  "consensus": "The episode exhibits characteristics indicative of spoofing-like behavior, particularly through large sell-side depth placement and repeated cancellations. However, counter-evidence and alternative explanations suggest caution before definitive classification.",
+  "evidence_timeline": [
+    {
+      "sequence": 1,
+      "event": "Large sell-side depth appeared one tick from the touch at tick 100.",
+      "tick": null,
+      "source": "professional_surveillance_assessment",
+      "significance": "episode reconstruction"
+    },
+    {
+      "sequence": 2,
+      "event": "Displayed pressure was replenished after partial cancellation at tick 126.",
+      "tick": null,
+      "source": "professional_surveillance_assessment",
+      "significance": "episode reconstruction"
+    },
+    {
+      "sequence": 3,
+      "event": "Most displayed quantity was cancelled with little execution at tick 136.",
+      "tick": null,
+      "source": "professional_surveillance_assessment",
+      "significance": "episode reconstruction"
+    }
+  ],
+  "recommended_action": "Review agent's historical behavior for patterns.",
+  "executive_summary": "The episode exhibits characteristics indicative of spoofing-like behavior, particularly through large sell-side depth placement and repeated cancellations. However, counter-evidence and alternative explanations suggest caution before definitive classification.",
+  "model_mode": "local_vllm",
+  "model": "Qwen/Qwen2.5-14B-Instruct",
+  "latency_ms": 24201.1,
+  "fallback_reason": null,
+  "structured_assessment": {
+    "classification": "spoofing_like",
+    "confidence": 0.85,
+    "severity": "high",
+    "market_context": "The market regime was characterized by thin liquidity and medium volatility, which can exacerbate the impact of spoofing-like behavior.",
+    "evidence": [
+      {
+        "observation": "Large sell-side depth appeared one tick from the touch.",
+        "metric": "depth_imbalance",
+        "value": "-0.76",
+        "reasoning": "This indicates significant imbalance favoring the sell side, consistent with spoofing-like behavior."
+      },
+      {
+        "observation": "Displayed pressure was replenished after partial cancellation.",
+        "metric": "replenishment_count",
+        "value": "5",
+        "reasoning": "Repeated replenishment of large sell-side orders suggests an attempt to maintain artificial pressure."
+      },
+      {
+        "observation": "Most displayed quantity was cancelled with little execution.",
+        "metric": "cancel_to_trade_ratio",
+        "value": "10.5",
+        "reasoning": "High cancellation-to-trade ratio indicates that most orders were cancelled without contributing to genuine liquidity."
+      }
+    ],
+    "counter_evidence": [
+      {
+        "observation": "No trade statistics available.",
+        "metric": "trade_statistics",
+        "value": "unavailable",
+        "reasoning": "Lack of trade details limits understanding of actual market impact."
+      },
+      {
+        "observation": "Agent had high cancellation ratio in prior episode.",
+        "metric": "cancel_ratio",
+        "value": "0.81",
+        "reasoning": "Previous behavior may indicate a pattern of aggressive order management rather than manipulation."
+      }
+    ],
+    "alternative_explanations": [
+      "Inventory rebalancing",
+      "News-driven volatility response",
+      "Data limitations affecting interpretation"
+    ],
+    "episode_timeline": [
+      "Large sell-side depth appeared one tick from the touch at tick 100.",
+      "Displayed pressure was replenished after partial cancellation at tick 126.",
+      "Most displayed quantity was cancelled with little execution at tick 136."
+    ],
+    "detector_disagreement": "Detectors agreed on spoofing-like behavior (score 0.94) but differed on liquidity shock (score 0.48).",
+    "recommended_actions": [
+      "Review agent's historical behavior for patterns.",
+      "Request detailed trade information if available.",
+      "Monitor similar market conditions for recurrence."
+    ],
+    "regulatory_assessment": "Further investigation warranted given high anomaly score and detector agreement.",
+    "executive_summary": "The episode exhibits characteristics indicative of spoofing-like behavior, particularly through large sell-side depth placement and repeated cancellations. However, counter-evidence and alternative explanations suggest caution before definitive classification."
+  },
+  "disclaimer": "Educational synthetic simulation only. This does not detect real market manipulation, does not provide trading signals, and must not be used for compliance decisions."
+}

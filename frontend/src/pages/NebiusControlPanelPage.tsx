@@ -1796,14 +1796,6 @@ function metricValue(experiment: ManagedExperiment | null, key: string): number 
   return null;
 }
 
-function metricDisplay(value: unknown): string {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return Number.isInteger(value) ? String(value) : value.toFixed(3);
-  }
-  if (typeof value === "string") return value;
-  return "n/a";
-}
-
 function formatScore(value: number | null | undefined) {
   return typeof value === "number" && Number.isFinite(value) ? value.toFixed(3) : "n/a";
 }

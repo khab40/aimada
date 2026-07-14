@@ -306,7 +306,7 @@ Deliverables:
 - `[done]` tests for create, list, get, report visibility, delete, deterministic attack manifests, attack counts, expected labels, a 3-run local batch, fake local-batch artifact normalization, mocked Nebius investigations, sample-CSV aggregation, and missing real Nebius config.
 - `[done]` local HTTP verification created a 10-row mixed-scenario experiment in mock mode and confirmed manifest rows, normalized artifacts, original local-batch files, summary, leaderboard, benchmark report, and investigation artifacts under `outputs/experiments/<experiment_id>/`.
 - `[done]` more than ten production Nebius Serverless AI Job runs validated container execution, scenario generation, detector evaluation, metric aggregation, reporting, logging, and artifact persistence.
-- `[partial]` the compact artifact bundle is committed; consolidated runtime/cost records and console screenshots remain publication work.
+- `[partial]` the compact artifact bundle is committed and the judge-facing submission index includes measured runtime/cost records; console screenshots remain publication work.
 
 Current behavior:
 

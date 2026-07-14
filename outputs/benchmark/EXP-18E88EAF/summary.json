@@ -1,0 +1,44 @@
+{
+  "artifact_paths": {
+    "alerts": "outputs/experiments/EXP-18E88EAF/alerts.jsonl",
+    "benchmark_report": "outputs/experiments/EXP-18E88EAF/benchmark_report.md",
+    "detector_metrics": "outputs/experiments/EXP-18E88EAF/detector_metrics.csv",
+    "experiment_summary": "outputs/experiments/EXP-18E88EAF/experiment_summary.json",
+    "labels": "outputs/experiments/EXP-18E88EAF/labels.jsonl",
+    "leaderboard": "outputs/experiments/EXP-18E88EAF/leaderboard.json"
+  },
+  "avg_detection_latency_ms": 1500.0,
+  "experiment_id": "EXP-18E88EAF",
+  "f1_by_scenario": {
+    "layering": 1.0,
+    "normal_market": null,
+    "pump_and_cancel": 0.0,
+    "quote_stuffing": 1.0,
+    "spoofing": 1.0
+  },
+  "failed_runs": 0,
+  "investigation_count": 0,
+  "precision_by_scenario": {
+    "layering": 1.0,
+    "normal_market": null,
+    "pump_and_cancel": null,
+    "quote_stuffing": 1.0,
+    "spoofing": 1.0
+  },
+  "recall_by_scenario": {
+    "layering": 1.0,
+    "normal_market": null,
+    "pump_and_cancel": 0.0,
+    "quote_stuffing": 1.0,
+    "spoofing": 1.0
+  },
+  "scenarios": [
+    "layering",
+    "normal_market",
+    "pump_and_cancel",
+    "quote_stuffing",
+    "spoofing"
+  ],
+  "total_alerts": 3,
+  "total_attacks": 4
+}

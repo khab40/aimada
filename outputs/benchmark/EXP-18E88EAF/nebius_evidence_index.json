@@ -1,0 +1,71 @@
+[
+  {
+    "artifact_paths": {
+      "cloud_artifact_evidence": "outputs/nebius/evidence/job/EVD-B6F58405E568/cloud_artifact_evidence-cloud_artifact_evidence.json",
+      "metadata": "outputs/nebius/evidence/job/EVD-B6F58405E568/metadata.json",
+      "nebius_job_config": "outputs/nebius/evidence/job/EVD-B6F58405E568/nebius_job_config-nebius_job_config.rendered.yaml",
+      "nebius_job_logs": "outputs/nebius/evidence/job/EVD-B6F58405E568/nebius_job_logs-nebius_job_logs.json",
+      "request": "outputs/nebius/evidence/job/EVD-B6F58405E568/request.json",
+      "response": "outputs/nebius/evidence/job/EVD-B6F58405E568/response.json",
+      "submit_stdout": "outputs/nebius/evidence/job/EVD-B6F58405E568/submit_stdout-nebius_submit_stdout.txt"
+    },
+    "created_at": "2026-07-14T17:36:58.926212+00:00",
+    "endpoint": null,
+    "error": null,
+    "evidence_id": "EVD-B6F58405E568",
+    "kind": "job",
+    "latency_seconds": null,
+    "local_dir": "outputs/nebius/evidence/job/EVD-B6F58405E568",
+    "operation": "managed_experiment_collect",
+    "run_id": "aijob-e00q7cdpz32jyk0bsg",
+    "s3_status": "uploaded",
+    "source_uri": "s3://aimada-artifacts-e00g6zvxpr00/aimada/evidence/job/EVD-B6F58405E568",
+    "status": "completed"
+  },
+  {
+    "artifact_paths": {
+      "cloud_artifact_evidence": "outputs/nebius/evidence/job/EVD-5E8AD817506F/cloud_artifact_evidence-cloud_artifact_evidence.json",
+      "metadata": "outputs/nebius/evidence/job/EVD-5E8AD817506F/metadata.json",
+      "nebius_job_config": "outputs/nebius/evidence/job/EVD-5E8AD817506F/nebius_job_config-nebius_job_config.rendered.yaml",
+      "nebius_job_logs": "outputs/nebius/evidence/job/EVD-5E8AD817506F/nebius_job_logs-nebius_job_logs.json",
+      "request": "outputs/nebius/evidence/job/EVD-5E8AD817506F/request.json",
+      "response": "outputs/nebius/evidence/job/EVD-5E8AD817506F/response.json",
+      "submit_stdout": "outputs/nebius/evidence/job/EVD-5E8AD817506F/submit_stdout-nebius_submit_stdout.txt"
+    },
+    "created_at": "2026-07-14T17:36:39.919314+00:00",
+    "endpoint": null,
+    "error": null,
+    "evidence_id": "EVD-5E8AD817506F",
+    "kind": "job",
+    "latency_seconds": null,
+    "local_dir": "outputs/nebius/evidence/job/EVD-5E8AD817506F",
+    "operation": "managed_experiment_refresh",
+    "run_id": "aijob-e00q7cdpz32jyk0bsg",
+    "s3_status": "uploaded",
+    "source_uri": "s3://aimada-artifacts-e00g6zvxpr00/aimada/evidence/job/EVD-5E8AD817506F",
+    "status": "completed"
+  },
+  {
+    "artifact_paths": {
+      "cloud_artifact_evidence": "outputs/nebius/evidence/job/EVD-9A5F3E4D61A1/cloud_artifact_evidence-cloud_artifact_evidence.json",
+      "metadata": "outputs/nebius/evidence/job/EVD-9A5F3E4D61A1/metadata.json",
+      "nebius_job_config": "outputs/nebius/evidence/job/EVD-9A5F3E4D61A1/nebius_job_config-nebius_job_config.rendered.yaml",
+      "nebius_job_logs": "outputs/nebius/evidence/job/EVD-9A5F3E4D61A1/nebius_job_logs-nebius_job_logs.json",
+      "request": "outputs/nebius/evidence/job/EVD-9A5F3E4D61A1/request.json",
+      "response": "outputs/nebius/evidence/job/EVD-9A5F3E4D61A1/response.json",
+      "submit_stdout": "outputs/nebius/evidence/job/EVD-9A5F3E4D61A1/submit_stdout-nebius_submit_stdout.txt"
+    },
+    "created_at": "2026-07-14T17:36:38.721254+00:00",
+    "endpoint": null,
+    "error": null,
+    "evidence_id": "EVD-9A5F3E4D61A1",
+    "kind": "job",
+    "latency_seconds": null,
+    "local_dir": "outputs/nebius/evidence/job/EVD-9A5F3E4D61A1",
+    "operation": "managed_experiment_collect",
+    "run_id": "aijob-e00q7cdpz32jyk0bsg",
+    "s3_status": "uploaded",
+    "source_uri": "s3://aimada-artifacts-e00g6zvxpr00/aimada/evidence/job/EVD-9A5F3E4D61A1",
+    "status": "completed"
+  }
+]
