@@ -148,7 +148,11 @@ def _failed_runs(artifact_dir: Path) -> int:
     jobs_path = artifact_dir / "jobs.jsonl"
     if not jobs_path.exists():
         return 0
-    return sum(1 for row in _read_jsonl(jobs_path) if row.get("status") == "failed")
+    latest_by_batch: dict[tuple[object, object, object], dict[str, Any]] = {}
+    for row in _read_jsonl(jobs_path):
+        batch = (row.get("backend"), row.get("batch_start"), row.get("batch_end"))
+        latest_by_batch[batch] = row
+    return sum(1 for row in latest_by_batch.values() if row.get("status") == "failed")
 
 
 def _markdown_report(summary: ExperimentSummary, leaderboard: list[LeaderboardRow]) -> str:

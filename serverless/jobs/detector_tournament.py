@@ -28,6 +28,7 @@ from app.arena.engine import SimulationEngine  # noqa: E402
 from app.evaluation.ground_truth import evaluate_detection, evidence_attribution  # noqa: E402
 from app.evaluation.run_planning import (  # noqa: E402
     DEFAULT_DIFFICULTY_MIX,
+    derive_run_seed,
     engine_profile,
     exact_balanced_plan,
     exact_weighted_plan,
@@ -142,8 +143,8 @@ def _run_one_simulation(
     random_seed: int = 42,
     difficulty: str = "medium",
 ) -> list[RunResult]:
-    run_seed = random_seed + run_index
-    engine = SimulationEngine(seed=run_seed, **engine_profile(difficulty))
+    run_seed = derive_run_seed(random_seed, run_index)
+    engine = SimulationEngine(seed=run_seed, **engine_profile(difficulty, seed=run_seed))
     if scenario != "normal_market":
         engine.launch_scenario(scenario)
     first_alert_tick: dict[str, int] = {}

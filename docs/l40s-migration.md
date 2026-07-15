@@ -3,13 +3,13 @@
 ## Scope
 
 The LOB Arena Serverless AI Endpoint is right-sized from `gpu-h100-sxm` to the
-Nebius `gpu-l40s-g` platform and from `Qwen/Qwen2.5-1.5B-Instruct` to
-`Qwen/Qwen2.5-14B-Instruct`. The existing `1gpu-16vcpu-200gb` resource preset,
+Nebius `gpu-l40s-d` platform and from `Qwen/Qwen2.5-1.5B-Instruct` to
+`Qwen/Qwen2.5-14B-Instruct`. The existing `1gpu-16vcpu-96gb` resource preset,
 image, networking, subnet, public/token authentication, port, routes, health
 checks, autoscaling behavior, logging, monitoring, and CI/CD structure remain
 unchanged.
 
-Nebius CLI calls `gpu-l40s-g` a platform; `1gpu-16vcpu-200gb` remains the
+Nebius CLI calls `gpu-l40s-d` a platform; `1gpu-16vcpu-96gb` remains the
 platform-specific preset passed through `NEBIUS_ENDPOINT_PRESET`.
 
 ## vLLM configuration
@@ -80,7 +80,7 @@ responses exceed it.
    rollback:
 
    ```bash
-   export NEBIUS_ENDPOINT_NAME=market-abuse-arena-ai-endpoint-l40s
+   export NEBIUS_ENDPOINT_NAME=lob-arena-ai-endpoint-l40s
    ./scripts/create-nebius-ai-endpoint.sh
    ```
 

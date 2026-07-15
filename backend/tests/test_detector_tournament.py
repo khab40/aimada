@@ -81,6 +81,7 @@ def test_detector_tournament_nebius_submit_renders_object_storage_env(tmp_path: 
     )
     monkeypatch.setenv("NEBIUS_OBJECT_STORAGE_ACCESS_KEY_ID", "test-access")
     monkeypatch.setenv("NEBIUS_OBJECT_STORAGE_SECRET_ACCESS_KEY", "test-secret")
+    monkeypatch.setenv("NEBIUS_EVIDENCE_ARCHIVE_ENABLED", "false")
     monkeypatch.setattr("app.nebius.detector_tournament.subprocess.run", fake_run)
     get_settings.cache_clear()
     try:

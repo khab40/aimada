@@ -130,6 +130,7 @@ class SmartBatchRunRequest(BaseModel):
     scenarios: list[str] = Field(
         default_factory=lambda: list(BENCHMARK_SCENARIOS)
     )
+    random_seed: int = Field(default=42, ge=0)
 
 
 class AttackScenarioInput(BaseModel):
@@ -627,6 +628,7 @@ def run_smart_batches(payload: SmartBatchRunRequest, request: Request) -> SmartB
         runs=payload.runs,
         batch_size=payload.batch_size,
         scenarios=payload.scenarios,
+        random_seed=payload.random_seed,
         max_workers=request.app.state.settings.arena_local_batch_max_workers,
     )
     if batch.returncode != 0:

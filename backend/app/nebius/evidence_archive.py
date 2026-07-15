@@ -98,6 +98,25 @@ class NebiusEvidenceArchive:
         payload: dict[str, Any],
         artifact_paths: dict[str, str],
     ) -> NebiusEvidenceRecord:
+        response_payload = dict(payload)
+        usage = dict(payload.get("usage")) if isinstance(payload.get("usage"), dict) else {}
+        duration_seconds = _elapsed_between(payload.get("created_at"), payload.get("updated_at"))
+        workload_count = _nonnegative_int(payload.get("attack_count"))
+        event_path = artifact_paths.get("events") or artifact_paths.get("order_book_event_logs")
+        usage.setdefault("duration_seconds", duration_seconds)
+        usage.setdefault("job_runs", 1 if status in {"completed", "failed"} else 0)
+        usage.setdefault("workloads", workload_count)
+        usage.setdefault("simulation_events", _line_count(event_path))
+        usage.setdefault(
+            "artifact_count",
+            sum(1 for path in artifact_paths.values() if Path(path).is_file()),
+        )
+        if duration_seconds > 0 and self.settings.nebius_job_cost_per_hour_usd > 0:
+            usage.setdefault(
+                "job_cost_usd",
+                round(duration_seconds / 3600 * self.settings.nebius_job_cost_per_hour_usd, 8),
+            )
+        response_payload["usage"] = usage
         evidence_files = {
             key: path
             for key, path in artifact_paths.items()
@@ -108,7 +127,7 @@ class NebiusEvidenceArchive:
             operation=operation,
             status=status,
             request_payload={"run_id": run_id, "operation": operation},
-            response_payload=payload,
+            response_payload=response_payload,
             run_id=run_id,
             evidence_files=evidence_files,
         )
@@ -151,7 +170,11 @@ class NebiusEvidenceArchive:
         completion_tokens = _nonnegative_int(usage.get("completion_tokens"))
         total_tokens = _nonnegative_int(usage.get("total_tokens")) or prompt_tokens + completion_tokens
         estimated_cost_usd = _optional_nonnegative_float(usage.get("estimated_cost_usd"))
-        if estimated_cost_usd is None and (prompt_tokens or completion_tokens):
+        token_rates_configured = (
+            self.settings.nebius_input_token_cost_per_million_usd > 0
+            or self.settings.nebius_output_token_cost_per_million_usd > 0
+        )
+        if estimated_cost_usd is None and token_rates_configured and (prompt_tokens or completion_tokens):
             estimated_cost_usd = round(
                 prompt_tokens / 1_000_000 * self.settings.nebius_input_token_cost_per_million_usd
                 + completion_tokens / 1_000_000 * self.settings.nebius_output_token_cost_per_million_usd,
@@ -410,6 +433,30 @@ def _optional_nonnegative_float(value: Any) -> float | None:
         return max(0.0, float(value)) if value is not None else None
     except (TypeError, ValueError):
         return None
+
+
+def _elapsed_between(started_at: Any, finished_at: Any) -> float:
+    if not isinstance(started_at, str) or not isinstance(finished_at, str):
+        return 0.0
+    try:
+        started = datetime.fromisoformat(started_at.replace("Z", "+00:00"))
+        finished = datetime.fromisoformat(finished_at.replace("Z", "+00:00"))
+    except ValueError:
+        return 0.0
+    return round(max(0.0, (finished - started).total_seconds()), 6)
+
+
+def _line_count(raw_path: str | None) -> int:
+    if not raw_path:
+        return 0
+    path = Path(raw_path)
+    if not path.is_file():
+        return 0
+    try:
+        with path.open("rb") as handle:
+            return sum(1 for _line in handle)
+    except OSError:
+        return 0
 
 
 def measure_started_at() -> float:

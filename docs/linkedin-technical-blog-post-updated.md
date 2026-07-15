@@ -31,7 +31,7 @@ The interactive path uses a React and Vite frontend, a FastAPI control plane, a 
 
 *LOB Arena separates the React interface, authoritative FastAPI runtime, agents workspace, and Nebius Endpoint and Job execution paths.*
 
-LOB Arena was validated on real Nebius production infrastructure. More than ten Nebius Serverless AI Job runs completed successfully, with execution visible in production logs. I also deployed a vLLM-backed Nebius Serverless AI Endpoint and exercised routes for scenario generation, incident analysis, investigation reporting, order-book alert analysis, and structured market-event explanation. Those runs produced Job artifacts, detector metrics, reports, logs, and Endpoint responses. This validation proves the execution contracts; it does not turn LOB Arena into a real-market surveillance product.
+LOB Arena was validated on real Nebius production infrastructure. The latest evidence set contains six newly completed 200-workload Nebius Serverless AI Jobs, in addition to earlier deployment checks. I also deployed a vLLM-backed Nebius Serverless AI Endpoint and exercised routes for scenario generation, incident analysis, investigation reporting, order-book alert analysis, and structured market-event explanation. Those runs produced Job artifacts, detector metrics, reports, logs, and Endpoint responses. This validation proves the execution contracts; it does not turn LOB Arena into a real-market surveillance product.
 
 Job lifecycle records and generated artifacts are archived to Nebius Object Storage. Endpoint execution metadata is archived through the same evidence layer without presenting private credentials or sensitive transport details to the browser. The backend can synchronize archived evidence from S3-compatible storage back to backend-local storage, and the UI exposes the synchronized records and downloadable artifacts. This creates a traceable path from production execution, through durable storage, to evidence that a reviewer can inspect.
 
@@ -132,7 +132,7 @@ The public bundle intentionally excludes credentials, authorization headers, pri
 
 LOB Arena uses Nebius Serverless AI in two materially different ways.
 
-The **Serverless AI Endpoint** supports interactive operations such as AI Investigation Team analysis, incident explanation, structured investigation reports, bounded synthetic scenario generation, and market-event summarization. The representative deployment uses an NVIDIA L40S configuration, the `1gpu-16vcpu-200gb` preset, `Qwen/Qwen2.5-14B-Instruct`, and vLLM inference.
+The **Serverless AI Endpoint** supports interactive operations such as AI Investigation Team analysis, incident explanation, structured investigation reports, bounded synthetic scenario generation, and market-event summarization. The representative deployment uses an NVIDIA L40S configuration, the `1gpu-16vcpu-96gb` preset, `Qwen/Qwen2.5-14B-Instruct`, and vLLM inference.
 
 **Serverless Jobs** support offline evaluation: running multiple synthetic scenarios, comparing detector predictions with ground truth, calculating precision, recall, F1 and latency, generating leaderboards, writing reports, and persisting artifacts. The representative Job configuration uses the `cpu-d3` preset with four virtual CPUs and 16 GB of memory.
 
@@ -142,20 +142,22 @@ Using both products demonstrates more than a single inference request. The Endpo
 
 LOB Arena now demonstrates an end-to-end workflow from synthetic scenario generation to reviewable investigation and benchmark evidence.
 
-Representative measurements were:
+The initial six-Job production set exposed an evidence-quality bug: six different seeds were stored in experiment metadata but were not forwarded into Job arguments. After fixing the command path and seed derivation, I reran the complete six-Job set in Nebius:
 
 | Workflow | Result |
 |---|---:|
-| Local Docker startup and demo | approximately 3–5 minutes |
-| Local ten-scenario tournament | approximately 0.7 seconds, excluding startup |
-| Nebius Serverless Job with five scenarios | approximately 181 seconds |
-| Serverless Job active compute cost | approximately $0.005 |
-| Two Endpoint investigation requests | P50 24.2 seconds; P95 28.8 seconds |
-| Endpoint request-active compute cost | approximately $0.023 |
+| New Nebius Serverless Jobs | 6 completed |
+| Synthetic workloads | 1,200: 960 attacks and 240 normal controls |
+| Generated order-book events | 148,958 |
+| Seed verification | 1,200 unique run seeds; zero cross-experiment overlap |
+| Artifact verification | 6 distinct event digests; 6 distinct metric digests; 42 Job outputs synchronized |
+| Measured aggregate Job lifecycle | 1,308.436 seconds |
+| Aggregate confusion counts | TP 710; FN 250; FP 0; TN 240 |
+| Aggregate precision / recall / F1 | 1.000 / 0.740 / 0.850 |
 
-The estimated combined active compute cost of the representative Job and two Endpoint requests was approximately **$0.028**.
+Pricing rates were not configured in the application for this evidence session, so the UI reports measured usage without inventing a dollar estimate. The lifecycle measurement includes queue, status, and collection overhead and is not presented as provider-billed compute time.
 
-These figures are workload-specific estimates based on measured active execution time. Actual billing can differ because of startup time, idle warm time, storage, billing increments, taxes, and pricing changes.
+The corrected Jobs used six base seeds and 1,200 disjoint derived run seeds. They produced six distinct event-stream hashes and six distinct metrics hashes. The earlier repeated set remains audit history only and is not used in the performance claim.
 
 The detector metrics validate the synthetic evaluation and execution contracts. They should not be interpreted as claims about production-market surveillance accuracy.
 

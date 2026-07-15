@@ -5,7 +5,7 @@ from pathlib import Path
 from app.arena.engine import SimulationEngine
 from app.detectors.features import extract_features
 from app.evaluation.ground_truth import evaluate_detection
-from app.evaluation.run_planning import exact_balanced_plan, exact_weighted_plan
+from app.evaluation.run_planning import derive_run_seed, engine_profile, exact_balanced_plan, exact_weighted_plan
 from app.schemas.arena import AgentEvent, OrderBookSnapshot, PriceLevel
 from serverless.jobs import detector_tournament, run_batch_experiments
 
@@ -58,7 +58,9 @@ def test_basic_tournament_runs_exact_total_and_uses_seed(tmp_path: Path, monkeyp
 
     assert payload["runs"] == 3
     assert len({row["run_id"] for row in payload["run_results"]}) == 3
-    assert {row["seed"] for row in payload["run_results"]} == {91, 92, 93}
+    assert {row["seed"] for row in payload["run_results"]} == {
+        derive_run_seed(91, index) for index in range(3)
+    }
     attack_rows = [row for row in payload["run_results"] if row["scenario"] == "spoofing_like_wall"]
     assert attack_rows and all(row["truth"] for row in attack_rows)
     normal_metrics = [row for row in payload["metrics"] if row["scenario"] == "normal-market"]
@@ -70,7 +72,7 @@ def test_batch_runner_applies_difficulty_and_rich_ground_truth() -> None:
     result = run_batch_experiments._run_one(0, "spoofing_like_wall", "hard", 300)
     label = result.labels[0]
 
-    assert result.seed == 300
+    assert result.seed == derive_run_seed(300, 0)
     assert result.difficulty == "hard"
     assert label["difficulty"] == "hard"
     assert label["manipulation_windows"]
@@ -81,6 +83,29 @@ def test_batch_runner_applies_difficulty_and_rich_ground_truth() -> None:
     assert "event_recall" in result.metrics
     assert "participant_recall" in result.metrics
     assert "order_recall" in result.metrics
+
+
+def test_adjacent_experiment_seeds_produce_independent_run_seeds_and_profiles() -> None:
+    first = {derive_run_seed(100, index) for index in range(200)}
+    second = {derive_run_seed(101, index) for index in range(200)}
+
+    assert len(first) == 200
+    assert len(second) == 200
+    assert first.isdisjoint(second)
+    seed = derive_run_seed(100, 0)
+    assert engine_profile("medium", seed=seed) == engine_profile("medium", seed=seed)
+    assert engine_profile("medium", seed=seed) != engine_profile("medium", seed=derive_run_seed(101, 0))
+
+
+def test_distinct_base_seeds_change_normalized_market_events() -> None:
+    first = run_batch_experiments._run_one(0, "spoofing_like_wall", "medium", 100)
+    second = run_batch_experiments._run_one(0, "spoofing_like_wall", "medium", 101)
+
+    def normalize(rows: list[dict[str, object]]) -> list[dict[str, object]]:
+        return [{key: value for key, value in row.items() if key != "timestamp"} for row in rows]
+
+    assert first.seed != second.seed
+    assert normalize(first.events) != normalize(second.events)
 
 
 def test_order_lifetime_is_observed_order_age_not_scenario_elapsed() -> None:

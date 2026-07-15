@@ -431,6 +431,7 @@ class NebiusExperimentOrchestrator:
             runs=experiment.attack_count,
             batch_size=experiment.batch_size,
             scenarios=experiment.scenarios,
+            random_seed=experiment.seed,
             image=image,
             output_dir=f"/job/outputs/experiments/{experiment.id}/local-batch",
             rendered_path=artifact_dir / "nebius_job_config.rendered.yaml",
@@ -454,6 +455,7 @@ class NebiusExperimentOrchestrator:
                 f"--runs {experiment.attack_count} "
                 f"--batch-size {experiment.batch_size} "
                 f"--scenarios {','.join(experiment.scenarios)} "
+                f"--random-seed {experiment.seed} "
                 f"--output /job/outputs/experiments/{experiment.id}/local-batch"
                 f"{self._job_s3_args(experiment.id)}"
             ),

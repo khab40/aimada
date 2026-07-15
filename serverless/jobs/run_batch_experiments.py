@@ -31,6 +31,7 @@ from app.arena.engine import SimulationEngine  # noqa: E402
 from app.evaluation.ground_truth import evaluate_detection, evidence_attribution  # noqa: E402
 from app.evaluation.run_planning import (  # noqa: E402
     DEFAULT_DIFFICULTY_MIX,
+    derive_run_seed,
     engine_profile,
     exact_balanced_plan,
     exact_weighted_plan,
@@ -115,6 +116,7 @@ def main() -> None:
         "scenarios": scenarios,
         "scenario_counts": _counts(scenario_plan),
         "random_seed": args.random_seed,
+        "seed_strategy": "sha256(base_seed, run_index)",
         "difficulty_mix": difficulty_mix,
         "difficulty_counts": _counts(difficulty_plan),
         "artifacts": {
@@ -139,8 +141,8 @@ def _run_one(
     random_seed: int = 42,
 ) -> BatchResult:
     run_id = f"batch-{index:06d}"
-    run_seed = random_seed + index
-    engine = SimulationEngine(seed=run_seed, **engine_profile(difficulty))
+    run_seed = derive_run_seed(random_seed, index)
+    engine = SimulationEngine(seed=run_seed, **engine_profile(difficulty, seed=run_seed))
     engine_scenario = SCENARIO_TO_ENGINE.get(scenario)
     if engine_scenario is not None:
         engine.launch_scenario(engine_scenario)
@@ -164,6 +166,9 @@ def _run_one(
             row = dict(event)
             row["run_id"] = run_id
             row["tick"] = state["tick"]
+            row["seed"] = run_seed
+            row["difficulty"] = difficulty
+            row["scenario"] = scenario
             events.append(row)
             if row.get("type") == "trade" or "trade" in str(row.get("message", "")).lower():
                 trades.append(row)

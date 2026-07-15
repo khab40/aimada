@@ -198,7 +198,7 @@ environment_target.write_text(
 )
 defaults = {
     "NEBIUS_ENDPOINT_MODE": "local_vllm",
-    "NEBIUS_ENDPOINT_HARDWARE_PRESET": "gpu-l40s-g",
+    "NEBIUS_ENDPOINT_HARDWARE_PRESET": "gpu-l40s-d",
     "LOCAL_VLLM_MODEL": "Qwen/Qwen2.5-14B-Instruct",
     "LOCAL_VLLM_DTYPE": "auto",
     "LOCAL_VLLM_GPU_MEMORY_UTILIZATION": "0.90",

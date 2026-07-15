@@ -52,7 +52,7 @@ The builder caps the user payload at 24,000 serialized characters (roughly
 and previous-behaviour entries at 12. LOB snapshots contain only touch, spread,
 depth, imbalance, and summarized-level counts. This leaves room for the system
 prompt within the 6–8k input-token target and remains comfortably below the
-16,384-token vLLM context configured for one `gpu-l40s-g` GPU.
+16,384-token vLLM context configured for one `gpu-l40s-d` GPU.
 
 The model is instructed to reason internally without exposing chain-of-thought,
 separate observation from inference, compare manipulation and benign hypotheses,

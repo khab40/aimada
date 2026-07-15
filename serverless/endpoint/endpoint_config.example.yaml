@@ -1,9 +1,9 @@
-name: market-abuse-arena-ai-endpoint
+name: lob-arena-ai-endpoint
 container_port: 9000
 public: true
 auth: token
-platform: gpu-l40s-g
-preset: 1gpu-16vcpu-200gb
+platform: gpu-l40s-d
+preset: 1gpu-16vcpu-96gb
 subnet_name: default-subnet
 
 image:

@@ -26,6 +26,7 @@ def run_local_smart_batch(
     runs: int,
     batch_size: int,
     scenarios: list[str],
+    random_seed: int = 42,
     max_workers: int = 1,
     timeout_seconds: int = 120,
 ) -> LocalSmartBatchResult:
@@ -40,6 +41,8 @@ def run_local_smart_batch(
         str(max(1, min(max_workers, batch_size))),
         "--scenarios",
         ",".join(scenarios),
+        "--random-seed",
+        str(random_seed),
         "--output",
         str(output_dir),
     ]

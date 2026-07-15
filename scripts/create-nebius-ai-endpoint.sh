@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-NAME="${NEBIUS_ENDPOINT_NAME:-market-abuse-arena-ai-endpoint}"
+NAME="${NEBIUS_ENDPOINT_NAME:-lob-arena-ai-endpoint}"
 IMAGE="${ENDPOINT_IMAGE:-${NEBIUS_ENDPOINT_IMAGE:-ghcr.io/khab40/lob-arena-endpoint:vllm-qwen-v11}}"
-PLATFORM="${NEBIUS_ENDPOINT_PLATFORM:-gpu-l40s-g}"
-PRESET="${NEBIUS_ENDPOINT_PRESET:-1gpu-16vcpu-200gb}"
+PLATFORM="${NEBIUS_ENDPOINT_PLATFORM:-gpu-l40s-d}"
+PRESET="${NEBIUS_ENDPOINT_PRESET:-1gpu-16vcpu-96gb}"
 DISK_SIZE="${NEBIUS_ENDPOINT_DISK_SIZE:-200Gi}"
 CONTAINER_PORT="${NEBIUS_ENDPOINT_PORT:-9000}"
 AUTH="${NEBIUS_ENDPOINT_AUTH:-token}"
+ASYNC="${NEBIUS_ENDPOINT_ASYNC:-false}"
 MODE="${NEBIUS_ENDPOINT_MODE:-local_vllm}"
 LOCAL_VLLM_MODEL="${LOCAL_VLLM_MODEL:-Qwen/Qwen2.5-14B-Instruct}"
 LOCAL_VLLM_HOST="${LOCAL_VLLM_HOST:-127.0.0.1}"
@@ -53,6 +54,10 @@ args=(
 
 if [[ -n "${NEBIUS_PARENT_ID:-}" ]]; then
   args+=(--parent-id "${NEBIUS_PARENT_ID}")
+fi
+
+if [[ "${ASYNC,,}" =~ ^(1|true|yes|on)$ ]]; then
+  args+=(--async)
 fi
 
 if [[ "${AUTH}" == "token" ]]; then

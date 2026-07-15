@@ -15,6 +15,7 @@ def test_render_job_config_applies_experiment_overrides(tmp_path: Path) -> None:
         runs=17,
         batch_size=4,
         scenarios=["spoofing_like_wall", "quote_stuffing"],
+        random_seed=1234,
         image="ghcr.io/acme/aimada-jobs:test-tag",
         output_dir="/job/outputs/experiments/EXP-001/local-batch",
         rendered_path=rendered_path,
@@ -29,6 +30,7 @@ def test_render_job_config_applies_experiment_overrides(tmp_path: Path) -> None:
     assert "--runs 17" in config["args"]
     assert "--batch-size 4" in config["args"]
     assert "--scenarios spoofing_like_wall,quote_stuffing" in config["args"]
+    assert "--random-seed 1234" in config["args"]
     assert "--output /job/outputs/experiments/EXP-001/local-batch" in config["args"]
 
 
@@ -41,6 +43,7 @@ def test_render_job_config_defaults_image_tag_and_output_path(tmp_path: Path, mo
         runs=3,
         batch_size=2,
         scenarios=["normal_market"],
+        random_seed=91,
         image="ghcr.io/acme/aimada-jobs",
         output_dir="/job/outputs/experiments/EXP-002/local-batch",
     )

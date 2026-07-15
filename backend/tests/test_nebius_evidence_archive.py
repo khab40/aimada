@@ -116,3 +116,43 @@ def test_endpoint_usage_tracks_tokens_bytes_and_configured_cost(tmp_path: Path) 
     assert record.request_bytes > 0
     assert record.response_bytes > 0
     assert record.artifact_bytes >= record.request_bytes + record.response_bytes
+
+
+def test_endpoint_usage_does_not_report_zero_cost_without_configured_rates(tmp_path: Path) -> None:
+    archive = NebiusEvidenceArchive(LocalStore(tmp_path), Settings(_env_file=None))
+
+    record = archive.record(
+        kind="endpoint_call",
+        operation="explain_incident",
+        status="completed",
+        request_payload={"incident": "INC-1"},
+        response_payload={"usage": {"prompt_tokens": 100, "completion_tokens": 50}},
+    )
+
+    assert record.total_tokens == 150
+    assert record.estimated_cost_usd is None
+
+
+def test_completed_job_evidence_derives_measured_usage(tmp_path: Path) -> None:
+    events = tmp_path / "events.jsonl"
+    events.write_text('{"event": 1}\n{"event": 2}\n', encoding="utf-8")
+    archive = NebiusEvidenceArchive(LocalStore(tmp_path), Settings(_env_file=None))
+
+    record = archive.record_job(
+        operation="cloud_job_completed",
+        run_id="job-123",
+        status="completed",
+        payload={
+            "created_at": "2026-07-15T15:35:02+00:00",
+            "updated_at": "2026-07-15T15:37:41+00:00",
+            "attack_count": 200,
+        },
+        artifact_paths={"events": str(events)},
+    )
+
+    assert record.duration_seconds == 159
+    assert record.job_runs == 1
+    assert record.workloads == 200
+    assert record.simulation_events == 2
+    assert record.artifact_count == 1
+    assert record.job_cost_usd == 0

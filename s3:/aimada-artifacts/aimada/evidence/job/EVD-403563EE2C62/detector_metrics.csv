@@ -1,0 +1,2 @@
+scenario,runs,alerts,precision,recall,f1,avg_detection_latency_ms
+spoofing_like_wall,1,1,1.0,1.0,1.0,1000.0

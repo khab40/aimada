@@ -121,6 +121,7 @@ class ExperimentManager:
             runs=experiment.attack_count,
             batch_size=experiment.batch_size,
             scenarios=experiment.scenarios,
+            random_seed=experiment.seed,
             max_workers=get_settings().arena_local_batch_max_workers,
         )
         status = "completed" if batch.returncode == 0 else "failed"

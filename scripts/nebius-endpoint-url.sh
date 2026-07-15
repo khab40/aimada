@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-NAME="${NEBIUS_ENDPOINT_NAME:-market-abuse-arena-ai-endpoint}"
+NAME="${NEBIUS_ENDPOINT_NAME:-lob-arena-ai-endpoint}"
 ENDPOINT_ID="${NEBIUS_ENDPOINT_ID:-}"
 
 if [[ -z "${ENDPOINT_ID}" ]]; then

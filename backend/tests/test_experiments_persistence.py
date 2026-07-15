@@ -267,6 +267,8 @@ def test_experiment_run_local_batch_generates_attacks_and_persists_job(tmp_path:
     assert (output_dir / "manifest.json").exists()
     manifest = json.loads((output_dir / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["max_workers"] == 1
+    assert manifest["random_seed"] == 21
+    assert manifest["seed_strategy"] == "sha256(base_seed, run_index)"
     assert (output_dir / "detector_metrics.csv").exists()
     assert refreshed.status == "completed"
     assert refreshed.smart_batch_id == response.id
@@ -494,6 +496,11 @@ def test_aggregate_experiment_uses_sample_detector_metrics_csv(tmp_path: Path) -
         '{"run_id":"r1","scenario":"normal_market","has_attack":false}\n'
         '{"run_id":"r2","scenario":"spoofing","has_attack":true}\n'
         '{"run_id":"r3","scenario":"spoofing","has_attack":true}\n',
+        encoding="utf-8",
+    )
+    (artifact_dir / "jobs.jsonl").write_text(
+        '{"job_id":"failed-submit","backend":"nebius_serverless_job","batch_start":0,"batch_end":4,"status":"failed"}\n'
+        '{"job_id":"successful-retry","backend":"nebius_serverless_job","batch_start":0,"batch_end":4,"status":"completed"}\n',
         encoding="utf-8",
     )
     investigations_dir = artifact_dir / "investigations"

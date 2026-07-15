@@ -130,9 +130,9 @@ def test_l40s_endpoint_deployment_is_single_gpu_and_memory_bounded() -> None:
     deployment = (repo_root / "serverless" / "endpoint" / "endpoint_config.yaml").read_text(encoding="utf-8")
     create_script = (repo_root / "scripts" / "create-nebius-ai-endpoint.sh").read_text(encoding="utf-8")
 
-    assert "platform: gpu-l40s-g" in deployment
-    assert "preset: 1gpu-16vcpu-200gb" in deployment
-    assert 'PLATFORM="${NEBIUS_ENDPOINT_PLATFORM:-gpu-l40s-g}"' in create_script
+    assert "platform: gpu-l40s-d" in deployment
+    assert "preset: 1gpu-16vcpu-96gb" in deployment
+    assert 'PLATFORM="${NEBIUS_ENDPOINT_PLATFORM:-gpu-l40s-d}"' in create_script
     assert "Qwen/Qwen2.5-14B-Instruct" in startup
     for flag in (
         "--dtype",

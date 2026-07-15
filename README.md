@@ -133,8 +133,8 @@ The default Local Mock mode does **not** require a GPU or Nebius credentials.
 
 | Component | Configuration |
 |-----------|---------------|
-| AI Endpoint | NVIDIA L40S (`gpu-l40s-g`) |
-| Endpoint preset | `1gpu-16vcpu-200gb` |
+| AI Endpoint | NVIDIA L40S (`gpu-l40s-d`) |
+| Endpoint preset | `1gpu-16vcpu-96gb` |
 | Model | `Qwen/Qwen2.5-14B-Instruct` |
 | Runtime | vLLM |
 | Batch execution | Nebius Serverless Jobs (`cpu-d3`, 4 vCPU / 16 GB RAM) |
@@ -196,11 +196,12 @@ Generated local demo artifacts are written under `outputs/serverless-smoke/`.
 The public evidence is sanitized and checksum-verified: credentials, bearer tokens, signed URLs, and private Endpoint hostnames are excluded.
 
 - [Challenge submission index](docs/challenge-submission.md)
+- [Six-job production E2E evidence (1,200 workloads)](evidence/production-e2e-2026-07-15/README.md)
 - [Representative scenario benchmark](evidence/deployment-2026-07-14-1412/representative-scenario-benchmark.md)
 - [Committed benchmark bundle](outputs/benchmark/EXP-18E88EAF/README.md)
 - [Frozen Nebius deployment bundle](evidence/deployment-2026-07-14-1412/README.md)
 
-The latest bundle records Job `aijob-e00q7cdpz32jyk0bsg`, experiment `EXP-18E88EAF`, two successful Endpoint calls, and synchronized artifacts.
+The corrected production set records six completed Nebius Jobs, 1,200 disjoint-seed workloads, 148,958 events, six distinct event and metric digests, detector confusion counts, and synchronized Object Storage artifacts.
 
 Freeze a new local evidence snapshot with `./scripts/freeze-release.sh`; add `--offline` when Docker, the backend, or Nebius CLI is unavailable.
 
@@ -218,8 +219,8 @@ Core variables:
 ENDPOINT_TOKEN=endpoint-auth-token
 NEBIUS_ENDPOINT_BASE_URL=https://your-nebius-endpoint
 NEBIUS_ENDPOINT_MODE=local_vllm
-NEBIUS_ENDPOINT_PLATFORM=gpu-l40s-g
-NEBIUS_ENDPOINT_PRESET=1gpu-16vcpu-200gb
+NEBIUS_ENDPOINT_PLATFORM=gpu-l40s-d
+NEBIUS_ENDPOINT_PRESET=1gpu-16vcpu-96gb
 LOCAL_VLLM_MODEL=Qwen/Qwen2.5-14B-Instruct
 NEBIUS_JOB_IMAGE=ghcr.io/khab40/lob-arena-jobs:<tag>
 NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE='...'

@@ -151,6 +151,7 @@ def test_submit_with_s3_output_passes_upload_args_and_env(monkeypatch: Any, tmp_
     argv = captured["argv"]
     joined = " ".join(argv)
     assert "--s3-output-uri" in joined
+    assert "--random-seed 42" in joined
     assert "s3://aimada-artifacts/experiments/EXP-SUBMIT/local-batch" in joined
     assert "--s3-endpoint-url" in joined
     assert "--env" in argv

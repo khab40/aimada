@@ -16,6 +16,7 @@ def render_job_config(
     runs: int,
     batch_size: int,
     scenarios: list[str],
+    random_seed: int,
     image: str,
     output_dir: str,
     template_path: Path = DEFAULT_TEMPLATE_PATH,
@@ -41,7 +42,8 @@ def render_job_config(
 
     config["args"] = (
         f"/job/serverless/jobs/run_batch_experiments.py --runs {runs} "
-        f"--batch-size {batch_size} --scenarios {scenario_arg} --output {output_dir}"
+        f"--batch-size {batch_size} --scenarios {scenario_arg} "
+        f"--random-seed {random_seed} --output {output_dir}"
     )
     config["image"] = {"repository": repository, "tag": tag}
     config["scenarios"] = clean_scenarios
@@ -80,6 +82,7 @@ def main() -> None:
     parser.add_argument("--runs", required=True, type=int)
     parser.add_argument("--batch-size", required=True, type=int)
     parser.add_argument("--scenarios", required=True)
+    parser.add_argument("--random-seed", required=True, type=int)
     parser.add_argument("--image", required=True)
     parser.add_argument(
         "--output-dir",
@@ -96,6 +99,7 @@ def main() -> None:
         runs=args.runs,
         batch_size=args.batch_size,
         scenarios=_parse_scenarios(args.scenarios),
+        random_seed=args.random_seed,
         image=args.image,
         output_dir=job_output_dir,
         template_path=args.template,

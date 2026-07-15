@@ -4,17 +4,17 @@
 
 - **Repository:** [github.com/khab40/lob-arena](https://github.com/khab40/lob-arena)
 - **Technical article:** [Technical article draft](linkedin-technical-blog-post.md) — publication URL not yet available.
-- **Video:** Rendered demo not yet published; [narration script](../assets/demo-video/ai-market-abuse-detection-arena-ceo-demo-script2.txt) and [captions](../assets/demo-video/ai-market-abuse-detection-arena-ceo-demo-captions.srt) are included.
+- **Video:** Rendered demo not yet published; [narration script](../assets/demo-video/lob-arena-ceo-demo-script-v2.txt) and [captions](../assets/demo-video/lob-arena-ceo-demo-captions.srt) are included.
 - **Challenge category:** Nebius Serverless AI Builders Challenge.
 - **Hashtag:** `#NebiusServerlessChallenge`
 
 ## One-minute summary
 
-LOB Arena is a synthetic market-surveillance arena that makes order-book abuse-like behavior visible, measurable, and explainable without using real trading data. A FastAPI/React application runs deterministic spoofing, layering, quote-stuffing, and liquidity-shock scenarios; rule-based detectors generate evidence; and Nebius AI turns that evidence into investigation reports. Interactive inference is assigned to a Serverless Endpoint, while repeatable detector tournaments are assigned to Serverless Jobs. The result is an inspectable workflow from labeled scenario through alert, explanation, metrics, leaderboard, report, and charts. LOB Arena is an educational benchmark and research scaffold, not a production compliance or trading system.
+LOB Arena is a synthetic market-surveillance arena that makes order-book abuse-like behavior visible, measurable, and explainable without using real trading data. A FastAPI/React application runs deterministic Spoofing-like Wall, Layering-like Pattern, Quote Stuffing Burst, and Liquidity Evaporation scenarios; rule-based detectors generate evidence; and Nebius AI turns that evidence into investigation reports. Interactive inference is assigned to a Serverless Endpoint, while repeatable detector tournaments are assigned to Serverless Jobs. The result is an inspectable workflow from labeled scenario through alert, explanation, metrics, leaderboard, report, and charts. LOB Arena is an educational benchmark and research scaffold, not a production compliance or trading system.
 
 ## Nebius Serverless usage
 
-- **Endpoint:** The archived representative challenge run used a Nebius H100 Serverless Endpoint (`gpu-h100`, `1gpu-16vcpu-200gb`) with `Qwen/Qwen2.5-1.5B-Instruct`. The current right-sized deployment configuration uses one L40S (`gpu-l40s-g`) with `Qwen/Qwen2.5-14B-Instruct`; see [deployment configuration](nebius-deployment.md#nebius-ai-endpoints) and [migration notes](l40s-migration.md).
+- **Endpoint:** The archived representative challenge run used a Nebius H100 Serverless Endpoint (`gpu-h100`, `1gpu-16vcpu-200gb`) with `Qwen/Qwen2.5-1.5B-Instruct`. The current right-sized deployment configuration uses one L40S (`gpu-l40s-d`) with `Qwen/Qwen2.5-14B-Instruct`; see [deployment configuration](nebius-deployment.md#nebius-ai-endpoints) and [migration notes](l40s-migration.md).
 - **Job:** Nebius Serverless Job using the repository jobs image and the CPU `cpu-d3`, `4vcpu-16gb` preset for parallel simulations, detector evaluation, aggregation, and artifact generation. See [job configuration](../serverless/jobs/job_config.example.yaml).
 - **Why each execution model was selected:** Endpoint requests are short, interactive, and latency-sensitive. Tournament runs are finite, parallel, reproducible batch workloads that should terminate after persisting metrics and reports.
 
@@ -22,15 +22,15 @@ LOB Arena is a synthetic market-surveillance arena that makes order-book abuse-l
 
 - **Local path:** Follow the four commands in [Getting Started](../README.md#getting-started), then open `http://localhost:5173` and run the Serverless E2E demo. Generated evidence is written under `outputs/serverless-smoke/`.
 - **Real Nebius path:** Build and push both images, deploy the endpoint, create the job, and run the smoke workflow using [Nebius deployment instructions](nebius-deployment.md). Cloud completion must be confirmed by job status and collected artifacts; submission alone is not treated as success.
-- **Runtime and cost:** Local stack setup and mock demo typically take 3–5 minutes. The recorded local 10-scenario tournament ran from `2026-07-12T09:16:37.778151Z` to `2026-07-12T09:16:38.492110Z` (0.714 s, excluding container startup). The production measurements below use checked-in evidence from `EXP-18E88EAF` and public Nebius list rates current at publication time; final billing can differ because Nebius rounds usage and excludes taxes.
+- **Runtime and usage:** Six corrected 200-workload Jobs completed with hash-derived, non-overlapping run seeds and synchronized Object Storage artifacts. The earlier default-seed repetitions are retained only as audit history. Pricing rates were not configured, so no dollar estimate is fabricated.
 
-| Workflow | Measured production evidence | Infrastructure | Runtime / latency | Approximate active compute cost | Output |
-| --- | --- | --- | --- | ---: | --- |
-| Local mock demo | Local deterministic path | Laptop, Docker Compose | 3-5 min including stack startup | $0 | Demo artifacts under `outputs/serverless-smoke/` |
-| Serverless Job tournament | Job `aijob-e00q7cdpz32jyk0bsg`, experiment `EXP-18E88EAF` | Nebius Serverless Job, `cpu-d3`, `4vcpu-16gb`, image `ghcr.io/khab40/lob-arena-jobs:artifacts-v3-20260714-151355` | 5 scenarios in 181 s (`2026-07-14T17:33:35Z` to `2026-07-14T17:36:36Z`) | ~$0.005 using $0.10/hour CPU-only list pricing | Metrics, benchmark report, Job logs, and seven S3 artifacts synchronized to backend evidence |
-| vLLM Endpoint representative calls | Endpoint EVDs `EVD-EA016D5A3647` and `EVD-DDB7E7683A8F` | Nebius Serverless Endpoint, `gpu-l40s-g`, `1gpu-16vcpu-200gb`, `Qwen/Qwen2.5-14B-Instruct`, vLLM | 2 structured investigation calls; P50 24.20 s, P95 28.78 s; 52.98 s combined active request latency | ~$0.023 using $1.55/GPU-hour L40S AMD list pricing for request-active time | Structured JSON investigation responses, Endpoint evidence records, S3 archival, backend sync, UI download links |
+| Workflow | Measured production evidence | Infrastructure | Runtime / latency | Output |
+| --- | --- | --- | --- | --- |
+| Local mock demo | Local deterministic path | Laptop, Docker Compose | 3–5 min including stack startup | Demo artifacts under `outputs/serverless-smoke/` |
+| Corrected multi-seed Job set | Six completed Jobs; 1,200 unique run seeds with zero overlap | Nebius Serverless Job, `cpu-d3`, `4vcpu-16gb` | 1,200 workloads and 148,958 events in 1,308.436 s aggregate lifecycle | 6 distinct event digests, 6 distinct metric digests, and 42 Job outputs synchronized from Object Storage |
+| vLLM Endpoint representative calls | Endpoint EVDs `EVD-EA016D5A3647` and `EVD-DDB7E7683A8F` | Nebius Serverless Endpoint, `gpu-l40s-d`, `1gpu-16vcpu-96gb`, `Qwen/Qwen2.5-14B-Instruct`, vLLM | 2 structured investigation calls; P50 24.20 s, P95 28.78 s | Structured JSON responses, Endpoint evidence records, S3 archival, backend sync, and UI download links |
 
-Rates are taken from the [Nebius public pricing page](https://nebius.com/prices): CPU-only AMD EPYC Genoa is listed from `$0.10/hour`, and NVIDIA L40S with AMD CPU is listed from `$1.55/GPU-hour`. The Endpoint cost above counts measured request latency only; it does not include idle warm time, startup time, storage, or any console-side rounding.
+The detector result is intentionally not perfect: aggregate precision is 1.000, recall is 0.740, and F1 is 0.850. All 240 Liquidity Evaporation positives were missed and 10 Layering-like positives were missed. See the [sanitized production evidence](../evidence/production-e2e-2026-07-15/README.md).
 
 ## Results
 
