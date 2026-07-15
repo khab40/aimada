@@ -1,6 +1,6 @@
 # LOB Arena
 
-## Adversarial Synthetic Market Simulation for Surveillance Benchmarking
+**Adversarial Synthetic Market Simulation for Surveillance Benchmarking**
 
 ![LOB Arena GitHub banner](assets/img/ai-mada.jpg)
 
@@ -20,25 +20,70 @@
 
 A multi-agent platform that generates realistic synthetic limit-order-book activity and benchmarks market-surveillance systems against adaptive manipulation strategies.
 
-Safety boundary: LOB Arena is educational and synthetic. It does not detect real manipulation, does not generate trading signals, and is not suitable for compliance decisions.
+## Problem
 
-Key links:
+Market-surveillance systems need realistic, labeled abuse scenarios to measure detection quality. Real order-flow data is sensitive, confirmed manipulation examples are scarce, and static test fixtures do not represent strategies that adapt to surveillance controls.
 
-- [Challenge submission](docs/challenge-submission.md)
-- [Production Nebius evidence](evidence/deployment-2026-07-14-1412/README.md)
-- [Committed benchmark evidence](outputs/benchmark/EXP-18E88EAF/README.md)
-- [Quick start](docs/QUICKSTART.md)
-- [Nebius deployment](docs/nebius-deployment.md)
-- [LinkedIn technical article draft](docs/linkedin-technical-blog-post.md)
+Teams need a reproducible environment where they can generate synthetic limit-order-book activity, exercise detectors, explain alerts, and compare results without using customer or exchange data.
 
-## What LOB Arena Demonstrates
+> **Safety boundary:** LOB Arena is educational and synthetic. It does not detect real manipulation, generate trading signals, or make compliance decisions.
 
-- Interactive investigation through a vLLM-backed Nebius Serverless AI Endpoint.
-- Batch detector tournaments through Nebius Serverless Jobs.
-- Deterministic detectors that produce structured evidence before any LLM explanation.
-- A React/FastAPI live arena with an authoritative backend exchange and bounded agents.
-- S3-compatible evidence archival, backend synchronization, UI artifact links, and commit-safe evidence bundles.
-- Local Docker fallback with the same response shapes, so reviewers can reproduce the workflow without private cloud credentials.
+## Solution
+
+LOB Arena combines a live synthetic exchange, bounded multi-agent scenarios, deterministic detectors, AI-assisted investigation, and repeatable detector tournaments.
+
+- Generate normal and adversarial order-book activity with explicit ground-truth labels.
+- Run deterministic detectors before any LLM explanation is requested.
+- Investigate structured evidence through a vLLM-backed Nebius Serverless AI Endpoint.
+- Benchmark precision, recall, F1, false positives, and detection latency locally or with Nebius Serverless Jobs.
+- Preserve reports, metrics, logs, and artifacts in checksum-verified evidence bundles.
+- Run the complete reviewer workflow in Local Mock mode without cloud credentials.
+
+| Workflow | Runtime | Output |
+| --- | --- | --- |
+| Local Mock demo | Laptop + Docker Compose | Synthetic incidents and deterministic reports |
+| Endpoint investigation | Nebius Serverless Endpoint | Structured JSON investigation reports |
+| Detector tournament | Local fallback or Nebius Serverless Job | Metrics, leaderboard, benchmark report |
+| Evidence sync | Local store + Object Storage | Reviewable artifacts and integrity metadata |
+
+## Architecture
+
+```mermaid
+flowchart LR
+    UI["React / Vite<br/>Command Center + Arena"]
+    API["FastAPI<br/>REST + WebSocket"]
+    Runtime["Authoritative Runtime<br/>Exchange + Matching"]
+    Detectors["Deterministic Detectors"]
+    Runner["Agent Runner<br/>normal, heavy, LangGraph agents"]
+    Endpoint["Nebius Serverless Endpoint<br/>investigation + generation"]
+    Jobs["Nebius Serverless Jobs<br/>detector tournaments"]
+    Store["Artifacts + Evidence<br/>local disk + S3"]
+
+    UI <-->|commands + arena state| API
+    API --> Runtime
+    Runtime --> Detectors
+    Runtime -->|read-only snapshot| Runner
+    Runner -->|bounded intents| Runtime
+    API <-->|structured JSON| Endpoint
+    API -->|job request| Jobs
+    Detectors --> Store
+    Endpoint --> Store
+    Jobs --> Store
+    Store --> API
+```
+
+The backend is the only writer to the exchange. Agents receive read-only market snapshots and return bounded decisions. Detectors run deterministically over synthetic market state; the LLM receives summarized evidence rather than raw order-book streams.
+
+```text
+backend/          FastAPI simulator, detectors, experiments, evidence APIs
+agent-runner/     Out-of-process normal, heavy, and LangGraph agents
+frontend/         React UI for the arena, investigations, and tournaments
+serverless/       Nebius Endpoint and Job images, prompts, and runners
+scripts/          Deployment, evidence, CI, and secret utilities
+docs/             Architecture, deployment, safety, and benchmark docs
+outputs/          Commit-safe benchmark artifacts
+evidence/         Frozen deployment evidence bundles
+```
 
 ## Screenshots
 
@@ -50,7 +95,7 @@ Key links:
 | --- | --- |
 | ![LOB Arena detector tournament](assets/screenshots/Screenshot%202026-07-14%20at%2019.07.47.png) | ![LOB Arena execution trace](assets/screenshots/Screenshot%202026-07-14%20at%2019.08.40.png) |
 
-## Quick Start
+## Quick start
 
 ```bash
 git clone https://github.com/khab40/lob-arena.git
@@ -67,7 +112,7 @@ Open:
 
 The default Compose path builds `agent-runner`, `backend`, and `frontend` from source with `NEBIUS_ENDPOINT_MODE=mock`. Local Mock requires no Nebius credentials, private images, or GPU/vLLM runtime. Cloud calls use deterministic local fallback unless Nebius Cloud mode is explicitly configured.
 
-## Recommended Demo Flow
+## Demo
 
 1. Open the AI Command Center.
 2. Run the Serverless E2E demo.
@@ -79,60 +124,20 @@ The default Compose path builds `agent-runner`, `backend`, and `frontend` from s
 
 Generated local demo artifacts are written under `outputs/serverless-smoke/`.
 
-## Architecture
+## Evidence
 
-```mermaid
-flowchart LR
-    UI["React / Vite<br/>Command Center + Arena"]
-    API["FastAPI<br/>REST + WebSocket"]
-    Runtime["Authoritative Runtime<br/>Exchange + Matching"]
-    Detectors["Deterministic Detectors"]
-    Runner["agent-runner<br/>normal, heavy, LangGraph agents"]
-    Endpoint["Nebius Serverless Endpoint<br/>vLLM investigation + generation"]
-    Jobs["Nebius Serverless Jobs<br/>batch tournaments"]
-    Store["Artifacts + Evidence<br/>local disk + S3 sync"]
+The public evidence is sanitized and checksum-verified: credentials, bearer tokens, signed URLs, and private Endpoint hostnames are excluded.
 
-    UI <-->|commands + arena_state| API
-    API --> Runtime
-    Runtime --> Detectors
-    Runtime -->|read-only snapshot| Runner
-    Runner -->|bounded intents| Runtime
-    API <-->|structured JSON| Endpoint
-    API -->|job request| Jobs
-    Jobs --> Store
-    Detectors --> Store
-    Endpoint --> Store
-    Store --> API
-```
+- [Challenge submission index](docs/challenge-submission.md)
+- [Representative scenario benchmark](evidence/deployment-2026-07-14-1412/representative-scenario-benchmark.md)
+- [Committed benchmark bundle](outputs/benchmark/EXP-18E88EAF/README.md)
+- [Frozen Nebius deployment bundle](evidence/deployment-2026-07-14-1412/README.md)
 
-The backend is the only writer to the exchange. Agents receive read-only market snapshots and return bounded `AgentIntent` decisions. Detectors run deterministically over synthetic market state. The LLM receives summarized evidence, not raw order-book streams.
+The latest bundle records Job `aijob-e00q7cdpz32jyk0bsg`, experiment `EXP-18E88EAF`, two successful Endpoint calls, and synchronized artifacts.
 
-## Main Workflows
+Freeze a new local evidence snapshot with `./scripts/freeze-release.sh`; add `--offline` when Docker, the backend, or Nebius CLI is unavailable.
 
-| Workflow | Infrastructure | Output |
-| --- | --- | --- |
-| Local mock demo | Laptop + Docker Compose | Demo artifacts, deterministic reports |
-| Endpoint investigation | Nebius Serverless Endpoint, vLLM, Qwen2.5-14B | Structured JSON investigation reports |
-| Detector tournament | Nebius Serverless Job or local fallback | Metrics, leaderboard, benchmark report |
-| Evidence sync | Object Storage + backend local store | Downloadable UI evidence and artifacts |
-
-Measured publication values are recorded in [docs/challenge-submission.md](docs/challenge-submission.md). The latest compact evidence bundle records Job `aijob-e00q7cdpz32jyk0bsg`, experiment `EXP-18E88EAF`, two successful Endpoint calls, and synchronized artifacts.
-
-## Repository Layout
-
-```text
-backend/          FastAPI simulator, detectors, experiments, evidence APIs
-agent-runner/     Out-of-process normal, heavy, and LangGraph agent workspace
-frontend/         Vite React UI for arena, investigations, tournaments, evidence
-serverless/       Nebius Endpoint and Job images, configs, prompts, runners
-scripts/          Deployment, evidence, CI, and secret-rotation utilities
-docs/             Architecture, deployment, safety, benchmark, submission docs
-assets/           Banner, screenshots, article visuals, demo scripts
-outputs/          Commit-safe benchmark evidence plus local generated artifacts
-evidence/         Frozen deployment evidence bundles
-```
-
-## Real Nebius Mode
+## Nebius Cloud
 
 Real cloud execution is opt-in. Use the override only after configuring Nebius credentials and reviewing [docs/nebius-deployment.md](docs/nebius-deployment.md):
 
@@ -157,31 +162,6 @@ NEBIUS_JOB_OUTPUT_URI=s3://...
 ```
 
 If Job command templates are missing, the backend records `real_nebius_pending` instead of pretending a cloud run completed.
-
-## Evidence and Reproducibility
-
-Publication evidence is intentionally sanitized:
-
-- no credentials;
-- no bearer tokens;
-- no signed S3 URLs;
-- no private Endpoint hostnames in public bundles;
-- checksums for committed evidence files.
-
-Useful entry points:
-
-- [Representative scenario benchmark](evidence/deployment-2026-07-14-1412/representative-scenario-benchmark.md)
-- [Fresh benchmark bundle](outputs/benchmark/EXP-18E88EAF/README.md)
-- [Frozen deployment bundle](evidence/deployment-2026-07-14-1412/README.md)
-- [Challenge submission index](docs/challenge-submission.md)
-
-Freeze a new local evidence snapshot:
-
-```bash
-./scripts/freeze-release.sh
-```
-
-Use `--offline` when Docker, the backend, or Nebius CLI is unavailable.
 
 ## Development
 

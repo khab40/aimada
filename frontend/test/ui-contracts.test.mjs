@@ -38,6 +38,14 @@ describe("LOB Arena branding contract", () => {
     expectIncludes(manifest, ['"name": "LOB Arena"', '"short_name": "LOB Arena"']);
     assert.doesNotMatch(`${readme}\n${app}\n${index}\n${manifest}`, /AI Market Abuse Detection Arena/);
   });
+
+  it("presents the README in reviewer-first narrative order", () => {
+    const sections = ["Problem", "Solution", "Architecture", "Screenshots", "Quick start", "Demo", "Evidence"];
+    const offsets = sections.map((section) => readme.indexOf(`## ${section}`));
+
+    assert.ok(offsets.every((offset) => offset >= 0), "README narrative section is missing");
+    assert.deepEqual(offsets, [...offsets].sort((left, right) => left - right));
+  });
 });
 
 describe("Core UI navigation and workflow contracts", () => {
