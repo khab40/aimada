@@ -1,0 +1,98 @@
+{
+  "evidence_date": "2026-07-15",
+  "source": "manual_nebius_control_panel_session",
+  "completed_experiment": {
+    "experiment_id": "EXP-84D07DB1",
+    "job_id": "aijob-e00bjapxe5debkqzt8",
+    "status": "completed",
+    "workloads": 100,
+    "unique_derived_seeds": 100,
+    "events": 12414,
+    "labels": 100,
+    "raw_alert_records": 61,
+    "lifecycle_seconds": 159.800435,
+    "s3_artifacts_collected": 7,
+    "confusion_counts": {
+      "true_positives": 60,
+      "false_negatives": 20,
+      "false_positives": 0,
+      "true_negatives": 20
+    },
+    "metrics": {
+      "precision": 1.0,
+      "recall": 0.75,
+      "f1": 0.8571428571,
+      "specificity": 1.0,
+      "false_positive_rate": 0.0
+    },
+    "scenarios": {
+      "normal_market": 20,
+      "spoofing_like_wall": 20,
+      "layering_like": 20,
+      "quote_stuffing": 20,
+      "liquidity_evaporation": 20
+    },
+    "difficulty": {
+      "easy": 20,
+      "medium": 50,
+      "hard": 20,
+      "adversarial": 10
+    },
+    "seed_strategy": "sha256(base_seed, run_index)",
+    "source_event_sha256": "fd82373910fbc5dbe45c60e11d7166789af5e9332becfcc327282d88eb25e48e",
+    "source_metrics_sha256": "0db83fb14f17cf2773918c61e31ef8c5083dff347b933e320b567b08d89fa424",
+    "committed_metrics_sha256": "e169a3ca9b850d46d9b3e5d01d1cfef09cc403286b393a0807c6584ff4807696"
+  },
+  "endpoint_session": {
+    "model": "Qwen/Qwen2.5-14B-Instruct",
+    "model_mode": "local_vllm",
+    "calls": 12,
+    "completed": 12,
+    "fallbacks": 0,
+    "s3_uploaded": 12,
+    "structured_investigation_responses": 2,
+    "investigation_reports": 7,
+    "operations": {
+      "generate-market-abuse-scenario": 2,
+      "explain-event": 1,
+      "investigation-team": 2,
+      "investigation-report": 7
+    },
+    "usage": {
+      "prompt_tokens": 11246,
+      "completion_tokens": 5033,
+      "total_tokens": 16279,
+      "average_latency_seconds": 17.608,
+      "p50_latency_seconds": 14.805,
+      "minimum_latency_seconds": 6.632,
+      "maximum_latency_seconds": 35.817,
+      "artifact_bytes": 69976,
+      "cost_basis": "token counts and latency measured; pricing rates not configured"
+    },
+    "evidence_ids": [
+      "EVD-28A2F54474FF",
+      "EVD-AF982EB58C77",
+      "EVD-3FB98977E319",
+      "EVD-F6D94ECE4234",
+      "EVD-AA3A72BAD578",
+      "EVD-941F1EA6B115",
+      "EVD-3CFC4579BCCF",
+      "EVD-67842E612E8F",
+      "EVD-2E342EF44E0F",
+      "EVD-D94E6019B8F6",
+      "EVD-977A82AEF020",
+      "EVD-247FC023FC44"
+    ]
+  },
+  "polished_e2e": {
+    "experiment_id": "EXP-E88FB504",
+    "evidence_id": "EVD-E0E6EE5E2B40",
+    "local_stages": "completed",
+    "artifact_count": 8,
+    "simulation_events": 20,
+    "endpoint_calls": 3,
+    "total_tokens": 5017,
+    "cloud_child_status": "unresolved_not_found",
+    "claim": "not_counted_as_completed_cloud_job"
+  }
+}

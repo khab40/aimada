@@ -154,6 +154,13 @@ The initial six-Job production set exposed an evidence-quality bug: six differen
 | Measured aggregate Job lifecycle | 1,308.436 seconds |
 | Aggregate confusion counts | TP 710; FN 250; FP 0; TN 240 |
 | Aggregate precision / recall / F1 | 1.000 / 0.740 / 0.850 |
+| Real L40S/vLLM Endpoint calls | 25 completed; 0 fallbacks; 25 S3 uploads |
+| Endpoint usage | 25,084 prompt + 13,345 completion = 38,429 tokens |
+| Structured investigations | 17/17 validated and preserved; P50 Endpoint latency 27.141 s |
+
+I then ran the workflow manually through the Control Panel. That session completed a separate 100-workload Nebius Job with 100 unique derived seeds and 12,414 events. Its matched confusion counts were TP 60, FN 20, FP 0, and TN 20: precision 1.000, recall 0.750, and F1 0.857. The same session made 12 real Endpoint calls (16,279 tokens), including two schema-validated Investigation Team responses and seven JSON investigation reports; all 12 evidence records were uploaded to S3. The [sanitized manual UI bundle](../evidence/manual-ui-2026-07-15/README.md) preserves the metrics and execution boundary.
+
+The manual result reinforced the main detector finding: Spoofing-like Wall, Layering-like Pattern, and Quote Stuffing Burst were detected in all 20 matched workloads, while Liquidity Evaporation was missed in all 20. The Polished E2E local stages also completed, but its cloud child lookup returned `NotFound`; I do not count that child as a completed Job. The independently submitted 100-workload managed experiment is the cloud-completion evidence.
 
 Pricing rates were not configured in the application for this evidence session, so the UI reports measured usage without inventing a dollar estimate. The lifecycle measurement includes queue, status, and collection overhead and is not presented as provider-billed compute time.
 

@@ -1,0 +1,28 @@
+{
+  "endpoint_id": "aiendpoint-e00hx85p86yrb7w7jn",
+  "platform": "gpu-l40s-d",
+  "preset": "1gpu-16vcpu-96gb",
+  "model": "Qwen/Qwen2.5-14B-Instruct",
+  "model_mode": "local_vllm",
+  "calls": 25,
+  "completed": 25,
+  "fallbacks": 0,
+  "s3_uploaded": 25,
+  "structured_investigation_responses": 17,
+  "operations": {
+    "investigation-team": 17,
+    "investigation-report": 4,
+    "generate-market-abuse-scenario": 4
+  },
+  "usage": {
+    "prompt_tokens": 25084,
+    "completion_tokens": 13345,
+    "total_tokens": 38429,
+    "average_latency_seconds": 24.038,
+    "p50_latency_seconds": 27.141,
+    "minimum_latency_seconds": 4.382,
+    "maximum_latency_seconds": 31.347,
+    "artifact_bytes": 239918,
+    "cost_basis": "token counts and latency measured; pricing rates not configured"
+  }
+}

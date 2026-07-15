@@ -196,12 +196,14 @@ Generated local demo artifacts are written under `outputs/serverless-smoke/`.
 The public evidence is sanitized and checksum-verified: credentials, bearer tokens, signed URLs, and private Endpoint hostnames are excluded.
 
 - [Challenge submission index](docs/challenge-submission.md)
+- [Manual Nebius Control Panel evidence (100-workload Job + 12 real Endpoint calls)](evidence/manual-ui-2026-07-15/README.md)
 - [Six-job production E2E evidence (1,200 workloads)](evidence/production-e2e-2026-07-15/README.md)
+- [Production L40S/vLLM Endpoint evidence (25 real calls)](evidence/production-endpoint-2026-07-15/README.md)
 - [Representative scenario benchmark](evidence/deployment-2026-07-14-1412/representative-scenario-benchmark.md)
 - [Committed benchmark bundle](outputs/benchmark/EXP-18E88EAF/README.md)
 - [Frozen Nebius deployment bundle](evidence/deployment-2026-07-14-1412/README.md)
 
-The corrected production set records six completed Nebius Jobs, 1,200 disjoint-seed workloads, 148,958 events, six distinct event and metric digests, detector confusion counts, and synchronized Object Storage artifacts.
+The corrected production evidence records six completed Nebius Jobs with 1,200 disjoint-seed workloads plus 25 real L40S/vLLM Endpoint calls. A separate manual Control Panel session adds one completed 100-workload Job, 12,414 events, seven AI investigation reports, 12 real Endpoint calls, and synchronized Object Storage artifacts.
 
 Freeze a new local evidence snapshot with `./scripts/freeze-release.sh`; add `--offline` when Docker, the backend, or Nebius CLI is unavailable.
 

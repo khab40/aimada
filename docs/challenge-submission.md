@@ -28,7 +28,8 @@ LOB Arena is a synthetic market-surveillance arena that makes order-book abuse-l
 | --- | --- | --- | --- | --- |
 | Local mock demo | Local deterministic path | Laptop, Docker Compose | 3–5 min including stack startup | Demo artifacts under `outputs/serverless-smoke/` |
 | Corrected multi-seed Job set | Six completed Jobs; 1,200 unique run seeds with zero overlap | Nebius Serverless Job, `cpu-d3`, `4vcpu-16gb` | 1,200 workloads and 148,958 events in 1,308.436 s aggregate lifecycle | 6 distinct event digests, 6 distinct metric digests, and 42 Job outputs synchronized from Object Storage |
-| vLLM Endpoint representative calls | Endpoint EVDs `EVD-EA016D5A3647` and `EVD-DDB7E7683A8F` | Nebius Serverless Endpoint, `gpu-l40s-d`, `1gpu-16vcpu-96gb`, `Qwen/Qwen2.5-14B-Instruct`, vLLM | 2 structured investigation calls; P50 24.20 s, P95 28.78 s | Structured JSON responses, Endpoint evidence records, S3 archival, backend sync, and UI download links |
+| Production vLLM Endpoint set | 25 completed real calls: 17 investigations, 4 reports, 4 scenario generations | Nebius Serverless Endpoint, `gpu-l40s-d`, `1gpu-16vcpu-96gb`, `Qwen/Qwen2.5-14B-Instruct`, vLLM | 38,429 tokens; mean 24.038 s; P50 27.141 s; zero fallbacks | 17 validated structured assessments and 25 S3-uploaded evidence records |
+| Manual Control Panel run | One completed 100-workload Job plus 12 real Endpoint calls | Nebius Serverless Job + L40S/vLLM Endpoint | 12,414 events in 159.800 s Job lifecycle; 16,279 Endpoint tokens | TP 60, FN 20, FP 0, TN 20; F1 0.857; 7 investigation reports; S3-synchronized artifacts |
 
 The detector result is intentionally not perfect: aggregate precision is 1.000, recall is 0.740, and F1 is 0.850. All 240 Liquidity Evaporation positives were missed and 10 Layering-like positives were missed. See the [sanitized production evidence](../evidence/production-e2e-2026-07-15/README.md).
 
@@ -36,7 +37,8 @@ The detector result is intentionally not perfect: aggregate precision is 1.000, 
 
 - **Number of runs:** More than ten production Serverless AI Job runs validated the batch workflow. The committed `EXP-390EFAC2` evidence requested and retained 100 workload labels: 80 labeled attack rows plus 20 `normal_market` control rows.
 - **Best detector in the committed example:** The built-in deterministic detector suite reached precision/recall/F1 of 1.0 for the synthetic `layering_like`, `quote_stuffing`, and `spoofing_like_wall` scenarios; the benign `normal_market` control is excluded from attack recall.
-- **Endpoint investigations:** Seven reports completed in Nebius mode with no fallback; the evidence window contains eight completed, S3-uploaded Endpoint records.
+- **Endpoint investigations:** The production window contains 25 completed real vLLM calls with no fallback; all 25 evidence records were uploaded to S3, and all 17 Investigation Team responses preserved the validated structured assessment.
+- **Manual UI verification:** `EXP-84D07DB1` completed from the Control Panel with 100 unique derived seeds, 12,414 events, and seven collected Job-output artifacts. The same session produced 12 real Endpoint responses with zero fallback and two validated structured assessments. See the [manual UI evidence](../evidence/manual-ui-2026-07-15/README.md).
 - **Main finding:** Production runs validated container execution, scenario generation, detector evaluation, aggregation, reporting, logs, and artifact persistence. These synthetic metrics validate integration and reproducibility only; they do not support a real-world surveillance-accuracy claim.
 
 ### Workload-count reconciliation
@@ -54,6 +56,7 @@ The `EXP-390EFAC2` run did not drop 20 workloads. The checked-in `labels.jsonl` 
 ## Limitations
 
 - Production execution is validated, compact redacted evidence bundles are committed, and the runtime/cost statement above records the measured cloud run used for publication. Private console screenshots are intentionally not required to reproduce the public evidence chain.
+- The manual Polished E2E workflow completed its local pipeline and evidence upload, but its cloud child lookup returned `NotFound`; it is not counted as a completed cloud Job. The separate managed experiment is the completed manual cloud run.
 - The rendered demo video and published article URL remain missing.
 - The committed 100-workload evidence contains 80 labeled attack rows and 20 normal-market control rows; this is a denominator distinction, not an unexplained data loss.
 - Results cover five synthetic scenario labels with one deterministic detector suite/model dimension; broader seeds and learned-detector comparisons are required before comparative claims are credible.
