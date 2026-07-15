@@ -154,6 +154,19 @@ class NebiusIntegrationStatus(BaseModel):
     cli_version: str | None = None
 
 
+def local_mock_nebius_client() -> "NebiusClient":
+    """Return a client whose every AI operation is forced through deterministic local fallback."""
+    return NebiusClient(
+        incident_explainer_url="",
+        scenario_generator_url="",
+        orderbook_alert_url="",
+        investigation_report_url="",
+        investigation_team_url="",
+        market_abuse_scenario_url="",
+        api_key="",
+    )
+
+
 class NebiusClient:
     def __init__(
         self,

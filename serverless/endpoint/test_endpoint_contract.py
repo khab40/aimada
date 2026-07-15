@@ -247,6 +247,8 @@ def test_local_vllm_mode_uses_local_openai_compatible_endpoint_without_auth(
     monkeypatch.setenv("NEBIUS_ENDPOINT_MODE", "local_vllm")
     monkeypatch.setenv("LOCAL_VLLM_BASE_URL", "http://127.0.0.1:8001/v1")
     monkeypatch.setenv("LOCAL_VLLM_MODEL", "test-local-vllm-model")
+    monkeypatch.setenv("NEBIUS_INPUT_TOKEN_COST_PER_MILLION_USD", "2")
+    monkeypatch.setenv("NEBIUS_OUTPUT_TOKEN_COST_PER_MILLION_USD", "4")
     captured: dict[str, object] = {}
 
     def fake_urlopen(request: object, timeout: float) -> FakeModelResponse:
@@ -254,7 +256,9 @@ def test_local_vllm_mode_uses_local_openai_compatible_endpoint_without_auth(
         captured["authorization"] = request.get_header("Authorization")  # type: ignore[attr-defined]
         captured["url"] = request.full_url  # type: ignore[attr-defined]
         captured["body"] = json.loads(request.data.decode("utf-8"))  # type: ignore[attr-defined]
-        return FakeModelResponse(_chat_completion(json.dumps(_professional_assessment())))
+        payload = _chat_completion(json.dumps(_professional_assessment()))
+        payload["usage"] = {"prompt_tokens": 1000, "completion_tokens": 500, "total_tokens": 1500}
+        return FakeModelResponse(payload)
 
     monkeypatch.setattr(endpoint_app, "urlopen", fake_urlopen)
 
@@ -269,6 +273,9 @@ def test_local_vllm_mode_uses_local_openai_compatible_endpoint_without_auth(
 
     assert response.model_mode == "local_vllm"
     assert response.model == "test-local-vllm-model"
+    assert response.usage is not None
+    assert response.usage.total_tokens == 1500
+    assert response.usage.estimated_cost_usd == 0.004
     assert captured["url"] == "http://127.0.0.1:8001/v1/chat/completions"
     assert captured["authorization"] is None
     assert captured["timeout"] == 180.0

@@ -177,13 +177,17 @@ export interface NebiusStorageClient {
 }
 
 export type NebiusUsageMetrics = {
-  aiEndpointCallsToday: number;
+  aiEndpointCallsSession: number;
   averageLlmLatencySec: number;
   serverlessJobsRun: number;
+  jobRuntimeSec: number;
   simulationEventsGenerated: number;
   replayStorageMb: number;
+  artifactCount: number;
   estimatedCostUsd: number;
+  costBasis: string;
   tokensUsed: number;
+  sessionDurationSec: number;
 };
 
 export type ServiceHealth = {

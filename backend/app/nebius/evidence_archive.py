@@ -29,6 +29,19 @@ class NebiusEvidenceRecord(BaseModel):
     status: str
     created_at: str
     latency_seconds: float | None = None
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    estimated_cost_usd: float | None = None
+    job_cost_usd: float = 0
+    duration_seconds: float = 0
+    job_runs: int = 0
+    workloads: int = 0
+    simulation_events: int = 0
+    artifact_count: int = 0
+    request_bytes: int = 0
+    response_bytes: int = 0
+    artifact_bytes: int = 0
     run_id: str | None = None
     endpoint: str | None = None
     local_dir: str
@@ -120,8 +133,10 @@ class NebiusEvidenceArchive:
         local_dir.mkdir(parents=True, exist_ok=True)
         request_path = local_dir / "request.json"
         response_path = local_dir / "response.json"
-        request_path.write_text(json.dumps(_sanitize(request_payload), indent=2), encoding="utf-8")
-        response_path.write_text(json.dumps(_sanitize(response_payload), indent=2), encoding="utf-8")
+        request_text = json.dumps(_sanitize(request_payload), indent=2)
+        response_text = json.dumps(_sanitize(response_payload), indent=2)
+        request_path.write_text(request_text, encoding="utf-8")
+        response_path.write_text(response_text, encoding="utf-8")
         artifact_paths = {"request": str(request_path), "response": str(response_path)}
         for label, raw_path in (evidence_files or {}).items():
             source = Path(raw_path)
@@ -130,6 +145,25 @@ class NebiusEvidenceArchive:
             target = local_dir / f"{_safe_name(label)}-{source.name}"
             _copy_redacted(source, target)
             artifact_paths[label] = str(target)
+
+        usage = response_payload.get("usage") if isinstance(response_payload.get("usage"), dict) else {}
+        prompt_tokens = _nonnegative_int(usage.get("prompt_tokens"))
+        completion_tokens = _nonnegative_int(usage.get("completion_tokens"))
+        total_tokens = _nonnegative_int(usage.get("total_tokens")) or prompt_tokens + completion_tokens
+        estimated_cost_usd = _optional_nonnegative_float(usage.get("estimated_cost_usd"))
+        if estimated_cost_usd is None and (prompt_tokens or completion_tokens):
+            estimated_cost_usd = round(
+                prompt_tokens / 1_000_000 * self.settings.nebius_input_token_cost_per_million_usd
+                + completion_tokens / 1_000_000 * self.settings.nebius_output_token_cost_per_million_usd,
+                8,
+            )
+        job_cost_usd = _optional_nonnegative_float(usage.get("job_cost_usd")) or 0.0
+        duration_seconds = _optional_nonnegative_float(usage.get("duration_seconds")) or 0.0
+        artifact_bytes = sum(
+            Path(path).stat().st_size
+            for path in artifact_paths.values()
+            if Path(path).exists() and Path(path).is_file()
+        )
 
         source_uri = self._record_source_uri(kind, evidence_id)
         s3_status: Literal["uploaded", "local_only", "upload_failed"] = (
@@ -142,6 +176,19 @@ class NebiusEvidenceArchive:
             status=status,
             created_at=created_at,
             latency_seconds=latency_seconds,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            total_tokens=total_tokens,
+            estimated_cost_usd=estimated_cost_usd,
+            job_cost_usd=job_cost_usd,
+            duration_seconds=duration_seconds,
+            job_runs=_nonnegative_int(usage.get("job_runs")),
+            workloads=_nonnegative_int(usage.get("workloads")),
+            simulation_events=_nonnegative_int(usage.get("simulation_events")),
+            artifact_count=_nonnegative_int(usage.get("artifact_count")),
+            request_bytes=len(request_text.encode("utf-8")),
+            response_bytes=len(response_text.encode("utf-8")),
+            artifact_bytes=artifact_bytes,
             run_id=run_id,
             endpoint=endpoint,
             local_dir=str(local_dir),
@@ -349,6 +396,20 @@ def _safe_name(value: str) -> str:
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _nonnegative_int(value: Any) -> int:
+    try:
+        return max(0, int(value or 0))
+    except (TypeError, ValueError):
+        return 0
+
+
+def _optional_nonnegative_float(value: Any) -> float | None:
+    try:
+        return max(0.0, float(value)) if value is not None else None
+    except (TypeError, ValueError):
+        return None
 
 
 def measure_started_at() -> float:

@@ -117,6 +117,21 @@ class Settings(BaseSettings):
         le=600.0,
         alias="NEBIUS_INFERENCE_TIMEOUT_SECONDS",
     )
+    nebius_input_token_cost_per_million_usd: float = Field(
+        default=0.0,
+        ge=0.0,
+        alias="NEBIUS_INPUT_TOKEN_COST_PER_MILLION_USD",
+    )
+    nebius_output_token_cost_per_million_usd: float = Field(
+        default=0.0,
+        ge=0.0,
+        alias="NEBIUS_OUTPUT_TOKEN_COST_PER_MILLION_USD",
+    )
+    nebius_job_cost_per_hour_usd: float = Field(
+        default=0.0,
+        ge=0.0,
+        alias="NEBIUS_JOB_COST_PER_HOUR_USD",
+    )
     nebius_local_tournament_scenario_limit: int = Field(
         default=24,
         ge=1,

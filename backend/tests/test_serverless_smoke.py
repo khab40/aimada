@@ -6,7 +6,8 @@ from typing import Any
 from app.arena.engine import SimulationEngine
 from app.config import get_settings
 from app.nebius.client import NebiusClient
-from app.nebius.serverless_smoke import run_serverless_smoke_demo
+from app.nebius.evidence_archive import NebiusEvidenceArchive
+from app.nebius.serverless_smoke import finalize_serverless_smoke_demo, run_serverless_smoke_demo
 from app.storage.local_store import LocalStore
 
 
@@ -32,13 +33,13 @@ def test_serverless_smoke_demo_writes_artifacts_and_leaderboard(monkeypatch: Any
 
     artifact_names = {artifact.name for artifact in response.artifacts}
 
-    assert response.mode == "real_nebius_pending"
+    assert response.mode == "local"
     assert response.incident_id
     assert response.detector_alerts
     assert response.explanation is not None
     assert response.investigation is not None
     assert response.tournament.leaderboard
-    assert response.serverless_job["status"] == "real_nebius_pending"
+    assert response.serverless_job["status"] == "completed"
     assert "NEBIUS_JOB_*_COMMAND_TEMPLATE" not in response.serverless_job["message"]
     assert {
         "summary.json",
@@ -50,7 +51,17 @@ def test_serverless_smoke_demo_writes_artifacts_and_leaderboard(monkeypatch: Any
         "serverless_job.json",
         "manifest.json",
     } <= artifact_names
-    assert (tmp_path / "serverless-smoke" / "manifest.json").exists()
+    assert (tmp_path / "serverless-smoke" / response.experiment_id / "manifest.json").exists()
+    experiment = store.read_json(f"experiments/{response.experiment_id}/experiment.json")
+    assert experiment["status"] == "completed"
+    assert experiment["metrics"][0]["kind"] == "polished_e2e_usage"
+    assert response.evidence_s3_status == "local_only"
+    assert response.usage.artifact_count == 8
+    assert response.usage.simulation_events > 0
+    assert any(
+        record.evidence_id == response.evidence_id
+        for record in NebiusEvidenceArchive(store, get_settings()).list_records(limit=100)
+    )
 
 
 def test_serverless_smoke_demo_reports_configured_nebius_job(monkeypatch: Any, tmp_path: Path) -> None:
@@ -81,6 +92,7 @@ def test_serverless_smoke_demo_reports_configured_nebius_job(monkeypatch: Any, t
                 simulation=SimulationEngine(store=store, normal_agent_count=3),
                 store=store,
                 repo_root=Path(__file__).resolve().parents[2],
+                execution_mode="nebius",
             )
         )
     finally:
@@ -100,3 +112,19 @@ def test_serverless_smoke_demo_reports_configured_nebius_job(monkeypatch: Any, t
     assert "project-test" in captured["argv"]
     assert "--volume" in captured["argv"]
     assert "s3://bucket:/job/outputs:rw" in captured["argv"]
+    experiment = store.read_json(f"experiments/{response.experiment_id}/experiment.json")
+    assert experiment["status"] == "submitted"
+
+    assert response.cloud_tournament is not None
+    completed = response.cloud_tournament.model_copy(
+        update={"status": "completed", "completed_at": response.cloud_tournament.started_at}
+    )
+    finalized = finalize_serverless_smoke_demo(
+        experiment_id=response.experiment_id,
+        tournament=completed,
+        store=store,
+    )
+    assert finalized.experiment.status == "completed"
+    assert finalized.experiment.smart_batch_id == completed.tournament_id
+    assert finalized.evidence.operation == "polished_e2e_cloud_results"
+    assert finalized.usage.job_runs == 2

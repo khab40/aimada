@@ -30,7 +30,7 @@ from app.experiments.nebius_orchestrator import (
     NebiusJobConfigRenderResponse,
 )
 from app.experiments.repository import ExperimentRepository
-from app.nebius.client import NebiusClient
+from app.nebius.client import NebiusClient, local_mock_nebius_client
 from app.schemas.arena import AttackTrackerState, BenchmarkResult
 from app.storage.history import append_history_artifact, history_window
 from app.storage.local_store import LocalStore
@@ -381,11 +381,12 @@ def run_experiment_investigations(
     experiment_id: str,
     request: Request,
     top_k: int = 7,
+    execution_mode: Literal["local", "nebius"] = "nebius",
 ) -> InvestigationRunResponse:
     try:
         response = _experiment_manager(request).run_investigations(
             experiment_id,
-            client=NebiusClient(),
+            client=NebiusClient() if execution_mode == "nebius" else local_mock_nebius_client(),
             top_k=top_k,
         )
     except ValueError as exc:

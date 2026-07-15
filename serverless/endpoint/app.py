@@ -45,6 +45,14 @@ app = FastAPI(
 )
 
 
+class ModelUsage(BaseModel):
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    estimated_cost_usd: float | None = None
+    cost_basis: str = "token counts only; pricing not configured"
+
+
 class EvidenceItem(BaseModel):
     key: str
     label: str
@@ -75,6 +83,7 @@ class IncidentExplanationResponse(BaseModel):
     model_mode: str = "deterministic_fallback"
     model: str = DEFAULT_ENDPOINT_MODEL
     latency_ms: float = 0.0
+    usage: ModelUsage | None = None
     fallback_reason: str | None = None
     disclaimer: str = DISCLAIMER
 
@@ -93,6 +102,7 @@ class ScenarioGenerationResponse(BaseModel):
     model_mode: str = "deterministic_fallback"
     model: str = DEFAULT_ENDPOINT_MODEL
     latency_ms: float = 0.0
+    usage: ModelUsage | None = None
     fallback_reason: str | None = None
     safety_note: str = DISCLAIMER
 
@@ -145,6 +155,7 @@ class MarketAbuseScenarioResponse(BaseModel):
     model_mode: str = "deterministic_fallback"
     model: str = DEFAULT_ENDPOINT_MODEL
     latency_ms: float = 0.0
+    usage: ModelUsage | None = None
     fallback_reason: str | None = None
     disclaimer: str = DISCLAIMER
 
@@ -176,6 +187,7 @@ class OrderBookAlertResponse(BaseModel):
     model_mode: str
     model: str = DEFAULT_ENDPOINT_MODEL
     latency_ms: float = 0.0
+    usage: ModelUsage | None = None
     fallback_reason: str | None = None
     disclaimer: str = DISCLAIMER
 
@@ -196,6 +208,7 @@ class InvestigationReportResponse(BaseModel):
     model_mode: str = "deterministic_fallback"
     model: str = DEFAULT_ENDPOINT_MODEL
     latency_ms: float = 0.0
+    usage: ModelUsage | None = None
     fallback_reason: str | None = None
     disclaimer: str = DISCLAIMER
 
@@ -245,6 +258,7 @@ class AIInvestigationTeamResponse(BaseModel):
     model_mode: str = "deterministic_fallback"
     model: str = DEFAULT_ENDPOINT_MODEL
     latency_ms: float = 0.0
+    usage: ModelUsage | None = None
     fallback_reason: str | None = None
     # The validated surveillance assessment is preserved alongside the legacy
     # investigator-team view so callers can consume the structured contract.
@@ -493,6 +507,7 @@ class ModelCallResult:
     model: str
     latency_ms: float = 0.0
     fallback_reason: str | None = None
+    usage: ModelUsage | None = None
 
 
 def _call_surveillance_analysis(
@@ -768,6 +783,31 @@ def _call_openai_compatible_json(
         model_mode=model_mode,
         model=model,
         latency_ms=_elapsed_ms(started),
+        usage=_model_usage(decoded),
+    )
+
+
+def _model_usage(response: dict[str, Any]) -> ModelUsage | None:
+    raw = response.get("usage")
+    if not isinstance(raw, dict):
+        return None
+    prompt_tokens = max(0, int(raw.get("prompt_tokens") or 0))
+    completion_tokens = max(0, int(raw.get("completion_tokens") or 0))
+    total_tokens = max(0, int(raw.get("total_tokens") or prompt_tokens + completion_tokens))
+    input_rate = _float_env("NEBIUS_INPUT_TOKEN_COST_PER_MILLION_USD", 0.0)
+    output_rate = _float_env("NEBIUS_OUTPUT_TOKEN_COST_PER_MILLION_USD", 0.0)
+    pricing_configured = input_rate > 0 or output_rate > 0
+    estimated_cost = (
+        round((prompt_tokens * input_rate + completion_tokens * output_rate) / 1_000_000, 8)
+        if pricing_configured
+        else None
+    )
+    return ModelUsage(
+        prompt_tokens=prompt_tokens,
+        completion_tokens=completion_tokens,
+        total_tokens=total_tokens,
+        estimated_cost_usd=estimated_cost,
+        cost_basis="configured token rates" if pricing_configured else "token counts only; pricing not configured",
     )
 
 
@@ -881,6 +921,7 @@ def _with_model_metadata(response: BaseModel, result: ModelCallResult) -> Any:
             "model": result.model,
             "latency_ms": result.latency_ms,
             "fallback_reason": result.fallback_reason,
+            "usage": result.usage,
         }
     )
 

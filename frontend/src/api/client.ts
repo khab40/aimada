@@ -392,6 +392,19 @@ export type NebiusEvidenceRecord = {
   status: string;
   created_at: string;
   latency_seconds?: number | null;
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  total_tokens?: number;
+  estimated_cost_usd?: number | null;
+  job_cost_usd?: number;
+  duration_seconds?: number;
+  job_runs?: number;
+  workloads?: number;
+  simulation_events?: number;
+  artifact_count?: number;
+  request_bytes?: number;
+  response_bytes?: number;
+  artifact_bytes?: number;
   run_id?: string | null;
   endpoint?: string | null;
   local_dir: string;
@@ -620,6 +633,33 @@ export type ServerlessSmokeResponse = {
   serverless_job: Record<string, unknown>;
   artifacts: ServerlessSmokeArtifact[];
   benefits: string[];
+  experiment_id: string;
+  evidence_id: string;
+  evidence_s3_status: "uploaded" | "local_only" | "upload_failed";
+  evidence_source_uri?: string | null;
+  usage: {
+    duration_seconds: number;
+    endpoint_calls: number;
+    endpoint_avg_latency_seconds: number;
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+    job_runs: number;
+    workloads: number;
+    simulation_events: number;
+    artifact_count: number;
+    artifact_bytes: number;
+    endpoint_cost_usd: number;
+    job_cost_usd: number;
+    estimated_cost_usd: number;
+    cost_basis: string;
+  };
+};
+
+export type ServerlessSmokeFinalizeResponse = {
+  experiment: ManagedExperiment;
+  evidence: NebiusEvidenceRecord;
+  usage: ServerlessSmokeResponse["usage"];
 };
 
 export type ScenarioActionResponse = {
@@ -798,9 +838,13 @@ export async function normalizeManagedExperimentArtifacts(experimentId: string):
 
 export async function runManagedExperimentInvestigations(
   experimentId: string,
+  runtimeMode: "local-demo" | "nebius-cloud",
   topK = 7
 ): Promise<InvestigationRunResponse> {
-  const params = new URLSearchParams({ top_k: String(topK) });
+  const params = new URLSearchParams({
+    execution_mode: runtimeMode === "local-demo" ? "local" : "nebius",
+    top_k: String(topK)
+  });
   const response = await fetch(
     `${API_BASE_URL}/api/experiments/${encodeURIComponent(experimentId)}/run-investigations?${params.toString()}`,
     { method: "POST" }
@@ -1139,9 +1183,11 @@ export async function createInvestigationReport(): Promise<InvestigationReportRe
 }
 
 export async function runAIInvestigationTeam(
-  request: AIInvestigationTeamRequest = defaultAIInvestigationTeamRequest()
+  request: AIInvestigationTeamRequest = defaultAIInvestigationTeamRequest(),
+  runtimeMode: "local-demo" | "nebius-cloud" = "local-demo"
 ): Promise<AIInvestigationTeamResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/nebius/investigation-team/analyze`, {
+  const executionMode = runtimeMode === "local-demo" ? "local" : "nebius";
+  const response = await fetch(`${API_BASE_URL}/api/nebius/investigation-team/analyze?execution_mode=${executionMode}`, {
     body: JSON.stringify(request),
     headers: { "Content-Type": "application/json" },
     method: "POST"
@@ -1153,9 +1199,11 @@ export async function runAIInvestigationTeam(
 }
 
 export async function generateMarketAbuseScenario(
-  request: MarketAbuseScenarioGenerationRequest
+  request: MarketAbuseScenarioGenerationRequest,
+  runtimeMode: "local-demo" | "nebius-cloud" = "local-demo"
 ): Promise<MarketAbuseScenarioResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/nebius/scenario-generator/generate`, {
+  const executionMode = runtimeMode === "local-demo" ? "local" : "nebius";
+  const response = await fetch(`${API_BASE_URL}/api/nebius/scenario-generator/generate?execution_mode=${executionMode}`, {
     body: JSON.stringify(request),
     headers: { "Content-Type": "application/json" },
     method: "POST"
@@ -1199,12 +1247,28 @@ export async function refreshDetectorTournament(tournamentId: string): Promise<D
   return response.json();
 }
 
-export async function runServerlessSmokeDemo(): Promise<ServerlessSmokeResponse> {
+export async function runServerlessSmokeDemo(runtimeMode: "local-demo" | "nebius-cloud"): Promise<ServerlessSmokeResponse> {
   const response = await fetch(`${API_BASE_URL}/api/nebius/serverless-smoke/run`, {
+    body: JSON.stringify({ execution_mode: runtimeMode === "local-demo" ? "local" : "nebius" }),
+    headers: { "Content-Type": "application/json" },
     method: "POST"
   });
   if (!response.ok) {
     throw new Error(await apiErrorMessage(response, "Serverless smoke demo failed"));
+  }
+  return response.json();
+}
+
+export async function finalizeServerlessSmokeDemo(
+  experimentId: string,
+  tournamentId: string
+): Promise<ServerlessSmokeFinalizeResponse> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/nebius/serverless-smoke/${encodeURIComponent(experimentId)}/finalize/${encodeURIComponent(tournamentId)}`,
+    { method: "POST" }
+  );
+  if (!response.ok) {
+    throw new Error(await apiErrorMessage(response, "Serverless smoke finalization failed"));
   }
   return response.json();
 }

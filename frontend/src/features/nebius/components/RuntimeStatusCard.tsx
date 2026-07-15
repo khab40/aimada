@@ -1,36 +1,28 @@
-import type { NebiusRuntimeStatus, NebiusUsageMetrics } from "@/features/nebius/types";
+import type { NebiusRuntimeStatus } from "@/features/nebius/types";
 
-export function RuntimeStatusCard({ status, usage }: { status: NebiusRuntimeStatus; usage: NebiusUsageMetrics }) {
+export function RuntimeStatusCard({ status }: { status: NebiusRuntimeStatus }) {
   const cards = [
     {
-      cost: "not metered",
-      gpu: "not reported",
+      detail: status.region === "not reported" ? "Region not reported" : status.region,
       lastExecution: status.activeSimulation,
-      latency: "live probes",
       status: status.cloudStatus,
       title: "Nebius Cloud"
     },
     {
-      cost: "not metered",
-      gpu: "model endpoint",
-      lastExecution: usage.aiEndpointCallsToday > 0 ? `${usage.aiEndpointCallsToday} calls` : "not reported",
-      latency: usage.averageLlmLatencySec > 0 ? `${usage.averageLlmLatencySec.toFixed(2)}s` : "not reported",
+      detail: "Investigation and scenario routes",
+      lastExecution: status.activeSimulation,
       status: status.aiEndpointStatus,
       title: "Nebius AI"
     },
     {
-      cost: "not metered",
-      gpu: "not reported",
+      detail: "Detector tournament execution",
       lastExecution: `${status.ticksProcessed.toLocaleString()} steps`,
-      latency: status.eventsPerSecond > 0 ? `${status.eventsPerSecond.toLocaleString()}/sec` : "not reported",
       status: status.serverlessStatus,
       title: "Managed Experiment Jobs"
     },
     {
-      cost: "not metered",
-      gpu: "not required",
-      lastExecution: `${usage.replayStorageMb.toFixed(0)} MB stored`,
-      latency: status.storageStatus === "synced" ? "live probe succeeded" : "unavailable",
+      detail: "Experiment and evidence storage",
+      lastExecution: status.storageStatus === "synced" ? "Live probe succeeded" : "No successful probe",
       status: status.storageStatus,
       title: "Artifacts"
     }
@@ -53,17 +45,13 @@ export function RuntimeStatusCard({ status, usage }: { status: NebiusRuntimeStat
 }
 
 function RuntimeCard({
-  cost,
-  gpu,
+  detail,
   lastExecution,
-  latency,
   status,
   title
 }: {
-  cost: string;
-  gpu: string;
+  detail: string;
   lastExecution: string;
-  latency: string;
   status: string;
   title: string;
 }) {
@@ -74,9 +62,7 @@ function RuntimeCard({
       </div>
       <dl>
         <Metric label="Status" value={status.replace("-", " ")} />
-        <Metric label="Latency" value={latency} />
-        <Metric label="GPU" value={gpu} />
-        <Metric label="Cost" value={cost} />
+        <Metric label="Role" value={detail} />
         <Metric label="Last execution" value={lastExecution} />
       </dl>
     </article>

@@ -58,6 +58,8 @@ describe("Core UI navigation and workflow contracts", () => {
   const incidentTransfer = read("src/controlCenterIncident.ts");
   const investigator = read("src/components/NebiusAIInvestigatorPanel.tsx");
   const apiClient = read("src/api/client.ts");
+  const runtimeStatus = read("src/features/nebius/components/RuntimeStatusCard.tsx");
+  const usageMonitor = read("src/features/nebius/components/UsageCostMonitor.tsx");
 
   it("keeps product navigation focused and removes implementation destinations", () => {
     expectIncludes(app, [
@@ -209,7 +211,6 @@ describe("Core UI navigation and workflow contracts", () => {
       "Job",
       "Result",
       "real endpoint used",
-      "real cloud execution",
       "fallback to deterministic mock",
       "refreshDetectorTournament",
       "mergeSmokeCloudTournament",
@@ -219,7 +220,6 @@ describe("Core UI navigation and workflow contracts", () => {
       "evidenceArtifactsFrom",
       "endpoint unavailable",
       "Model name",
-      "GPU",
       "Cost",
       "Artifacts",
       "Tokens",
@@ -248,6 +248,45 @@ describe("Core UI navigation and workflow contracts", () => {
     assert.doesNotMatch(nebius, /Managed Experiment Lab/);
   });
 
+  it("gates the five-step workflow and keeps session telemetry in Execution Trace", () => {
+    expectIncludes(nebius, [
+      "workflowStepReady",
+      "workflowStepLockedReason",
+      "controlsDisabled",
+      "executionResultsReady",
+      "mergeArtifactLinks",
+      "<UsageCostMonitor",
+      "showE2ECompletion",
+      "<E2ECompletionDialog",
+      "finalizeServerlessSmokeDemo",
+      "Nebius Serverless Job did not finish before the polling timeout."
+    ]);
+    expectIncludes(usageMonitor, [
+      "Current Command Center browser session",
+      "aiEndpointCallsSession",
+      "sessionDurationSec",
+      "estimatedCostUsd",
+      "costBasis"
+    ]);
+    // One artifact block in Experiment Lab and one merged block in Execution Trace.
+    assert.equal((nebius.match(/<ExperimentArtifactLinks/g) ?? []).length, 2);
+    assert.doesNotMatch(runtimeStatus, /Estimated cost|Tokens|GPU|Latency/);
+  });
+
+  it("persists Polished E2E results and selects Local Mock explicitly", () => {
+    expectIncludes(apiClient, [
+      "execution_mode: runtimeMode === \"local-demo\" ? \"local\" : \"nebius\"",
+      "/api/nebius/serverless-smoke/",
+      "/finalize/",
+      "ServerlessSmokeFinalizeResponse"
+    ]);
+    expectIncludes(nebius, [
+      "finalized.evidence.s3_status",
+      "refreshExperimentDetails(result.experiment_id)",
+      "Polished E2E demo saved as experiment"
+    ]);
+  });
+
   it("gates every Nebius-only control on live service probes", () => {
     expectIncludes(nebius, [
       "probeSucceeded(nebiusStatus?.endpoint_health)",
@@ -257,7 +296,7 @@ describe("Core UI navigation and workflow contracts", () => {
       "configured submit command, and successful live Jobs probe",
       "Object Storage is ${storageHealthStatus",
       "Required Nebius services did not pass their live probes",
-      "not metered",
+      "Usage measured",
       "not reported"
     ]);
   });

@@ -1,6 +1,7 @@
 import json
 from datetime import datetime, timezone
 from pathlib import Path
+from time import perf_counter
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field
@@ -8,6 +9,10 @@ from pydantic import BaseModel, Field
 from app.api.routes_incidents import build_compact_replay_payload, persist_explanation_result
 from app.arena.engine import SimulationEngine
 from app.config import get_settings
+from app.experiments.manager import ExperimentManager
+from app.experiments.models import Experiment, ExperimentCreateRequest, utc_now
+from app.experiments.nebius_orchestrator import ExperimentJobRecord
+from app.experiments.repository import ExperimentRepository
 from app.nebius.client import IncidentExplanationResponse, NebiusClient
 from app.nebius.detector_tournament import (
     DetectorTournamentResponse,
@@ -15,12 +20,36 @@ from app.nebius.detector_tournament import (
     start_tournament,
 )
 from app.nebius.investigation_team import AIInvestigationTeamRequest, AIInvestigationTeamResponse
+from app.nebius.evidence_archive import NebiusEvidenceArchive, NebiusEvidenceRecord
 from app.nebius.scenario_generator import MarketAbuseScenarioGenerationRequest
 from app.schemas.arena import ArenaState, DetectorScore, Incident
 from app.storage.local_store import LocalStore
 
 
 SmokeMode = Literal["local", "real_nebius_pending", "real_nebius", "error"]
+SmokeExecutionMode = Literal["local", "nebius"]
+
+
+class ServerlessSmokeRequest(BaseModel):
+    execution_mode: SmokeExecutionMode = "local"
+
+
+class ServerlessSmokeUsage(BaseModel):
+    duration_seconds: float
+    endpoint_calls: int
+    endpoint_avg_latency_seconds: float
+    prompt_tokens: int
+    completion_tokens: int
+    total_tokens: int
+    job_runs: int
+    workloads: int
+    simulation_events: int
+    artifact_count: int
+    artifact_bytes: int
+    endpoint_cost_usd: float
+    job_cost_usd: float
+    estimated_cost_usd: float
+    cost_basis: str
 
 
 class SmokeArtifact(BaseModel):
@@ -42,6 +71,17 @@ class ServerlessSmokeResponse(BaseModel):
     serverless_job: dict[str, Any]
     artifacts: list[SmokeArtifact]
     benefits: list[str] = Field(default_factory=list)
+    experiment_id: str
+    evidence_id: str
+    evidence_s3_status: Literal["uploaded", "local_only", "upload_failed"]
+    evidence_source_uri: str | None = None
+    usage: ServerlessSmokeUsage
+
+
+class ServerlessSmokeFinalizeResponse(BaseModel):
+    experiment: Experiment
+    evidence: NebiusEvidenceRecord
+    usage: ServerlessSmokeUsage
 
 
 async def run_serverless_smoke_demo(
@@ -50,10 +90,26 @@ async def run_serverless_smoke_demo(
     simulation: SimulationEngine,
     store: LocalStore,
     repo_root: Path,
+    execution_mode: SmokeExecutionMode = "local",
 ) -> ServerlessSmokeResponse:
     settings = get_settings()
+    started_at = perf_counter()
     created_at = _now()
-    artifact_dir = store.output_dir / "serverless-smoke"
+    repository = ExperimentRepository(store)
+    manager = ExperimentManager(repository)
+    experiment = manager.create(
+        ExperimentCreateRequest(
+            name=f"Polished E2E demo · {created_at[:19]}",
+            attack_count=9,
+            batch_size=9,
+            scenarios=["spoofing", "layering"],
+            seed=42,
+            nebius_mode="local_parallel_batch" if execution_mode == "local" else "real_nebius_pending",
+        )
+    )
+    archive = NebiusEvidenceArchive(store, settings)
+    evidence_before = {record.evidence_id for record in archive.list_records(limit=10_000)}
+    artifact_dir = store.output_dir / "serverless-smoke" / experiment.id
     artifact_dir.mkdir(parents=True, exist_ok=True)
 
     scenario_request = MarketAbuseScenarioGenerationRequest(
@@ -121,16 +177,26 @@ async def run_serverless_smoke_demo(
             store=store,
             repo_root=repo_root,
         )
-        if _job_submit_configured(settings)
+        if execution_mode == "nebius" and _job_submit_configured(settings)
         else None
     )
-    serverless_job = _serverless_job_status(settings, local_tournament, cloud_tournament)
-    mode: SmokeMode = (
-        "error"
-        if serverless_job["status"] == "failed"
-        else "real_nebius"
-        if cloud_tournament is not None
-        else "real_nebius_pending"
+    serverless_job = (
+        {
+            "status": "completed",
+            "execution_mode": "local_mock",
+            "job_id": local_tournament.tournament_id,
+            "message": "Local Mock tournament completed without cloud resources.",
+            "local_tournament_id": local_tournament.tournament_id,
+            "templates_configured": False,
+            "artifact_collection_configured": False,
+            "cloud_output_uri": None,
+            "artifacts": local_tournament.artifacts,
+        }
+        if execution_mode == "local"
+        else _serverless_job_status(settings, local_tournament, cloud_tournament)
+    )
+    mode: SmokeMode = "local" if execution_mode == "local" else (
+        "error" if serverless_job["status"] == "failed" else "real_nebius" if cloud_tournament is not None else "real_nebius_pending"
     )
 
     investigation_markdown = _investigation_markdown(
@@ -144,6 +210,7 @@ async def run_serverless_smoke_demo(
     artifact_payloads: dict[str, Any] = {
         "summary.json": {
             "created_at": created_at,
+            "experiment_id": experiment.id,
             "mode": mode,
             "story": "AI-generated spoofing incident -> LOB simulation -> detector alert -> LLM explanation -> AI investigation -> detector tournament -> artifacts.",
             "scenario_id": scenario.scenario_id,
@@ -199,6 +266,108 @@ async def run_serverless_smoke_demo(
             "manifest.json",
         ]
     ]
+    artifact_paths = {artifact.name.rsplit(".", 1)[0]: artifact.path for artifact in artifacts}
+    duration_seconds = round(perf_counter() - started_at, 4)
+    session_endpoint_records = [
+        record
+        for record in archive.list_records(limit=10_000)
+        if record.evidence_id not in evidence_before and record.kind == "endpoint_call"
+    ]
+    endpoint_calls = len(session_endpoint_records)
+    endpoint_latency_total = sum(record.latency_seconds or 0.0 for record in session_endpoint_records)
+    prompt_tokens = sum(record.prompt_tokens for record in session_endpoint_records)
+    completion_tokens = sum(record.completion_tokens for record in session_endpoint_records)
+    total_tokens = sum(record.total_tokens for record in session_endpoint_records)
+    endpoint_cost = sum(record.estimated_cost_usd or 0.0 for record in session_endpoint_records)
+    job_runs = 1 + int(cloud_tournament is not None)
+    job_cost = (
+        duration_seconds / 3600 * settings.nebius_job_cost_per_hour_usd
+        if execution_mode == "nebius"
+        and cloud_tournament is not None
+        and cloud_tournament.status in {"completed", "failed"}
+        and settings.nebius_job_cost_per_hour_usd > 0
+        else 0.0
+    )
+    artifact_bytes = sum(Path(artifact.path).stat().st_size for artifact in artifacts)
+    usage = ServerlessSmokeUsage(
+        duration_seconds=duration_seconds,
+        endpoint_calls=endpoint_calls,
+        endpoint_avg_latency_seconds=round(endpoint_latency_total / endpoint_calls, 4) if endpoint_calls else 0.0,
+        prompt_tokens=prompt_tokens,
+        completion_tokens=completion_tokens,
+        total_tokens=total_tokens,
+        job_runs=job_runs,
+        workloads=9 * job_runs,
+        simulation_events=len(state.events),
+        artifact_count=len(artifacts),
+        artifact_bytes=artifact_bytes,
+        endpoint_cost_usd=round(endpoint_cost, 8),
+        job_cost_usd=round(job_cost, 8),
+        estimated_cost_usd=round(endpoint_cost + job_cost, 8),
+        cost_basis=(
+            "Local Mock uses no metered cloud resources."
+            if execution_mode == "local"
+            else "Configured token and job-hour rates."
+            if settings.nebius_job_cost_per_hour_usd > 0 or endpoint_cost > 0
+            else "Usage measured; cloud pricing rates are not configured."
+        ),
+    )
+    cloud_pending = execution_mode == "nebius" and (
+        cloud_tournament is None or cloud_tournament.status not in {"completed", "failed"}
+    )
+    final_status = "failed" if mode == "error" else "submitted" if cloud_pending else "completed"
+    initial_job_status = (
+        cloud_tournament.status
+        if cloud_tournament is not None
+        else "real_nebius_pending"
+        if cloud_pending
+        else "failed"
+        if mode == "error"
+        else "completed"
+    )
+    evidence = archive.record(
+        kind="job",
+        operation="polished_e2e_demo",
+        status="running" if cloud_pending else "completed" if mode != "error" else "failed",
+        request_payload={"execution_mode": execution_mode, "experiment_id": experiment.id},
+        response_payload={
+            "mode": mode,
+            "scenario_id": scenario.scenario_id,
+            "incident_id": incident.id if incident else None,
+            "usage": usage.model_dump(mode="json"),
+        },
+        run_id=experiment.id,
+        evidence_files=artifact_paths,
+    )
+    job = ExperimentJobRecord(
+        job_id=f"E2E-{experiment.id.removeprefix('EXP-')}",
+        experiment_id=experiment.id,
+        backend="nebius_serverless_job" if execution_mode == "nebius" else "local_parallel_batch",
+        status=initial_job_status,
+        batch_start=0,
+        batch_end=9,
+        attack_count=9,
+        created_at=created_at,
+        updated_at=utc_now(),
+        message=f"Polished E2E demo completed in {mode} mode.",
+        artifact_paths=artifact_paths,
+    )
+    store.append_jsonl(f"experiments/{experiment.id}/jobs.jsonl", job.model_dump(mode="json"))
+    updated_experiment = experiment.model_copy(
+        update={
+            "status": final_status,
+            "smart_batch_id": local_tournament.tournament_id,
+            "artifact_dir": str(artifact_dir),
+            "artifact_paths": {
+                **artifact_paths,
+                "jobs": str(repository.experiment_dir(experiment.id) / "jobs.jsonl"),
+                "e2e_evidence": evidence.artifact_paths.get("metadata", ""),
+            },
+            "metrics": [{"kind": "polished_e2e_usage", **usage.model_dump(mode="json")}],
+            "updated_at": utc_now(),
+        }
+    )
+    repository.save(updated_experiment)
     store.append_jsonl(
         "nebius/serverless_smoke_runs.jsonl",
         {
@@ -230,7 +399,150 @@ async def run_serverless_smoke_demo(
             "Scalable tournament evaluation",
             "AI endpoint for interactive analyst support",
         ],
+        experiment_id=experiment.id,
+        evidence_id=evidence.evidence_id,
+        evidence_s3_status=evidence.s3_status,
+        evidence_source_uri=evidence.source_uri,
+        usage=usage,
     )
+
+
+def finalize_serverless_smoke_demo(
+    *,
+    experiment_id: str,
+    tournament: DetectorTournamentResponse,
+    store: LocalStore,
+) -> ServerlessSmokeFinalizeResponse:
+    if tournament.status not in {"completed", "failed"}:
+        raise ValueError("Nebius tournament is not finished")
+    repository = ExperimentRepository(store)
+    experiment = repository.get(experiment_id)
+    if experiment is None:
+        raise LookupError(f"experiment {experiment_id} not found")
+
+    settings = get_settings()
+    previous_usage = next(
+        (
+            ServerlessSmokeUsage.model_validate(metric)
+            for metric in experiment.metrics
+            if metric.get("kind") == "polished_e2e_usage"
+        ),
+        None,
+    )
+    cloud_runtime = _tournament_duration_seconds(tournament)
+    usage = _final_cloud_usage(previous_usage, cloud_runtime=cloud_runtime, settings=settings)
+    cloud_artifacts = {f"cloud_{name}": path for name, path in tournament.artifacts.items()}
+    archive = NebiusEvidenceArchive(store, settings)
+    evidence = archive.record(
+        kind="job",
+        operation="polished_e2e_cloud_results",
+        status=tournament.status,
+        request_payload={"experiment_id": experiment_id, "tournament_id": tournament.tournament_id},
+        response_payload={
+            "tournament": tournament.model_dump(mode="json"),
+            "usage": usage.model_dump(mode="json"),
+        },
+        run_id=experiment_id,
+        evidence_files=cloud_artifacts,
+    )
+    artifact_paths = {
+        **experiment.artifact_paths,
+        **cloud_artifacts,
+        "e2e_cloud_evidence": evidence.artifact_paths.get("metadata", ""),
+    }
+    updated = experiment.model_copy(
+        update={
+            "status": "completed" if tournament.status == "completed" else "failed",
+            "smart_batch_id": tournament.tournament_id,
+            "artifact_paths": artifact_paths,
+            "metrics": [
+                *[metric for metric in experiment.metrics if metric.get("kind") != "polished_e2e_usage"],
+                {"kind": "polished_e2e_usage", **usage.model_dump(mode="json")},
+                {"kind": "polished_e2e_cloud_tournament", **tournament.metrics},
+            ],
+            "updated_at": utc_now(),
+        }
+    )
+    repository.save(updated)
+    store.append_jsonl(
+        f"experiments/{experiment.id}/jobs.jsonl",
+        ExperimentJobRecord(
+            job_id=tournament.tournament_id,
+            experiment_id=experiment.id,
+            backend="nebius_serverless_job",
+            status=tournament.status,
+            batch_start=0,
+            batch_end=experiment.attack_count,
+            attack_count=experiment.attack_count,
+            created_at=tournament.started_at,
+            updated_at=tournament.completed_at or utc_now(),
+            message=tournament.summary,
+            artifact_paths=cloud_artifacts,
+        ).model_dump(mode="json"),
+    )
+    return ServerlessSmokeFinalizeResponse(experiment=updated, evidence=evidence, usage=usage)
+
+
+def _final_cloud_usage(
+    previous: ServerlessSmokeUsage | None,
+    *,
+    cloud_runtime: float,
+    settings: Any,
+) -> ServerlessSmokeUsage:
+    base = previous or ServerlessSmokeUsage(
+        duration_seconds=0,
+        endpoint_calls=0,
+        endpoint_avg_latency_seconds=0,
+        prompt_tokens=0,
+        completion_tokens=0,
+        total_tokens=0,
+        job_runs=1,
+        workloads=0,
+        simulation_events=0,
+        artifact_count=0,
+        artifact_bytes=0,
+        endpoint_cost_usd=0,
+        job_cost_usd=0,
+        estimated_cost_usd=0,
+        cost_basis="Usage measured; cloud pricing rates are not configured.",
+    )
+    token_cost = (
+        base.prompt_tokens / 1_000_000 * settings.nebius_input_token_cost_per_million_usd
+        + base.completion_tokens / 1_000_000 * settings.nebius_output_token_cost_per_million_usd
+    )
+    job_cost = cloud_runtime / 3600 * settings.nebius_job_cost_per_hour_usd
+    rates_configured = any(
+        rate > 0
+        for rate in (
+            settings.nebius_input_token_cost_per_million_usd,
+            settings.nebius_output_token_cost_per_million_usd,
+            settings.nebius_job_cost_per_hour_usd,
+        )
+    )
+    return base.model_copy(
+        update={
+            "duration_seconds": round(max(base.duration_seconds, cloud_runtime), 4),
+            "endpoint_cost_usd": round(token_cost, 8),
+            "job_cost_usd": round(job_cost, 8),
+            "estimated_cost_usd": round(token_cost + job_cost, 8),
+            "cost_basis": (
+                "Configured token and Nebius job-hour rates."
+                if rates_configured
+                else "Usage measured; cloud pricing rates are not configured."
+            ),
+        }
+    )
+
+
+def _tournament_duration_seconds(tournament: DetectorTournamentResponse) -> float:
+    if not tournament.completed_at:
+        return 0.0
+    try:
+        started = datetime.fromisoformat(tournament.started_at.replace("Z", "+00:00"))
+        completed = datetime.fromisoformat(tournament.completed_at.replace("Z", "+00:00"))
+    except ValueError:
+        return 0.0
+    return max(0.0, (completed - started).total_seconds())
 
 
 async def _run_simulation_window(simulation: SimulationEngine, *, max_ticks: int) -> ArenaState:

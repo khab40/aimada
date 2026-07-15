@@ -7,7 +7,13 @@ from urllib.error import HTTPError, URLError
 from app.api.routes_incidents import build_compact_replay_payload, persist_explanation_result
 from app.arena.engine import SimulationEngine
 from app.config import get_settings
-from app.nebius.client import AIInvestigationTeamRequest, InvestigationReportRequest, NebiusClient, OrderBookAlertRequest
+from app.nebius.client import (
+    AIInvestigationTeamRequest,
+    InvestigationReportRequest,
+    NebiusClient,
+    OrderBookAlertRequest,
+    local_mock_nebius_client,
+)
 from app.nebius.adapters import MockNebiusCloudAdapter
 from app.nebius.scenario_generator import MarketAbuseScenarioGenerationRequest, project_attack_scenario
 from app.storage.local_store import LocalStore
@@ -661,3 +667,13 @@ def test_nebius_client_falls_back_when_deployed_endpoint_fails(monkeypatch: Any)
     assert response.mode == "mock"
     assert response.fallback_reason is not None
     assert "Nebius order-book alert fallback" in response.fallback_reason
+def test_local_mock_client_disables_every_cloud_endpoint() -> None:
+    client = local_mock_nebius_client()
+
+    assert client.incident_explainer_url == ""
+    assert client.scenario_generator_url == ""
+    assert client.orderbook_alert_url == ""
+    assert client.investigation_report_url == ""
+    assert client.investigation_team_url == ""
+    assert client.market_abuse_scenario_url == ""
+

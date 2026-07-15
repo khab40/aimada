@@ -112,6 +112,73 @@ Open:
 
 The default Compose path builds `agent-runner`, `backend`, and `frontend` from source with `NEBIUS_ENDPOINT_MODE=mock`. Local Mock requires no Nebius credentials, private images, or GPU/vLLM runtime. Cloud calls use deterministic local fallback unless Nebius Cloud mode is explicitly configured.
 
+
+## Hardware Configuration, Runtime, Cost and Expected Outputs
+
+### Hardware Configuration
+
+#### Local Development
+
+| Component | Requirement |
+|-----------|-------------|
+| CPU | 4+ vCPUs (8 recommended) |
+| Memory | 8 GB minimum (16 GB recommended) |
+| Disk | 5 GB free |
+| Docker | Docker Engine + Docker Compose |
+| OS | Linux, macOS or Windows |
+
+The default Local Mock mode does **not** require a GPU or Nebius credentials.
+
+#### Nebius Production Configuration
+
+| Component | Configuration |
+|-----------|---------------|
+| AI Endpoint | NVIDIA L40S (`gpu-l40s-g`) |
+| Endpoint preset | `1gpu-16vcpu-200gb` |
+| Model | `Qwen/Qwen2.5-14B-Instruct` |
+| Runtime | vLLM |
+| Batch execution | Nebius Serverless Jobs (`cpu-d3`, 4 vCPU / 16 GB RAM) |
+
+### Approximate Runtime and Cost
+
+| Workflow | Runtime | Approximate Cost |
+|----------|--------:|-----------------:|
+| Local Docker demo | 3–5 min | $0 |
+| Local detector tournament (10 scenarios) | ~0.7 s | $0 |
+| Nebius Serverless Job (5 scenarios) | ~181 s | ~$0.005 |
+| Nebius Endpoint investigation (2 requests) | P50 24.2 s / P95 28.8 s | ~$0.023 |
+
+Measured on representative production runs. Actual runtime and billing depend on model, startup latency and current Nebius pricing.
+
+### Expected Outputs
+
+Running the end-to-end demo produces:
+
+**Interactive outputs**
+
+- Synthetic market abuse scenario
+- Order-book replay
+- Detector alerts
+- AI Investigation Team report
+- Detector Tournament leaderboard
+- Execution trace
+
+**Generated artifacts**
+
+Artifacts are written under `outputs/serverless-smoke/`, including:
+
+- `summary.json`
+- `scenario.json`
+- `simulation_events.json`
+- `detector_alerts.json`
+- `investigation_report.md`
+- `tournament_result.json`
+- `serverless_job.json`
+- `manifest.json`
+
+Benchmark execution additionally produces metrics, leaderboard reports, manifests and checksum-verified evidence bundles under `outputs/benchmark/` and `evidence/`.
+
+
 ## Demo
 
 1. Open the AI Command Center.

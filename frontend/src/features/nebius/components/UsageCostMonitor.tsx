@@ -9,13 +9,21 @@ export function UsageCostMonitor({ metrics }: { metrics: NebiusUsageMetrics }) {
         </div>
       </div>
       <div className="usage-monitor-grid">
-        <UsageMetric label="LLM Tokens" value="Not reported" detail="Endpoint request count is not metered here" />
-        <UsageMetric label="Managed Experiment Runs" value={String(metrics.serverlessJobsRun)} detail="Event count is not reported by the control-plane probe" />
-        <UsageMetric label="Storage" value="Not reported" detail="Artifact links are listed below" />
-        <UsageMetric label="Total Cost" value="Not metered" detail={`${metrics.averageLlmLatencySec.toFixed(1)}s recorded average latency`} />
+        <UsageMetric label="Session" value={formatDuration(metrics.sessionDurationSec)} detail="Current Command Center browser session" />
+        <UsageMetric label="Endpoint calls" value={String(metrics.aiEndpointCallsSession)} detail={`${metrics.averageLlmLatencySec.toFixed(3)}s average measured latency`} />
+        <UsageMetric label="LLM tokens" value={metrics.tokensUsed.toLocaleString()} detail="Provider-reported prompt and completion tokens" />
+        <UsageMetric label="Job runs" value={String(metrics.serverlessJobsRun)} detail={`${formatDuration(metrics.jobRuntimeSec)} measured runtime · ${metrics.simulationEventsGenerated} workloads/events`} />
+        <UsageMetric label="Artifacts" value={String(metrics.artifactCount)} detail={`${metrics.replayStorageMb.toFixed(3)} MB stored this session`} />
+        <UsageMetric label="Estimated cost" value={`$${metrics.estimatedCostUsd.toFixed(6)}`} detail={metrics.costBasis} />
       </div>
     </section>
   );
+}
+
+function formatDuration(seconds: number): string {
+  if (seconds < 60) return `${seconds.toFixed(1)}s`;
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes}m ${(seconds - minutes * 60).toFixed(0)}s`;
 }
 
 function UsageMetric({ detail, label, value }: { label: string; value: string; detail: string }) {

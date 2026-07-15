@@ -16,6 +16,7 @@ from app.nebius.client import (
     OrderBookAlertResponse,
     RedTeamScenarioRequest,
     RedTeamScenarioResponse,
+    local_mock_nebius_client,
 )
 from app.experiments.nebius_orchestrator import summarize_experiment_jobs
 from app.nebius.investigation_team import AIInvestigationTeamRequest, AIInvestigationTeamResponse, analyze_with_client
@@ -37,7 +38,13 @@ from app.nebius.scenario_generator import (
     project_attack_scenario,
 )
 from app.nebius.smart_batch_runner import read_metrics, run_local_smart_batch
-from app.nebius.serverless_smoke import ServerlessSmokeResponse, run_serverless_smoke_demo
+from app.nebius.serverless_smoke import (
+    ServerlessSmokeFinalizeResponse,
+    ServerlessSmokeRequest,
+    ServerlessSmokeResponse,
+    finalize_serverless_smoke_demo,
+    run_serverless_smoke_demo,
+)
 from app.storage.history import append_history_artifact
 
 router = APIRouter(prefix="/api/nebius", tags=["nebius"])
@@ -66,13 +73,39 @@ def sync_nebius_evidence(request: Request) -> NebiusEvidenceSyncResponse:
 
 
 @router.post("/serverless-smoke/run", response_model=ServerlessSmokeResponse)
-async def run_serverless_smoke(request: Request) -> ServerlessSmokeResponse:
+async def run_serverless_smoke(request: Request, payload: ServerlessSmokeRequest | None = None) -> ServerlessSmokeResponse:
+    execution_mode = payload.execution_mode if payload is not None else "local"
     return await run_serverless_smoke_demo(
-        client=nebius_client,
+        client=nebius_client if execution_mode == "nebius" else local_mock_nebius_client(),
         simulation=request.app.state.simulation,
         store=request.app.state.store,
         repo_root=_repo_root(),
+        execution_mode=execution_mode,
     )
+
+
+@router.post(
+    "/serverless-smoke/{experiment_id}/finalize/{tournament_id}",
+    response_model=ServerlessSmokeFinalizeResponse,
+)
+def finalize_serverless_smoke(
+    experiment_id: str,
+    tournament_id: str,
+    request: Request,
+) -> ServerlessSmokeFinalizeResponse:
+    tournament = get_tournament(tournament_id, store=request.app.state.store)
+    if tournament is None:
+        raise HTTPException(status_code=404, detail="Detector tournament not found")
+    try:
+        return finalize_serverless_smoke_demo(
+            experiment_id=experiment_id,
+            tournament=tournament,
+            store=request.app.state.store,
+        )
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @router.post("/red-team-scenario", response_model=RedTeamScenarioResponse)
@@ -292,8 +325,15 @@ def investigation_report(payload: InvestigationReportRequest, request: Request) 
 
 
 @router.post("/investigation-team/analyze", response_model=AIInvestigationTeamResponse)
-def analyze_investigation_team(payload: AIInvestigationTeamRequest, request: Request) -> AIInvestigationTeamResponse:
-    report = analyze_with_client(nebius_client, payload)
+def analyze_investigation_team(
+    payload: AIInvestigationTeamRequest,
+    request: Request,
+    execution_mode: Literal["local", "nebius"] = "nebius",
+) -> AIInvestigationTeamResponse:
+    report = analyze_with_client(
+        nebius_client if execution_mode == "nebius" else local_mock_nebius_client(),
+        payload,
+    )
     created_at = _now()
     row = {
         "created_at": created_at,
@@ -317,8 +357,12 @@ def analyze_investigation_team(payload: AIInvestigationTeamRequest, request: Req
 def generate_ai_scenario(
     payload: MarketAbuseScenarioGenerationRequest,
     request: Request,
+    execution_mode: Literal["local", "nebius"] = "nebius",
 ) -> CanonicalMarketAbuseScenario:
-    scenario = generate_market_abuse_scenario_with_client(nebius_client, payload)
+    scenario = generate_market_abuse_scenario_with_client(
+        nebius_client if execution_mode == "nebius" else local_mock_nebius_client(),
+        payload,
+    )
     projected = AttackScenario.model_validate(project_attack_scenario(scenario))
     created_at = _now()
     row = {

@@ -64,7 +64,7 @@ def test_job_evidence_uploads_and_syncs_with_object_storage(monkeypatch: Any, tm
     settings = Settings(
         _env_file=None,
         NEBIUS_EVIDENCE_ARCHIVE_ENABLED=True,
-        NEBIUS_JOB_OUTPUT_URI="s3://aimada-artifacts/aimada",
+        NEBIUS_JOB_OUTPUT_URI="s3://lob-arena-artifacts/lob-arena",
         NEBIUS_OBJECT_STORAGE_ENDPOINT_URL="https://storage.example",
         NEBIUS_OBJECT_STORAGE_ACCESS_KEY_ID="access-key",
         NEBIUS_OBJECT_STORAGE_SECRET_ACCESS_KEY="secret-key",
@@ -83,8 +83,36 @@ def test_job_evidence_uploads_and_syncs_with_object_storage(monkeypatch: Any, tm
     synced = archive.sync()
 
     assert record.s3_status == "uploaded"
-    assert record.source_uri == f"s3://aimada-artifacts/aimada/evidence/job/{record.evidence_id}"
+    assert record.source_uri == f"s3://lob-arena-artifacts/lob-arena/evidence/job/{record.evidence_id}"
     assert synced.status == "synced"
     assert synced.record_count == 1
-    assert any("s3://aimada-artifacts/aimada/evidence/job/" in " ".join(command) for command in commands)
-    assert any("s3://aimada-artifacts/aimada/evidence" in " ".join(command) for command in commands)
+    assert any("s3://lob-arena-artifacts/lob-arena/evidence/job/" in " ".join(command) for command in commands)
+    assert any("s3://lob-arena-artifacts/lob-arena/evidence" in " ".join(command) for command in commands)
+
+
+def test_endpoint_usage_tracks_tokens_bytes_and_configured_cost(tmp_path: Path) -> None:
+    settings = Settings(
+        _env_file=None,
+        NEBIUS_INPUT_TOKEN_COST_PER_MILLION_USD=2,
+        NEBIUS_OUTPUT_TOKEN_COST_PER_MILLION_USD=4,
+    )
+    archive = NebiusEvidenceArchive(LocalStore(tmp_path), settings)
+
+    record = archive.record(
+        kind="endpoint_call",
+        operation="explain_incident",
+        status="completed",
+        request_payload={"incident": "INC-1"},
+        response_payload={
+            "result": "ok",
+            "usage": {"prompt_tokens": 1_000_000, "completion_tokens": 500_000, "total_tokens": 1_500_000},
+        },
+    )
+
+    assert record.prompt_tokens == 1_000_000
+    assert record.completion_tokens == 500_000
+    assert record.total_tokens == 1_500_000
+    assert record.estimated_cost_usd == 4
+    assert record.request_bytes > 0
+    assert record.response_bytes > 0
+    assert record.artifact_bytes >= record.request_bytes + record.response_bytes
