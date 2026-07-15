@@ -2,7 +2,7 @@
 
 **Adversarial Synthetic Market Simulation for Surveillance Benchmarking**
 
-![LOB Arena GitHub banner](assets/img/ai-mada.jpg)
+![LOB Arena GitHub banner](assets/img/01-lob-arena-banner.jpg)
 
 <p align="center">
   <a href="https://github.com/khab40/lob-arena"><img src="https://img.shields.io/badge/GitHub-khab40%2Flob--arena-181717?logo=github&amp;logoColor=white" alt="LOB Arena repository"></a>
