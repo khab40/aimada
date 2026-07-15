@@ -20,7 +20,7 @@ from app.storage.retention import cleanup_output_data
 from app.websocket.manager import WebSocketManager
 from app.websocket.routes import router as websocket_router
 
-app = FastAPI(title="AI Market Abuse Detection Arena")
+app = FastAPI(title="LOB Arena")
 settings = get_settings()
 app.state.store = LocalStore(settings.arena_output_dir)
 app.state.nebius_evidence = (
@@ -70,7 +70,7 @@ app.include_router(websocket_router)
 @app.get("/api/status", tags=["status"])
 def api_status() -> dict[str, object]:
     return {
-        "service": "ai-market-abuse-detection-arena-backend",
+        "service": "lob-arena-backend",
         "status": "ok",
         "nebius": nebius_client.integration_status().model_dump(mode="json"),
     }

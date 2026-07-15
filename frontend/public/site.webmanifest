@@ -1,9 +1,10 @@
 {
-  "name": "AI Market Abuse Detection Arena",
-  "short_name": "AIMADA",
+  "name": "LOB Arena",
+  "short_name": "LOB Arena",
+  "description": "A multi-agent platform that generates realistic synthetic limit-order-book activity and benchmarks market-surveillance systems against adaptive manipulation strategies.",
   "icons": [
     {
-      "src": "/aimada-icon.svg",
+      "src": "/lob-arena-icon.svg",
       "sizes": "64x64",
       "type": "image/svg+xml"
     }

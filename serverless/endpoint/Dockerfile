@@ -1,5 +1,5 @@
 # vLLM-only endpoint image for Nebius Serverless AI Endpoint on GPU.
-# Runs local vLLM on 127.0.0.1:8001 and exposes AIMADA FastAPI on 0.0.0.0:9000.
+# Runs local vLLM on 127.0.0.1:8001 and exposes LOB Arena FastAPI on 0.0.0.0:9000.
 
 FROM vllm/vllm-openai:v0.10.1.1
 
@@ -33,7 +33,7 @@ import app
 health = app.health()
 assert health["status"] == "ok"
 assert health["endpoint_mode"] == "mock"
-print("AIMADA endpoint smoke test passed")
+print("LOB Arena endpoint smoke test passed")
 PY
 
 EXPOSE 9000

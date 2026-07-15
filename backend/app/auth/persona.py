@@ -31,7 +31,7 @@ def create_session(
     auth_store: AuthStore | None = None,
     jwt_secret: str | None = None,
     jwt_expires_in_seconds: int = 43_200,
-    jwt_issuer: str = "ai-market-abuse-detection-arena",
+    jwt_issuer: str = "lob-arena",
 ) -> dict[str, Any]:
     now = utc_now()
     user_id = user_id_for_google_identity(google_subject, email)

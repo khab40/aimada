@@ -8,8 +8,8 @@ PLATFORM="${PLATFORM:-linux/amd64}"
 PUSH="${PUSH:-false}"
 SMOKE="${SMOKE:-false}"
 
-ENDPOINT_IMAGE="${ENDPOINT_IMAGE:-${NEBIUS_ENDPOINT_IMAGE:-${IMAGE_NAMESPACE}/ai-market-abuse-detection-arena-endpoint:${TAG}}}"
-JOBS_IMAGE="${JOBS_IMAGE:-${NEBIUS_JOB_IMAGE:-${IMAGE_NAMESPACE}/ai-market-abuse-detection-arena-jobs:${TAG}}}"
+ENDPOINT_IMAGE="${ENDPOINT_IMAGE:-${NEBIUS_ENDPOINT_IMAGE:-${IMAGE_NAMESPACE}/lob-arena-endpoint:${TAG}}}"
+JOBS_IMAGE="${JOBS_IMAGE:-${NEBIUS_JOB_IMAGE:-${IMAGE_NAMESPACE}/lob-arena-jobs:${TAG}}}"
 
 if [[ "${ENDPOINT_IMAGE}" == "${JOBS_IMAGE}" ]]; then
   printf "%s\n" "Endpoint and Jobs image tags must be different: ${ENDPOINT_IMAGE}" >&2

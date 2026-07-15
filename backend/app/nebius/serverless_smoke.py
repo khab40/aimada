@@ -355,7 +355,7 @@ def _investigation_markdown(
     serverless_job: dict[str, Any],
 ) -> str:
     lines = [
-        "# AIMADA Nebius Serverless Smoke Demo",
+        "# LOB Arena Nebius Serverless Smoke Demo",
         "",
         f"- Created: {created_at}",
         f"- Incident: {incident.id if incident else 'not created'}",

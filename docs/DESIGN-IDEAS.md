@@ -91,7 +91,7 @@ Current prototype status:
 
 
 ## ABIDES inspired
-ABIDES is an excellent foundation, but it predates the current generation of AI systems. For AIMADA, I would extend it with:
+ABIDES is an excellent foundation, but it predates the current generation of AI systems. For LOB Arena, I would extend it with:
 
 1. LLM agents that choose manipulation strategies and explain decisions.
 2. RL attackers that learn spoofing and layering policies.

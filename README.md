@@ -1,12 +1,12 @@
-# AIMADA
+# LOB Arena
 
-## AI Market Abuse Detection Arena
+## Adversarial Synthetic Market Simulation for Surveillance Benchmarking
 
-![AI Market Abuse Detection Arena GitHub banner](assets/img/ai-mada.jpg)
+![LOB Arena GitHub banner](assets/img/ai-mada.jpg)
 
 <p align="center">
-  <a href="https://github.com/khab40/aimada"><img src="https://img.shields.io/badge/GitHub-khab40%2Faimada-181717?logo=github&amp;logoColor=white" alt="AIMADA repository"></a>
-  <a href="https://github.com/khab40/aimada/actions/workflows/ci.yml"><img src="https://github.com/khab40/aimada/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI status"></a>
+  <a href="https://github.com/khab40/lob-arena"><img src="https://img.shields.io/badge/GitHub-khab40%2Flob--arena-181717?logo=github&amp;logoColor=white" alt="LOB Arena repository"></a>
+  <a href="https://github.com/khab40/lob-arena/actions/workflows/ci.yml"><img src="https://github.com/khab40/lob-arena/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI status"></a>
   <a href="https://github.com/nebius"><img src="https://img.shields.io/badge/Nebius-Serverless_AI-6C47FF?logo=nebius&amp;logoColor=white" alt="Nebius Serverless AI"></a>
   <a href="https://github.com/python/cpython"><img src="https://img.shields.io/badge/Python-3.11-3776AB?logo=python&amp;logoColor=white" alt="Python 3.11"></a>
   <a href="https://github.com/fastapi/fastapi"><img src="https://img.shields.io/badge/FastAPI-Backend-009688?logo=fastapi&amp;logoColor=white" alt="FastAPI backend"></a>
@@ -18,9 +18,9 @@
   <a href="https://github.com/kubernetes/kubernetes"><img src="https://img.shields.io/badge/Kubernetes-Deployment-326CE5?logo=kubernetes&amp;logoColor=white" alt="Kubernetes deployment"></a>
 </p>
 
-AIMADA is a synthetic market-abuse simulation and evaluation arena built around Nebius Serverless AI. It runs bounded order-book scenarios, deterministic detectors, AI-assisted investigations, and repeatable detector tournaments without using real trading data.
+A multi-agent platform that generates realistic synthetic limit-order-book activity and benchmarks market-surveillance systems against adaptive manipulation strategies.
 
-Safety boundary: AIMADA is educational and synthetic. It does not detect real manipulation, does not generate trading signals, and is not suitable for compliance decisions.
+Safety boundary: LOB Arena is educational and synthetic. It does not detect real manipulation, does not generate trading signals, and is not suitable for compliance decisions.
 
 Key links:
 
@@ -31,7 +31,7 @@ Key links:
 - [Nebius deployment](docs/nebius-deployment.md)
 - [LinkedIn technical article draft](docs/linkedin-technical-blog-post.md)
 
-## What AIMADA Demonstrates
+## What LOB Arena Demonstrates
 
 - Interactive investigation through a vLLM-backed Nebius Serverless AI Endpoint.
 - Batch detector tournaments through Nebius Serverless Jobs.
@@ -44,17 +44,17 @@ Key links:
 
 | Runtime and cloud status | AI Investigation Team |
 | --- | --- |
-| ![AIMADA Nebius runtime status](assets/screenshots/Screenshot%202026-07-14%20at%2019.06.53.png) | ![AIMADA AI Investigation Team](assets/screenshots/Screenshot%202026-07-14%20at%2017.41.43.png) |
+| ![LOB Arena Nebius runtime status](assets/screenshots/Screenshot%202026-07-14%20at%2019.06.53.png) | ![LOB Arena AI Investigation Team](assets/screenshots/Screenshot%202026-07-14%20at%2017.41.43.png) |
 
 | Detector Tournament | Execution Trace |
 | --- | --- |
-| ![AIMADA detector tournament](assets/screenshots/Screenshot%202026-07-14%20at%2019.07.47.png) | ![AIMADA execution trace](assets/screenshots/Screenshot%202026-07-14%20at%2019.08.40.png) |
+| ![LOB Arena detector tournament](assets/screenshots/Screenshot%202026-07-14%20at%2019.07.47.png) | ![LOB Arena execution trace](assets/screenshots/Screenshot%202026-07-14%20at%2019.08.40.png) |
 
 ## Quick Start
 
 ```bash
-git clone https://github.com/khab40/aimada.git
-cd aimada
+git clone https://github.com/khab40/lob-arena.git
+cd lob-arena
 cp .env.example .env
 docker compose up --build
 ```
@@ -149,7 +149,7 @@ NEBIUS_ENDPOINT_MODE=local_vllm
 NEBIUS_ENDPOINT_PLATFORM=gpu-l40s-g
 NEBIUS_ENDPOINT_PRESET=1gpu-16vcpu-200gb
 LOCAL_VLLM_MODEL=Qwen/Qwen2.5-14B-Instruct
-NEBIUS_JOB_IMAGE=ghcr.io/khab40/ai-market-abuse-detection-arena-jobs:<tag>
+NEBIUS_JOB_IMAGE=ghcr.io/khab40/lob-arena-jobs:<tag>
 NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE='...'
 NEBIUS_JOB_STATUS_COMMAND_TEMPLATE='...'
 NEBIUS_JOB_ARTIFACTS_COMMAND_TEMPLATE='...'

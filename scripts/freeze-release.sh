@@ -192,7 +192,7 @@ def display(key: str, value: str) -> str:
     return value.replace("\n", "\\n").replace("\r", "\\r")
 
 environment_target.write_text(
-    "# Sanitized AIMADA deployment environment; credential values are never exported.\n"
+    "# Sanitized LOB Arena deployment environment; credential values are never exported.\n"
     + "".join(f"{key}={display(key, values[key])}\n" for key in sorted(values)),
     encoding="utf-8",
 )
@@ -296,7 +296,7 @@ target = Path(sys.argv[1])
 timestamp = sys.argv[2]
 offline = sys.argv[3]
 target.write_text(
-    f"""# AIMADA deployment evidence: {timestamp}
+    f"""# LOB Arena deployment evidence: {timestamp}
 
 This timestamped bundle freezes the Git revision, sanitized deployment environment,
 Docker and Python inventories, Nebius Endpoint metadata, model/vLLM configuration,
@@ -305,7 +305,7 @@ benchmark outputs. Credential-bearing values, authorization headers, signed URL
 parameters, private keys, and URL user-info are redacted before publication.
 
 - Generated at (UTC): `{timestamp}`
-- Repository: `https://github.com/khab40/aimada`
+- Repository: `https://github.com/khab40/lob-arena`
 - Collection mode: `{'offline' if offline.lower() == 'true' else 'live'}`
 - Source policy: tracked project files plus sanitized command metadata
 - Integrity: run `shasum -a 256 -c checksums.sha256` from this directory
@@ -434,7 +434,7 @@ files = {
 manifest = {
     "schema_version": 1,
     "generated_at_utc": timestamp,
-    "repository": "https://github.com/khab40/aimada",
+    "repository": "https://github.com/khab40/lob-arena",
     "redaction": "credential values, auth headers, signed URL values, private keys, URL user-info, and private local paths removed",
     "files": files,
 }

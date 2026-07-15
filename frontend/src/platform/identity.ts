@@ -106,7 +106,7 @@ export function workspaceForUser(user: PlatformUser): PlatformWorkspace {
     defaultRole: "analyst",
     id: "workspace-aimada-surveillance",
     members: [user, demoReviewer],
-    name: "Aimada Surveillance Desk",
+    name: "LOB Arena Surveillance Desk",
     organization_type: "bank"
   };
 }

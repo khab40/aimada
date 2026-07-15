@@ -65,14 +65,14 @@ runs vLLM and FastAPI inside the container:
 ```bash
 docker build --platform linux/amd64 \
   -f serverless/endpoint/Dockerfile \
-  -t ghcr.io/<your-org>/ai-market-abuse-detection-arena-endpoint:<tag> \
+  -t ghcr.io/<your-org>/lob-arena-endpoint:<tag> \
   serverless/endpoint
-docker push ghcr.io/<your-org>/ai-market-abuse-detection-arena-endpoint:<tag>
+docker push ghcr.io/<your-org>/lob-arena-endpoint:<tag>
 
 export NEBIUS_PARENT_ID=<project-id>
 export NEBIUS_SUBNET_ID=<vpc-subnet-id>
 export ENDPOINT_TOKEN=<endpoint-bearer-token>
-export NEBIUS_ENDPOINT_IMAGE=ghcr.io/<your-org>/ai-market-abuse-detection-arena-endpoint:<tag>
+export NEBIUS_ENDPOINT_IMAGE=ghcr.io/<your-org>/lob-arena-endpoint:<tag>
 export NEBIUS_ENDPOINT_MODE=local_vllm
 export NEBIUS_ENDPOINT_PLATFORM=gpu-l40s-g
 export NEBIUS_ENDPOINT_PRESET=1gpu-16vcpu-200gb
@@ -105,7 +105,7 @@ Apple Silicon Docker cannot realistically validate the L40S GPU path. Validate
 `local_vllm` in Nebius with a pushed `linux/amd64` image:
 
 ```bash
-export NEBIUS_ENDPOINT_IMAGE=ghcr.io/<your-org>/ai-market-abuse-detection-arena-endpoint:<tag>
+export NEBIUS_ENDPOINT_IMAGE=ghcr.io/<your-org>/lob-arena-endpoint:<tag>
 docker buildx build --platform linux/amd64 \
   -f serverless/endpoint/Dockerfile \
   -t "${NEBIUS_ENDPOINT_IMAGE}" \

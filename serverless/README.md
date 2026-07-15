@@ -78,8 +78,8 @@ The script options are environment variables:
 ```bash
 IMAGE_NAMESPACE=ghcr.io/khab40
 TAG=latest
-ENDPOINT_IMAGE=ghcr.io/khab40/ai-market-abuse-detection-arena-endpoint:latest
-JOBS_IMAGE=ghcr.io/khab40/ai-market-abuse-detection-arena-jobs:latest
+ENDPOINT_IMAGE=ghcr.io/khab40/lob-arena-endpoint:latest
+JOBS_IMAGE=ghcr.io/khab40/lob-arena-jobs:latest
 PUSH=false
 PLATFORM=linux/amd64
 SMOKE=false
@@ -96,8 +96,8 @@ SMOKE=true IMAGE_NAMESPACE=ghcr.io/<your-org> TAG=<tag> ./scripts/build-serverle
 By default, the script builds these local tags:
 
 ```text
-ghcr.io/khab40/ai-market-abuse-detection-arena-endpoint:latest
-ghcr.io/khab40/ai-market-abuse-detection-arena-jobs:latest
+ghcr.io/khab40/lob-arena-endpoint:latest
+ghcr.io/khab40/lob-arena-jobs:latest
 ```
 
 Anonymous registry verification on 2026-07-13 confirmed the jobs `latest` and
@@ -122,7 +122,7 @@ deployment smoke workflow:
 ```bash
 NEBIUS_ENDPOINT_BASE_URL=http://localhost:9000 \
 BACKEND_BASE_URL=http://localhost:8000 \
-JOBS_IMAGE=ghcr.io/khab40/ai-market-abuse-detection-arena-jobs:latest \
+JOBS_IMAGE=ghcr.io/khab40/lob-arena-jobs:latest \
 ./scripts/serverless-smoke.sh
 ```
 
@@ -132,7 +132,7 @@ For a deployed endpoint:
 NEBIUS_ENDPOINT_BASE_URL=https://<endpoint-host> \
 BACKEND_BASE_URL=https://<backend-host> \
 ENDPOINT_TOKEN=<optional-endpoint-token> \
-JOBS_IMAGE=ghcr.io/<your-org>/ai-market-abuse-detection-arena-jobs:<tag> \
+JOBS_IMAGE=ghcr.io/<your-org>/lob-arena-jobs:<tag> \
 ./scripts/serverless-smoke.sh
 ```
 
@@ -148,11 +148,11 @@ Equivalent manual commands:
 
 ```bash
 docker build --platform linux/amd64 -f serverless/endpoint/Dockerfile \
-  -t ghcr.io/khab40/ai-market-abuse-detection-arena-endpoint:latest \
+  -t ghcr.io/khab40/lob-arena-endpoint:latest \
   serverless/endpoint
 
 docker build -f serverless/jobs/Dockerfile \
-  -t ghcr.io/khab40/ai-market-abuse-detection-arena-jobs:latest \
+  -t ghcr.io/khab40/lob-arena-jobs:latest \
   .
 ```
 
@@ -172,7 +172,7 @@ Local-vLLM L40S endpoint:
 export NEBIUS_PARENT_ID=<project-id>
 export NEBIUS_SUBNET_ID=<vpc-subnet-id>
 export ENDPOINT_TOKEN=<endpoint-bearer-token>
-export NEBIUS_ENDPOINT_IMAGE=ghcr.io/<your-org>/ai-market-abuse-detection-arena-endpoint:<tag>
+export NEBIUS_ENDPOINT_IMAGE=ghcr.io/<your-org>/lob-arena-endpoint:<tag>
 export NEBIUS_ENDPOINT_MODE=local_vllm
 export NEBIUS_ENDPOINT_PLATFORM=gpu-l40s-g
 export NEBIUS_ENDPOINT_PRESET=1gpu-16vcpu-200gb

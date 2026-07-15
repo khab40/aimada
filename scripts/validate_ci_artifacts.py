@@ -77,7 +77,7 @@ def validate(root: Path) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Validate deterministic AIMADA CI evaluation artifacts.")
+    parser = argparse.ArgumentParser(description="Validate deterministic LOB Arena CI evaluation artifacts.")
     parser.add_argument("root", type=Path)
     args = parser.parse_args()
     validate(args.root)

@@ -94,7 +94,7 @@ if nebius iam service-account get-by-name \
 else
   nebius iam service-account create \
     --name "${SERVICE_ACCOUNT_NAME}" --parent-id "${PROJECT_ID}" \
-    --description 'AIMADA Serverless Job artifact upload and collection' \
+    --description 'LOB Arena Serverless Job artifact upload and collection' \
     --format json --no-check-update --no-progress > "${RESOURCE_JSON}"
   SERVICE_ACCOUNT_ID="$(jq -er '.metadata.id' "${RESOURCE_JSON}")"
 fi
@@ -128,7 +128,7 @@ ACCESS_KEY_RESOURCE_ID=""
 if [[ "${ROTATE_KEY}" == "true" || -z "${EXISTING_ACCESS_KEY}" || -z "${EXISTING_SECRET_KEY}" ]]; then
   nebius iam v2 access-key create \
     --account-service-account-id "${SERVICE_ACCOUNT_ID}" --parent-id "${PROJECT_ID}" \
-    --name aimada-artifacts --description 'AIMADA Object Storage access key' \
+    --name aimada-artifacts --description 'LOB Arena Object Storage access key' \
     --secret-delivery-mode inline --format json --no-check-update --no-progress > "${KEY_JSON}"
   ACCESS_KEY_RESOURCE_ID="$(jq -er '.metadata.id' "${KEY_JSON}")"
   ACCESS_KEY="$(jq -er '.status.aws_access_key_id' "${KEY_JSON}")"

@@ -172,7 +172,7 @@ jobs:
           context: ${{ matrix.context }}
           file: ${{ matrix.file }}
           push: false
-          tags: aimada-ci/${{ matrix.name }}:${{ github.sha }}
+          tags: lob-arena-ci/${{ matrix.name }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

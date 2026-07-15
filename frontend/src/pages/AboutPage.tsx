@@ -35,12 +35,10 @@ export function AboutPage() {
   return (
     <section className="about-page">
       <div className="panel about-hero-panel">
-        <h2>Visual synthetic market arena for detection, explanation, and benchmarks</h2>
+        <h2>Adversarial Synthetic Market Simulation for Surveillance Benchmarking</h2>
         <p>
-          AI Market Abuse Detection Arena is a React visual cockpit plus FastAPI simulator that creates a synthetic
-          limit-order-book market. Normal agents provide baseline activity, red-team scenarios inject bounded
-          abuse-like patterns, deterministic detectors score the market state, and Nebius AI plus experiment jobs
-          explain incidents or run offline experiments.
+          A multi-agent platform that generates realistic synthetic limit-order-book activity and benchmarks
+          market-surveillance systems against adaptive manipulation strategies.
         </p>
       </div>
 

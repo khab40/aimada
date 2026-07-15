@@ -1,6 +1,6 @@
-AI Market Abuse Detection Arena — CEO Demo Narration and Edit Plan
+LOB Arena — CEO Demo Narration and Edit Plan
 
-00.0–05.0s | Title: AI Market Abuse Detection Arena
+00.0–05.0s | Title: LOB Arena
 Narration: Markets move in milliseconds. But manipulation leaves a pattern.
 
 05.0–13.0s | Caption: Market abuse hides inside normal-looking order flow.
@@ -30,8 +30,8 @@ Narration: For leadership, the value is clearer risk visibility and stronger sys
 112.0–125.0s | Caption: From simulation to explanation: a stronger compliance narrative.
 Narration: From simulation to explanation, it creates a stronger compliance narrative.
 
-125.0–131.0s | Closing: Simulate. Detect. Explain. https://github.com/khab40/aimada
-Narration: AI Market Abuse Detection Arena. Simulate the market. Expose the abuse. Prove the defence.
+125.0–131.0s | Closing: Simulate. Detect. Explain. https://github.com/khab40/lob-arena
+Narration: LOB Arena. Simulate the market. Expose the abuse. Prove the defence.
 
 Notes:
 - This rendered version uses lightweight local synthetic narration generated with espeak. For a final external CEO version, replace the audio track with a premium human or commercial TTS voice-over using the narration above.

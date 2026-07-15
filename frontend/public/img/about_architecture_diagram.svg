@@ -2,7 +2,7 @@
   <rect width="1600" height="720" fill="#07111b"/>
   <rect x="34" y="34" width="1532" height="652" rx="28" fill="#0a121d" stroke="#23445f" stroke-width="2"/>
 
-  <text x="82" y="92" fill="#f8fafc" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="700">AI Market Abuse Detection Arena Architecture</text>
+  <text x="82" y="92" fill="#f8fafc" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="700">LOB Arena Architecture</text>
   <text x="82" y="132" fill="#a7c7d8" font-family="Inter, Arial, sans-serif" font-size="20">Four execution areas: browser front end, FastAPI back end, agent runner workspace, and Nebius Serverless Cloud.</text>
 
   <g font-family="Inter, Arial, sans-serif">

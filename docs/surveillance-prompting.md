@@ -1,6 +1,6 @@
 # Professional surveillance prompting
 
-AIMADA uses Qwen2.5-14B-Instruct as a bounded investigation assistant, not as
+LOB Arena uses Qwen2.5-14B-Instruct as a bounded investigation assistant, not as
 the detector. Deterministic detectors first produce structured episode evidence;
 the model explains that evidence, compares hypotheses, and recommends review
 steps. It receives summaries only—never raw order-book streams.

@@ -1,6 +1,6 @@
-# AIMADA Social Preview Capture Specification
+# LOB Arena Social Preview Capture Specification
 
-The final social-preview PNG must be created from **real AIMADA application screenshots**. Do not generate or draw substitute product UI.
+The final social-preview PNG must be created from **real LOB Arena application screenshots**. Do not generate or draw substitute product UI.
 
 ## Final output
 
@@ -9,7 +9,7 @@ The final social-preview PNG must be created from **real AIMADA application scre
 - 1280 × 640 px
 - PNG
 - under 1 MB
-- dark graphite/navy background matching AIMADA dark mode
+- dark graphite/navy background matching LOB Arena dark mode
 
 ## Source captures required
 
@@ -38,16 +38,16 @@ Prefer the Investigation Team when the findings, consensus, timeline, and recomm
 - Left 58–62%: Live Arena crop.
 - Right 38–42%: Investigation Team or Detector Tournament crop.
 - Add a dark overlay only as needed for text contrast.
-- Title at top left: `AIMADA`.
-- Subtitle: `AI Market Abuse Detection Arena`.
+- Title at top left: `LOB Arena`.
+- Subtitle: `LOB Arena`.
 - Supporting line near the bottom: `Built with Nebius Serverless AI Jobs + Endpoints`.
 - Keep all key content at least 48 px inside the canvas edges.
 
 ## Typography
 
-Use the same sans-serif family as the AIMADA UI where available. Keep the hierarchy simple:
+Use the same sans-serif family as the LOB Arena UI where available. Keep the hierarchy simple:
 
-- AIMADA: 64–76 px, bold
+- LOB Arena: 64–76 px, bold
 - Subtitle: 28–34 px
 - Supporting line: 20–24 px
 

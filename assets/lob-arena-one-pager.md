@@ -1,6 +1,6 @@
-# AI Market Abuse Detection Arena
+# LOB Arena
 
-AI Market Abuse Detection Arena is an early-stage product demo for visualizing, testing, explaining, and benchmarking market-abuse detection workflows in synthetic order-book environments.
+LOB Arena is an early-stage product demo for visualizing, testing, explaining, and benchmarking market-abuse detection workflows in synthetic order-book environments.
 
 The system combines a React visual arena, a FastAPI exchange simulator, synthetic normal and red-team agents, deterministic market microstructure detectors, and Nebius serverless infrastructure. It is designed to evolve from a controlled simulation into a practical experimentation layer for surveillance engineering teams.
 

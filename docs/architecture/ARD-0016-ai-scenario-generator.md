@@ -15,7 +15,7 @@ Primary implementation:
 
 ## Context
 
-AIMADA already has red-team scenario generation, local templates, variant generation, and Arena injection. Phase 2 promotes this into an AI Scenario Generator where Nebius AI Serverless creates synthetic market-abuse scenarios that the existing simulator can replay.
+LOB Arena already has red-team scenario generation, local templates, variant generation, and Arena injection. Phase 2 promotes this into an AI Scenario Generator where Nebius AI Serverless creates synthetic market-abuse scenarios that the existing simulator can replay.
 
 Existing code to reuse:
 

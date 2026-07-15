@@ -1,6 +1,6 @@
 # Project Phases
 
-AI Market Abuse Detection Arena is built as:
+LOB Arena is built as:
 
 - React visual arena
 - FastAPI simulator
@@ -16,7 +16,7 @@ This project is an educational simulation. The scenarios are synthetic abuse-lik
 
 Status: `[done]`
 
-Current product narrative: AIMADA is a Nebius AI Serverless-powered market surveillance command center. The Arena generates suspicious market workloads; Nebius AI Serverless investigates, explains, generates scenarios, and runs detector benchmarks.
+Current product narrative: LOB Arena is a Nebius AI Serverless-powered market surveillance command center. The Arena generates suspicious market workloads; Nebius AI Serverless investigates, explains, generates scenarios, and runs detector benchmarks.
 
 Implementation phases:
 

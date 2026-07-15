@@ -17,7 +17,7 @@ Primary implementation:
 
 ## Context
 
-AIMADA already has detector tournament pieces:
+LOB Arena already has detector tournament pieces:
 
 - `serverless/jobs/detector_tournament.py`: runs detector comparison over simulator scenarios and writes `metrics.csv`, `results.json`, chart artifacts, and `benchmark_report.md`.
 - `serverless/jobs/run_batch_experiments.py`: runs larger smart batches and writes canonical experiment artifacts such as `order_book_events.jsonl`, `attack_labels.jsonl`, `blue_team_alerts.jsonl`, `detector_metrics.csv`, and `manifest.json`.

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/khab40/aimada/serverless/endpoint/schemas/surveillance-request.schema.json",
-  "title": "AIMADA Summarized Surveillance Episode Request",
+  "$id": "https://github.com/khab40/lob-arena/serverless/endpoint/schemas/surveillance-request.schema.json",
+  "title": "LOB Arena Summarized Surveillance Episode Request",
   "type": "object",
   "additionalProperties": false,
   "required": [

@@ -1,16 +1,16 @@
-# AIMADA Nebius AI Serverless Demo Script
+# LOB Arena Nebius AI Serverless Demo Script
 
 ## Goal
 
-Show AIMADA as a Nebius AI Serverless-powered market surveillance command center in under five minutes. The demo works fully in local mock mode and keeps the same UI/API contracts for real Nebius execution.
+Show LOB Arena as a Nebius AI Serverless-powered market surveillance command center in under five minutes. The demo works fully in local mock mode and keeps the same UI/API contracts for real Nebius execution.
 
 ## Setup
 
-Repository: [https://github.com/khab40/aimada](https://github.com/khab40/aimada)
+Repository: [https://github.com/khab40/lob-arena](https://github.com/khab40/lob-arena)
 
 ```bash
-git clone https://github.com/khab40/aimada.git
-cd aimada
+git clone https://github.com/khab40/lob-arena.git
+cd lob-arena
 cp .env.example .env
 docker compose up --build
 ```
@@ -133,4 +133,4 @@ If command templates are not configured, the E2E smoke demo still writes local a
 - Nebius AI Serverless Endpoint is used for interactive investigation and scenario generation.
 - Nebius Serverless Jobs are used for scalable detector tournaments.
 - Local mock mode exists for reliable judging and preserves the same API contracts.
-- All outputs are synthetic and educational; AIMADA is not a real compliance system.
+- All outputs are synthetic and educational; LOB Arena is not a real compliance system.

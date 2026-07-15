@@ -5,6 +5,12 @@ Update this file with each significant commit before pushing.
 
 ## Unreleased
 
+### Current - chore: rename project to LOB Arena
+
+- Renamed user-facing product, package, service, image, documentation, and repository references to LOB Arena.
+- Added the surveillance-benchmarking tagline, canonical one-line description, and a frontend branding contract test.
+- Preserved legacy `AIMADA_*`, session-header, schema-version, storage-key, and deployed artifact identifiers for compatibility.
+
 ### Current - chore: compact command center and remove stale docs
 
 - Folded standalone demo/report/detection/experiment page modules into the current Command Center and Arena surfaces.

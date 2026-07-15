@@ -128,7 +128,7 @@ python serverless/jobs/render_job_config.py \
   --runs 100 \
   --batch-size 10 \
   --scenarios normal_market,spoofing \
-  --image ghcr.io/your-org/ai-market-abuse-detection-arena-jobs:latest
+  --image ghcr.io/your-org/lob-arena-jobs:latest
 ```
 
 The rendered config is written to

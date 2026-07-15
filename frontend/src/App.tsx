@@ -103,7 +103,7 @@ export function App() {
         <aside className="app-sidebar" aria-label="Application navigation">
           <div className="sidebar-brand">
             <div className="sidebar-wordmark">
-              <strong>AIMADA</strong>
+              <strong>LOB Arena</strong>
             </div>
             <button
               aria-label={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}
@@ -268,13 +268,13 @@ function ArenaSplashOverlay() {
     <div className="arena-splash-backdrop" role="presentation">
       <section aria-labelledby="arena-splash-title" aria-modal="true" className="arena-splash-panel" role="dialog">
         <div className="arena-splash-copy">
-          <h2 id="arena-splash-title">AI Market Abuse Detection Arena</h2>
+          <h2 id="arena-splash-title">LOB Arena</h2>
           <p>
-            Synthetic market state, red-team scenarios, detector evidence, replay history, and reports in one shared arena.
+            Adversarial synthetic market simulation for surveillance benchmarking.
           </p>
         </div>
         <img
-          alt="One-slide overview of the AI Market Abuse Detection Arena workflow"
+          alt="One-slide overview of the LOB Arena workflow"
           className="arena-splash-image"
           src={oneSlideUrl}
         />

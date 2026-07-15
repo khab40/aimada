@@ -11,7 +11,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    app_name: str = "AI Market Abuse Detection Arena"
+    app_name: str = "LOB Arena"
     endpoint_token: str | None = Field(
         default=None,
         validation_alias=AliasChoices("ENDPOINT_TOKEN", "NEBIUS_ENDPOINT_TOKEN"),
@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     )
     nebius_endpoint_mode: str = Field(default="mock", alias="NEBIUS_ENDPOINT_MODE")
     nebius_job_image: str = Field(
-        default="ghcr.io/khab40/ai-market-abuse-detection-arena-jobs:latest",
+        default="ghcr.io/khab40/lob-arena-jobs:latest",
         alias="NEBIUS_JOB_IMAGE",
     )
     nebius_subnet_id: str | None = Field(default=None, alias="NEBIUS_SUBNET_ID")
@@ -133,7 +133,7 @@ class Settings(BaseSettings):
     enable_advanced_attack_controls: bool = Field(default=False, alias="ENABLE_ADVANCED_ATTACK_CONTROLS")
     enable_legacy_pages: bool = Field(default=False, alias="ENABLE_LEGACY_PAGES")
     aimada_jwt_secret: str = Field(default="dev-only-change-me", alias="AIMADA_JWT_SECRET")
-    aimada_jwt_issuer: str = Field(default="ai-market-abuse-detection-arena", alias="AIMADA_JWT_ISSUER")
+    aimada_jwt_issuer: str = Field(default="lob-arena", alias="AIMADA_JWT_ISSUER")
     aimada_jwt_expires_in_seconds: int = Field(default=43_200, ge=300, le=2_592_000, alias="AIMADA_JWT_EXPIRES_IN_SECONDS")
     arena_agent_count: int = Field(default=200, ge=1, le=1000, alias="ARENA_AGENT_COUNT")
     arena_agent_decision_timeout_seconds: float = Field(

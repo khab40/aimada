@@ -7,7 +7,7 @@ preset: 1gpu-16vcpu-200gb
 subnet_name: default-subnet
 
 image:
-  repository: ghcr.io/your-org/ai-market-abuse-detection-arena-endpoint
+  repository: ghcr.io/your-org/lob-arena-endpoint
   tag: latest
 
 env:

@@ -15,7 +15,7 @@ Primary implementation:
 
 ## Context
 
-AIMADA already generates synthetic incidents, detector alerts, replay evidence, and experiment artifacts. The product should present this as a Nebius AI Serverless-powered investigation workflow, not as a simulator with optional AI buttons.
+LOB Arena already generates synthetic incidents, detector alerts, replay evidence, and experiment artifacts. The product should present this as a Nebius AI Serverless-powered investigation workflow, not as a simulator with optional AI buttons.
 
 Existing code already has most of the path:
 

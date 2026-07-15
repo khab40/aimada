@@ -2,7 +2,7 @@
 
 ## Submission links
 
-- **Repository:** [github.com/khab40/aimada](https://github.com/khab40/aimada)
+- **Repository:** [github.com/khab40/lob-arena](https://github.com/khab40/lob-arena)
 - **Technical article:** [Technical article draft](linkedin-technical-blog-post.md) — publication URL not yet available.
 - **Video:** Rendered demo not yet published; [narration script](../assets/demo-video/ai-market-abuse-detection-arena-ceo-demo-script2.txt) and [captions](../assets/demo-video/ai-market-abuse-detection-arena-ceo-demo-captions.srt) are included.
 - **Challenge category:** Nebius Serverless AI Builders Challenge.
@@ -10,7 +10,7 @@
 
 ## One-minute summary
 
-AIMADA is a synthetic market-surveillance arena that makes order-book abuse-like behavior visible, measurable, and explainable without using real trading data. A FastAPI/React application runs deterministic spoofing, layering, quote-stuffing, and liquidity-shock scenarios; rule-based detectors generate evidence; and Nebius AI turns that evidence into investigation reports. Interactive inference is assigned to a Serverless Endpoint, while repeatable detector tournaments are assigned to Serverless Jobs. The result is an inspectable workflow from labeled scenario through alert, explanation, metrics, leaderboard, report, and charts. AIMADA is an educational benchmark and research scaffold, not a production compliance or trading system.
+LOB Arena is a synthetic market-surveillance arena that makes order-book abuse-like behavior visible, measurable, and explainable without using real trading data. A FastAPI/React application runs deterministic spoofing, layering, quote-stuffing, and liquidity-shock scenarios; rule-based detectors generate evidence; and Nebius AI turns that evidence into investigation reports. Interactive inference is assigned to a Serverless Endpoint, while repeatable detector tournaments are assigned to Serverless Jobs. The result is an inspectable workflow from labeled scenario through alert, explanation, metrics, leaderboard, report, and charts. LOB Arena is an educational benchmark and research scaffold, not a production compliance or trading system.
 
 ## Nebius Serverless usage
 

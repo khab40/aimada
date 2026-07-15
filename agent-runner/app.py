@@ -68,7 +68,7 @@ manager = AgentManager(
     ],
     decision_timeout_seconds=DECISION_TIMEOUT_SECONDS,
 )
-app = FastAPI(title="AI Market Abuse Detection Arena Agent Runner")
+app = FastAPI(title="LOB Arena Agent Runner")
 
 
 @app.on_event("shutdown")

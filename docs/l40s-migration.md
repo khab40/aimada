@@ -2,7 +2,7 @@
 
 ## Scope
 
-The AIMADA Serverless AI Endpoint is right-sized from `gpu-h100-sxm` to the
+The LOB Arena Serverless AI Endpoint is right-sized from `gpu-h100-sxm` to the
 Nebius `gpu-l40s-g` platform and from `Qwen/Qwen2.5-1.5B-Instruct` to
 `Qwen/Qwen2.5-14B-Instruct`. The existing `1gpu-16vcpu-200gb` resource preset,
 image, networking, subnet, public/token authentication, port, routes, health
@@ -24,7 +24,7 @@ platform-specific preset passed through `NEBIUS_ENDPOINT_PRESET`.
 | Maximum sequences | `16` |
 | Trust remote code | enabled |
 
-The OpenAI-compatible vLLM API remains on `127.0.0.1:8001/v1`; AIMADA's public
+The OpenAI-compatible vLLM API remains on `127.0.0.1:8001/v1`; LOB Arena's public
 FastAPI routes and authentication contract are unchanged.
 
 ## Memory-fit verification
@@ -42,7 +42,7 @@ memory for one L40S. The planning calculation is:
 
 This leaves roughly 15.8 GiB inside the vLLM budget after weights for KV cache,
 CUDA graphs, activations, and framework overhead. One full-length request fits
-comfortably; typical shorter AIMADA requests can use the configured 16-sequence
+comfortably; typical shorter LOB Arena requests can use the configured 16-sequence
 scheduler cap. Do not interpret `max-num-seqs=16` as capacity for sixteen
 simultaneous 16K contexts: approximately three full-length sequences are the
 conservative operational target after overhead. vLLM profiles the available KV
@@ -52,7 +52,7 @@ cache at startup and fails early if the configuration cannot fit.
 
 These are sizing estimates, not measured production results. Both GPU and model
 change, so they must be replaced with measurements from the deployed endpoint.
-The ranges assume typical AIMADA requests near 512–2,048 input tokens and
+The ranges assume typical LOB Arena requests near 512–2,048 input tokens and
 128–512 output tokens.
 
 | Measure | Previous H100 / Qwen2.5-1.5B | L40S / Qwen2.5-14B | Expectation |
@@ -61,15 +61,15 @@ The ranges assume typical AIMADA requests near 512–2,048 input tokens and
 | vLLM memory budget | 85% of H100 memory | about 43.2 GiB | lower absolute reservation |
 | Single-request decode | roughly 120–250 tokens/s | roughly 30–50 tokens/s | larger model is slower |
 | Time to first token | roughly 0.05–0.20 s | roughly 0.20–0.80 s | depends strongly on prompt length |
-| Aggregate throughput at useful batching | roughly 800–2,000 tokens/s | roughly 250–600 tokens/s | validate with AIMADA payloads |
+| Aggregate throughput at useful batching | roughly 800–2,000 tokens/s | roughly 250–600 tokens/s | validate with LOB Arena payloads |
 | Scheduler concurrency | previous vLLM default, not pinned | 16 requests | 8–16 short/medium requests; about 3 at 16K |
 
 The L40S has 864 GB/s memory bandwidth, so decode-heavy latency is expected to
-be materially higher than H100. Prefix caching should improve repeated AIMADA
+be materially higher than H100. Prefix caching should improve repeated LOB Arena
 system prompts. Use vLLM's serving benchmark against the real Endpoint and
 record TTFT, inter-token latency, request throughput, token throughput, peak GPU
 memory, and error rate at concurrency 1, 4, 8, and 16. Keep the existing
-12-second application timeout initially; change it only if measured AIMADA
+12-second application timeout initially; change it only if measured LOB Arena
 responses exceed it.
 
 ## Migration
@@ -87,7 +87,7 @@ responses exceed it.
 3. Confirm `/health` reports `local_vllm` and
    `Qwen/Qwen2.5-14B-Instruct`.
 4. Run `scripts/validate-local-vllm-endpoint.sh validate` against all existing
-   AIMADA routes.
+   LOB Arena routes.
 5. Benchmark concurrency 1, 4, 8, and 16 and inspect GPU memory in Nebius logs
    and monitoring.
 6. Switch the existing backend base URL only after validation. Authentication,

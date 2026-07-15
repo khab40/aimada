@@ -1,6 +1,6 @@
 # Backend
 
-FastAPI backend for the AI Market Abuse Detection Arena project.
+FastAPI backend for the LOB Arena project.
 
 The current runtime exposes a simple synthetic L2 order book simulation for the
 arena UI. It ticks every 500 ms while running.

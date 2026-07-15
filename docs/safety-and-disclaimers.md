@@ -1,6 +1,6 @@
 # Safety and Disclaimers
 
-AI Market Abuse Detection Arena is a synthetic simulation and detector evaluation project.
+LOB Arena is a synthetic simulation and detector evaluation project.
 
 ## Not Production Surveillance
 

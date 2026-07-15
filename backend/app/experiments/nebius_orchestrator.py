@@ -478,7 +478,7 @@ class NebiusExperimentOrchestrator:
         return (
             self.settings.nebius_job_image
             if self.settings is not None
-            else "ghcr.io/khab40/ai-market-abuse-detection-arena-jobs:latest"
+            else "ghcr.io/khab40/lob-arena-jobs:latest"
         )
 
     def _setting(self, name: str) -> str | None:

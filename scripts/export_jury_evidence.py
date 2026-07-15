@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Export a small, sanitized, commit-safe proof bundle from the AIMADA API."""
+"""Export a small, sanitized, commit-safe proof bundle from the LOB Arena API."""
 
 from __future__ import annotations
 
@@ -101,9 +101,9 @@ def export(base_url: str, experiment_id: str, output_root: Path) -> Path:
 
     completed_jobs = [job for job in jobs if job["status"] == "completed"]
     endpoint_calls = [row for row in evidence if row["kind"] == "endpoint_call"]
-    readme = f"""# AIMADA jury evidence: `{experiment_id}`
+    readme = f"""# LOB Arena jury evidence: `{experiment_id}`
 
-This is a sanitized, commit-safe export from the local AIMADA backend after artifacts were collected from Nebius Object Storage. Raw credentials, authorization headers, endpoint hostnames, and duplicate raw model responses are excluded.
+This is a sanitized, commit-safe export from the local LOB Arena backend after artifacts were collected from Nebius Object Storage. Raw credentials, authorization headers, endpoint hostnames, and duplicate raw model responses are excluded.
 
 - Experiment status: `{experiment['status']}`
 - Requested workloads: {experiment['attack_count']}
@@ -128,7 +128,7 @@ python3 scripts/export_jury_evidence.py --experiment-id {experiment_id}
         "schema_version": 1,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "experiment_id": experiment_id,
-        "source": "AIMADA local API backed by collected Nebius/S3 artifacts",
+        "source": "LOB Arena local API backed by collected Nebius/S3 artifacts",
         "redaction": "credentials, authorization values, endpoint hostnames, and duplicate raw responses removed",
         "files": checksums,
     }

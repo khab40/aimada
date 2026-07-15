@@ -1,6 +1,6 @@
 # Architecture Records
 
-This folder contains Architecture Record Documents (ARDs) for AI Market Abuse Detection Arena.
+This folder contains Architecture Record Documents (ARDs) for LOB Arena.
 
 ARDs capture architecture decisions, context, tradeoffs, implementation phases, and links to supporting documentation. They are meant to complement the higher-level architecture overview in [../architecture.md](../architecture.md).
 

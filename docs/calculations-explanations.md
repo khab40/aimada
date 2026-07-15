@@ -1,4 +1,4 @@
-# AIMADA Calculations and Workflow Explanations
+# LOB Arena Calculations and Workflow Explanations
 
 ## Table of Contents
 
@@ -76,7 +76,7 @@ Nebius AI:
   investigation synthesis
   batch orchestration
 
-Deterministic AIMADA code:
+Deterministic LOB Arena code:
   order book
   feature calculation
   detector confidence
@@ -123,7 +123,7 @@ The order book and matching engine remain authoritative. AI produces bounded sce
 
 ## What this step does
 
-Runtime selects whether AIMADA operates in:
+Runtime selects whether LOB Arena operates in:
 
 - **Local Demo** mode; or
 - **Nebius Cloud** mode.
@@ -148,7 +148,7 @@ jobWillUseNebius =
     AND Job submission template is configured
 ```
 
-If those conditions fail, AIMADA falls back to deterministic local behavior and displays the fallback status instead of claiming a successful cloud run.
+If those conditions fail, LOB Arena falls back to deterministic local behavior and displays the fallback status instead of claiming a successful cloud run.
 
 ## Local Demo
 
@@ -415,7 +415,7 @@ Instead it:
 
 A precise description is:
 
-> The AI generates a canonical scenario specification. AIMADA then projects that specification onto one of the simulator’s supported executable scenario families.
+> The AI generates a canonical scenario specification. LOB Arena then projects that specification onto one of the simulator’s supported executable scenario families.
 
 ---
 
@@ -824,7 +824,7 @@ When `NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE` is configured:
 - logs and S3 artifacts are collected;
 - metrics are reconstructed from downloaded artifacts.
 
-If the Job submission template is missing, AIMADA returns deterministic mock tournament output and records a fallback reason.
+If the Job submission template is missing, LOB Arena returns deterministic mock tournament output and records a fallback reason.
 
 ## Local Tournament Workload
 
@@ -1064,7 +1064,7 @@ and applies hard-coded scenario-to-detector ground truth.
 
 The current benchmark is best described as:
 
-> A deterministic synthetic regression benchmark for AIMADA’s own scenario and detector implementations.
+> A deterministic synthetic regression benchmark for LOB Arena’s own scenario and detector implementations.
 
 It is not yet an independent external validation benchmark.
 
@@ -1245,6 +1245,6 @@ The evidence values do not form an additional score. They are the underlying fea
 
 A technically accurate description of the current implementation is:
 
-> AIMADA generates bounded, explicitly labelled synthetic market-abuse scenarios using a Nebius AI Endpoint or deterministic fallback. Scenarios are projected into an authoritative limit-order-book simulator. On every simulation tick, deterministic feature extractors calculate depth, imbalance, spread, cancellation, message-rate, wall-size, and timing features. Four weighted rule-based detectors convert those features into confidence scores and incidents. The Nebius AI Investigation Team explains the resulting structured evidence. Detector tournaments replay synthetic scenario families locally or through Nebius Serverless Jobs and compare detector alerts with hard-coded scenario labels using precision, recall, F1, false positives, false negatives, and simulated detection latency.
+> LOB Arena generates bounded, explicitly labelled synthetic market-abuse scenarios using a Nebius AI Endpoint or deterministic fallback. Scenarios are projected into an authoritative limit-order-book simulator. On every simulation tick, deterministic feature extractors calculate depth, imbalance, spread, cancellation, message-rate, wall-size, and timing features. Four weighted rule-based detectors convert those features into confidence scores and incidents. The Nebius AI Investigation Team explains the resulting structured evidence. Detector tournaments replay synthetic scenario families locally or through Nebius Serverless Jobs and compare detector alerts with hard-coded scenario labels using precision, recall, F1, false positives, false negatives, and simulated detection latency.
 
 This separation is useful because the core evidence remains reproducible and auditable. The UI should, however, clearly indicate that the main numerical detector scores come from deterministic formulas rather than from an AI model classifier.

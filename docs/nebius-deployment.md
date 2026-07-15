@@ -178,8 +178,8 @@ Then create the endpoint and job:
 export NEBIUS_SUBNET_ID=<vpc-subnet-id>
 export NEBIUS_PARENT_ID=<project-id>
 export ENDPOINT_TOKEN=<endpoint-bearer-token>
-export NEBIUS_ENDPOINT_IMAGE=ghcr.io/<your-org>/ai-market-abuse-detection-arena-endpoint:<tag>
-export NEBIUS_JOB_IMAGE=ghcr.io/<your-org>/ai-market-abuse-detection-arena-jobs:<tag>
+export NEBIUS_ENDPOINT_IMAGE=ghcr.io/<your-org>/lob-arena-endpoint:<tag>
+export NEBIUS_JOB_IMAGE=ghcr.io/<your-org>/lob-arena-jobs:<tag>
 
 ./scripts/create-nebius-ai-endpoint.sh
 ./scripts/create-nebius-ai-job.sh
@@ -191,7 +191,7 @@ To deploy the endpoint with local vLLM on one Nebius L40S:
 export NEBIUS_SUBNET_ID=<vpc-subnet-id>
 export NEBIUS_PARENT_ID=<project-id>
 export ENDPOINT_TOKEN=<endpoint-bearer-token>
-export NEBIUS_ENDPOINT_IMAGE=ghcr.io/<your-org>/ai-market-abuse-detection-arena-endpoint:<tag>
+export NEBIUS_ENDPOINT_IMAGE=ghcr.io/<your-org>/lob-arena-endpoint:<tag>
 export NEBIUS_ENDPOINT_MODE=local_vllm
 export NEBIUS_ENDPOINT_PLATFORM=gpu-l40s-g
 export NEBIUS_ENDPOINT_PRESET=1gpu-16vcpu-200gb
@@ -225,7 +225,7 @@ Apple Silicon Docker does not validate the L40S path. Use Nebius as the source
 of truth:
 
 ```bash
-export NEBIUS_ENDPOINT_IMAGE=ghcr.io/<your-org>/ai-market-abuse-detection-arena-endpoint:<tag>
+export NEBIUS_ENDPOINT_IMAGE=ghcr.io/<your-org>/lob-arena-endpoint:<tag>
 docker buildx build --platform linux/amd64 \
   -f serverless/endpoint/Dockerfile \
   -t "${NEBIUS_ENDPOINT_IMAGE}" \
@@ -278,7 +278,7 @@ After the endpoint, backend, and jobs image are available, run the deployment sm
 ```bash
 NEBIUS_ENDPOINT_BASE_URL=https://<endpoint-host> \
 BACKEND_BASE_URL=https://<backend-host> \
-JOBS_IMAGE=ghcr.io/<your-org>/ai-market-abuse-detection-arena-jobs:<tag> \
+JOBS_IMAGE=ghcr.io/<your-org>/lob-arena-jobs:<tag> \
 ./scripts/serverless-smoke.sh
 ```
 

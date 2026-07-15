@@ -1,4 +1,4 @@
-# Quick Start - AI Market Abuse Detection Arena
+# Quick Start - LOB Arena
 
 Get the system running locally in 5 minutes.
 
@@ -12,8 +12,8 @@ Get the system running locally in 5 minutes.
 
 ```bash
 # Clone the repository
-git clone https://github.com/khab40/aimada.git
-cd aimada
+git clone https://github.com/khab40/lob-arena.git
+cd lob-arena
 
 # Copy environment template
 cp .env.example .env

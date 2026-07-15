@@ -52,7 +52,7 @@ secrets-check:
 	./scripts/check-secrets.sh
 
 secrets-test:
-	cd backend && UV_CACHE_DIR=$${UV_CACHE_DIR:-/tmp/aimada-uv-cache} uv run pytest tests/test_secret_scripts.py -q
+	cd backend && UV_CACHE_DIR=$${UV_CACHE_DIR:-/tmp/lob-arena-uv-cache} uv run pytest tests/test_secret_scripts.py -q
 
 docker-up:
 	docker compose up --build

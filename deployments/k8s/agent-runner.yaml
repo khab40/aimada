@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: agent-runner
-          image: ghcr.io/your-org/ai-market-abuse-detection-arena-agent-runner:k8s
+          image: ghcr.io/your-org/lob-arena-agent-runner:k8s
           imagePullPolicy: Always
           envFrom:
             - configMapRef:

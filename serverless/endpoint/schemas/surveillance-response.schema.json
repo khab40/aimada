@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/khab40/aimada/serverless/endpoint/schemas/surveillance-response.schema.json",
-  "title": "AIMADA Professional Surveillance Assessment Response",
+  "$id": "https://github.com/khab40/lob-arena/serverless/endpoint/schemas/surveillance-response.schema.json",
+  "title": "LOB Arena Professional Surveillance Assessment Response",
   "type": "object",
   "additionalProperties": false,
   "required": [

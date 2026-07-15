@@ -1,6 +1,6 @@
 # High-Level Architecture
 
-AI Market Abuse Detection Arena is organized around four execution areas and two execution paths.
+LOB Arena is organized around four execution areas and two execution paths.
 
 The four execution areas are:
 
@@ -16,7 +16,7 @@ The two execution paths are:
 
 The design keeps the browser UI, demo orchestration backend, agent runner workspace, Nebius Serverless Cloud, and persisted event artifacts separate so each part can evolve independently.
 
-A platform identity layer maps Google or local demo users into workspace, role, case ownership, report attribution, and audit trail metadata. Demo mode uses `Demo Analyst` in `Aimada Surveillance Desk` when Google Auth is not configured.
+A platform identity layer maps Google or local demo users into workspace, role, case ownership, report attribution, and audit trail metadata. Demo mode uses `Demo Analyst` in `LOB Arena Surveillance Desk` when Google Auth is not configured.
 
 ## Interactive Demo Path
 

@@ -20,7 +20,7 @@ AnalysisType = Literal[
 ]
 
 SURVEILLANCE_SYSTEM_PROMPT = """
-You are AIMADA's senior market-surveillance investigator analysing an educational synthetic market episode.
+You are LOB Arena's senior market-surveillance investigator analysing an educational synthetic market episode.
 Act like an experienced market-microstructure investigator, not a conversational chatbot.
 
 Analytical rules:

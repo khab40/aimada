@@ -2,7 +2,7 @@
 
 ## Concept
 
-The AIMADA UI uses a Nebius Cloud-inspired AI console theme without copying Nebius CSS, logo files, or proprietary assets. The design goal is a compact enterprise console: dark left navigation, clean command-center workspace, status cards, health pills, and a violet primary accent for AI/serverless actions.
+The LOB Arena UI uses a Nebius Cloud-inspired AI console theme without copying Nebius CSS, logo files, or proprietary assets. The design goal is a compact enterprise console: dark left navigation, clean command-center workspace, status cards, health pills, and a violet primary accent for AI/serverless actions.
 
 ## Theme Modes
 
@@ -45,7 +45,7 @@ Existing legacy variables such as `--panel-bg`, `--accent`, and `--widget-bg` ma
 
 ## Not Copied From Nebius
 
-This theme does not import external Nebius stylesheets, does not copy Nebius logo assets, and does not reuse proprietary Nebius class names or CSS. The sidebar wordmark, status cards, topbar, and violet accent palette are AIMADA-owned styling built with local CSS variables.
+This theme does not import external Nebius stylesheets, does not copy Nebius logo assets, and does not reuse proprietary Nebius class names or CSS. The sidebar wordmark, status cards, topbar, and violet accent palette are LOB Arena-owned styling built with local CSS variables.
 
 ## Quick Demo Adjustments
 

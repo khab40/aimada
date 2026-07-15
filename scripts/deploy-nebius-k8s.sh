@@ -91,9 +91,9 @@ K8S_BACKEND_REPLICAS="${K8S_BACKEND_REPLICAS:-1}"
 K8S_FRONTEND_REPLICAS="${K8S_FRONTEND_REPLICAS:-1}"
 K8S_INGRESS_HOST="${K8S_INGRESS_HOST:-aimada.example.com}"
 K8S_ENABLE_INGRESS="${K8S_ENABLE_INGRESS:-false}"
-NEBIUS_BACKEND_IMAGE="${NEBIUS_BACKEND_IMAGE:-${IMAGE_NAMESPACE}/ai-market-abuse-detection-arena-backend:${TAG}}"
-NEBIUS_FRONTEND_IMAGE="${NEBIUS_FRONTEND_IMAGE:-${IMAGE_NAMESPACE}/ai-market-abuse-detection-arena-frontend:${TAG}}"
-NEBIUS_AGENT_RUNNER_IMAGE="${NEBIUS_AGENT_RUNNER_IMAGE:-${IMAGE_NAMESPACE}/ai-market-abuse-detection-arena-agent-runner:${TAG}}"
+NEBIUS_BACKEND_IMAGE="${NEBIUS_BACKEND_IMAGE:-${IMAGE_NAMESPACE}/lob-arena-backend:${TAG}}"
+NEBIUS_FRONTEND_IMAGE="${NEBIUS_FRONTEND_IMAGE:-${IMAGE_NAMESPACE}/lob-arena-frontend:${TAG}}"
+NEBIUS_AGENT_RUNNER_IMAGE="${NEBIUS_AGENT_RUNNER_IMAGE:-${IMAGE_NAMESPACE}/lob-arena-agent-runner:${TAG}}"
 K8S_RENDER_DIR="${K8S_RENDER_DIR:-${ROOT_DIR}/outputs/deployments/k8s-rendered}"
 
 contains_target() {
@@ -197,9 +197,9 @@ PY
 }
 
 set_image_and_replicas() {
-  replace_text "${K8S_RENDER_DIR}/backend.yaml" "ghcr.io/your-org/ai-market-abuse-detection-arena-backend:k8s" "${NEBIUS_BACKEND_IMAGE}"
-  replace_text "${K8S_RENDER_DIR}/frontend.yaml" "ghcr.io/your-org/ai-market-abuse-detection-arena-frontend:k8s" "${NEBIUS_FRONTEND_IMAGE}"
-  replace_text "${K8S_RENDER_DIR}/agent-runner.yaml" "ghcr.io/your-org/ai-market-abuse-detection-arena-agent-runner:k8s" "${NEBIUS_AGENT_RUNNER_IMAGE}"
+  replace_text "${K8S_RENDER_DIR}/backend.yaml" "ghcr.io/your-org/lob-arena-backend:k8s" "${NEBIUS_BACKEND_IMAGE}"
+  replace_text "${K8S_RENDER_DIR}/frontend.yaml" "ghcr.io/your-org/lob-arena-frontend:k8s" "${NEBIUS_FRONTEND_IMAGE}"
+  replace_text "${K8S_RENDER_DIR}/agent-runner.yaml" "ghcr.io/your-org/lob-arena-agent-runner:k8s" "${NEBIUS_AGENT_RUNNER_IMAGE}"
   replace_text "${K8S_RENDER_DIR}/backend.yaml" "replicas: 1" "replicas: ${K8S_BACKEND_REPLICAS}"
   replace_text "${K8S_RENDER_DIR}/frontend.yaml" "replicas: 1" "replicas: ${K8S_FRONTEND_REPLICAS}"
   replace_text "${K8S_RENDER_DIR}/agent-runner.yaml" "replicas: 2" "replicas: ${K8S_AGENT_RUNNER_REPLICAS}"
@@ -228,7 +228,7 @@ data:
   NEBIUS_ENDPOINT_MODE: "${NEBIUS_ENDPOINT_MODE:-local_vllm}"
   NEBIUS_ENDPOINT_BASE_URL: "${NEBIUS_ENDPOINT_BASE_URL:-}"
   NEBIUS_HEALTH_TIMEOUT_SECONDS: "${NEBIUS_HEALTH_TIMEOUT_SECONDS:-5}"
-  NEBIUS_JOB_IMAGE: "${NEBIUS_JOB_IMAGE:-ghcr.io/khab40/ai-market-abuse-detection-arena-jobs:latest}"
+  NEBIUS_JOB_IMAGE: "${NEBIUS_JOB_IMAGE:-ghcr.io/khab40/lob-arena-jobs:latest}"
   NEBIUS_JOB_OUTPUT_URI: "${NEBIUS_JOB_OUTPUT_URI:-}"
   NEBIUS_OBJECT_STORAGE_ENDPOINT_URL: "${NEBIUS_OBJECT_STORAGE_ENDPOINT_URL:-https://storage.eu-north1.nebius.cloud}"
   NEBIUS_OBJECT_STORAGE_REGION: "${NEBIUS_OBJECT_STORAGE_REGION:-eu-north1}"

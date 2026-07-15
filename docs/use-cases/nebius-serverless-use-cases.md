@@ -6,7 +6,7 @@ Date: 2026-07-06
 
 ## Product Position
 
-AIMADA is a Nebius AI Serverless-powered market surveillance platform for synthetic market workloads. It does not analyze real markets and does not provide compliance decisions. The platform value is a complete synthetic workflow:
+LOB Arena is a Nebius AI Serverless-powered market surveillance platform for synthetic market workloads. It does not analyze real markets and does not provide compliance decisions. The platform value is a complete synthetic workflow:
 
 1. Generate suspicious market workload.
 2. Replay it in Arena.

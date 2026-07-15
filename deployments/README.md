@@ -1,4 +1,4 @@
-# Aimada Deployment Modes
+# LOB Arena Deployment Modes
 
 Deployment entry point:
 

@@ -5,7 +5,7 @@ preset: 4vcpu-16gb
 subnet_name: default-subnet
 
 image:
-  repository: ghcr.io/your-org/ai-market-abuse-detection-arena-jobs
+  repository: ghcr.io/your-org/lob-arena-jobs
   tag: latest
 
 args:

@@ -27,7 +27,7 @@ Production-grade surveillance integrations, real market data ingestion, complian
 
 ## Context
 
-AI Market Abuse Detection Arena is an educational simulation for demonstrating synthetic order-book anomaly detection and AI-generated explanations. It is not a production market surveillance system, does not detect real market manipulation, does not provide trading signals, and must not be used for compliance decisions.
+LOB Arena is an educational simulation for demonstrating synthetic order-book anomaly detection and AI-generated explanations. It is not a production market surveillance system, does not detect real market manipulation, does not provide trading signals, and must not be used for compliance decisions.
 
 The project needs to support two complementary workflows:
 
@@ -577,7 +577,7 @@ Architecture records that refine this decision:
 
 ### What It Is Today
 
-AI Market Abuse Detection Arena is a visual AI demo and research prototype for showing how synthetic market abuse patterns can appear inside a live limit-order-book simulation. It is intentionally framed as an educational simulator, not a production surveillance product, trading system, or compliance decision engine.
+LOB Arena is a visual AI demo and research prototype for showing how synthetic market abuse patterns can appear inside a live limit-order-book simulation. It is intentionally framed as an educational simulator, not a production surveillance product, trading system, or compliance decision engine.
 
 The current architecture combines three things in one coherent demo:
 

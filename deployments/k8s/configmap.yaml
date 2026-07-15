@@ -17,7 +17,7 @@ data:
   NEBIUS_ENDPOINT_MODE: "local_vllm"
   NEBIUS_ENDPOINT_BASE_URL: ""
   NEBIUS_HEALTH_TIMEOUT_SECONDS: "5"
-  NEBIUS_JOB_IMAGE: "ghcr.io/khab40/ai-market-abuse-detection-arena-jobs:latest"
+  NEBIUS_JOB_IMAGE: "ghcr.io/khab40/lob-arena-jobs:latest"
   NEBIUS_JOB_OUTPUT_URI: ""
   NEBIUS_OBJECT_STORAGE_ENDPOINT_URL: "https://storage.eu-north1.nebius.cloud"
   NEBIUS_OBJECT_STORAGE_REGION: "eu-north1"

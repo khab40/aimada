@@ -24,7 +24,7 @@ Future work:
 
 ## Context
 
-Google Auth should support Aimada as a multiuser investigation platform, not act as login decoration. Investigations, reports, reviewer approvals, and exported evidence need clear ownership even during local demos.
+Google Auth should support LOB Arena as a multiuser investigation platform, not act as login decoration. Investigations, reports, reviewer approvals, and exported evidence need clear ownership even during local demos.
 
 ## Decision
 

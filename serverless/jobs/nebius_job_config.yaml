@@ -8,7 +8,7 @@ container_command: python
 args: /job/serverless/jobs/run_batch_experiments.py --runs 1000 --batch-size 100 --output /job/outputs/serverless-batch
 
 image:
-  repository: ghcr.io/khab40/ai-market-abuse-detection-arena-jobs
+  repository: ghcr.io/khab40/lob-arena-jobs
   tag: latest
 
 scenarios:

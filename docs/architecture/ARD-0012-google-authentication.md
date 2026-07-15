@@ -17,7 +17,7 @@ Implemented:
 - Stable Google user identity through `google_id = payload.sub`.
 - App-issued HS256 JWT after Google verification; Google tokens are not used as long-lived app sessions.
 - Backward-compatible `X-AIMADA-Session-ID` session header plus `Authorization: Bearer <app-jwt>` support.
-- Frontend maps authenticated users into the platform identity model defined by ARD-0014; when Google is not configured, the UI uses the local `Demo Analyst` identity and `Aimada Surveillance Desk` workspace.
+- Frontend maps authenticated users into the platform identity model defined by ARD-0014; when Google is not configured, the UI uses the local `Demo Analyst` identity and `LOB Arena Surveillance Desk` workspace.
 
 Future work:
 

@@ -20,6 +20,26 @@ function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+describe("LOB Arena branding contract", () => {
+  const readme = read("../README.md");
+  const app = read("src/App.tsx");
+  const index = read("index.html");
+  const manifest = read("public/site.webmanifest");
+
+  it("keeps the project title, tagline, description, and repository URL aligned", () => {
+    expectIncludes(readme, [
+      "# LOB Arena",
+      "Adversarial Synthetic Market Simulation for Surveillance Benchmarking",
+      "A multi-agent platform that generates realistic synthetic limit-order-book activity and benchmarks market-surveillance systems against adaptive manipulation strategies.",
+      "github.com/khab40/lob-arena"
+    ]);
+    expectIncludes(app, ["<strong>LOB Arena</strong>", "Adversarial synthetic market simulation"]);
+    expectIncludes(index, ["<title>LOB Arena</title>", 'name="description"']);
+    expectIncludes(manifest, ['"name": "LOB Arena"', '"short_name": "LOB Arena"']);
+    assert.doesNotMatch(`${readme}\n${app}\n${index}\n${manifest}`, /AI Market Abuse Detection Arena/);
+  });
+});
+
 describe("Battlefield visualization UI contract", () => {
   const terrain = read("src/tabs/MarketBattlefield3D/components/OrderBookTerrain.tsx");
   const data = read("src/tabs/MarketBattlefield3D/hooks/useMarketBattlefieldData.ts");
@@ -82,7 +102,7 @@ describe("Core UI navigation and workflow contracts", () => {
       "label: \"Command Center\"",
       "label: \"Arena / Workload Generator\"",
       "label: \"About / Docs\"",
-      "AIMADA",
+      "LOB Arena",
       "Command Center ready",
       "<Route path=\"/\" element={<Navigate to=\"/nebius\" replace />} />",
       "<Route path=\"/nebius\" element={<NebiusControlPanelPage />} />",

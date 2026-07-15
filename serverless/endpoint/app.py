@@ -23,7 +23,7 @@ from surveillance import (
 
 import logging
 
-logger = logging.getLogger("aimada-endpoint")
+logger = logging.getLogger("lob-arena-endpoint")
 
 JSON_ONLY_INSTRUCTION = (
     "Return ONLY valid JSON. Do not use markdown. Do not wrap the JSON in code fences. "
@@ -41,7 +41,7 @@ DEFAULT_ENDPOINT_MODEL = DEFAULT_LOCAL_VLLM_MODEL
 
 
 app = FastAPI(
-    title="AI Market Abuse Detection Arena Serverless Endpoint",
+    title="LOB Arena Serverless Endpoint",
 )
 
 
@@ -260,7 +260,7 @@ class ExplainPayload(BaseModel):
 def health() -> dict[str, str | bool]:
     return {
         "status": "ok",
-        "service": "ai-market-abuse-detection-arena-endpoint",
+        "service": "lob-arena-endpoint",
         "endpoint_mode": _endpoint_mode(),
         "model_mode": _active_model_mode(),
         "model": _active_model_name(),
@@ -274,7 +274,7 @@ def health() -> dict[str, str | bool]:
 def ready() -> dict[str, str | bool]:
     return {
         "status": "ready",
-        "service": "ai-market-abuse-detection-arena-endpoint",
+        "service": "lob-arena-endpoint",
         "endpoint_mode": _endpoint_mode(),
         "model_mode": _active_model_mode(),
         "model": _active_model_name(),

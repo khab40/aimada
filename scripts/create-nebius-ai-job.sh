@@ -2,7 +2,7 @@
 set -euo pipefail
 
 NAME="${NEBIUS_JOB_NAME:-market-abuse-smart-batch}"
-IMAGE="${NEBIUS_JOB_IMAGE:-ghcr.io/khab40/ai-market-abuse-detection-arena-jobs:latest}"
+IMAGE="${NEBIUS_JOB_IMAGE:-ghcr.io/khab40/lob-arena-jobs:latest}"
 PLATFORM="${NEBIUS_JOB_PLATFORM:-cpu-d3}"
 PRESET="${NEBIUS_JOB_PRESET:-4vcpu-16gb}"
 DISK_SIZE="${NEBIUS_JOB_DISK_SIZE:-100Gi}"

@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: ghcr.io/your-org/ai-market-abuse-detection-arena-frontend:k8s
+          image: ghcr.io/your-org/lob-arena-frontend:k8s
           imagePullPolicy: Always
           envFrom:
             - configMapRef:

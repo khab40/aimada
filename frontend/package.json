@@ -1,5 +1,6 @@
 {
-  "name": "ai-market-abuse-detection-arena-frontend",
+  "name": "lob-arena-frontend",
+  "description": "Adversarial synthetic market simulation for surveillance benchmarking.",
   "version": "0.1.0",
   "private": true,
   "type": "module",

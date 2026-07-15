@@ -9,7 +9,7 @@ ENDPOINT_BASE_URL="${NEBIUS_ENDPOINT_BASE_URL:-${SERVERLESS_ENDPOINT_URL:-http:/
 BACKEND_BASE_URL="${BACKEND_BASE_URL:-${VITE_API_BASE_URL:-http://localhost:8000}}"
 IMAGE_NAMESPACE="${IMAGE_NAMESPACE:-ghcr.io/khab40}"
 TAG="${TAG:-latest}"
-JOBS_IMAGE="${JOBS_IMAGE:-${NEBIUS_JOB_IMAGE:-${IMAGE_NAMESPACE}/ai-market-abuse-detection-arena-jobs:${TAG}}}"
+JOBS_IMAGE="${JOBS_IMAGE:-${NEBIUS_JOB_IMAGE:-${IMAGE_NAMESPACE}/lob-arena-jobs:${TAG}}}"
 PYTHON_BIN="${PYTHON:-python}"
 if ! command -v "${PYTHON_BIN}" >/dev/null 2>&1 && command -v python3 >/dev/null 2>&1; then
   PYTHON_BIN="python3"

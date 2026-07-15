@@ -1,12 +1,12 @@
-# Building AIMADA: An Adversarial Market-Abuse Evaluation Arena with Nebius Serverless AI
+# Building LOB Arena: An Adversarial Market-Abuse Evaluation Arena with Nebius Serverless AI
 
-![AIMADA overall architecture connecting the arena, agents, simulator, AI investigator, evidence store, and Serverless Jobs](../assets/article/aimada-diagrams/01-overall-architecture.jpg)
+![LOB Arena overall architecture connecting the arena, agents, simulator, AI investigator, evidence store, and Serverless Jobs](../assets/article/aimada-diagrams/01-overall-architecture.jpg)
 
-*Figure 1. AIMADA combines an authoritative synthetic market runtime, Red and Blue agents, AI-assisted investigation, durable evidence, and Serverless Jobs.*
+*Figure 1. LOB Arena combines an authoritative synthetic market runtime, Red and Blue agents, AI-assisted investigation, durable evidence, and Serverless Jobs.*
 
-I built AIMADA for the #NebiusServerlessChallenge: a synthetic market-abuse simulation and evaluation platform built and validated with Nebius Serverless AI Jobs and Serverless AI Endpoints.
+I built LOB Arena for the #NebiusServerlessChallenge: a synthetic market-abuse simulation and evaluation platform built and validated with Nebius Serverless AI Jobs and Serverless AI Endpoints.
 
-Repository: [https://github.com/khab40/aimada](https://github.com/khab40/aimada)
+Repository: [https://github.com/khab40/lob-arena](https://github.com/khab40/lob-arena)
 
 The problem I wanted to explore is common in technical AI demos: the interesting part of the domain is difficult to show safely.
 
@@ -24,7 +24,7 @@ The interactive path uses a React and Vite frontend, a FastAPI control plane, a 
 
 *Figure 2. The Red Team generates bounded synthetic abuse-like behavior; the Blue Team detects, scores, and explains it.*
 
-AIMADA was validated on real Nebius production infrastructure. More than ten Nebius Serverless AI Job runs completed successfully, with execution visible in production logs. I also deployed a vLLM-backed Nebius Serverless AI Endpoint and exercised routes for scenario generation, incident analysis, investigation reporting, order-book alert analysis, and structured market-event explanation. Those runs produced Job artifacts, detector metrics, reports, logs, and Endpoint responses. This validation proves the execution contracts; it does not turn AIMADA into a real-market surveillance product.
+LOB Arena was validated on real Nebius production infrastructure. More than ten Nebius Serverless AI Job runs completed successfully, with execution visible in production logs. I also deployed a vLLM-backed Nebius Serverless AI Endpoint and exercised routes for scenario generation, incident analysis, investigation reporting, order-book alert analysis, and structured market-event explanation. Those runs produced Job artifacts, detector metrics, reports, logs, and Endpoint responses. This validation proves the execution contracts; it does not turn LOB Arena into a real-market surveillance product.
 
 ![Nebius deployment with an L40S-backed vLLM Endpoint, on-demand Serverless Jobs, token authentication, and Object Storage](../assets/article/aimada-diagrams/05-nebius-deployment.jpg)
 
@@ -38,11 +38,11 @@ The frontend renders the live arena: order-book ladders, price and spread charts
 
 The browser sends commands over WebSocket. The FastAPI backend runs the simulation and publishes complete `arena_state` messages. This keeps the browser away from simulation internals, server credentials, and direct Endpoint access.
 
-![Conceptual AIMADA dashboard with experiment, alert, risk, detector, and recent-incident views](../assets/article/aimada-diagrams/08-dashboard-concept.jpg)
+![Conceptual LOB Arena dashboard with experiment, alert, risk, detector, and recent-incident views](../assets/article/aimada-diagrams/08-dashboard-concept.jpg)
 
 *Figure 4. The command-center concept brings experiment status, detector output, incident risk, and investigation progress into one reviewer-facing view.*
 
-During an interactive run, AIMADA uses the separate `agent-runner/` workspace to generate normal synthetic market activity.
+During an interactive run, LOB Arena uses the separate `agent-runner/` workspace to generate normal synthetic market activity.
 
 At each simulation tick, the backend sends a read-only order-book snapshot to the workspace through its `/decide` API. The workspace returns typed `AgentIntent` objects rather than mutating the market directly. The backend validates and deterministically sorts those intents, remains the single authoritative writer, and applies accepted actions to the synthetic exchange and matching engine.
 
@@ -50,7 +50,7 @@ The workspace runs several kinds of trading agents. Top-of-book market makers re
 
 This separation lets the frontend display agent activity while the backend preserves ordering, timeouts, validation, and reproducibility.
 
-None of these agents connects to a broker, exchange, or real market. They trade only inside AIMADA’s synthetic order book and cannot emit real orders or trading signals.
+None of these agents connects to a broker, exchange, or real market. They trade only inside LOB Arena’s synthetic order book and cannot emit real orders or trading signals.
 
 Inside the backend, the core loop is intentionally deterministic. A synthetic exchange, order book, and matching engine process actions from market-making, liquidity-taking, and noise agents. Scenario agents can then inject bounded spoofing-like, layering-like, quote-stuffing-like, liquidity-evaporation, or pump-and-cancel behavior.
 
@@ -62,7 +62,7 @@ The key word is “bounded.” These are synthetic patterns for education and de
 
 ## Why detection and explanation are separate
 
-Nebius Serverless AI Endpoints do not make AIMADA’s original detection decision.
+Nebius Serverless AI Endpoints do not make LOB Arena’s original detection decision.
 
 A deterministic detector produces structured evidence first: spread, visible depth, imbalance, message rate, cancel-to-trade ratio, wall-size ratio, order lifetime, confidence scores, and scenario labels.
 
@@ -74,7 +74,7 @@ The backend then sends a compact incident payload to the Endpoint. The Endpoint 
 
 ![AI investigation workflow from alert and evidence collection through context construction, LLM analysis, structured report, and Job processing](../assets/article/aimada-diagrams/04-ai-investigation-workflow.jpg)
 
-*Figure 7. AIMADA assembles a bounded evidence package before invoking the LLM, then validates and stores a structured investigation result.*
+*Figure 7. LOB Arena assembles a bounded evidence package before invoking the LLM, then validates and stores a structured investigation result.*
 
 This split matters because it keeps the workflow auditable. AI is used for explanation, narration, investigation assistance, and bounded scenario generation. Structured detector evidence remains the source of truth.
 
@@ -136,7 +136,7 @@ The public bundle intentionally excludes credentials, authorization headers, pri
 
 The most important design choice was separating “detect” from “explain.” In many AI prototypes, the model is asked to be both judge and storyteller. That is convenient, but difficult to evaluate.
 
-In AIMADA, detectors are deterministic functions over synthetic order-book state. They create incidents with explicit evidence. The AI layer translates that evidence into plain language, helps organize an investigation, narrates the result, or generates a bounded scenario. It does not silently replace detector logic or become the source of ground truth.
+In LOB Arena, detectors are deterministic functions over synthetic order-book state. They create incidents with explicit evidence. The AI layer translates that evidence into plain language, helps organize an investigation, narrates the result, or generates a bounded scenario. It does not silently replace detector logic or become the source of ground truth.
 
 I also found that evidence transport is part of the product architecture. A successful cloud status is useful, but a reviewer needs the associated metrics, reports, logs, timestamps, and artifacts. Archiving to Object Storage, synchronizing through the backend, and exposing downloads in the UI turns an execution claim into an inspectable chain.
 
@@ -144,8 +144,8 @@ The next research steps are to increase benchmark and scenario diversity, develo
 
 That comparison matters. A learned detector should not receive a more forgiving evaluation path because its internals are more complex. Deterministic and learned approaches should consume compatible evidence, preserve the same ground truth, report the same metric families, and produce artifacts another practitioner can inspect.
 
-Public repository: [https://github.com/khab40/aimada](https://github.com/khab40/aimada)
+Public repository: [https://github.com/khab40/lob-arena](https://github.com/khab40/lob-arena)
 
-Safety disclaimer: AIMADA is synthetic and educational. It uses no real trading data, does not detect real market manipulation, does not provide trading signals, and is not suitable for compliance decisions.
+Safety disclaimer: LOB Arena is synthetic and educational. It uses no real trading data, does not detect real market manipulation, does not provide trading signals, and is not suitable for compliance decisions.
 
 #NebiusServerlessChallenge
