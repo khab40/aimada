@@ -7,7 +7,7 @@ benchmark outputs. Credential-bearing values, authorization headers, signed URL
 parameters, private keys, and URL user-info are redacted before publication.
 
 - Generated at (UTC): `2026-07-14-1412`
-- Repository: `https://github.com/khab40/aimada`
+- Repository: `https://github.com/khab40/lob-arena`
 - Collection mode: `live`
 - Source policy: tracked project files plus sanitized command metadata
 - Integrity: run `shasum -a 256 -c checksums.sha256` from this directory

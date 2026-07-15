@@ -5,7 +5,7 @@
 ![AI Market Abuse Detection Arena GitHub banner](assets/img/ai-mada.jpg)
 
 <p align="center">
-  <a href="https://github.com/khab40/aimada"><img src="https://img.shields.io/badge/GitHub-khab40%2Faimada-181717?logo=github&amp;logoColor=white" alt="AIMADA repository"></a>
+  <a href="https://github.com/khab40/lob-arena"><img src="https://img.shields.io/badge/GitHub-khab40%2Flob--arena-181717?logo=github&amp;logoColor=white" alt="LOB Arena repository"></a>
   <a href="https://github.com/nebius"><img src="https://img.shields.io/badge/Nebius-Serverless_AI-6C47FF?logo=nebius&amp;logoColor=white" alt="Nebius Serverless AI"></a>
   <a href="https://github.com/python/cpython"><img src="https://img.shields.io/badge/Python-3.11-3776AB?logo=python&amp;logoColor=white" alt="Python 3.11"></a>
   <a href="https://github.com/fastapi/fastapi"><img src="https://img.shields.io/badge/FastAPI-Backend-009688?logo=fastapi&amp;logoColor=white" alt="FastAPI backend"></a>
@@ -15,7 +15,7 @@
   <a href="https://github.com/langchain-ai/langgraph"><img src="https://img.shields.io/badge/LangGraph-Agents-1C3C3C?logo=langchain&amp;logoColor=white" alt="LangGraph agents"></a>
   <a href="https://github.com/docker/compose"><img src="https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&amp;logoColor=white" alt="Docker Compose"></a>
   <a href="https://github.com/kubernetes/kubernetes"><img src="https://img.shields.io/badge/Kubernetes-Deployment-326CE5?logo=kubernetes&amp;logoColor=white" alt="Kubernetes deployment"></a>
-  <a href="https://github.com/khab40/aimada/actions/workflows/ci.yml"><img src="https://github.com/khab40/aimada/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI status"></a>
+  <a href="https://github.com/khab40/lob-arena/actions/workflows/ci.yml"><img src="https://github.com/khab40/lob-arena/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI status"></a>
 </p>
 
 AIMADA is a Nebius AI Serverless-first market surveillance command center for synthetic market-abuse workloads. The Arena generates suspicious market activity; Nebius AI Serverless investigates incidents, generates scenarios, and runs detector tournaments.
@@ -119,8 +119,8 @@ outputs/          Generated logs, incidents, reports, artifacts
 ### 1. Clone and Configure
 
 ```bash
-git clone https://github.com/khab40/aimada.git
-cd aimada
+git clone https://github.com/khab40/lob-arena.git
+cd lob-arena
 cp .env.example .env
 ```
 

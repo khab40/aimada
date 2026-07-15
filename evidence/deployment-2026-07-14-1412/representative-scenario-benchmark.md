@@ -12,7 +12,7 @@ This table uses AIMADA’s checked-in scenario contracts and the fresh `EXP-18E8
 
 ## What was done
 
-The standard spoofing and layering fixtures were converted into the backend’s structured investigation request and sent through the live Endpoint. The five standard scenarios were submitted once to Job `aijob-e00q7cdpz32jyk0bsg` using image `ghcr.io/khab40/ai-market-abuse-detection-arena-jobs:artifacts-v3-20260714-151355`, `cpu-d3`, and `4vcpu-16gb`. The Job ran from `2026-07-14T17:33:35Z` to `2026-07-14T17:36:36Z` (~181 seconds); seven S3 artifacts were synchronized with no missing files. Evidence records the request source, observed response or detector result, execution source, and status.
+The standard spoofing and layering fixtures were converted into the backend’s structured investigation request and sent through the live Endpoint. The five standard scenarios were submitted once to Job `aijob-e00q7cdpz32jyk0bsg` using image `ghcr.io/khab40/lob-arena-jobs:artifacts-v3-20260714-151355`, `cpu-d3`, and `4vcpu-16gb`. The Job ran from `2026-07-14T17:33:35Z` to `2026-07-14T17:36:36Z` (~181 seconds); seven S3 artifacts were synchronized with no missing files. Evidence records the request source, observed response or detector result, execution source, and status.
 
 ## Explanation by the system
 

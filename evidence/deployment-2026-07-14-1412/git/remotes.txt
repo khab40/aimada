@@ -1,2 +1,2 @@
-origin	https://github.com/khab40/aimada.git (fetch)
-origin	https://github.com/khab40/aimada.git (push)
+origin	https://github.com/khab40/lob-arena.git (fetch)
+origin	https://github.com/khab40/lob-arena.git (push)
