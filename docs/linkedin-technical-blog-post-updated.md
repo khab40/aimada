@@ -1,6 +1,6 @@
 # Building LOB Arena: An Adversarial Market-Surveillance Evaluation Platform with Nebius Serverless AI
 
-![LOB Arena dashboard concept showing the synthetic market-abuse evaluation arena](../assets/article/aimada-diagrams/08-dashboard-concept.jpg)
+![LOB Arena concept showing the synthetic market-abuse evaluation arena](../assets/article/aimada-diagrams/08-dashboard-concept.jpg)
 *LOB Arena is a synthetic arena for evaluating market-abuse detectors and AI-assisted investigations on Nebius Serverless AI.*
 
 Market-surveillance teams can purchase historical order-book data from exchanges and specialist market-data vendors. The harder problem is obtaining complete, reliable ground-truth labels that identify which sequences represent manipulation, which reflect legitimate trading behaviour, and how a surveillance system should respond.
