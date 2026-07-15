@@ -14,7 +14,7 @@ def test_render_job_config_applies_experiment_overrides(tmp_path: Path) -> None:
         experiment_id="EXP-001",
         runs=17,
         batch_size=4,
-        scenarios=["spoofing", "quote_stuffing"],
+        scenarios=["spoofing_like_wall", "quote_stuffing"],
         image="ghcr.io/acme/aimada-jobs:test-tag",
         output_dir="/job/outputs/experiments/EXP-001/local-batch",
         rendered_path=rendered_path,
@@ -24,11 +24,11 @@ def test_render_job_config_applies_experiment_overrides(tmp_path: Path) -> None:
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
 
     assert config["image"] == {"repository": "ghcr.io/acme/aimada-jobs", "tag": "test-tag"}
-    assert config["scenarios"] == ["spoofing", "quote_stuffing"]
+    assert config["scenarios"] == ["spoofing_like_wall", "quote_stuffing"]
     assert config["outputs"]["directory"] == "/job/outputs/experiments/EXP-001/local-batch"
     assert "--runs 17" in config["args"]
     assert "--batch-size 4" in config["args"]
-    assert "--scenarios spoofing,quote_stuffing" in config["args"]
+    assert "--scenarios spoofing_like_wall,quote_stuffing" in config["args"]
     assert "--output /job/outputs/experiments/EXP-001/local-batch" in config["args"]
 
 

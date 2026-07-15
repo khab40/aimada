@@ -10,7 +10,7 @@ TIMEOUT="${NEBIUS_JOB_TIMEOUT:-1h}"
 RUNS="${NEBIUS_JOB_RUNS:-1000}"
 BATCH_SIZE="${NEBIUS_JOB_BATCH_SIZE:-100}"
 OUTPUT_DIR="${NEBIUS_JOB_OUTPUT_DIR:-/job/outputs/serverless-batch}"
-SCENARIOS="${NEBIUS_JOB_SCENARIOS:-normal_market,spoofing,layering,quote_stuffing,pump_and_cancel}"
+SCENARIOS="${NEBIUS_JOB_SCENARIOS:-normal_market,spoofing_like_wall,layering_like,quote_stuffing,liquidity_evaporation}"
 S3_OUTPUT_URI="${NEBIUS_JOB_OUTPUT_URI:-}"
 S3_ENDPOINT_URL="${NEBIUS_OBJECT_STORAGE_ENDPOINT_URL:-}"
 

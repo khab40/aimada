@@ -3,8 +3,8 @@ from app.exchange.schemas import Order
 
 
 class SpoofingLikeAgent(Agent):
-    scenario_family = "spoofing_like"
-    scenario_name = "spoofing-like"
+    scenario_family = "spoofing_like_wall"
+    scenario_name = "spoofing_like_wall"
 
     def __init__(self, agent_id: str, scenario_id: str | None = None) -> None:
         super().__init__(agent_id)

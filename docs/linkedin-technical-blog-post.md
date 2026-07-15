@@ -48,7 +48,7 @@ This separation lets the frontend display agent activity while the backend prese
 
 None of these agents connects to a broker, exchange, or real market. They trade only inside LOB Arena’s synthetic order book and cannot emit real orders or trading signals.
 
-Inside the backend, the core loop is intentionally deterministic. A synthetic exchange, order book, and matching engine process actions from market-making, liquidity-taking, and noise agents. Scenario agents can then inject bounded spoofing-like, layering-like, quote-stuffing-like, liquidity-evaporation, or pump-and-cancel behavior.
+Inside the backend, the core loop is intentionally deterministic. A synthetic exchange, order book, and matching engine process actions from market-making, liquidity-taking, and noise agents. Scenario agents can then inject the four implemented workloads: Spoofing-like Wall, Layering-like Pattern, Quote Stuffing Burst, and Liquidity Evaporation.
 
 The key word is “bounded.” These are synthetic patterns for education and detector testing, not instructions for real market activity.
 

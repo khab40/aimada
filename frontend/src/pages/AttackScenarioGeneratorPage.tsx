@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   generateNebiusAttackScenario,
   injectNebiusAttackScenario
@@ -11,10 +11,11 @@ import type {
   AttackScenarioInput
 } from "@/features/nebius/types";
 import type { Incident } from "@/types/arena";
+import { arenaScenarioLabels, arenaScenarioTypes } from "@/scenarios";
 
 const initialAttackInput: AttackScenarioInput = {
   attackDuration: "Medium",
-  attackType: "Spoofing",
+  attackType: arenaScenarioLabels.spoofing_like_wall,
   detectorDifficulty: "Medium",
   marketCondition: "Thin liquidity",
   objective: "Buy cheaper",
@@ -22,7 +23,7 @@ const initialAttackInput: AttackScenarioInput = {
   stealthLevel: "Medium"
 };
 
-const attackTypes: AttackScenarioInput["attackType"][] = ["Spoofing", "Layering", "Quote Stuffing", "Momentum Ignition", "Mixed Attack"];
+const attackTypes: AttackScenarioInput["attackType"][] = arenaScenarioTypes.map((type) => arenaScenarioLabels[type]);
 const durations: AttackScenarioInput["attackDuration"][] = ["Short", "Medium", "Long"];
 
 type ReusableScenarioTemplate = {
@@ -34,28 +35,28 @@ type ReusableScenarioTemplate = {
 
 const reusableScenarioTemplates: ReusableScenarioTemplate[] = [
   {
-    attackInput: { attackType: "Spoofing", detectorDifficulty: "Medium", marketCondition: "Thin liquidity", stealthLevel: "Medium" },
+    attackInput: { attackType: arenaScenarioLabels.spoofing_like_wall, detectorDifficulty: "Medium", marketCondition: "Thin liquidity", stealthLevel: "Medium" },
     duration: "Medium",
-    key: "spoofing",
-    title: "spoofing"
+    key: "spoofing_like_wall",
+    title: arenaScenarioLabels.spoofing_like_wall
   },
   {
-    attackInput: { attackType: "Layering", detectorDifficulty: "Hard", marketCondition: "High volatility", stealthLevel: "Subtle" },
+    attackInput: { attackType: arenaScenarioLabels.layering_like, detectorDifficulty: "Hard", marketCondition: "High volatility", stealthLevel: "Subtle" },
     duration: "Long",
-    key: "layering",
-    title: "layering"
+    key: "layering_like",
+    title: arenaScenarioLabels.layering_like
   },
   {
-    attackInput: { attackType: "Mixed Attack", detectorDifficulty: "Hard", marketCondition: "Normal liquidity", objective: "Test detector weakness" },
+    attackInput: { attackType: arenaScenarioLabels.liquidity_evaporation, detectorDifficulty: "Hard", marketCondition: "Normal liquidity", objective: "Test detector weakness" },
     duration: "Medium",
-    key: "wash_trading",
-    title: "wash trading"
+    key: "liquidity_evaporation",
+    title: arenaScenarioLabels.liquidity_evaporation
   },
   {
-    attackInput: { attackType: "Quote Stuffing", detectorDifficulty: "Medium", marketCondition: "Low activity period", stealthLevel: "Obvious" },
+    attackInput: { attackType: arenaScenarioLabels.quote_stuffing, detectorDifficulty: "Medium", marketCondition: "Low activity period", stealthLevel: "Obvious" },
     duration: "Short",
     key: "quote_stuffing",
-    title: "quote stuffing"
+    title: arenaScenarioLabels.quote_stuffing
   }
 ];
 
@@ -67,7 +68,6 @@ export function AttackScenarioGeneratorPage() {
   const [attackScenario, setAttackScenario] = useState<AttackScenario | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [arenaRunReady, setArenaRunReady] = useState(false);
 
   useEffect(() => {
     const demoScenario = searchParams.get("demoScenario");
@@ -85,7 +85,6 @@ export function AttackScenarioGeneratorPage() {
       ...template.attackInput,
       attackDuration: template.duration as AttackScenarioInput["attackDuration"]
     }));
-    setArenaRunReady(false);
     setMessage(`${template.title} template loaded. Generate the scenario, then run it in Arena.`);
   }
 
@@ -104,15 +103,13 @@ export function AttackScenarioGeneratorPage() {
   async function generateAttack() {
     const scenario = await generateNebiusAttackScenario(attackInput);
     setAttackScenario(scenario);
-    setArenaRunReady(false);
     setMessage(`${scenario.id} persisted and ready for live injection.`);
   }
 
   async function injectScenario() {
     if (!attackScenario) return;
-    const response = await injectNebiusAttackScenario(attackScenario.id);
-    setArenaRunReady(true);
-    setMessage(response.message);
+    await injectNebiusAttackScenario(attackScenario.id);
+    navigate(`/arena?replayScenario=${encodeURIComponent(attackScenario.id)}`);
   }
 
   function sendToInvestigation() {
@@ -185,7 +182,6 @@ export function AttackScenarioGeneratorPage() {
               <button className="scenario-primary-action" disabled={busy} onClick={() => void runAction(injectScenario)} type="button">Run in Arena</button>
             )}
             {attackScenario ? <button onClick={() => void runAction(generateAttack)} type="button">Generate New</button> : null}
-            {arenaRunReady ? <Link className="primary-link-button" to="/arena">Open Arena</Link> : null}
             {attackScenario ? (
               <button className="primary-link-button" onClick={sendToInvestigation} type="button">
                 Send to Nebius investigation

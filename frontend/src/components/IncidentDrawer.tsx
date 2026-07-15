@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { NebiusAIInvestigatorPanel } from "@/components/NebiusAIInvestigatorPanel";
 import type { ProductDemoConfig } from "@/demoModes";
 import type { Incident } from "@/types/arena";
+import { arenaScenarioLabels } from "@/scenarios";
 
 type IncidentDetailsMode = "live" | "replay";
 
@@ -9,13 +10,6 @@ type ReplayStep = {
   label: string;
   tickOffset: number;
   summary: string;
-};
-
-const incidentTypeLabels: Record<string, string> = {
-  layering_like: "Layering-like Pattern",
-  liquidity_evaporation: "Liquidity Evaporation",
-  quote_stuffing: "Quote Stuffing Burst",
-  spoofing_like_wall: "Spoofing-like Wall"
 };
 
 const replaySteps: ReplayStep[] = [
@@ -136,5 +130,5 @@ function formatReplayTick(baseTick: number | undefined, offset: number) {
 }
 
 function formatIncidentType(type: string) {
-  return incidentTypeLabels[type] ?? type.replace(/_/g, " ");
+  return arenaScenarioLabels[type as keyof typeof arenaScenarioLabels] ?? type.replace(/_/g, " ");
 }

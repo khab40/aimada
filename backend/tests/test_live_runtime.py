@@ -42,13 +42,13 @@ def test_live_runtime_launches_scenario_and_broadcasts_state() -> None:
         broadcaster = RecordingBroadcaster()
         runtime = LiveArenaRuntime(broadcaster, tick_interval_seconds=0.01)
         try:
-            result = await runtime.launch_scenario("layering-like")
+            result = await runtime.launch_scenario("layering_like")
             await asyncio.sleep(0.02)
             snapshot = await runtime.snapshot()
 
             assert result["accepted"] is True
             assert snapshot["running"] is True
-            assert snapshot["active_scenario"]["scenario_name"] == "layering-like"
+            assert snapshot["active_scenario"]["scenario_name"] == "layering_like"
             assert "ABUSER_02" in snapshot["active_agents"]
             assert any(message["type"] == "arena_state" for message in broadcaster.messages)
         finally:

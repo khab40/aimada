@@ -57,20 +57,20 @@ def test_generate_red_team_scenario_returns_launchable_config(monkeypatch: Any, 
     assert config.parameters["duration_seconds"] == 4
 
 
-def test_red_team_scenario_config_normalizes_to_existing_launcher() -> None:
+def test_red_team_scenario_config_uses_exact_existing_launcher() -> None:
     config = routes_red_team.scenario_config_from_draft(
         RedTeamScenarioResponse(
             mode="mock",
             endpoint="mock Nebius scenario generator",
-            scenario_type="panic_selloff",
-            title="Unsupported draft type",
-            description="Draft maps to the nearest launchable liquidity scenario.",
+            scenario_type="liquidity_evaporation",
+            title="Liquidity Evaporation",
+            description="Draft uses the implemented liquidity scenario.",
             parameters={},
             expected_detector_risk=0.61,
             safety_note="Educational simulator use only.",
         ),
         RedTeamScenarioGenerateRequest(
-            scenario_family="panic_selloff",
+            scenario_family="liquidity_evaporation",
             market_regime=MarketRegime.THIN_LIQUIDITY,
             goal=RedTeamGoal.OBVIOUS,
             constraints={},

@@ -61,6 +61,9 @@ export function MarketTimeline({ frames }: { frames: MarketTimelineFrame[] }) {
         <h2>Market Movement</h2>
         <span>{points.length} frames</span>
       </div>
+      <p className="market-timeline-description">
+        Rolling simulation history: mid price (cyan), spread in basis points (amber), and order-book imbalance (violet). The x-axis is simulation tick, not wall-clock time.
+      </p>
 
       <div className="timeline-chart" role="img" aria-label="Mid price, spread bps, and imbalance timeline">
         <ResponsiveContainer width="100%" height="100%">

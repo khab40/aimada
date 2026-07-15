@@ -4,7 +4,7 @@ from app.exchange.schemas import Order
 
 class LayeringLikeAgent(Agent):
     scenario_family = "layering_like"
-    scenario_name = "layering-like"
+    scenario_name = "layering_like"
 
     def __init__(self, agent_id: str, scenario_id: str | None = None) -> None:
         super().__init__(agent_id)

@@ -138,6 +138,7 @@ class NebiusIntegrationStatus(BaseModel):
     endpoint_base_url: str | None = None
     endpoint_base_url_configured: bool
     endpoint_health: dict[str, Any] | None = None
+    runner_health: dict[str, Any]
     job_health: dict[str, Any]
     storage_health: dict[str, Any]
     checked_at: str
@@ -401,9 +402,11 @@ class NebiusClient:
                 cli_version = (completed.stdout or completed.stderr).strip() or None
             except (OSError, subprocess.SubprocessError, TimeoutError):
                 cli_version = None
-        with ThreadPoolExecutor(max_workers=2) as executor:
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            runner_probe = executor.submit(self.runner_health)
             job_probe = executor.submit(self.job_health, cli_path=cli_path)
             storage_probe = executor.submit(self.storage_health)
+            runner_health = runner_probe.result()
             job_health = job_probe.result()
             storage_health = storage_probe.result()
 
@@ -420,6 +423,7 @@ class NebiusClient:
             endpoint_base_url=settings.nebius_endpoint_base_url,
             endpoint_base_url_configured=bool(settings.nebius_endpoint_base_url),
             endpoint_health=endpoint_health,
+            runner_health=runner_health,
             job_health=job_health,
             storage_health=storage_health,
             checked_at=datetime.now(timezone.utc).isoformat(),
@@ -536,6 +540,41 @@ class NebiusClient:
             env=env,
         )
 
+    def runner_health(self) -> dict[str, Any]:
+        settings = get_settings()
+        urls = settings.remote_agent_url_list
+        checked_at = datetime.now(timezone.utc).isoformat()
+        if not urls:
+            return {
+                "status": "not_configured",
+                "detail": "No remote agent Runner URL is configured.",
+                "checked_at": checked_at,
+            }
+        healthy: list[dict[str, Any]] = []
+        failures: list[str] = []
+        for url in urls:
+            health_url = f"{url.rstrip('/')}/health"
+            try:
+                response = self._get_public_json(
+                    health_url,
+                    timeout_seconds=settings.nebius_cloud_probe_timeout_seconds,
+                )
+                if str(response.get("status", "")).lower() in {"ok", "ready", "healthy", "connected"}:
+                    healthy.append(response)
+                else:
+                    failures.append(f"{url}: {response.get('status', 'invalid response')}")
+            except (HTTPError, URLError, TimeoutError, json.JSONDecodeError, ValueError) as exc:
+                failures.append(f"{url}: {exc}")
+        status = "ok" if len(healthy) == len(urls) else "degraded" if healthy else "unavailable"
+        return {
+            "status": status,
+            "configured_count": len(urls),
+            "healthy_count": len(healthy),
+            "agent_count": sum(int(item.get("agent_count") or 0) for item in healthy),
+            "detail": "All configured Runner services responded." if not failures else "; ".join(failures),
+            "checked_at": checked_at,
+        }
+
     def _get_json(self, url: str, *, timeout_seconds: float | None = None) -> dict[str, Any]:
         headers: dict[str, str] = {}
         if self.api_key:
@@ -546,6 +585,14 @@ class NebiusClient:
             decoded = json.loads(body)
             if not isinstance(decoded, dict):
                 raise ValueError("Nebius endpoint returned a non-object JSON response")
+            return decoded
+
+    def _get_public_json(self, url: str, *, timeout_seconds: float) -> dict[str, Any]:
+        request = Request(url, method="GET")
+        with urlopen(request, timeout=timeout_seconds) as response:
+            decoded = json.loads(response.read().decode("utf-8"))
+            if not isinstance(decoded, dict):
+                raise ValueError("Runner returned a non-object JSON response")
             return decoded
 
     def _post_json(self, url: str, payload: dict[str, Any]) -> dict[str, Any]:

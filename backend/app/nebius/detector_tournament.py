@@ -21,7 +21,7 @@ from app.nebius.evidence_archive import NebiusEvidenceArchive
 from app.storage.local_store import LocalStore
 
 
-ManipulationType = Literal["spoofing", "layering", "wash_trading", "quote_stuffing"]
+ManipulationType = Literal["spoofing_like_wall", "layering_like", "quote_stuffing", "liquidity_evaporation"]
 DetectorName = Literal["spoofing_like", "layering_like", "quote_stuffing", "liquidity_shock"]
 TournamentStatus = Literal["queued", "running", "completed", "failed", "real_nebius_pending"]
 TournamentExecutionMode = Literal["local_mock", "local", "nebius_serverless_job"]
@@ -30,7 +30,7 @@ _LOCAL_TOURNAMENT_LOCK = threading.Lock()
 
 class DetectorTournamentStartRequest(BaseModel):
     number_of_scenarios: int = Field(default=100, ge=1, le=1000)
-    manipulation_types: list[ManipulationType] = Field(default_factory=lambda: ["spoofing", "layering", "quote_stuffing"])
+    manipulation_types: list[ManipulationType] = Field(default_factory=lambda: ["spoofing_like_wall", "layering_like", "quote_stuffing", "liquidity_evaporation"])
     difficulty_mix: dict[str, float] = Field(default_factory=lambda: {"easy": 0.2, "medium": 0.5, "hard": 0.2, "adversarial": 0.1})
     detector_set: list[DetectorName] = Field(default_factory=lambda: ["spoofing_like", "layering_like", "quote_stuffing"])
     random_seed: int = 42
@@ -824,14 +824,7 @@ def _artifact_paths(output_dir: Path) -> dict[str, str]:
 
 
 def _scenario_names(values: list[ManipulationType]) -> list[str]:
-    mapping = {
-        "spoofing": "spoofing",
-        "layering": "layering",
-        "quote_stuffing": "quote_stuffing",
-        "wash_trading": "pump_and_cancel",
-    }
-    normalized = [mapping[value] for value in values]
-    return normalized or ["spoofing", "layering", "quote_stuffing"]
+    return [str(value) for value in values] or ["spoofing_like_wall", "layering_like", "quote_stuffing", "liquidity_evaporation"]
 
 
 def _detectors(values: list[DetectorName]) -> list[str]:

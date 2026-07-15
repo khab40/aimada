@@ -153,7 +153,7 @@ def test_generate_market_abuse_scenario_returns_ground_truth_contract() -> None:
     assert response.manipulation_type == "quote_stuffing"
     assert response.ground_truth["label"] == "quote_stuffing"
     assert response.events
-    assert response.replay["route"] == "quote-stuffing"
+    assert response.replay["route"] == "quote_stuffing"
     assert response.model_mode == "deterministic_fallback"
     assert response.source["endpoint"] == "/generate-market-abuse-scenario"
 
@@ -169,7 +169,7 @@ def test_orderbook_alert_returns_detector_contract() -> None:
                 "cancel_to_trade_ratio": 5.4,
                 "imbalance": 0.72,
             },
-            scenario_hint="spoofing",
+            scenario_hint="spoofing_like_wall",
         )
     )
 
@@ -267,7 +267,7 @@ def test_local_vllm_mode_uses_local_openai_compatible_endpoint_without_auth(
             bids=[{"price": 68120, "quantity": 12.4}],
             asks=[{"price": 68130, "quantity": 1.8}],
             features={"wall_size_ratio": 8.2},
-            scenario_hint="spoofing",
+            scenario_hint="spoofing_like_wall",
         )
     )
 
@@ -339,7 +339,7 @@ def test_local_vllm_market_abuse_scenario_uses_compact_narrative_contract(
     assert response.model_mode == "local_vllm"
     assert response.source["mode"] == "nebius"
     assert response.events
-    assert response.ground_truth["label"] == "spoofing"
+    assert response.ground_truth["label"] == "spoofing_like_wall"
     assert "events" not in json.loads(captured["messages"][1]["content"])["scenario"]  # type: ignore[index]
 
 
@@ -365,7 +365,7 @@ def test_invalid_model_json_falls_back(monkeypatch: pytest.MonkeyPatch) -> None:
             bids=[{"price": 68120, "quantity": 12.4}],
             asks=[{"price": 68130, "quantity": 1.8}],
             features={"wall_size_ratio": 8.2},
-            scenario_hint="spoofing",
+            scenario_hint="spoofing_like_wall",
         )
     )
 
@@ -389,7 +389,7 @@ def test_wrong_shaped_model_json_falls_back(monkeypatch: pytest.MonkeyPatch) -> 
             bids=[{"price": 68120, "quantity": 12.4}],
             asks=[{"price": 68130, "quantity": 1.8}],
             features={"wall_size_ratio": 8.2},
-            scenario_hint="spoofing",
+            scenario_hint="spoofing_like_wall",
         )
     )
 
@@ -413,7 +413,7 @@ def test_unknown_endpoint_mode_falls_back_without_http_call(monkeypatch: pytest.
             bids=[{"price": 68120, "quantity": 12.4}],
             asks=[{"price": 68130, "quantity": 1.8}],
             features={"wall_size_ratio": 8.2},
-            scenario_hint="spoofing",
+            scenario_hint="spoofing_like_wall",
         )
     )
 

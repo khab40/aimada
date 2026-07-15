@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from uuid import uuid4
 
+from app.config import get_settings
 from app.experiments.aggregator import AggregationResult, ExperimentSummary, LeaderboardRow, aggregate_experiment, load_leaderboard, load_summary, report_path
 from app.experiments.artifact_normalizer import ArtifactNormalizationResponse, normalize_local_batch_artifacts
 from app.experiments.attack_manifest import AttackManifestResponse, generate_attack_manifest
@@ -120,6 +121,7 @@ class ExperimentManager:
             runs=experiment.attack_count,
             batch_size=experiment.batch_size,
             scenarios=experiment.scenarios,
+            max_workers=get_settings().arena_local_batch_max_workers,
         )
         status = "completed" if batch.returncode == 0 else "failed"
         updated_at = utc_now()

@@ -68,7 +68,7 @@ function buildEvidenceRows(state: ArenaState): EvidenceRow[] {
       value: `${formatNumber(features?.depth_change_pct)}% depth change`
     },
     {
-      explanation: "Cancel activity is elevated versus trades, especially during quote-stuffing-like flow.",
+      explanation: "Cancel activity is elevated versus trades, especially during a Quote Stuffing Burst.",
       label: "High cancel/trade ratio",
       status: features && (features.cancel_to_trade_ratio ?? 0) >= 20 ? "confirmed" : scenario ? "observed" : "pending",
       value: `${formatNumber(features?.cancel_to_trade_ratio)}:1`

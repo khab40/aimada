@@ -14,7 +14,7 @@ detector outputs, and writes benchmark artifacts.
 ```bash
 python serverless/jobs/detector_tournament.py \
   --runs 100 \
-  --scenarios spoofing,layering,quote_stuffing,liquidity_evaporation \
+  --scenarios spoofing_like_wall,layering_like,quote_stuffing,liquidity_evaporation \
   --detectors spoofing_like,layering_like,quote_stuffing,liquidity_shock \
   --random-seed 42 \
   --difficulty-mix '{"easy":0.2,"medium":0.5,"hard":0.2,"adversarial":0.1}' \
@@ -100,7 +100,7 @@ also available through the compatibility wrapper `run_batch_benchmark.py`.
 python serverless/jobs/run_batch_experiments.py \
   --runs 1000 \
   --batch-size 100 \
-  --scenarios normal_market,spoofing,layering,quote_stuffing,pump_and_cancel \
+  --scenarios normal_market,spoofing_like_wall,layering_like,quote_stuffing,liquidity_evaporation \
   --random-seed 42 \
   --difficulty-mix '{"easy":0.2,"medium":0.5,"hard":0.2,"adversarial":0.1}' \
   --output outputs/serverless-batch
@@ -127,7 +127,7 @@ python serverless/jobs/render_job_config.py \
   --experiment-id EXP-001 \
   --runs 100 \
   --batch-size 10 \
-  --scenarios normal_market,spoofing \
+  --scenarios normal_market,spoofing_like_wall \
   --image ghcr.io/your-org/lob-arena-jobs:latest
 ```
 

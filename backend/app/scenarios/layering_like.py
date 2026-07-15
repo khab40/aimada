@@ -4,7 +4,7 @@ from app.scenarios.base import ScenarioBase
 
 
 class LayeringLikeScenario(ScenarioBase):
-    scenario_name = "layering-like"
+    scenario_name = "layering_like"
     scenario_family = "layering_like"
     agent_id = "ABUSER_02"
 

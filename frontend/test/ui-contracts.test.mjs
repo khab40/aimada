@@ -51,6 +51,8 @@ describe("LOB Arena branding contract", () => {
 describe("Core UI navigation and workflow contracts", () => {
   const app = read("src/App.tsx");
   const arena = read("src/pages/ArenaPage.tsx");
+  const agentTimeline = read("src/components/AgentTimeline.tsx");
+  const marketTimeline = read("src/components/MarketTimeline.tsx");
   const nebius = read("src/pages/NebiusControlPanelPage.tsx");
   const runtimeModes = read("src/runtimeModes.ts");
   const css = read("src/App.css");
@@ -100,12 +102,34 @@ describe("Core UI navigation and workflow contracts", () => {
       "MetricPill label=\"Mid\"",
       "MetricPill label=\"Spread\"",
       "📄 Evidence",
-      "🕒 Timeline",
-      "IncidentDrawer"
+      "Market Timeline",
+      "🕒 Agent Events",
+      "IncidentDrawer",
+      "Live replay active:",
+      "Exchange ticks, LOB updates, detectors, and incident evidence are streaming below."
     ]);
     expectIncludes(arena, ["storeControlCenterIncident", "controlCenterIncidentPath", "onSendToControlCenter"]);
     assert.doesNotMatch(arena, /aria-label="Market visualization"/);
     assert.doesNotMatch(arena, /MarketBattlefield3D|OrderBookTerrain|battlefieldFrames/);
+  });
+
+  it("labels agent events as synthetic tick-based activity with runtime provenance", () => {
+    expectIncludes(agentTimeline, [
+      "Clock · simulation ticks",
+      "Venue · synthetic LOB",
+      "No orders are routed to a real exchange.",
+      "Agent Runner",
+      "formatSimulationTick"
+    ]);
+    assert.doesNotMatch(agentTimeline, /new Date\(timestamp\)/);
+    expectIncludes(arena, ["activeAgents={state.active_agents}", "title=\"Agent Event Timeline\""]);
+    expectIncludes(marketTimeline, [
+      "Rolling simulation history",
+      "mid price (cyan)",
+      "spread in basis points (amber)",
+      "order-book imbalance (violet)",
+      "simulation tick, not wall-clock time"
+    ]);
   });
 
   it("transfers the selected Arena incident into the investigation workflow", () => {
@@ -180,6 +204,8 @@ describe("Core UI navigation and workflow contracts", () => {
       "Ground truth",
       "generateMarketAbuseScenario",
       "injectNebiusAttackScenario",
+      "navigate(`/arena?replayScenario=",
+      "The live Arena remains available and keeps ticking.",
       "title=\"Investigation Team\"",
       "title=\"Detector Tournament\"",
       "Nebius AI Detector Tournament",
@@ -255,6 +281,14 @@ describe("Core UI navigation and workflow contracts", () => {
       "controlsDisabled",
       "executionResultsReady",
       "mergeArtifactLinks",
+      "ExperimentArtifactBrowser",
+      "ExperimentInvestigationResults",
+      "Benchmark alert explanations",
+      "Showing Tab 3 · Benchmark alert explanations",
+      "benchmark-alert-explanations",
+      "scrollIntoView",
+      "Explain alerts → Tab 3",
+      "Open analyst report",
       "<UsageCostMonitor",
       "showE2ECompletion",
       "<E2ECompletionDialog",
@@ -268,8 +302,8 @@ describe("Core UI navigation and workflow contracts", () => {
       "estimatedCostUsd",
       "costBasis"
     ]);
-    // One artifact block in Experiment Lab and one merged block in Execution Trace.
-    assert.equal((nebius.match(/<ExperimentArtifactLinks/g) ?? []).length, 2);
+    assert.equal((nebius.match(/<ExperimentArtifactBrowser/g) ?? []).length, 1);
+    assert.equal((nebius.match(/<ExperimentArtifactLinks/g) ?? []).length, 0);
     assert.doesNotMatch(runtimeStatus, /Estimated cost|Tokens|GPU|Latency/);
   });
 
@@ -311,6 +345,8 @@ describe("Core UI navigation and workflow contracts", () => {
       "testNebiusConnection",
       "Checking live Nebius services",
       "runtimeProbeStatus",
+      "status.runner_health",
+      "Runner ${runtimeStatusText(runnerStatus)}",
       "status.job_health",
       "status.storage_health"
     ]);

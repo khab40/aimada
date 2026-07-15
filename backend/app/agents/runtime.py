@@ -12,6 +12,7 @@ from app.exchange.schemas import BookSide, Order, Side
 
 IntentKind = Literal["set_level", "market", "limit", "cancel"]
 AgentEventType = Literal["market_maker", "normal"]
+AgentRuntimeSource = Literal["backend", "agent_runner"]
 
 
 @dataclass(frozen=True)
@@ -33,6 +34,7 @@ class AgentIntent:
     sequence: int = 0
     latency_bucket: int = 0
     event_type: AgentEventType = "normal"
+    runtime_source: AgentRuntimeSource = "backend"
     side: BookSide | Side | None = None
     price: float | None = None
     quantity: float = 0.0
@@ -349,7 +351,7 @@ class RemoteAgentClient:
             if not isinstance(item, dict):
                 continue
             try:
-                parsed.append(AgentIntent(**item))
+                parsed.append(AgentIntent(**{**item, "runtime_source": "agent_runner"}))
             except (TypeError, ValueError):
                 continue
         return parsed

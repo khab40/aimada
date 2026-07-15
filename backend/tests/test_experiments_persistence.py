@@ -103,7 +103,7 @@ def test_run_benchmark_experiment_persists_run_and_report_summary(tmp_path: Path
             detectors="tuned",
             market_regime="volatile",
             runs=100,
-            scenarios=["spoofing", "quote stuffing"],
+            scenarios=["spoofing_like_wall", "quote_stuffing"],
         ),
         request,
     )
@@ -124,7 +124,7 @@ def test_managed_experiment_create_list_get_delete(tmp_path: Path) -> None:
             name="Phase 4.5 smoke",
             attack_count=12,
             batch_size=4,
-            scenarios=["spoofing", "layering"],
+            scenarios=["spoofing_like_wall", "layering_like"],
             seed=7,
             nebius_mode="local_parallel_batch",
         ),
@@ -137,7 +137,7 @@ def test_managed_experiment_create_list_get_delete(tmp_path: Path) -> None:
     assert created.smart_batch_id is None
     assert created.attack_count == 12
     assert created.batch_size == 4
-    assert created.scenarios == ["spoofing", "layering"]
+    assert created.scenarios == ["spoofing_like_wall", "layering_like"]
     assert created.artifact_paths["manifest"] == str(manifest)
     assert manifest.exists()
 
@@ -165,7 +165,7 @@ def test_attack_manifest_generation_is_deterministic_for_same_seed(tmp_path: Pat
             name="Deterministic manifest",
             attack_count=10,
             batch_size=5,
-            scenarios=["normal_market", "spoofing", "quote_stuffing"],
+            scenarios=["normal_market", "spoofing_like_wall", "quote_stuffing"],
             seed=1234,
             nebius_mode="mock",
         ),
@@ -190,7 +190,7 @@ def test_attack_manifest_generation_respects_attack_count(tmp_path: Path) -> Non
                 name=f"Count manifest {attack_count}",
                 attack_count=attack_count,
                 batch_size=20,
-                scenarios=["normal_market", "spoofing", "layering", "quote_stuffing", "pump_and_cancel"],
+                scenarios=["normal_market", "spoofing_like_wall", "layering_like", "quote_stuffing", "liquidity_evaporation"],
                 seed=99,
             ),
             request,
@@ -213,7 +213,7 @@ def test_attack_manifest_expected_labels_are_correct(tmp_path: Path) -> None:
             name="Labels manifest",
             attack_count=10,
             batch_size=5,
-            scenarios=["normal_market", "spoofing", "layering", "quote_stuffing", "pump_and_cancel"],
+            scenarios=["normal_market", "spoofing_like_wall", "layering_like", "quote_stuffing", "liquidity_evaporation"],
             seed=7,
         ),
         request,
@@ -223,10 +223,10 @@ def test_attack_manifest_expected_labels_are_correct(tmp_path: Path) -> None:
     rows = _read_jsonl(Path(response.path))
     expected_families = {
         "normal_market": None,
-        "spoofing": "spoofing_like",
-        "layering": "layering_like",
+        "spoofing_like_wall": "spoofing_like",
+        "layering_like": "layering_like",
         "quote_stuffing": "quote_stuffing",
-        "pump_and_cancel": "liquidity_shock",
+        "liquidity_evaporation": "liquidity_shock",
     }
 
     assert {row["scenario"] for row in rows} == set(expected_families)
@@ -242,7 +242,7 @@ def test_experiment_run_local_batch_generates_attacks_and_persists_job(tmp_path:
             name="Small local batch",
             attack_count=3,
             batch_size=2,
-            scenarios=["normal_market", "spoofing"],
+            scenarios=["normal_market", "spoofing_like_wall"],
             seed=21,
         ),
         request,
@@ -257,7 +257,7 @@ def test_experiment_run_local_batch_generates_attacks_and_persists_job(tmp_path:
     assert response.status == "completed"
     assert response.runs == 3
     assert response.batch_size == 2
-    assert response.scenarios == ["normal_market", "spoofing"]
+    assert response.scenarios == ["normal_market", "spoofing_like_wall"]
     assert response.elapsed_seconds >= 0
     assert len(jobs) == 1
     assert jobs[0]["job_id"] == response.id
@@ -265,6 +265,8 @@ def test_experiment_run_local_batch_generates_attacks_and_persists_job(tmp_path:
     assert jobs[0]["status"] == "completed"
     assert len(attacks) == 3
     assert (output_dir / "manifest.json").exists()
+    manifest = json.loads((output_dir / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["max_workers"] == 1
     assert (output_dir / "detector_metrics.csv").exists()
     assert refreshed.status == "completed"
     assert refreshed.smart_batch_id == response.id
@@ -280,7 +282,7 @@ def test_normalize_artifacts_copies_fake_local_batch_outputs(tmp_path: Path) -> 
             name="Normalize fake batch",
             attack_count=3,
             batch_size=2,
-            scenarios=["normal_market", "spoofing"],
+            scenarios=["normal_market", "spoofing_like_wall"],
             seed=51,
         ),
         request,
@@ -332,7 +334,7 @@ def test_collect_nebius_artifacts_from_fake_mounted_output(tmp_path: Path) -> No
             name="Collect Nebius artifacts",
             attack_count=3,
             batch_size=2,
-            scenarios=["normal_market", "spoofing"],
+            scenarios=["normal_market", "spoofing_like_wall"],
             seed=61,
             nebius_mode="real_nebius_pending",
         ),
@@ -379,7 +381,7 @@ def test_collect_nebius_artifacts_marks_pending_when_unavailable(tmp_path: Path)
             name="Pending cloud artifacts",
             attack_count=3,
             batch_size=2,
-            scenarios=["normal_market", "spoofing"],
+            scenarios=["normal_market", "spoofing_like_wall"],
             seed=62,
             nebius_mode="real_nebius_pending",
         ),
@@ -402,7 +404,7 @@ def test_run_investigations_uses_mocked_nebius_client_for_top_alerts(tmp_path: P
             name="Investigate alerts",
             attack_count=3,
             batch_size=2,
-            scenarios=["normal_market", "spoofing"],
+            scenarios=["normal_market", "spoofing_like_wall"],
             seed=61,
         ),
         request,
@@ -447,7 +449,7 @@ def test_run_investigations_requires_detector_alert_artifacts(tmp_path: Path) ->
             name="Missing detector alerts",
             attack_count=3,
             batch_size=2,
-            scenarios=["normal_market", "spoofing"],
+            scenarios=["normal_market", "spoofing_like_wall"],
             seed=63,
         ),
         request,
@@ -467,7 +469,7 @@ def test_aggregate_experiment_uses_sample_detector_metrics_csv(tmp_path: Path) -
             name="Aggregate sample metrics",
             attack_count=4,
             batch_size=2,
-            scenarios=["normal_market", "spoofing"],
+            scenarios=["normal_market", "spoofing_like_wall"],
             seed=71,
         ),
         request,
@@ -533,7 +535,7 @@ def test_submit_nebius_without_real_config_persists_pending_job(tmp_path: Path) 
             name="Pending Nebius",
             attack_count=3,
             batch_size=2,
-            scenarios=["normal_market", "spoofing"],
+            scenarios=["normal_market", "spoofing_like_wall"],
             seed=31,
             nebius_mode="real_nebius_pending",
         ),
@@ -577,7 +579,7 @@ def test_render_nebius_job_config_without_submit(tmp_path: Path) -> None:
             name="Render Nebius config",
             attack_count=10,
             batch_size=5,
-            scenarios=["normal_market", "spoofing"],
+            scenarios=["normal_market", "spoofing_like_wall"],
             seed=73,
             nebius_mode="real_nebius_pending",
         ),

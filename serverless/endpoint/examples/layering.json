@@ -3,7 +3,7 @@
     "schema_version": "aimada.surveillance.request.v1",
     "analysis_type": "completed_episode",
     "invocation_reason": "episode status indicates completion",
-    "simulation_metadata": {"episode_id": "INC-LAYER-02", "scenario_family": "layering", "status": "completed"},
+    "simulation_metadata": {"episode_id": "INC-LAYER-02", "scenario_family": "layering_like", "status": "completed"},
     "market_regime": {"liquidity": "normal", "volatility": "low"},
     "instrument": {"symbol": "AIMD"},
     "episode_duration": {"start_tick": 220, "end_tick": 275, "duration_ticks": 55},

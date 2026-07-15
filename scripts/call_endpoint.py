@@ -15,12 +15,12 @@ SAMPLE_ALERT = {
         "depth_change_pct": 0.38,
         "imbalance": 0.72,
     },
-    "scenario_hint": "spoofing",
+    "scenario_hint": "spoofing_like_wall",
     "tick": 12,
 }
 
 SAMPLE_REPORT = {
-    "scenario_trace": {"scenario": "spoofing", "run_id": "demo"},
+    "scenario_trace": {"scenario": "spoofing_like_wall", "run_id": "demo"},
     "alerts": [{"detector": "spoofing_like", "confidence": 0.91}],
     "metrics": {"precision": 0.91, "recall": 0.88, "f1": 0.895, "avg_detection_latency_ms": 750},
 }

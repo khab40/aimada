@@ -102,7 +102,7 @@ async def run_serverless_smoke_demo(
             name=f"Polished E2E demo · {created_at[:19]}",
             attack_count=9,
             batch_size=9,
-            scenarios=["spoofing", "layering"],
+            scenarios=["spoofing_like_wall", "layering_like"],
             seed=42,
             nebius_mode="local_parallel_batch" if execution_mode == "local" else "real_nebius_pending",
         )
@@ -113,7 +113,7 @@ async def run_serverless_smoke_demo(
     artifact_dir.mkdir(parents=True, exist_ok=True)
 
     scenario_request = MarketAbuseScenarioGenerationRequest(
-        manipulation_type="spoofing",
+        manipulation_type="spoofing_like_wall",
         difficulty="medium",
         symbol="AIMD",
         duration_ticks=120,
@@ -124,7 +124,7 @@ async def run_serverless_smoke_demo(
     scenario = client.generate_market_abuse_scenario(scenario_request)
 
     await simulation.reset()
-    simulation.launch_scenario("spoofing-like")
+    simulation.launch_scenario("spoofing_like_wall")
     state = await _run_simulation_window(simulation, max_ticks=90)
     incident = _select_incident(state)
     detector_alerts = [_score_to_dict(score) for score in state.detectors.alerts]
@@ -155,7 +155,7 @@ async def run_serverless_smoke_demo(
     local_tournament = start_tournament(
         DetectorTournamentStartRequest(
             number_of_scenarios=9,
-            manipulation_types=["spoofing", "layering"],
+            manipulation_types=["spoofing_like_wall", "layering_like"],
             difficulty_mix={"easy": 0.33, "medium": 0.34, "hard": 0.33},
             detector_set=["spoofing_like", "layering_like", "quote_stuffing", "liquidity_shock"],
             random_seed=42,
@@ -168,7 +168,7 @@ async def run_serverless_smoke_demo(
         start_tournament(
             DetectorTournamentStartRequest(
                 number_of_scenarios=9,
-                manipulation_types=["spoofing", "layering"],
+                    manipulation_types=["spoofing_like_wall", "layering_like"],
                 difficulty_mix={"easy": 0.33, "medium": 0.34, "hard": 0.33},
                 detector_set=["spoofing_like", "layering_like", "quote_stuffing", "liquidity_shock"],
                 random_seed=42,

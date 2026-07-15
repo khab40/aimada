@@ -138,7 +138,6 @@ Scenario launcher examples:
 [Layering-like Pattern]
 [Quote Stuffing Burst]
 [Liquidity Evaporation]
-[Panic Selloff]
 ```
 
 ### 2. Incident Details
@@ -346,7 +345,7 @@ POST /simulation/reset
 
 POST /scenario/spoofing-like
 POST /scenario/layering-like
-POST /scenario/quote-stuffing-like
+POST /scenario/quote-stuffing
 POST /scenario/liquidity-evaporation
 
 GET  /incidents

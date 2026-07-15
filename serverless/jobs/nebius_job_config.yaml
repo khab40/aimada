@@ -13,10 +13,10 @@ image:
 
 scenarios:
   - normal_market
-  - spoofing
-  - layering
+  - spoofing_like_wall
+  - layering_like
   - quote_stuffing
-  - pump_and_cancel
+  - liquidity_evaporation
 
 outputs:
   directory: /job/outputs/serverless-batch

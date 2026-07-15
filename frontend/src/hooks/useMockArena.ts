@@ -12,12 +12,9 @@ import type {
   OrderBookSnapshot,
   PriceLevel
 } from "@/types/arena";
+import type { ArenaScenarioType } from "@/scenarios";
 
-export type MockScenarioType =
-  | "spoofing_like_wall"
-  | "layering_like"
-  | "quote_stuffing"
-  | "liquidity_evaporation";
+export type MockScenarioType = ArenaScenarioType;
 
 type ScenarioSpec = {
   agentId: string;
@@ -36,7 +33,7 @@ const scenarioSpecs: Record<MockScenarioType, ScenarioSpec> = {
   spoofing_like_wall: {
     agentId: "ABUSER_01",
     durationTicks: 10,
-    family: "spoofing_like",
+    family: "spoofing_like_wall",
     label: "Spoofing-like ask wall"
   },
   layering_like: {

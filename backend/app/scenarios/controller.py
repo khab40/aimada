@@ -1,9 +1,10 @@
 from app.exchange.order_book import OrderBook
 from app.schemas.arena import AgentEvent, AttackTrackerState
 from app.scenarios.base import ScenarioBase
+from app.scenarios.catalog import ScenarioType, parse_scenario_type
 from app.scenarios.layering_like import LayeringLikeScenario
 from app.scenarios.liquidity_evaporation import LiquidityEvaporationScenario
-from app.scenarios.quote_stuffing_like import QuoteStuffingLikeScenario
+from app.scenarios.quote_stuffing import QuoteStuffingScenario
 from app.scenarios.spoofing_like import SpoofingLikeScenario
 
 
@@ -40,15 +41,11 @@ class ScenarioController:
         self.active = None
 
     def _scenario_class(self, scenario_name: str) -> type[ScenarioBase]:
-        normalized = scenario_name.lower().replace("_", "-")
-        scenarios: dict[str, type[ScenarioBase]] = {
-            "spoofing-like": SpoofingLikeScenario,
-            "spoofing-like-wall": SpoofingLikeScenario,
-            "layering-like": LayeringLikeScenario,
-            "quote-stuffing": QuoteStuffingLikeScenario,
-            "quote-stuffing-like": QuoteStuffingLikeScenario,
-            "liquidity-evaporation": LiquidityEvaporationScenario,
+        scenario_type = parse_scenario_type(scenario_name)
+        scenarios: dict[ScenarioType, type[ScenarioBase]] = {
+            ScenarioType.SPOOFING_LIKE_WALL: SpoofingLikeScenario,
+            ScenarioType.LAYERING_LIKE: LayeringLikeScenario,
+            ScenarioType.QUOTE_STUFFING: QuoteStuffingScenario,
+            ScenarioType.LIQUIDITY_EVAPORATION: LiquidityEvaporationScenario,
         }
-        if normalized not in scenarios:
-            raise ValueError(f"unknown scenario: {scenario_name}")
-        return scenarios[normalized]
+        return scenarios[scenario_type]

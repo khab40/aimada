@@ -264,7 +264,7 @@ Update this file with each significant commit before pushing.
 ### `0c1f58b` - fix: preserve labeled legacy scenario runtime
 
 - Kept the legacy scenario-agent and `LiveArenaRuntime` path because committed tests and older scenario-controller code still reference it.
-- Added scenario metadata propagation to spoofing-like, layering-like, and quote-stuffing-like agents.
+- Added scenario metadata propagation to Spoofing-like Wall, Layering-like Pattern, and Quote Stuffing Burst agents.
 - Added scenario launch support to `LiveArenaRuntime` and covered it with tests.
 - Extended the matching engine to preserve scenario identifiers on cancel, limit-order, and market-order events.
 

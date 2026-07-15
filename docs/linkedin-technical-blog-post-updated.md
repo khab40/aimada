@@ -1,18 +1,24 @@
-# Building LOB Arena: An Adversarial Market-Abuse Evaluation Arena with Nebius Serverless AI
+# Building LOB Arena: An Adversarial Market-Surveillance Evaluation Platform with Nebius Serverless AI
 
-![LOB Arena overall architecture connecting the arena, agents, simulator, AI investigator, evidence store, and Serverless Jobs](../assets/article/aimada-diagrams/01-overall-architecture.jpg)
+![LOB Arena dashboard concept showing the synthetic market-abuse evaluation arena](../assets/article/aimada-diagrams/08-dashboard-concept.jpg)
+*LOB Arena is a synthetic arena for evaluating market-abuse detectors and AI-assisted investigations on Nebius Serverless AI.*
 
-*Figure 1. LOB Arena combines an authoritative synthetic market runtime, Red and Blue agents, AI-assisted investigation, durable evidence, and Serverless Jobs.*
+Market-surveillance teams can purchase historical order-book data from exchanges and specialist market-data vendors. The harder problem is obtaining complete, reliable ground-truth labels that identify which sequences represent manipulation, which reflect legitimate trading behaviour, and how a surveillance system should respond.
 
-I built LOB Arena for the #NebiusServerlessChallenge: a synthetic market-abuse simulation and evaluation platform built and validated with Nebius Serverless AI Jobs and Serverless AI Endpoints.
+Even with high-quality historical data, benchmarking remains difficult. Teams need repeatable scenarios, known agent intentions, consistent ground truth, controlled market conditions, and comparable metrics across detector designs and market regimes.
 
-Repository: [https://github.com/khab40/lob-arena](https://github.com/khab40/lob-arena)
+This was the motivation for **LOB Arena**.
 
-The problem I wanted to explore is common in technical AI demos: the interesting part of the domain is difficult to show safely.
+LOB Arena is an open-source platform for generating synthetic limit-order-book activity, injecting bounded abuse-like scenarios, benchmarking surveillance detectors, and using Nebius Serverless AI to produce structured investigations and explanations.
 
-Market surveillance involves sensitive data, specialized market-microstructure concepts, noisy event streams, and language that can become misleading when a prototype is presented as a real compliance tool.
+**Repository:** [https://github.com/khab40/lob-arena](https://github.com/khab40/lob-arena)
 
-I did not want to build a system that claims to detect real manipulation. Instead, I built an educational arena where synthetic normal agents and synthetic abuse-like agents interact inside a controlled limit-order-book simulation.
+I built the project for the **#NebiusServerlessChallenge** as an engineering environment rather than as a claim that an AI model can independently detect real market manipulation.
+
+The goal is to create a controlled, reproducible arena in which the ground truth is known because the scenarios are generated deliberately.
+
+![Red and blue synthetic agents interacting through the authoritative LOB Arena backend](../assets/article/aimada-diagrams/02-red-vs-blue-agents.jpg)
+*Synthetic market makers, liquidity takers, and abuse-like scenario agents trade only inside LOB Arena's bounded simulated order book.*
 
 That creates a concrete engineering surface: generate market events, inject labeled scenarios, run deterministic detectors, preserve structured evidence, and use AI to explain what the detector already found.
 
@@ -20,15 +26,10 @@ The architecture has two main execution paths.
 
 The interactive path uses a React and Vite frontend, a FastAPI control plane, a separate agents workspace, and a Nebius Serverless AI Endpoint. The batch path uses Nebius Serverless AI Jobs for repeatable synthetic workloads, detector evaluation, aggregation, and artifact generation.
 
-![Red Team adversarial agents compared with Blue Team detectors and AI investigation](../assets/article/aimada-diagrams/02-red-vs-blue-agents.jpg)
-
-*Figure 2. The Red Team generates bounded synthetic abuse-like behavior; the Blue Team detects, scores, and explains it.*
+![Architecture diagram connecting the frontend, backend, agent-runner workspace, Nebius Serverless Endpoint and Jobs, Object Storage, and evidence UI](../assets/article/aimada-diagrams/01-overall-architecture.jpg)
+*LOB Arena separates the React interface, authoritative FastAPI runtime, agents workspace, and Nebius Endpoint and Job execution paths.*
 
 LOB Arena was validated on real Nebius production infrastructure. More than ten Nebius Serverless AI Job runs completed successfully, with execution visible in production logs. I also deployed a vLLM-backed Nebius Serverless AI Endpoint and exercised routes for scenario generation, incident analysis, investigation reporting, order-book alert analysis, and structured market-event explanation. Those runs produced Job artifacts, detector metrics, reports, logs, and Endpoint responses. This validation proves the execution contracts; it does not turn LOB Arena into a real-market surveillance product.
-
-![Nebius deployment with an L40S-backed vLLM Endpoint, on-demand Serverless Jobs, token authentication, and Object Storage](../assets/article/aimada-diagrams/05-nebius-deployment.jpg)
-
-*Figure 3. Interactive investigation runs on an L40S-backed Serverless Endpoint, while finite batch experiments run as on-demand Serverless Jobs and persist artifacts to Object Storage.*
 
 Job lifecycle records and generated artifacts are archived to Nebius Object Storage. Endpoint execution metadata is archived through the same evidence layer without presenting private credentials or sensitive transport details to the browser. The backend can synchronize archived evidence from S3-compatible storage back to backend-local storage, and the UI exposes the synchronized records and downloadable artifacts. This creates a traceable path from production execution, through durable storage, to evidence that a reviewer can inspect.
 
@@ -38,9 +39,8 @@ The frontend renders the live arena: order-book ladders, price and spread charts
 
 The browser sends commands over WebSocket. The FastAPI backend runs the simulation and publishes complete `arena_state` messages. This keeps the browser away from simulation internals, server credentials, and direct Endpoint access.
 
-![Conceptual LOB Arena dashboard with experiment, alert, risk, detector, and recent-incident views](../assets/article/aimada-diagrams/08-dashboard-concept.jpg)
-
-*Figure 4. The command-center concept brings experiment status, detector output, incident risk, and investigation progress into one reviewer-facing view.*
+![LOB Arena Live Arena showing synthetic order flow, bounded scenarios, detector signals, and incident evidence](../assets/article/aimada-diagrams/03-lob-simulation.jpg)
+*The Live Arena makes synthetic order flow, bounded adversarial scenarios, detector confidence, and incident evidence visible in one workflow.*
 
 During an interactive run, LOB Arena uses the separate `agent-runner/` workspace to generate normal synthetic market activity.
 
@@ -54,10 +54,6 @@ None of these agents connects to a broker, exchange, or real market. They trade 
 
 Inside the backend, the core loop is intentionally deterministic. A synthetic exchange, order book, and matching engine process actions from market-making, liquidity-taking, and noise agents. Scenario agents can then inject the four implemented workloads: Spoofing-like Wall, Layering-like Pattern, Quote Stuffing Burst, and Liquidity Evaporation.
 
-![Limit-order-book simulation with bid and ask ladders, matching engine, event stream, Red agents, Blue agents, and Jobs production](../assets/article/aimada-diagrams/03-lob-simulation.jpg)
-
-*Figure 5. Red and normal agents submit bounded synthetic orders into an authoritative LOB and matching engine; Blue agents observe the resulting event stream.*
-
 The key word is “bounded.” These are synthetic patterns for education and detector testing, not instructions for real market activity.
 
 ## Why detection and explanation are separate
@@ -66,25 +62,22 @@ Nebius Serverless AI Endpoints do not make LOB Arena’s original detection deci
 
 A deterministic detector produces structured evidence first: spread, visible depth, imbalance, message rate, cancel-to-trade ratio, wall-size ratio, order lifetime, confidence scores, and scenario labels.
 
-![Detection pipeline from market data and feature engineering through detectors, risk scoring, alerts, AI investigation, and Serverless Jobs](../assets/article/aimada-diagrams/06-detection-pipeline.jpg)
-
-*Figure 6. Deterministic features and detectors create the alert and evidence; the LLM investigates and explains rather than silently replacing the detector.*
-
 The backend then sends a compact incident payload to the Endpoint. The Endpoint can return a readable explanation, investigation assistance, recommended review actions, or a bounded synthetic scenario draft.
 
-![AI investigation workflow from alert and evidence collection through context construction, LLM analysis, structured report, and Job processing](../assets/article/aimada-diagrams/04-ai-investigation-workflow.jpg)
-
-*Figure 7. LOB Arena assembles a bounded evidence package before invoking the LLM, then validates and stores a structured investigation result.*
+![AI Investigation Team workflow translating detector evidence into a structured review narrative](../assets/article/aimada-diagrams/04-ai-investigation-workflow.jpg)
+*The AI Investigation Team translates deterministic detector evidence into a structured, reviewable narrative without replacing the detector.*
 
 This split matters because it keeps the workflow auditable. AI is used for explanation, narration, investigation assistance, and bounded scenario generation. Structured detector evidence remains the source of truth.
 
-![Example structured JSON investigation output with classification, risk, evidence, explanation, score, and recommended action](../assets/article/aimada-diagrams/07-structured-json-output.jpg)
-
-*Figure 8. Structured JSON makes model output machine-validatable, reviewable, and reusable by the UI, evidence store, and benchmark pipeline.*
+![Structured JSON contract for surveillance-style LLM output](../assets/article/aimada-diagrams/07-structured-json-output.jpg)
+*Endpoint responses are parsed as structured JSON so the UI can separate classification, confidence, evidence, counter-evidence, and recommended actions.*
 
 ## The batch path
 
 Nebius Serverless AI Jobs fit the offline evaluation path naturally. Instead of asking a live request to run dozens or hundreds of simulations, a Job can execute repeatable synthetic workloads, evaluate detector output against labels, aggregate metrics, and persist reports and artifacts before terminating.
+
+![Nebius deployment and evidence flow from production execution to synchronized review artifacts](../assets/article/aimada-diagrams/05-nebius-deployment.jpg)
+*Production Job and Endpoint evidence is archived to Object Storage, synchronized by the backend, and exposed as reviewable UI records and downloads.*
 
 The outputs are designed to be reviewable: JSON records, CSV metrics, Markdown reports, logs, and chart-ready data. The metric vocabulary includes precision, recall, F1, false positives, false negatives, and detection latency against known synthetic labels.
 
@@ -130,7 +123,42 @@ This layer answers a deployment question: do the packaged Job and Endpoint contr
 
 The **Representative Production Run** is the compact, sanitized evidence sample committed for review. It preserves Job records, normalized detector metrics, a detector/model leaderboard, investigation results, an evidence index, a benchmark report, a manifest, and checksums.
 
-The public bundle intentionally excludes credentials, authorization headers, private Endpoint hostnames, signed URLs, and raw environment-specific logs. It also discloses coverage differences rather than hiding them. A judge can inspect the evidence without access to the private Nebius account or Object Storage bucket.
+The public bundle intentionally excludes credentials, authorization headers, private Endpoint hostnames, signed URLs, and raw environment-specific logs. It also reconciles the benchmark denominator explicitly: the representative 100-workload run contains 80 labeled attack rows and 20 normal-market control rows. A judge can inspect the evidence without access to the private Nebius account or Object Storage bucket.
+
+![LOB Arena detection pipeline connecting labeled workloads to metrics, reports, and production evidence](../assets/article/aimada-diagrams/06-detection-pipeline.jpg)
+*Detector Tournament results connect labeled synthetic workloads to metrics, leaderboards, reports, and sanitized production-execution evidence.*
+
+
+## Why Nebius Serverless AI
+
+LOB Arena uses Nebius Serverless AI in two materially different ways.
+
+The **Serverless AI Endpoint** supports interactive operations such as AI Investigation Team analysis, incident explanation, structured investigation reports, bounded synthetic scenario generation, and market-event summarization. The representative deployment uses an NVIDIA L40S configuration, the `1gpu-16vcpu-200gb` preset, `Qwen/Qwen2.5-14B-Instruct`, and vLLM inference.
+
+**Serverless Jobs** support offline evaluation: running multiple synthetic scenarios, comparing detector predictions with ground truth, calculating precision, recall, F1 and latency, generating leaderboards, writing reports, and persisting artifacts. The representative Job configuration uses the `cpu-d3` preset with four virtual CPUs and 16 GB of memory.
+
+Using both products demonstrates more than a single inference request. The Endpoint handles interactive AI, while Jobs provide the repeatable batch-compute layer required by the benchmarking workflow.
+
+## Results
+
+LOB Arena now demonstrates an end-to-end workflow from synthetic scenario generation to reviewable investigation and benchmark evidence.
+
+Representative measurements were:
+
+| Workflow | Result |
+|---|---:|
+| Local Docker startup and demo | approximately 3–5 minutes |
+| Local ten-scenario tournament | approximately 0.7 seconds, excluding startup |
+| Nebius Serverless Job with five scenarios | approximately 181 seconds |
+| Serverless Job active compute cost | approximately $0.005 |
+| Two Endpoint investigation requests | P50 24.2 seconds; P95 28.8 seconds |
+| Endpoint request-active compute cost | approximately $0.023 |
+
+The estimated combined active compute cost of the representative Job and two Endpoint requests was approximately **$0.028**.
+
+These figures are workload-specific estimates based on measured active execution time. Actual billing can differ because of startup time, idle warm time, storage, billing increments, taxes, and pricing changes.
+
+The detector metrics validate the synthetic evaluation and execution contracts. They should not be interpreted as claims about production-market surveillance accuracy.
 
 ## What I learned
 

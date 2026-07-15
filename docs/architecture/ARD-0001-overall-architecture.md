@@ -275,7 +275,7 @@ Detector families:
 
 - spoofing-like wall detector
 - layering-like detector
-- quote-stuffing-like detector
+- quote-stuffing detector
 - liquidity-shock detector
 
 Detector output should include confidence, severity, evidence, involved agent or scenario, timestamps, and incident metadata.
@@ -369,7 +369,7 @@ Add manually launched synthetic scenarios:
 
 - spoofing-like wall
 - layering-like pattern
-- quote-stuffing-like burst
+- Quote Stuffing Burst
 - scenario buttons
 - agent feed
 
@@ -571,7 +571,7 @@ The current architecture combines three things in one coherent demo:
 2. A deterministic detection layer that converts order-book behavior into measurable evidence, confidence scores, and incident cards.
 3. A Nebius-backed AI explanation layer that turns structured detector evidence into readable incident summaries and simulation reports.
 
-In the UI, a reviewer can start the arena, watch the order book change in real time, launch scenarios such as spoofing-like walls, layering-like behavior, quote-stuffing-like bursts, or liquidity shocks, and then inspect detector confidence and incident explanations. The important design choice is that AI does not decide whether abuse happened. The deterministic detector creates the evidence first; the AI endpoint explains that evidence in plain English.
+In the UI, a reviewer can start the arena, watch the order book change in real time, launch Spoofing-like Wall, Layering-like Pattern, Quote Stuffing Burst, or Liquidity Evaporation, and then inspect detector confidence and incident explanations. The important design choice is that AI does not decide whether abuse happened. The deterministic detector creates the evidence first; the AI endpoint explains that evidence in plain English.
 
 ### Why It Matters
 

@@ -109,7 +109,7 @@ Scope:
 
 - spoofing-like wall
 - layering-like pattern
-- quote-stuffing-like burst
+- Quote Stuffing Burst
 - scenario buttons
 - agent feed
 
@@ -312,7 +312,7 @@ Current behavior:
 
 - New experiments start in `manifest_generated` status.
 - Attack manifests use the experiment's `attack_count`, `scenarios`, and `seed`, preserve the requested scenario mix, and support 10, 100, and 1000-row experiments.
-- Expected detector labels are generated for `normal_market`, `spoofing`, `layering`, `quote_stuffing`, and `pump_and_cancel`.
+- Expected detector labels are generated for `normal_market`, `spoofing_like_wall`, `layering_like`, `quote_stuffing`, and `liquidity_evaporation`.
 - `run-local-batch` ensures `attacks.jsonl` exists, runs the local parallel batch with experiment `attack_count`, `batch_size`, and `scenarios`, then updates status to `completed` or `failed`.
 - `normalize-artifacts` maps `order_book_events.jsonl`, `trades.jsonl`, `attack_labels.jsonl`, `blue_team_alerts.jsonl`, `detector_metrics.csv`, `generated_report.md`, and `manifest.json` into `events.jsonl`, `trades.jsonl`, `labels.jsonl`, `alerts.jsonl`, `detector_metrics.csv`, `benchmark_report.md`, `batch_manifest.json`, and `artifact_index.json`.
 - `run-investigations` reads `alerts.jsonl` or `local-batch/blue_team_alerts.jsonl`, selects the top alerts by confidence, calls the existing Nebius investigation-report client once per selected alert, and persists JSON/Markdown reports under `investigations/`.

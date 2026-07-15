@@ -57,7 +57,7 @@ graph TD
 
 Generate bounded synthetic market-abuse workloads from six demo controls:
 
-- manipulation type: `spoofing`, `layering`, `wash_trading`, `quote_stuffing`
+- manipulation type: `spoofing_like_wall`, `layering_like`, `quote_stuffing`, `liquidity_evaporation`
 - difficulty: `easy`, `medium`, `hard`, `adversarial`
 - symbol
 - duration
@@ -84,7 +84,7 @@ Backend request model: `MarketAbuseScenarioGenerationRequest`.
 
 Validation:
 
-- `manipulation_type`: `spoofing | layering | wash_trading | quote_stuffing`
+- `manipulation_type`: `spoofing_like_wall | layering_like | quote_stuffing | liquidity_evaporation`
 - `difficulty`: `easy | medium | hard | adversarial`
 - `duration_ticks`: bounded to the simulator replay window, recommended `30..600`
 - `liquidity_regime`: `thin | normal | deep`
@@ -200,7 +200,7 @@ Replay mapping:
 | `spoofing` | `spoofing-like` |
 | `layering` | `layering-like` |
 | `quote_stuffing` | `quote-stuffing` |
-| `wash_trading` | compatibility event replay if implemented; otherwise project to `mixed` and mark `source.replay_mode="template_projection"` |
+| `liquidity_evaporation` | native Arena replay with top-of-book thinning and spread widening |
 
 Do not remove:
 
@@ -358,6 +358,6 @@ Backend response:
 ## Risks And Shortcuts
 
 - Risk: canonical event replay is richer than current Arena scenario launch. Shortcut: store canonical events now, project to existing scenario names for replay, then add direct event replay later.
-- Risk: `wash_trading` has no first-class Arena route. Shortcut: return a canonical event scenario and project replay to `mixed` until a dedicated simulator agent exists.
+- Requests are limited to the four first-class Arena routes so generated scenarios always replay their named implementation.
 - Risk: AI output violates enums. Shortcut: backend schema validation plus deterministic fallback.
 - Risk: too many controls in demo. The active page keeps only the core controls; legacy tuning is preserved under `archived/advanced-controls/`.

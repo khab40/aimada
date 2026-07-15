@@ -30,7 +30,7 @@ def test_aggregate_score_flags_large_order() -> None:
 def test_live_detector_engine_adds_scores_features_and_evidence() -> None:
     engine = SimulationEngine()
 
-    engine.launch_scenario("spoofing-like")
+    engine.launch_scenario("spoofing_like_wall")
     for _ in range(4):
         state = engine.step()
 
@@ -45,7 +45,7 @@ def test_live_detector_engine_adds_scores_features_and_evidence() -> None:
 def test_quote_stuffing_detector_scores_message_rate() -> None:
     engine = SimulationEngine()
 
-    engine.launch_scenario("quote-stuffing")
+    engine.launch_scenario("quote_stuffing")
     for _ in range(5):
         state = engine.step()
 

@@ -149,14 +149,14 @@ cat > "${SMOKE_DIR}/orderbook_payload.json" <<'JSON'
     "depth_change_pct": 0.38,
     "imbalance": 0.72
   },
-  "scenario_hint": "spoofing",
+  "scenario_hint": "spoofing_like_wall",
   "tick": 12
 }
 JSON
 
 cat > "${SMOKE_DIR}/investigation_payload.json" <<'JSON'
 {
-  "scenario_trace": {"scenario": "spoofing", "run_id": "serverless-smoke"},
+  "scenario_trace": {"scenario": "spoofing_like_wall", "run_id": "serverless-smoke"},
   "alerts": [{"detector": "spoofing_like", "confidence": 0.91}],
   "metrics": {"precision": 0.91, "recall": 0.88, "f1": 0.895, "avg_detection_latency_ms": 750}
 }
@@ -180,7 +180,7 @@ docker run --rm \
   python /job/serverless/jobs/run_batch_experiments.py \
   --runs 3 \
   --batch-size 2 \
-  --scenarios normal_market,spoofing \
+  --scenarios normal_market,spoofing_like_wall \
   --output /job/outputs/serverless-smoke \
   > "${SMOKE_DIR}/jobs_smoke_stdout.json"
 
@@ -190,7 +190,7 @@ cat > "${SMOKE_DIR}/experiment_create_payload.json" <<'JSON'
   "name": "Serverless smoke experiment",
   "attack_count": 10,
   "batch_size": 5,
-  "scenarios": ["normal_market", "spoofing", "layering", "quote_stuffing", "pump_and_cancel"],
+  "scenarios": ["normal_market", "spoofing_like_wall", "layering_like", "quote_stuffing", "liquidity_evaporation"],
   "seed": 2026,
   "nebius_mode": "real_nebius_pending"
 }

@@ -45,8 +45,8 @@ def test_simulation_replay_is_deterministic_for_same_seed() -> None:
     first = SimulationEngine(seed=99)
     second = SimulationEngine(seed=99)
 
-    first.launch_scenario("spoofing-like")
-    second.launch_scenario("spoofing-like")
+    first.launch_scenario("spoofing_like_wall")
+    second.launch_scenario("spoofing_like_wall")
     first_states = [first.step() for _ in range(8)]
     second_states = [second.step() for _ in range(8)]
 
@@ -73,7 +73,7 @@ def test_simulation_replay_is_deterministic_for_same_seed() -> None:
 
 def test_spoofing_scenario_creates_single_scenario_linked_incident() -> None:
     engine = SimulationEngine(seed=11)
-    engine.launch_scenario("spoofing-like")
+    engine.launch_scenario("spoofing_like_wall")
 
     state = {}
     for _ in range(8):
@@ -82,7 +82,7 @@ def test_spoofing_scenario_creates_single_scenario_linked_incident() -> None:
     incidents = [
         incident
         for incident in state["incidents"]
-        if incident["scenario_family"] == "spoofing_like"
+        if incident["scenario_family"] == "spoofing_like_wall"
     ]
     assert len(incidents) == 1
     assert incidents[0]["confidence"] >= 0.8

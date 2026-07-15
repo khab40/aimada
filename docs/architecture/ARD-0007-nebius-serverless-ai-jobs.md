@@ -91,8 +91,8 @@ In scope:
 
 - small and medium synthetic benchmark batches
 - detector tournament benchmarks
-- parallel attack/detect batches across normal, spoofing, layering, quote
-  stuffing, and pump-and-cancel scenarios
+- parallel attack/detect batches across the normal-market control plus
+  `spoofing_like_wall`, `layering_like`, `quote_stuffing`, and `liquidity_evaporation`
 - synthetic dataset generation from simulator events
 - feature extraction from event and snapshot artifacts
 - benchmark reports, metrics, and charts

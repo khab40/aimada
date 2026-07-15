@@ -246,7 +246,7 @@ def _repository_with_experiment(tmp_path: Path) -> ExperimentRepository:
             status="manifest_generated",
             attack_count=4,
             batch_size=2,
-            scenarios=["normal_market", "spoofing"],
+            scenarios=["normal_market", "spoofing_like_wall"],
             seed=42,
             nebius_mode="real_nebius_pending",
             artifact_dir=str(tmp_path / "experiments" / "EXP-SUBMIT"),

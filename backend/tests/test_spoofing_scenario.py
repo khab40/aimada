@@ -7,4 +7,4 @@ def test_spoofing_like_agent_places_large_visible_order() -> None:
 
     assert orders[0].quantity >= 400
     assert orders[0].side == "sell"
-    assert orders[0].scenario_family == "spoofing_like"
+    assert orders[0].scenario_family == "spoofing_like_wall"

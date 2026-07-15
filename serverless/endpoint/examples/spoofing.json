@@ -3,7 +3,7 @@
     "schema_version": "aimada.surveillance.request.v1",
     "analysis_type": "high_anomaly",
     "invocation_reason": "maximum detector score 0.94 crossed 0.75",
-    "simulation_metadata": {"episode_id": "INC-SPOOF-01", "scenario_family": "spoofing", "status": "completed"},
+    "simulation_metadata": {"episode_id": "INC-SPOOF-01", "scenario_family": "spoofing_like_wall", "status": "completed"},
     "market_regime": {"liquidity": "thin", "volatility": "medium"},
     "instrument": {"symbol": "AIMD", "tick_size": 0.01},
     "episode_duration": {"start_tick": 100, "end_tick": 138, "duration_ticks": 38},

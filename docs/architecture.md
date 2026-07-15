@@ -148,7 +148,7 @@ Phase 4.5 adds a Managed Experiment manifest control plane before execution. The
 ### Benchmark Outputs
 
 - detector metrics: precision, recall, F1, false positives, and false negatives
-- per-scenario summaries for spoofing-like, layering-like, and quote-stuffing-like patterns
+- per-scenario summaries for Spoofing-like Wall, Layering-like Pattern, Quote Stuffing Burst, and Liquidity Evaporation
 - benchmark charts for report inclusion
 - generated benchmark report describing detector behavior and observed failure modes
 - persisted raw artifacts for later review and reproducibility

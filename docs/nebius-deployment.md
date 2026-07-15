@@ -323,7 +323,7 @@ batches. It covers:
 - spoofing attack
 - layering attack
 - quote stuffing
-- pump-and-cancel pattern
+- Liquidity Evaporation pattern
 
 Outputs:
 
@@ -492,7 +492,7 @@ Jobs do not need endpoint URLs for the first benchmark path. Configure job
 arguments instead:
 
 ```bash
-python detector_tournament.py --runs 100 --scenarios normal_market,spoofing,layering,quote_stuffing,pump_and_cancel --detectors spoofing_like,layering_like,quote_stuffing,liquidity_shock --output /job/outputs/benchmark
+python detector_tournament.py --runs 100 --scenarios normal_market,spoofing_like_wall,layering_like,quote_stuffing,liquidity_evaporation --detectors spoofing_like,layering_like,quote_stuffing,liquidity_shock --output /job/outputs/benchmark
 python synthetic_dataset_factory.py --samples 100 --output /job/outputs/synthetic-dataset
 python /job/serverless/jobs/run_batch_experiments.py --runs 1000 --batch-size 100 --output /job/outputs/serverless-batch
 ```

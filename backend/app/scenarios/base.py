@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 from app.exchange.order_book import OrderBook
 from app.schemas.arena import AgentEvent, AttackStage, AttackStageSnapshot, AttackTrackerState, ScenarioLabel
+from app.scenarios.catalog import SCENARIO_LABELS, ScenarioType
 
 
 STAGE_SEQUENCE = [
@@ -183,13 +184,7 @@ class ScenarioBase:
         return windows
 
     def _label_scenario_name(self) -> str:
-        names = {
-            "spoofing_like": "Spoofing-like Wall",
-            "layering_like": "Layering-like",
-            "quote_stuffing": "Quote Stuffing",
-            "liquidity_evaporation": "Liquidity Evaporation",
-        }
-        return names.get(self.scenario_family, self.scenario_name)
+        return SCENARIO_LABELS.get(ScenarioType(self.scenario_family), self.scenario_name)
 
     def _now_ms(self) -> float:
         return time.time() * 1000

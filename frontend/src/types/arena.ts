@@ -46,6 +46,7 @@ export type DetectorScores = {
 
 export type AgentEvent = {
   type: string;
+  tick?: number;
   timestamp?: number;
   order_id?: string;
   aggressor_order_id?: string;
@@ -59,6 +60,7 @@ export type AgentEvent = {
   scenario_id?: string | null;
   scenario_name?: string | null;
   scenario_family?: string | null;
+  runtime_source?: "backend" | "agent_runner";
   [key: string]: unknown;
 };
 

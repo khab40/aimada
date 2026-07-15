@@ -4,7 +4,7 @@ from typing import Any, Literal
 from uuid import uuid4
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.nebius.adapters import MockNebiusCloudAdapter
 from app.nebius.client import (
@@ -46,6 +46,7 @@ from app.nebius.serverless_smoke import (
     run_serverless_smoke_demo,
 )
 from app.storage.history import append_history_artifact
+from app.scenarios.catalog import BENCHMARK_SCENARIOS, ScenarioType
 
 router = APIRouter(prefix="/api/nebius", tags=["nebius"])
 nebius_client = NebiusClient()
@@ -117,7 +118,7 @@ def generate_red_team_scenario(request: RedTeamScenarioRequest) -> RedTeamScenar
 
 
 class SmartScenarioRequest(BaseModel):
-    scenario_family: str = "spoofing"
+    scenario_family: ScenarioType = ScenarioType.SPOOFING_LIKE_WALL
     market_regime: str = "volatile"
     goal: str = "hard_to_detect"
     constraints: dict[str, Any] = Field(default_factory=dict)
@@ -127,12 +128,12 @@ class SmartBatchRunRequest(BaseModel):
     runs: int = Field(default=100, ge=1, le=1000)
     batch_size: int = Field(default=100, ge=1, le=500)
     scenarios: list[str] = Field(
-        default_factory=lambda: ["normal_market", "spoofing", "layering", "quote_stuffing", "pump_and_cancel"]
+        default_factory=lambda: list(BENCHMARK_SCENARIOS)
     )
 
 
 class AttackScenarioInput(BaseModel):
-    attackType: str = "Spoofing"
+    attackType: str = "Spoofing-like Wall"
     marketCondition: str = "Thin liquidity"
     objective: str = "Buy cheaper"
     stealthLevel: str = "Medium"
@@ -140,11 +141,17 @@ class AttackScenarioInput(BaseModel):
     redTeamAgentCount: int = Field(default=1, ge=1, le=10)
     detectorDifficulty: str = "Medium"
 
+    @field_validator("attackType")
+    @classmethod
+    def validate_attack_type(cls, value: str) -> str:
+        _normalize_attack_type(value)
+        return value
+
 
 class AttackScenario(BaseModel):
     id: str
     name: str
-    attackType: Literal["spoofing", "layering", "quote_stuffing", "momentum_ignition", "mixed"]
+    attackType: ScenarioType
     targetSide: Literal["buy", "sell", "both"]
     objective: str
     marketRegime: str
@@ -620,6 +627,7 @@ def run_smart_batches(payload: SmartBatchRunRequest, request: Request) -> SmartB
         runs=payload.runs,
         batch_size=payload.batch_size,
         scenarios=payload.scenarios,
+        max_workers=request.app.state.settings.arena_local_batch_max_workers,
     )
     if batch.returncode != 0:
         raise HTTPException(
@@ -863,25 +871,23 @@ def _format_size(size: int) -> str:
     return f"{size / (1024 * 1024):.1f} MB"
 
 
-def _normalize_attack_type(value: str) -> Literal["spoofing", "layering", "quote_stuffing", "momentum_ignition", "mixed"]:
+def _normalize_attack_type(value: str) -> ScenarioType:
     normalized = value.lower().replace(" ", "_").replace("-", "_")
     mapping = {
-        "spoofing": "spoofing",
-        "layering": "layering",
-        "quote_stuffing": "quote_stuffing",
-        "momentum_ignition": "momentum_ignition",
-        "mixed": "mixed",
-        "mixed_attack": "mixed",
+        "spoofing_like_wall": ScenarioType.SPOOFING_LIKE_WALL,
+        "layering_like_pattern": ScenarioType.LAYERING_LIKE,
+        "quote_stuffing_burst": ScenarioType.QUOTE_STUFFING,
+        "liquidity_evaporation": ScenarioType.LIQUIDITY_EVAPORATION,
     }
-    return mapping.get(normalized, "spoofing")  # type: ignore[return-value]
+    if normalized in ScenarioType._value2member_map_:
+        return ScenarioType(normalized)
+    if normalized in mapping:
+        return mapping[normalized]
+    raise ValueError(f"unknown attack scenario: {value}")
 
 
 def _scenario_route_for(attack_type: str) -> str:
-    if attack_type == "layering":
-        return "layering-like"
-    if attack_type == "quote_stuffing":
-        return "quote-stuffing"
-    return "spoofing-like"
+    return ScenarioType(attack_type).value
 
 
 def _side_label(side: str) -> str:
@@ -906,12 +912,10 @@ def _objective_text(value: str) -> str:
 def _expected_signals(attack_type: str, target_side: str) -> list[str]:
     if attack_type == "quote_stuffing":
         return ["message-rate burst", "high cancel-to-trade ratio", "short order lifetime", "temporary spread widening"]
-    if attack_type == "layering":
+    if attack_type == ScenarioType.LAYERING_LIKE:
         return ["multi-level fake depth", "staggered cancellations", "persistent side imbalance", "price pressure without durable execution"]
-    if attack_type == "momentum_ignition":
-        return ["aggressive sweep", "short-lived price acceleration", "follow-on cancellations", "reversal after ignition"]
-    if attack_type == "mixed":
-        return ["combined spoofing and layering signatures", "mixed-side pressure", "high message rate", "timed real trades"]
+    if attack_type == ScenarioType.LIQUIDITY_EVAPORATION:
+        return ["top-of-book depth collapse", "spread widening", "low replenishment", "two-sided liquidity withdrawal"]
     side = "buy-side" if target_side == "buy" else "sell-side"
     return [
         f"large visible {side} wall",

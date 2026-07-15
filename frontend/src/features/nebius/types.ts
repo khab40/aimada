@@ -1,3 +1,5 @@
+import type { ArenaScenarioLabel, ArenaScenarioType } from "@/scenarios";
+
 export type NebiusRuntimeStatus = {
   cloudStatus: "checking" | "online" | "offline" | "degraded";
   aiEndpointStatus: "checking" | "ready" | "busy" | "offline" | "not-configured";
@@ -76,7 +78,7 @@ export interface NebiusAiClient {
 }
 
 export type AttackScenarioInput = {
-  attackType: "Spoofing" | "Layering" | "Quote Stuffing" | "Momentum Ignition" | "Mixed Attack";
+  attackType: ArenaScenarioLabel;
   marketCondition: "Thin liquidity" | "Normal liquidity" | "High volatility" | "News shock" | "Low activity period";
   objective: "Buy cheaper" | "Sell higher" | "Trigger stop-loss cascade" | "Distort visible liquidity" | "Test detector weakness";
   stealthLevel: "Obvious" | "Medium" | "Subtle";
@@ -88,7 +90,7 @@ export type AttackScenarioInput = {
 export type AttackScenario = {
   id: string;
   name: string;
-  attackType: "spoofing" | "layering" | "quote_stuffing" | "momentum_ignition" | "mixed";
+  attackType: ArenaScenarioType;
   targetSide: "buy" | "sell" | "both";
   objective: string;
   marketRegime: string;

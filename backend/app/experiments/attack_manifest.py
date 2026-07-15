@@ -6,16 +6,17 @@ from typing import Any
 from pydantic import BaseModel
 
 from app.experiments.models import Experiment
+from app.scenarios.catalog import BENCHMARK_SCENARIOS
 
 
-SCENARIOS = ["normal_market", "spoofing", "layering", "quote_stuffing", "pump_and_cancel"]
+SCENARIOS = list(BENCHMARK_SCENARIOS)
 
 EXPECTED_DETECTOR_FAMILIES = {
     "normal_market": None,
-    "spoofing": "spoofing_like",
-    "layering": "layering_like",
+    "spoofing_like_wall": "spoofing_like",
+    "layering_like": "layering_like",
     "quote_stuffing": "quote_stuffing",
-    "pump_and_cancel": "liquidity_shock",
+    "liquidity_evaporation": "liquidity_shock",
 }
 
 
@@ -92,10 +93,10 @@ def _planned_scenarios(attack_count: int, scenarios: list[str], rng: random.Rand
 def _duration_ticks(scenario: str, rng: random.Random) -> int:
     ranges = {
         "normal_market": (80, 180),
-        "spoofing": (24, 72),
-        "layering": (40, 120),
+        "spoofing_like_wall": (24, 72),
+        "layering_like": (40, 120),
         "quote_stuffing": (8, 28),
-        "pump_and_cancel": (16, 48),
+        "liquidity_evaporation": (16, 48),
     }
     low, high = ranges[scenario]
     return rng.randint(low, high)
@@ -104,10 +105,10 @@ def _duration_ticks(scenario: str, rng: random.Random) -> int:
 def _agent_profile(scenario: str, rng: random.Random) -> str:
     profiles = {
         "normal_market": ["balanced_noise", "passive_liquidity", "small_taker"],
-        "spoofing": ["large_wall_fast_cancel", "wide_wall_layered_cancel"],
-        "layering": ["multi_level_ladder", "staggered_depth_ladder"],
+        "spoofing_like_wall": ["large_wall_fast_cancel", "wide_wall_layered_cancel"],
+        "layering_like": ["multi_level_ladder", "staggered_depth_ladder"],
         "quote_stuffing": ["message_burst_cancel", "microburst_quote_churn"],
-        "pump_and_cancel": ["aggressive_sweep_cancel", "liquidity_pullback_probe"],
+        "liquidity_evaporation": ["top_book_thinning", "spread_widening"],
     }
     choices = profiles[scenario]
     return choices[rng.randrange(len(choices))]
@@ -124,14 +125,14 @@ def _parameters(scenario: str, rng: random.Random, start_tick: int, duration_tic
             "message_rate_per_tick": round(rng.uniform(0.5, 2.5), 3),
             "max_order_size": rng.randint(2, 12),
         }
-    if scenario == "spoofing":
+    if scenario == "spoofing_like_wall":
         return {
             **base,
             "wall_size_multiplier": rng.randint(6, 14),
             "distance_from_mid_bps": rng.randint(8, 35),
             "cancel_style": rng.choice(["instant", "gradual", "partial"]),
         }
-    if scenario == "layering":
+    if scenario == "layering_like":
         return {
             **base,
             "levels": rng.randint(3, 8),
@@ -147,9 +148,9 @@ def _parameters(scenario: str, rng: random.Random, start_tick: int, duration_tic
         }
     return {
         **base,
-        "sweep_size_multiplier": rng.randint(4, 11),
-        "cancel_ratio": round(rng.uniform(0.65, 0.93), 3),
-        "pullback_ticks": rng.randint(3, 14),
+        "depth_retention_ratio": round(rng.uniform(0.15, 0.4), 3),
+        "levels_removed": rng.randint(2, 5),
+        "spread_widening_ticks": rng.randint(3, 14),
     }
 
 

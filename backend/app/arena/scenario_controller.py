@@ -1,7 +1,7 @@
 from app.agents.layering_like import LayeringLikeAgent
 from app.agents.liquidity_evaporation import LiquidityEvaporationAgent
 from app.agents.noise_trader import NoiseTrader
-from app.agents.quote_stuffing_like import QuoteStuffingLikeAgent
+from app.agents.quote_stuffing import QuoteStuffingAgent
 from app.agents.spoofing_like import SpoofingLikeAgent
 from app.arena.engine import ArenaEngine
 
@@ -22,10 +22,10 @@ class ScenarioController:
 
     def launch(self, scenario_name: str) -> dict[str, object]:
         agents = {
-            "spoofing-like": [NoiseTrader("noise-1"), SpoofingLikeAgent("spoof-1")],
-            "layering-like": [NoiseTrader("noise-1"), LayeringLikeAgent("layer-1")],
-            "quote-stuffing-like": [QuoteStuffingLikeAgent("stuff-1")],
-            "liquidity-evaporation": [LiquidityEvaporationAgent("evap-1")],
+            "spoofing_like_wall": [NoiseTrader("noise-1"), SpoofingLikeAgent("spoof-1")],
+            "layering_like": [NoiseTrader("noise-1"), LayeringLikeAgent("layer-1")],
+            "quote_stuffing": [QuoteStuffingAgent("stuff-1")],
+            "liquidity_evaporation": [LiquidityEvaporationAgent("evap-1")],
         }.get(scenario_name)
         if agents is None:
             return {"accepted": False, "error": f"unknown scenario: {scenario_name}"}

@@ -13,6 +13,7 @@ import { useArenaSource } from "@/hooks/useArenaSource";
 import { getProductDemoConfig, type ProductDemoConfig } from "@/demoModes";
 import { controlCenterIncidentPath, investigationContextFromArenaState, storeControlCenterIncident } from "@/controlCenterIncident";
 import type { ArenaState, Incident, OrderBookSnapshot } from "@/types/arena";
+import { arenaScenarioLabels } from "@/scenarios";
 
 const WIDGET_TICK_WINDOW = 48;
 
@@ -24,23 +25,15 @@ type HeatmapSnapshotFrame = {
 type DetectionSecondaryView = "evidence" | "timeline";
 type MarketSecondaryView = "heatmap" | "timeline";
 
-const scenarioLabels: Record<string, string> = Object.fromEntries(
-  [
-    ["spoofing_like_wall", "Spoofing-like Wall"],
-    ["layering_like", "Layering-like Pattern"],
-    ["quote_stuffing", "Quote Stuffing Burst"],
-    ["liquidity_evaporation", "Liquidity Evaporation"]
-  ]
-);
-
 function formatScenarioLabel(name?: string | null) {
-  return name ? scenarioLabels[name] ?? name : "None";
+  return name ? arenaScenarioLabels[name as keyof typeof arenaScenarioLabels] ?? name : "None";
 }
 
 export function ArenaPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const demoConfig = getProductDemoConfig(searchParams.get("demo"));
+  const replayScenario = searchParams.get("replayScenario");
   const { launchScenario, mode, pause, reset, running, sourceStatus, start, state, tick } = useArenaSource({
     demo: Boolean(demoConfig),
     demoScenario: demoConfig?.scenarioType,
@@ -206,6 +199,11 @@ export function ArenaPage() {
       ) : null}
 
       {demoConfig ? <ArenaDemoBanner config={demoConfig} /> : null}
+      {replayScenario ? (
+        <div className="loading-banner replay-active-banner" role="status">
+          Live replay active: {replayScenario}. Exchange ticks, LOB updates, detectors, and incident evidence are streaming below.
+        </div>
+      ) : null}
 
       <div className="cockpit-grid">
         <section className="panel cockpit-left arena-column">
@@ -231,7 +229,7 @@ export function ArenaPage() {
             <section className="market-secondary-view">
               <div className="widget-tab-row" role="tablist" aria-label="Secondary market views">
                 <button className={marketSecondaryView === "heatmap" ? "active" : ""} onClick={() => setMarketSecondaryView("heatmap")} type="button">Heatmap</button>
-                <button className={marketSecondaryView === "timeline" ? "active" : ""} onClick={() => setMarketSecondaryView("timeline")} type="button">Timeline</button>
+                <button className={marketSecondaryView === "timeline" ? "active" : ""} onClick={() => setMarketSecondaryView("timeline")} type="button">Market Timeline</button>
               </div>
               <div className="tab-content-panel" key={marketSecondaryView}>
                 {marketSecondaryView === "heatmap" ? (
@@ -252,13 +250,13 @@ export function ArenaPage() {
           <section className="secondary-widget-drawer">
             <div className="widget-tab-row" role="tablist" aria-label="Secondary detection widgets">
               <button className={secondaryView === "evidence" ? "active" : ""} onClick={() => setSecondaryView("evidence")} type="button">📄 Evidence</button>
-              <button className={secondaryView === "timeline" ? "active" : ""} onClick={() => setSecondaryView("timeline")} type="button">🕒 Timeline</button>
+              <button className={secondaryView === "timeline" ? "active" : ""} onClick={() => setSecondaryView("timeline")} type="button">🕒 Agent Events</button>
             </div>
             <div className="tab-content-panel" key={secondaryView}>
               {secondaryView === "evidence" ? (
                 <EvidencePanel state={state} />
               ) : (
-                <AgentTimeline events={state.events} layout="compact" title="Timeline" />
+                <AgentTimeline activeAgents={state.active_agents} events={state.events} layout="compact" title="Agent Event Timeline" />
               )}
             </div>
           </section>
@@ -370,7 +368,7 @@ function createIncident(state: ArenaState): Incident | null {
       { key: "spread_bps", label: "Spread", value: state.features.spread_bps ?? 0, unit: "bps" },
       { key: "depth_change_pct", label: "Depth change", value: state.features.depth_change_pct ?? 0, unit: "%" }
     ],
-    explanation: `${scenarioLabels[scenario.scenario_name] ?? scenario.scenario_name} is active in the mock arena and has raised the ${alert.name} detector score.`,
+    explanation: `${arenaScenarioLabels[scenario.scenario_name as keyof typeof arenaScenarioLabels] ?? scenario.scenario_name} is active in the mock arena and has raised the ${alert.name} detector score.`,
     id: `MOCK-${scenario.scenario_id}-${alert.name}`,
     scenario_family: scenario.scenario_family,
     scenario_id: scenario.scenario_id,

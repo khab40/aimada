@@ -2,9 +2,9 @@ from app.agents.base import Agent
 from app.exchange.schemas import Order
 
 
-class QuoteStuffingLikeAgent(Agent):
-    scenario_family = "quote_stuffing_like"
-    scenario_name = "quote-stuffing-like"
+class QuoteStuffingAgent(Agent):
+    scenario_family = "quote_stuffing"
+    scenario_name = "quote_stuffing"
 
     def __init__(self, agent_id: str, scenario_id: str | None = None) -> None:
         super().__init__(agent_id)

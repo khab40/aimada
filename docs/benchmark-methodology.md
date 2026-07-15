@@ -6,7 +6,7 @@ The benchmark path evaluates detector behavior on labeled synthetic simulations.
 
 - Spoofing-like: large visible orders are placed away from the touch and canceled after influencing book pressure.
 - Layering-like: multiple same-side levels create persistent apparent pressure before cancellation.
-- Quote-stuffing-like: high-frequency order and cancel bursts stress event-rate features.
+- Quote Stuffing Burst: high-frequency order and cancel bursts stress event-rate features.
 - Liquidity shock: depth evaporates quickly, widening spreads and reducing executable liquidity.
 
 ## Metrics

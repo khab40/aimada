@@ -18,7 +18,7 @@ def main() -> None:
         "--runs",
         str(args.runs),
         "--scenarios",
-        "normal_market,spoofing,layering,quote_stuffing,pump_and_cancel",
+        "normal_market,spoofing_like_wall,layering_like,quote_stuffing,liquidity_evaporation",
         "--output",
         str(args.output / "benchmark"),
     ]

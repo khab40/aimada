@@ -35,13 +35,13 @@ Rates are taken from the [Nebius public pricing page](https://nebius.com/prices)
 ## Results
 
 - **Number of runs:** More than ten production Serverless AI Job runs validated the batch workflow. The committed `EXP-390EFAC2` evidence requested and retained 100 workload labels: 80 labeled attack rows plus 20 `normal_market` control rows.
-- **Best detector in the committed example:** The built-in deterministic detector suite reached precision/recall/F1 of 1.0 for the synthetic layering, quote-stuffing, and spoofing scenarios; recall was 0.0 for the normal-market and pump-and-cancel rows.
+- **Best detector in the committed example:** The built-in deterministic detector suite reached precision/recall/F1 of 1.0 for the synthetic `layering_like`, `quote_stuffing`, and `spoofing_like_wall` scenarios; the benign `normal_market` control is excluded from attack recall.
 - **Endpoint investigations:** Seven reports completed in Nebius mode with no fallback; the evidence window contains eight completed, S3-uploaded Endpoint records.
 - **Main finding:** Production runs validated container execution, scenario generation, detector evaluation, aggregation, reporting, logs, and artifact persistence. These synthetic metrics validate integration and reproducibility only; they do not support a real-world surveillance-accuracy claim.
 
 ### Workload-count reconciliation
 
-The `EXP-390EFAC2` run did not drop 20 workloads. The checked-in `labels.jsonl` contains 100 rows: 20 `normal_market` controls with `has_attack:false`, plus 20 rows each for `spoofing_like`, `layering_like`, `quote_stuffing`, and `liquidity_evaporation`. The aggregate report's "80 attacks" denominator excludes the benign control rows by design. In detector metrics, `liquidity_evaporation` is normalized to the `pump_and_cancel` scenario row, so the five 20-row workload groups are represented as `normal_market`, `spoofing`, `layering`, `quote_stuffing`, and `pump_and_cancel`.
+The `EXP-390EFAC2` run did not drop 20 workloads. The checked-in `labels.jsonl` contains 100 rows: 20 `normal_market` controls with `has_attack:false`, plus 20 rows each for `spoofing_like_wall`, `layering_like`, `quote_stuffing`, and `liquidity_evaporation`. The aggregate report's "80 attacks" denominator excludes the benign control rows by design.
 
 ## Proof of execution
 

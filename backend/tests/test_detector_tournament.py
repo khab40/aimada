@@ -21,7 +21,7 @@ def test_detector_tournament_runs_local_mock_and_persists(tmp_path: Path) -> Non
     response = start_tournament(
         DetectorTournamentStartRequest(
             number_of_scenarios=2,
-            manipulation_types=["spoofing"],
+            manipulation_types=["spoofing_like_wall"],
             detector_set=["spoofing_like"],
             execution_mode="local_mock",
             random_seed=7,
@@ -87,7 +87,7 @@ def test_detector_tournament_nebius_submit_renders_object_storage_env(tmp_path: 
         response = start_tournament(
             DetectorTournamentStartRequest(
                 number_of_scenarios=1,
-                manipulation_types=["spoofing"],
+                manipulation_types=["spoofing_like_wall"],
                 detector_set=["spoofing_like"],
                 execution_mode="nebius",
             ),
@@ -123,7 +123,7 @@ def test_detector_tournament_collects_completed_s3_artifacts(tmp_path: Path, mon
             "blue_team_alerts.jsonl": "{}\n",
             "detector_metrics.csv": (
                 "scenario,runs,alerts,precision,recall,f1,avg_detection_latency_ms\n"
-                "spoofing,1,1,1.0,1.0,1.0,1000.0\n"
+                    "spoofing_like_wall,1,1,1.0,1.0,1.0,1000.0\n"
             ),
             "generated_report.md": "# Report\n",
             "manifest.json": "{}\n",
@@ -150,7 +150,7 @@ def test_detector_tournament_collects_completed_s3_artifacts(tmp_path: Path, mon
         submitted = start_tournament(
             DetectorTournamentStartRequest(
                 number_of_scenarios=1,
-                manipulation_types=["spoofing"],
+                manipulation_types=["spoofing_like_wall"],
                 detector_set=["spoofing_like"],
                 execution_mode="nebius",
             ),
@@ -167,7 +167,7 @@ def test_detector_tournament_collects_completed_s3_artifacts(tmp_path: Path, mon
     assert refreshed is not None
     assert refreshed.status == "completed"
     assert refreshed.metrics["artifact_count"] == 7
-    assert refreshed.leaderboard[0].scenario == "spoofing"
+    assert refreshed.leaderboard[0].scenario == "spoofing_like_wall"
     assert Path(refreshed.artifacts["artifact_index"]).is_file()
     assert Path(refreshed.artifacts["nebius_job_logs"]).read_text(encoding="utf-8") == "batch complete"
 
@@ -177,7 +177,7 @@ def test_detector_tournament_api_facade_round_trip(tmp_path: Path) -> None:
     response = start_detector_tournament(
         DetectorTournamentStartRequest(
             number_of_scenarios=1,
-            manipulation_types=["layering"],
+            manipulation_types=["layering_like"],
             detector_set=["layering_like"],
             execution_mode="local_mock",
         ),

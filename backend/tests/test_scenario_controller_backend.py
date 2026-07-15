@@ -8,7 +8,7 @@ from app.scenarios.controller import ScenarioController
 def test_spoofing_like_scenario_progresses_and_marks_abuser_wall() -> None:
     engine = SimulationEngine()
 
-    result = engine.launch_scenario("spoofing-like")
+    result = engine.launch_scenario("spoofing_like_wall")
     first = engine.step()
 
     assert result["accepted"] is True
@@ -24,13 +24,13 @@ def test_spoofing_like_scenario_progresses_and_marks_abuser_wall() -> None:
 def test_scenario_launch_creates_reproducible_label_record() -> None:
     engine = SimulationEngine(seed=123)
 
-    result = engine.launch_scenario("spoofing-like")
+    result = engine.launch_scenario("spoofing_like_wall")
     state = engine.step()
 
     label = state["active_scenario"]["label"]
     assert result["accepted"] is True
     assert label["scenario_id"] == state["active_scenario"]["scenario_id"]
-    assert label["scenario_family"] == "spoofing_like"
+    assert label["scenario_family"] == "spoofing_like_wall"
     assert label["seed"] == 123
     assert label["start_tick"] == state["active_scenario"]["start_tick"]
     assert label["start_tick"] == 1
@@ -41,7 +41,7 @@ def test_scenario_launch_creates_reproducible_label_record() -> None:
 
 def test_quote_stuffing_scenario_generates_burst_events() -> None:
     engine = SimulationEngine()
-    engine.launch_scenario("quote-stuffing")
+    engine.launch_scenario("quote_stuffing")
 
     for _ in range(5):
         state = engine.step()
@@ -59,7 +59,7 @@ def test_liquidity_evaporation_route_method_starts_running_scenario() -> None:
     async def run() -> None:
         engine = SimulationEngine(tick_interval_seconds=0.01)
         try:
-            tracker = await engine.start_scenario("liquidity-evaporation")
+            tracker = await engine.start_scenario("liquidity_evaporation")
             await asyncio.sleep(0.03)
             state = await engine.get_state()
 

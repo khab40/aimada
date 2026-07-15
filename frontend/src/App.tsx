@@ -416,7 +416,7 @@ function RuntimePanel() {
     }));
     try {
       const status = await getNebiusStatus();
-      const endpointReady = status.endpoint_health?.status === "ok";
+      const endpointReady = runtimeProbeStatus(status.endpoint_health ?? undefined) === "Connected";
       const endpointStatus: RuntimeStatus = endpointReady
         ? "Connected"
         : status.endpoint_base_url_configured
@@ -424,11 +424,12 @@ function RuntimePanel() {
           : "Not configured";
       const jobsStatus = runtimeProbeStatus(status.job_health);
       const storageStatus = runtimeProbeStatus(status.storage_health);
-      const runnerStatus: RuntimeStatus = jobsStatus === "Connected"
+      const runnerProbeStatus = runtimeProbeStatus(status.runner_health);
+      const runnerStatus: RuntimeStatus = runnerProbeStatus === "Connected"
         ? "Ready"
-        : jobsStatus === "Not configured"
+        : runnerProbeStatus === "Not configured"
           ? "Not configured"
-          : "Unavailable";
+          : runnerProbeStatus;
       setRuntimeOverrides((current) => ({
         ...current,
         "nebius-cloud": {
@@ -440,8 +441,14 @@ function RuntimePanel() {
           Storage: storageStatus
         }
       }));
+      const probeIssues = [
+        endpointStatus === "Connected" ? null : `Endpoint: ${runtimeProbeDetail(status.endpoint_health ?? undefined)}`,
+        runnerStatus === "Ready" ? null : `Runner: ${runtimeProbeDetail(status.runner_health)}`,
+        jobsStatus === "Connected" ? null : `Jobs: ${runtimeProbeDetail(status.job_health)}`,
+        storageStatus === "Connected" ? null : `Storage: ${runtimeProbeDetail(status.storage_health)}`
+      ].filter((detail): detail is string => Boolean(detail));
       setCloudMessage(
-        `Live check: Endpoint ${runtimeStatusText(endpointStatus)}; Jobs ${runtimeStatusText(jobsStatus)}; Storage ${runtimeStatusText(storageStatus)}.`
+        `Live check: Runner ${runtimeStatusText(runnerStatus)}; Endpoint ${runtimeStatusText(endpointStatus)}; Jobs ${runtimeStatusText(jobsStatus)}; Storage ${runtimeStatusText(storageStatus)}.${probeIssues.length ? ` ${probeIssues.join(" ")}` : ""}`
       );
     } catch (error) {
       setRuntimeOverrides((current) => ({
@@ -532,7 +539,7 @@ function RuntimePanel() {
 
 function runtimeProbeStatus(probe: Record<string, unknown> | undefined): RuntimeStatus {
   const status = String(probe?.status ?? "unavailable").toLowerCase();
-  if (status === "ok") return "Connected";
+  if (["ok", "ready", "healthy", "connected"].includes(status)) return "Connected";
   if (status === "not_configured") return "Not configured";
   if (status === "degraded") return "Degraded";
   return "Unavailable";
@@ -540,4 +547,9 @@ function runtimeProbeStatus(probe: Record<string, unknown> | undefined): Runtime
 
 function runtimeStatusText(status: RuntimeStatus): string {
   return status.toLowerCase();
+}
+
+function runtimeProbeDetail(probe: Record<string, unknown> | undefined): string {
+  const detail = probe?.detail ?? probe?.fallback_reason;
+  return typeof detail === "string" && detail.trim() ? detail : runtimeStatusText(runtimeProbeStatus(probe));
 }

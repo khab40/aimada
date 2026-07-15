@@ -4,8 +4,8 @@ from app.scenarios.base import ScenarioBase
 
 
 class SpoofingLikeScenario(ScenarioBase):
-    scenario_name = "spoofing-like"
-    scenario_family = "spoofing_like"
+    scenario_name = "spoofing_like_wall"
+    scenario_family = "spoofing_like_wall"
     agent_id = "ABUSER_01"
 
     def __init__(self, scenario_id: str, start_tick: int, seed: int = 0) -> None:

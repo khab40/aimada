@@ -77,7 +77,7 @@ Run scalable detector evaluations over many generated or replayed synthetic scen
 Tournament start form:
 
 - `number_of_scenarios`: integer, default `100`, capped by backend
-- `manipulation_types`: list of `spoofing`, `layering`, `wash_trading`, `quote_stuffing`
+- `manipulation_types`: list of `spoofing_like_wall`, `layering_like`, `quote_stuffing`, `liquidity_evaporation`
 - `difficulty_mix`: object such as `{ "easy": 0.2, "medium": 0.5, "hard": 0.2, "adversarial": 0.1 }`
 - `detector_set`: list of `spoofing_like`, `layering_like`, `quote_stuffing`, `liquidity_shock`
 - `random_seed`: integer
@@ -199,10 +199,10 @@ Implemented routes in `backend/app/api/routes_nebius.py`:
 Route behavior:
 
 1. Normalize request controls into existing scenario names:
-   - `spoofing` -> `spoofing`
-   - `layering` -> `layering`
+   - `spoofing_like_wall` -> `spoofing_like_wall`
+   - `layering_like` -> `layering_like`
    - `quote_stuffing` -> `quote_stuffing`
-   - `wash_trading` -> `pump_and_cancel` or `normal_market` plus manifest metadata until direct simulator support exists
+   - `liquidity_evaporation` -> `liquidity_evaporation`
 2. If `execution_mode=local_mock`, return deterministic leaderboard rows immediately and do not launch backend batch work.
 3. If `execution_mode=local`, queue a capped local run through `serverless/jobs/detector_tournament.py`; only one local tournament can run at a time.
 4. If `execution_mode=nebius` and job submit config is present, submit a Nebius Serverless Job command, persist request/stdout artifacts, and return `queued`.
@@ -355,7 +355,7 @@ Display:
 
 ## Risks And Shortcuts
 
-- Risk: `wash_trading` does not have a native simulator scenario. Shortcut: map to `pump_and_cancel` or record as manifest metadata until direct replay exists.
+- Scenario inputs are restricted to the four native Arena implementations; unsupported projections are rejected.
 - Risk: `difficulty_mix` is not yet supported by simulator physics. Shortcut: store it in manifest and use it to weight scenario selection first.
 - Risk: cloud artifacts are not mounted automatically. Shortcut: keep `collect-nebius-artifacts` as explicit step.
 - Risk: two existing runners have different artifact names. Shortcut: facade normalizes both into the same response envelope.

@@ -43,7 +43,7 @@ def test_basic_tournament_runs_exact_total_and_uses_seed(tmp_path: Path, monkeyp
             "--runs",
             "3",
             "--scenarios",
-            "normal_market,spoofing",
+            "normal_market,spoofing_like_wall",
             "--detectors",
             "spoofing_like,layering_like",
             "--random-seed",
@@ -59,7 +59,7 @@ def test_basic_tournament_runs_exact_total_and_uses_seed(tmp_path: Path, monkeyp
     assert payload["runs"] == 3
     assert len({row["run_id"] for row in payload["run_results"]}) == 3
     assert {row["seed"] for row in payload["run_results"]} == {91, 92, 93}
-    attack_rows = [row for row in payload["run_results"] if row["scenario"] == "spoofing-like"]
+    attack_rows = [row for row in payload["run_results"] if row["scenario"] == "spoofing_like_wall"]
     assert attack_rows and all(row["truth"] for row in attack_rows)
     normal_metrics = [row for row in payload["metrics"] if row["scenario"] == "normal-market"]
     assert all(row["precision"] is None and row["recall"] is None and row["f1"] is None for row in normal_metrics)
@@ -67,7 +67,7 @@ def test_basic_tournament_runs_exact_total_and_uses_seed(tmp_path: Path, monkeyp
 
 
 def test_batch_runner_applies_difficulty_and_rich_ground_truth() -> None:
-    result = run_batch_experiments._run_one(0, "spoofing", "hard", 300)
+    result = run_batch_experiments._run_one(0, "spoofing_like_wall", "hard", 300)
     label = result.labels[0]
 
     assert result.seed == 300
@@ -119,8 +119,8 @@ def test_order_lifetime_is_observed_order_age_not_scenario_elapsed() -> None:
 def test_layering_runs_on_both_book_sides_by_seed() -> None:
     even = SimulationEngine(seed=2)
     odd = SimulationEngine(seed=3)
-    even.launch_scenario("layering-like")
-    odd.launch_scenario("layering-like")
+    even.launch_scenario("layering_like")
+    odd.launch_scenario("layering_like")
     for _ in range(2):
         even_state = even.step()
         odd_state = odd.step()

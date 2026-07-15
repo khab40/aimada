@@ -367,6 +367,7 @@ export type NebiusStatus = {
   endpoint_base_url?: string | null;
   endpoint_base_url_configured?: boolean;
   endpoint_health?: Record<string, unknown> | null;
+  runner_health?: Record<string, unknown>;
   job_health?: Record<string, unknown>;
   storage_health?: Record<string, unknown>;
   checked_at?: string;
@@ -510,7 +511,7 @@ export type AIInvestigationTeamResponse = {
 };
 
 export type MarketAbuseScenarioGenerationRequest = {
-  manipulation_type: "spoofing" | "layering" | "wash_trading" | "quote_stuffing";
+  manipulation_type: "spoofing_like_wall" | "layering_like" | "quote_stuffing" | "liquidity_evaporation";
   difficulty: "easy" | "medium" | "hard" | "adversarial";
   symbol: string;
   duration_ticks: number;
@@ -572,7 +573,7 @@ export type MarketAbuseScenarioResponse = {
 
 export type DetectorTournamentStartRequest = {
   number_of_scenarios: number;
-  manipulation_types: ("spoofing" | "layering" | "wash_trading" | "quote_stuffing")[];
+  manipulation_types: ("spoofing_like_wall" | "layering_like" | "quote_stuffing" | "liquidity_evaporation")[];
   difficulty_mix: Record<string, number>;
   detector_set: ("spoofing_like" | "layering_like" | "quote_stuffing" | "liquidity_shock")[];
   random_seed: number;
@@ -1123,7 +1124,7 @@ export async function runSmartDetection(): Promise<OrderBookAlertResponse> {
         message_rate: 21,
         wall_size_ratio: 8.2
       },
-      scenario_hint: "spoofing",
+      scenario_hint: "spoofing_like_wall",
       tick: 12
     }),
     headers: { "Content-Type": "application/json" },
@@ -1135,7 +1136,7 @@ export async function runSmartDetection(): Promise<OrderBookAlertResponse> {
   return response.json();
 }
 
-export async function runSmartBatches(runs = 100, batchSize = 100, scenarios = ["normal_market", "spoofing", "layering", "quote_stuffing", "pump_and_cancel"]): Promise<SmartBatchRunResponse> {
+export async function runSmartBatches(runs = 100, batchSize = 100, scenarios = ["normal_market", "spoofing_like_wall", "layering_like", "quote_stuffing", "liquidity_evaporation"]): Promise<SmartBatchRunResponse> {
   const response = await fetch(`${API_BASE_URL}/api/nebius/smart-batches`, {
     body: JSON.stringify({
       batch_size: batchSize,
@@ -1287,7 +1288,7 @@ function defaultAIInvestigationTeamRequest(): AIInvestigationTeamRequest {
     incident: {
       confidence: 0.91,
       incident_id: "INC-DEMO-042",
-      scenario_family: "spoofing",
+      scenario_family: "spoofing_like_wall",
       severity: "high",
       tick: 42,
       title: "Synthetic spoofing wall detected",

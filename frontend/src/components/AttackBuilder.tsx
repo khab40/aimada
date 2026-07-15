@@ -3,13 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { launchAttackExperiment, type AttackExperimentRequest } from "@/api/client";
 import { controlCenterIncidentPath, storeControlCenterIncident } from "@/controlCenterIncident";
 import type { ArenaScenarioType } from "@/hooks/useArenaSource";
+import { arenaScenarioLabels, arenaScenarioTypes } from "@/scenarios";
 import type { Incident } from "@/types/arena";
 
 type CancelStyle = "instant" | "gradual" | "partial";
 type Difficulty = "Easy" | "Medium" | "Hard";
 type NoiseCover = "none" | "low" | "high";
-
-const scenarioTypes = ["spoofing", "layering", "quote stuffing", "liquidity evaporation"];
 
 export function AttackBuilder({ onLaunchScenario }: { onLaunchScenario?: (type: ArenaScenarioType) => void }) {
   const navigate = useNavigate();
@@ -18,7 +17,7 @@ export function AttackBuilder({ onLaunchScenario }: { onLaunchScenario?: (type: 
   const [distanceFromMidBps, setDistanceFromMidBps] = useState(12);
   const [lifetimeSeconds, setLifetimeSeconds] = useState(5);
   const [noiseCover, setNoiseCover] = useState<NoiseCover>("low");
-  const [scenarioType, setScenarioType] = useState("spoofing");
+  const [scenarioType, setScenarioType] = useState<ArenaScenarioType>("spoofing_like_wall");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [wallSizeMultiplier, setWallSizeMultiplier] = useState(8);
@@ -44,8 +43,8 @@ export function AttackBuilder({ onLaunchScenario }: { onLaunchScenario?: (type: 
 
   async function handleLaunch() {
     if (onLaunchScenario) {
-      onLaunchScenario(toArenaScenarioType(scenarioType));
-      setStatusMessage(`Launched ${scenarioType} in Arena.`);
+      onLaunchScenario(scenarioType);
+      setStatusMessage(`Launched ${arenaScenarioLabels[scenarioType]} in Arena.`);
       return;
     }
 
@@ -94,8 +93,8 @@ export function AttackBuilder({ onLaunchScenario }: { onLaunchScenario?: (type: 
       explanation: risk.explanation,
       id: `ARENA-BUILDER-${Date.now()}`,
       severity: risk.score >= 0.85 ? "Critical" : risk.score >= 0.7 ? "High" : risk.score >= 0.5 ? "Medium" : "Low",
-      title: `${scenarioType} scenario investigation`,
-      type: toArenaScenarioType(scenarioType)
+      title: `${arenaScenarioLabels[scenarioType]} investigation`,
+      type: scenarioType
     };
     storeControlCenterIncident(incident);
     navigate(controlCenterIncidentPath(incident));
@@ -113,8 +112,8 @@ export function AttackBuilder({ onLaunchScenario }: { onLaunchScenario?: (type: 
       <div className="attack-builder-grid">
         <label className="form-row">
           Manipulation type
-          <select value={scenarioType} onChange={(event) => setScenarioType(event.target.value)}>
-            {scenarioTypes.map((scenario) => <option key={scenario}>{scenario}</option>)}
+          <select value={scenarioType} onChange={(event) => setScenarioType(event.target.value as ArenaScenarioType)}>
+            {arenaScenarioTypes.map((scenario) => <option key={scenario} value={scenario}>{arenaScenarioLabels[scenario]}</option>)}
           </select>
         </label>
 
@@ -158,26 +157,12 @@ export function AttackBuilder({ onLaunchScenario }: { onLaunchScenario?: (type: 
   );
 }
 
-function toArenaScenarioType(value: string): ArenaScenarioType {
-  const normalized = value.toLowerCase().replaceAll("-", " ").replaceAll("_", " ");
-  if (normalized === "layering") {
-    return "layering_like";
-  }
-  if (normalized === "quote stuffing") {
-    return "quote_stuffing";
-  }
-  if (normalized === "liquidity evaporation") {
-    return "liquidity_evaporation";
-  }
-  return "spoofing_like_wall";
-}
-
 function calculateRisk(config: {
   cancelStyle: CancelStyle;
   distanceFromMidBps: number;
   lifetimeSeconds: number;
   noiseCover: NoiseCover;
-  scenarioType: string;
+  scenarioType: ArenaScenarioType;
   wallSizeMultiplier: number;
 }) {
   let score = 0.2;
@@ -186,7 +171,7 @@ function calculateRisk(config: {
   score += config.distanceFromMidBps <= 15 ? 0.16 : config.distanceFromMidBps <= 30 ? 0.08 : 0.02;
   score += config.cancelStyle === "instant" ? 0.14 : config.cancelStyle === "partial" ? 0.08 : 0.04;
   score += config.noiseCover === "none" ? 0.1 : config.noiseCover === "low" ? 0.04 : -0.04;
-  score += config.scenarioType === "quote stuffing" ? 0.12 : 0;
+  score += config.scenarioType === "quote_stuffing" ? 0.12 : 0;
 
   const boundedScore = Math.max(0.05, Math.min(0.99, score));
   const label = boundedScore >= 0.78 ? "High" : boundedScore >= 0.52 ? "Medium" : "Low";

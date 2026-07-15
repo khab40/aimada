@@ -10,7 +10,7 @@ Status as of 2026-06-23: `[done]`
 
 Implemented:
 
-- Deterministic feature extraction and detector modules for spoofing-like, layering-like, quote-stuffing-like, and liquidity shock patterns.
+- Deterministic feature extraction and detector modules for Spoofing-like Wall, Layering-like Pattern, Quote Stuffing Burst, and Liquidity Evaporation.
 - Aggregate detector scores, incident cards, Incident Details evidence, persisted incident records, and backend explanation payloads grounded in structured evidence.
 - Benchmark and report surfaces that reuse detector evidence rather than relying on generated prose as the detector.
 - Regression tests for normal market-making false positives, spoofing-like alerts, layering-like alerts, quote-stuffing noise limits, and deterministic replay incident linkage.

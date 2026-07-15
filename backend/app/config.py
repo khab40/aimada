@@ -149,6 +149,12 @@ class Settings(BaseSettings):
         alias="ARENA_AGENT_DECISION_TIMEOUT_SECONDS",
     )
     arena_remote_agent_urls: str = Field(default="", alias="ARENA_REMOTE_AGENT_URLS")
+    arena_local_batch_max_workers: int = Field(
+        default=1,
+        ge=1,
+        le=32,
+        alias="ARENA_LOCAL_BATCH_MAX_WORKERS",
+    )
     arena_remote_agent_timeout_seconds: float = Field(
         default=0.05,
         ge=0.001,

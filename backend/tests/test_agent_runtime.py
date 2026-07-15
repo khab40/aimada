@@ -107,8 +107,28 @@ def test_remote_agent_client_parses_runner_intents() -> None:
         assert len(intents) == 1
         assert intents[0].agent_id == "REMOTE_NOISE_001"
         assert intents[0].kind == "set_level"
+        assert intents[0].runtime_source == "agent_runner"
 
     asyncio.run(run())
+
+
+def test_agent_events_expose_execution_runtime_and_simulation_tick() -> None:
+    engine = SimulationEngine(normal_agent_count=0, baseline_liquidity_levels=0)
+    intent = AgentIntent(
+        tick=7,
+        agent_id="REMOTE_NOISE_001",
+        kind="set_level",
+        runtime_source="agent_runner",
+        side="bid",
+        price=99.0,
+        quantity=1.0,
+    )
+
+    event = engine._apply_agent_intent(intent)
+
+    assert event is not None
+    assert event.timestamp == 7
+    assert event.runtime_source == "agent_runner"
 
 
 def test_build_agent_manager_combines_local_and_remote_runners() -> None:

@@ -36,16 +36,12 @@ from app.evaluation.run_planning import (  # noqa: E402
     exact_weighted_plan,
     parse_difficulty_mix,
 )
+from app.scenarios.catalog import BENCHMARK_SCENARIOS  # noqa: E402
 
 
-SCENARIOS = ["normal_market", "spoofing", "layering", "quote_stuffing", "pump_and_cancel"]
-SCENARIO_TO_ENGINE = {
-    "normal_market": None,
-    "spoofing": "spoofing-like",
-    "layering": "layering-like",
-    "quote_stuffing": "quote-stuffing",
-    "pump_and_cancel": "liquidity-evaporation",
-}
+SCENARIOS = list(BENCHMARK_SCENARIOS)
+SCENARIO_TO_ENGINE = {scenario: scenario for scenario in SCENARIOS if scenario != "normal_market"}
+SCENARIO_TO_ENGINE["normal_market"] = None
 
 
 @dataclass
@@ -66,6 +62,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Run parallel synthetic attack/detect batches.")
     parser.add_argument("--runs", type=int, default=1000)
     parser.add_argument("--batch-size", type=int, default=100)
+    parser.add_argument("--max-workers", type=int, default=0)
     parser.add_argument("--scenarios", default=",".join(SCENARIOS))
     parser.add_argument("--random-seed", type=int, default=42)
     parser.add_argument("--difficulty-mix", default=json.dumps(DEFAULT_DIFFICULTY_MIX))
@@ -81,12 +78,13 @@ def main() -> None:
         parser.error("at least one scenario is required")
     runs = max(1, args.runs)
     batch_size = max(1, min(args.batch_size, 500))
+    max_workers = batch_size if args.max_workers <= 0 else max(1, min(args.max_workers, batch_size))
     difficulty_mix = parse_difficulty_mix(args.difficulty_mix)
     scenario_plan = exact_balanced_plan(runs, scenarios, seed=args.random_seed)
     difficulty_plan = exact_weighted_plan(runs, difficulty_mix, seed=args.random_seed + 1)
 
     results: list[BatchResult] = []
-    with ThreadPoolExecutor(max_workers=batch_size) as executor:
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = [
             executor.submit(
                 _run_one,
@@ -107,12 +105,13 @@ def main() -> None:
     _write_jsonl(output / "blue_team_alerts.jsonl", (row for result in results for row in result.alerts))
     metrics = _aggregate_metrics(results)
     _write_metrics(output / "detector_metrics.csv", metrics)
-    report = _build_report(results, metrics, batch_size)
+    report = _build_report(results, metrics, max_workers)
     (output / "generated_report.md").write_text(report, encoding="utf-8")
     manifest = {
         "created_at": datetime.now(timezone.utc).isoformat(),
         "runs": runs,
         "batch_size": batch_size,
+        "max_workers": max_workers,
         "scenarios": scenarios,
         "scenario_counts": _counts(scenario_plan),
         "random_seed": args.random_seed,
@@ -399,14 +398,14 @@ def _sync_to_s3(output: Path, s3_output_uri: str, endpoint_url: str) -> None:
         raise RuntimeError(f"S3 artifact upload failed: {details}")
 
 
-def _build_report(results: list[BatchResult], metrics: list[dict[str, Any]], batch_size: int) -> str:
+def _build_report(results: list[BatchResult], metrics: list[dict[str, Any]], max_workers: int) -> str:
     lines = [
         "# Smart Attack/Detect Batch Report",
         "",
         "Educational synthetic simulation only. Not for real market surveillance, trading, or compliance use.",
         "",
         f"- Simulations: {len(results)}",
-        f"- Parallel batch size: {batch_size}",
+        f"- Parallel workers: {max_workers}",
         "- Output files: 6",
         "",
         "| Scenario | Runs | Alerts | Precision | Recall | F1 | Avg latency ms |",

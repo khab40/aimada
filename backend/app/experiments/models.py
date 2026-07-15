@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field
+from app.scenarios.catalog import BENCHMARK_SCENARIOS
 
 
 ExperimentStatus = Literal[
@@ -21,7 +22,7 @@ class ExperimentCreateRequest(BaseModel):
     attack_count: int = Field(default=100, ge=1, le=1000)
     batch_size: int = Field(default=100, ge=1, le=500)
     scenarios: list[str] = Field(
-        default_factory=lambda: ["normal_market", "spoofing", "layering", "quote_stuffing", "pump_and_cancel"]
+        default_factory=lambda: list(BENCHMARK_SCENARIOS)
     )
     seed: int = Field(default=42, ge=0)
     nebius_mode: NebiusMode = "local_parallel_batch"

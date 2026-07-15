@@ -143,13 +143,7 @@ function getArenaMode(): ArenaMode {
 }
 
 function scenarioToBackendName(scenario: ArenaScenarioType) {
-  const mapping: Record<ArenaScenarioType, string> = {
-    layering_like: "layering-like",
-    liquidity_evaporation: "liquidity-evaporation",
-    quote_stuffing: "quote-stuffing",
-    spoofing_like_wall: "spoofing-like"
-  };
-  return mapping[scenario];
+  return scenario;
 }
 
 function isArenaState(value: unknown): value is ArenaState {

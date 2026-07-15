@@ -26,6 +26,7 @@ def run_local_smart_batch(
     runs: int,
     batch_size: int,
     scenarios: list[str],
+    max_workers: int = 1,
     timeout_seconds: int = 120,
 ) -> LocalSmartBatchResult:
     command = [
@@ -35,6 +36,8 @@ def run_local_smart_batch(
         str(runs),
         "--batch-size",
         str(batch_size),
+        "--max-workers",
+        str(max(1, min(max_workers, batch_size))),
         "--scenarios",
         ",".join(scenarios),
         "--output",

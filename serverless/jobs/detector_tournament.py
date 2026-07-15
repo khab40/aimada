@@ -33,32 +33,10 @@ from app.evaluation.run_planning import (  # noqa: E402
     exact_weighted_plan,
     parse_difficulty_mix,
 )
+from app.scenarios.catalog import BENCHMARK_SCENARIOS  # noqa: E402
 
 
-SCENARIO_ALIASES = {
-    "spoofing": "spoofing-like",
-    "spoofing_like": "spoofing-like",
-    "spoofing_like_wall": "spoofing-like",
-    "layering": "layering-like",
-    "layering_like": "layering-like",
-    "quote_stuffing": "quote-stuffing",
-    "quote-stuffing": "quote-stuffing",
-    "liquidity_evaporation": "liquidity-evaporation",
-    "liquidity-evaporation": "liquidity-evaporation",
-    "normal": "normal-market",
-    "normal_market": "normal-market",
-    "normal-market": "normal-market",
-    "pump_and_cancel": "pump-and-cancel",
-    "pump-and-cancel": "pump-and-cancel",
-}
-
-DEFAULT_SCENARIOS = [
-    "normal-market",
-    "spoofing-like",
-    "layering-like",
-    "quote-stuffing",
-    "pump-and-cancel",
-]
+DEFAULT_SCENARIOS = list(BENCHMARK_SCENARIOS)
 DEFAULT_DETECTORS = ["spoofing_like", "layering_like", "quote_stuffing", "liquidity_shock"]
 
 
@@ -146,8 +124,10 @@ def _split_csv(value: str) -> list[str]:
 
 
 def _normalize_scenario(value: str) -> str:
-    key = value.strip().lower().replace(" ", "_")
-    return SCENARIO_ALIASES.get(key, key.replace("_", "-"))
+    scenario = value.strip().lower()
+    if scenario not in DEFAULT_SCENARIOS:
+        raise ValueError(f"unsupported scenario: {value}")
+    return scenario
 
 
 def _normalize_detector(value: str) -> str:
@@ -164,9 +144,7 @@ def _run_one_simulation(
 ) -> list[RunResult]:
     run_seed = random_seed + run_index
     engine = SimulationEngine(seed=run_seed, **engine_profile(difficulty))
-    if scenario == "pump-and-cancel":
-        engine.launch_scenario("liquidity-evaporation")
-    elif scenario != "normal-market":
+    if scenario != "normal_market":
         engine.launch_scenario(scenario)
     first_alert_tick: dict[str, int] = {}
     alert_ticks: dict[str, list[int]] = defaultdict(list)
@@ -199,7 +177,7 @@ def _run_one_simulation(
 
     results: list[RunResult] = []
     for detector in detectors:
-        truth = scenario != "normal-market"
+        truth = scenario != "normal_market"
         predicted = detector in incident_detectors or max_confidence[detector] >= 0.75
         true_positive = int(truth and predicted)
         false_positive = int(not truth and predicted)

@@ -213,10 +213,10 @@ Accepted values:
 
 ```text
 Manipulation:
-  spoofing
-  layering
-  wash_trading
+  spoofing_like_wall
+  layering_like
   quote_stuffing
+  liquidity_evaporation
 
 Difficulty:
   easy
@@ -341,12 +341,12 @@ end_tick =
 3. cancel layers after pressure appears
 ```
 
-**Wash trading**
+**Liquidity Evaporation**
 
 ```text
-1. synthetic buy cross-trade
-2. synthetic sell cross-trade
-3. mark repeated self-crossing pattern
+1. thin the top three levels on both sides
+2. maintain reduced visible depth
+3. widen the spread after depth collapse
 ```
 
 **Quote stuffing**
@@ -871,12 +871,11 @@ At every tick:
 The expected detector is hard-coded:
 
 ```text
-spoofing-like         → spoofing_like
-layering-like         → layering_like
-quote-stuffing        → quote_stuffing
-liquidity-evaporation → liquidity_shock
-pump-and-cancel       → liquidity_shock
-normal-market         → no expected detector
+spoofing_like_wall    → spoofing_like
+layering_like         → layering_like
+quote_stuffing        → quote_stuffing
+liquidity_evaporation → liquidity_shock
+normal_market         → no expected detector
 ```
 
 For each detector and simulation:
@@ -1168,16 +1167,9 @@ The feature is calculated from attack start tick, not from individual order inse
 
 It should be renamed to `scenario_elapsed_ms` or replaced with real order-level lifetime statistics.
 
-## 9. No wash-trading detector
+## 9. Scenario catalog is intentionally bounded
 
-Scenario generation supports `wash_trading`, but the detector set contains only:
-
-- spoofing-like;
-- layering-like;
-- quote stuffing;
-- liquidity shock.
-
-There is no wash-trading detector or expected mapping in the basic tournament.
+Scenario generation and tournament execution accept only the four native Arena scenarios. The liquidity-shock detector evaluates the `liquidity_evaporation` workload.
 
 ## 10. Layering is asymmetric
 

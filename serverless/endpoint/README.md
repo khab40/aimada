@@ -226,7 +226,7 @@ curl -X POST http://localhost:9000/orderbook-alert \
     "bids":[{"price":68120,"quantity":12.4,"owner":"abuser"}],
     "asks":[{"price":68130,"quantity":1.8,"owner":"normal"}],
     "features":{"wall_size_ratio":8.2,"message_rate":21,"cancel_to_trade_ratio":5.4},
-    "scenario_hint":"spoofing"
+    "scenario_hint":"spoofing_like_wall"
   }'
 ```
 

@@ -16,6 +16,7 @@ import {
   getReportsSummary,
   injectNebiusAttackScenario,
   listManagedExperimentJobs,
+  listManagedExperimentInvestigations,
   listManagedExperiments,
   listNebiusEvidence,
   collectManagedExperimentNebiusArtifacts,
@@ -31,6 +32,7 @@ import {
   type AIInvestigationTeamResponse,
   type DetectorTournamentResponse,
   type ExperimentJobRecord,
+  type InvestigationRecord,
   type ExperimentLeaderboardRow,
   type ExperimentSummary,
   type MarketAbuseScenarioGenerationRequest,
@@ -46,6 +48,7 @@ import {
 } from "@/api/client";
 import { incidentInvestigationRequest, loadControlCenterIncident } from "@/controlCenterIncident";
 import type { Incident } from "@/types/arena";
+import { arenaScenarioLabels, arenaScenarioTypes } from "@/scenarios";
 import { RuntimeStatusCard } from "@/features/nebius/components/RuntimeStatusCard";
 import { UsageCostMonitor } from "@/features/nebius/components/UsageCostMonitor";
 import type {
@@ -127,17 +130,17 @@ function wait(ms: number): Promise<void> {
 
 const experimentScenarioOptions = [
   "normal_market",
-  "spoofing",
-  "layering",
+  "spoofing_like_wall",
+  "layering_like",
   "quote_stuffing",
-  "pump_and_cancel"
+  "liquidity_evaporation"
 ];
 
 const initialExperimentForm: ExperimentFormState = {
   attack_count: 100,
   batch_size: 20,
     name: "LOB Arena detector tournament",
-  scenarios: ["normal_market", "spoofing", "layering", "quote_stuffing", "pump_and_cancel"],
+  scenarios: ["normal_market", "spoofing_like_wall", "layering_like", "quote_stuffing", "liquidity_evaporation"],
   seed: 42
 };
 
@@ -145,7 +148,7 @@ const initialScenarioForm: MarketAbuseScenarioGenerationRequest = {
   difficulty: "medium",
   duration_ticks: 120,
   liquidity_regime: "thin",
-  manipulation_type: "spoofing",
+  manipulation_type: "spoofing_like_wall",
   seed: 42,
   symbol: "AIMD",
   volatility_regime: "high"
@@ -153,7 +156,7 @@ const initialScenarioForm: MarketAbuseScenarioGenerationRequest = {
 
 const demoScenarios: DemoScenario[] = [
   {
-    attackKey: "spoofing",
+    attackKey: "spoofing_like_wall",
     cta: "Start",
     demonstrates: ["attack generation", "detection", "mock AI investigation", "simulated execution trace"],
     duration: "30 seconds",
@@ -162,7 +165,7 @@ const demoScenarios: DemoScenario[] = [
     title: "Local Lightweight Demo"
   },
   {
-    attackKey: "layering",
+    attackKey: "layering_like",
     demonstrates: ["fast classifier", "reasoning model", "simulated latency", "simulated cost"],
     id: "local-ai-pipeline",
     purpose: "Show AI architecture even offline.",
@@ -177,7 +180,7 @@ const demoScenarios: DemoScenario[] = [
     title: "Endpoint Demo"
   },
   {
-    attackKey: "wash_trading",
+    attackKey: "liquidity_evaporation",
     demonstrates: ["complete platform", "endpoint", "jobs", "benchmark", "artifacts", "execution trace"],
     id: "nebius-platform",
     runtime: "nebius-cloud",
@@ -195,6 +198,7 @@ export function NebiusControlPanelPage() {
   const [experimentForm, setExperimentForm] = useState<ExperimentFormState>(initialExperimentForm);
   const [experimentJobs, setExperimentJobs] = useState<ExperimentJobRecord[]>([]);
   const [experimentLeaderboard, setExperimentLeaderboard] = useState<ExperimentLeaderboardRow[]>([]);
+  const [experimentInvestigations, setExperimentInvestigations] = useState<InvestigationRecord[]>([]);
   const [experimentSummary, setExperimentSummary] = useState<ExperimentSummary | null>(null);
   const [scenarioForm, setScenarioForm] = useState<MarketAbuseScenarioGenerationRequest>(initialScenarioForm);
   const [generatedScenario, setGeneratedScenario] = useState<MarketAbuseScenarioResponse | null>(null);
@@ -337,12 +341,14 @@ export function NebiusControlPanelPage() {
     setExperiment(latest);
     setExperimentJobs(jobs);
 
-    const [summary, leaderboard] = await Promise.all([
+    const [summary, leaderboard, investigations] = await Promise.all([
       getManagedExperimentSummary(experimentId).catch(() => null),
-      getManagedExperimentLeaderboard(experimentId).catch(() => [])
+      getManagedExperimentLeaderboard(experimentId).catch(() => []),
+      listManagedExperimentInvestigations(experimentId).catch(() => [])
     ]);
     setExperimentSummary(summary);
     setExperimentLeaderboard(leaderboard);
+    setExperimentInvestigations(investigations);
   }
 
   async function runExperimentAction(action: ExperimentAction, fn: () => Promise<void>, onError?: (message: string) => void) {
@@ -401,6 +407,7 @@ export function NebiusControlPanelPage() {
       setExperiment(created);
       setExperimentJobs([]);
       setExperimentLeaderboard([]);
+      setExperimentInvestigations([]);
       setExperimentSummary(null);
       setExperimentMessage(`Created benchmark ${created.id}.`);
       await refreshExperimentDetails(created.id);
@@ -419,6 +426,7 @@ export function NebiusControlPanelPage() {
   async function runExperimentLocalBatch() {
     if (!experiment) return;
     await runExperimentAction("run-local-batch", async () => {
+      setExperimentMessage("Running the tournament in an isolated, resource-limited worker. The live Arena remains available and keeps ticking.");
       const batch = await runManagedExperimentLocalBatch(experiment.id);
       setExperimentMessage(`${batch.status === "completed" ? "Completed" : "Failed"} local batch in ${batch.elapsed_seconds.toFixed(1)}s.`);
       await refreshExperimentDetails(experiment.id);
@@ -494,8 +502,17 @@ export function NebiusControlPanelPage() {
     if (!experiment) return;
     await runExperimentAction("run-investigations", async () => {
       const result = await runManagedExperimentInvestigations(experiment.id, runtimeMode);
-          setExperimentMessage(`Produced ${result.investigation_count} Nebius AI Investigation summaries in ${result.investigation_mode} mode.`);
+      setExperimentInvestigations(result.investigations);
+      setExperimentMessage(`Produced ${result.investigation_count} AI Investigation summaries in ${result.investigation_mode} mode. Showing Tab 3 · Benchmark alert explanations.`);
       await refreshExperimentDetails(experiment.id);
+      setActiveWorkflowStep(3);
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          const results = document.getElementById("benchmark-alert-explanations");
+          results?.focus({ preventScroll: true });
+          results?.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      });
     });
   }
 
@@ -521,9 +538,8 @@ export function NebiusControlPanelPage() {
   async function replayGeneratedScenario() {
     if (!generatedScenario) return;
     await runExperimentAction("replay-ai-scenario", async () => {
-      const response = await injectNebiusAttackScenario(generatedScenario.scenario_id);
-      setScenarioMessage(response.message);
-      await refreshControlPlane();
+      await injectNebiusAttackScenario(generatedScenario.scenario_id);
+      navigate(`/arena?replayScenario=${encodeURIComponent(generatedScenario.scenario_id)}`);
     }, setScenarioMessage);
   }
 
@@ -795,6 +811,7 @@ export function NebiusControlPanelPage() {
           </div>
           {investigationTeamReport ? <InvestigationTeamReport report={investigationTeamReport} /> : null}
           {experimentMessage ? <p className="experiment-message">{experimentMessage}</p> : null}
+          <ExperimentInvestigationResults investigations={experimentInvestigations} />
         </InfrastructureSection> : null}
 
         {activeWorkflowStep === 4 ? <InfrastructureSection
@@ -844,7 +861,7 @@ export function NebiusControlPanelPage() {
             </button>
             <span className="fallback-note">{nebiusEvidence.length} endpoint and Job evidence records</span>
           </div>
-          <ExperimentArtifactLinks
+          <ExperimentArtifactBrowser
             artifacts={mergeArtifactLinks(
               evidenceArtifactsFrom(nebiusEvidence),
               experiment ? experimentArtifactsFrom(experiment, experimentSummary) : []
@@ -1159,10 +1176,9 @@ function AIScenarioGeneratorPanel({
               value={form.manipulation_type}
               onChange={(event) => onUpdate("manipulation_type", event.target.value as MarketAbuseScenarioGenerationRequest["manipulation_type"])}
             >
-              <option value="spoofing">Spoofing</option>
-              <option value="layering">Layering</option>
-              <option value="wash_trading">Wash trading</option>
-              <option value="quote_stuffing">Quote stuffing</option>
+              {arenaScenarioTypes.map((scenario) => (
+                <option key={scenario} value={scenario}>{arenaScenarioLabels[scenario]}</option>
+              ))}
             </select>
           </label>
           <label>
@@ -1454,7 +1470,6 @@ function ExperimentLab({
   summary: ExperimentSummary | null;
 }) {
   const canRun = Boolean(experiment);
-  const artifacts = experiment ? experimentArtifactsFrom(experiment, summary) : [];
   const pendingNebiusJob = jobs.find((job) => ["queued", "running", "real_nebius_pending"].includes(job.status));
   const investigationReady = Boolean(experiment?.artifact_paths.alerts);
   const cloudJobInFlight = Boolean(pendingNebiusJob);
@@ -1560,10 +1575,10 @@ function ExperimentLab({
           </div>
           <div className="experiment-flow-actions">
             <button disabled={controlsDisabled || !canRun || cloudJobInFlight} onClick={onGenerateManifest} type="button">Generate manifest</button>
-            <button disabled={controlsDisabled || !canRun || cloudJobInFlight} onClick={onRunLocalBatch} type="button">Run Local Demo tournament</button>
+            <button disabled={controlsDisabled || !canRun || cloudJobInFlight} onClick={onRunLocalBatch} title="Runs in a resource-limited worker while the live Arena continues ticking." type="button">Run Local Demo tournament</button>
             <button disabled={controlsDisabled || runtimeMode !== "nebius-cloud" || !canRun || !jobConfigured || cloudJobInFlight} onClick={onSubmitNebius} title={runtimeMode !== "nebius-cloud" ? "Switch Runtime to Nebius Cloud before submitting a Serverless Job." : undefined} type="button">Run serverless job</button>
             <button disabled={controlsDisabled || !aggregationReady} onClick={onAggregate} title={aggregationReady ? undefined : "Run a tournament and collect normalized detector metrics first."} type="button">Aggregate</button>
-            <button disabled={controlsDisabled || !investigationReady} onClick={onRunInvestigations} title={investigationReady ? undefined : "Wait for detector alerts, then collect and normalize the completed Job artifacts."} type="button">Run AI Investigation</button>
+            <button disabled={controlsDisabled || !investigationReady} onClick={onRunInvestigations} title={investigationReady ? "Results open on Tab 3 · Investigation Team." : "Wait for detector alerts, then collect and normalize the completed Job artifacts."} type="button">Explain alerts → Tab 3</button>
           </div>
           {message ? <p className="experiment-message">{message}</p> : null}
           {pendingNebiusJob ? <p className="experiment-pending-note">pending cloud job execution: {pendingNebiusJob.message}</p> : null}
@@ -1572,9 +1587,8 @@ function ExperimentLab({
         </div>
       </div>
 
-      <div className="experiment-output-grid">
+      <div className="experiment-output-grid tournament-output-grid">
         <ExperimentJobsTable jobs={jobs} />
-        <ExperimentArtifactLinks artifacts={artifacts} experimentId={experiment?.id} />
         <ExperimentLeaderboardTable leaderboard={leaderboard} />
       </div>
     </section>
@@ -1793,33 +1807,113 @@ function ExperimentJobsTable({ jobs }: { jobs: ExperimentJobRecord[] }) {
   );
 }
 
-function ExperimentArtifactLinks({
+function ExperimentInvestigationResults({ investigations }: { investigations: InvestigationRecord[] }) {
+  return (
+    <section
+      className="benchmark-investigations"
+      aria-label="Benchmark alert explanations"
+      id="benchmark-alert-explanations"
+      tabIndex={-1}
+    >
+      <div className="artifact-browser-heading">
+        <div>
+          <span>Benchmark alert explanations</span>
+          <strong>{investigations.length ? `${investigations.length} analyst summaries` : "No summaries yet"}</strong>
+        </div>
+        <span className={`runtime-status ${investigations.length ? "active" : "not-configured"}`}>
+          {investigations.length ? "Ready" : "Awaiting run"}
+        </span>
+      </div>
+      {investigations.length ? (
+        <div className="benchmark-investigation-grid">
+          {investigations.map((investigation) => {
+            const title = textField(investigation.response, "title") || `Alert ${investigation.alert_id}`;
+            const summary = textField(investigation.response, "summary") || "Investigation report generated.";
+            return (
+              <article className="benchmark-investigation-card" key={`${investigation.alert_id}-${investigation.json_path}`}>
+                <div className="investigation-card-heading">
+                  <span>{investigation.alert_id}</span>
+                  <span className={`runtime-status ${investigation.mode === "mock" ? "mock" : "connected"}`}>{investigation.mode}</span>
+                </div>
+                <h3>{title}</h3>
+                <p>{summary}</p>
+                <small>{investigation.latency_seconds.toFixed(3)}s · persisted with benchmark evidence</small>
+                <div className="investigation-card-actions">
+                  <a href={artifactDownloadUrl(investigation.markdown_path)} target="_blank" rel="noreferrer">Open analyst report</a>
+                  <a href={artifactDownloadUrl(investigation.json_path)} target="_blank" rel="noreferrer">View JSON</a>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      ) : (
+        <p>Run “Explain benchmark alerts” after a tournament produces alerts. Mock and cloud summaries will appear here and remain available after refresh.</p>
+      )}
+    </section>
+  );
+}
+
+function ExperimentArtifactBrowser({
   artifacts,
   experimentId
 }: {
   artifacts: Array<[string, string]>;
   experimentId?: string;
 }) {
+  const entries = artifacts.map(([label, path]) => ({
+    category: artifactCategory(label),
+    format: artifactFormat(path),
+    href: artifactDownloadUrl(path),
+    label: label.replaceAll("_", " "),
+    path
+  }));
+  if (experimentId && !entries.some((entry) => entry.label === "benchmark report")) {
+    entries.push({
+      category: "Report",
+      format: "HTML",
+      href: getManagedExperimentReportUrl(experimentId),
+      label: "benchmark report",
+      path: `Experiment ${experimentId}`
+    });
+  }
   return (
-    <div className="nebius-result-block experiment-artifacts-block">
-      <span>Execution artifacts</span>
-      {artifacts.length ? (
-        <div className="experiment-artifact-list">
-          {artifacts.map(([label, path]) => (
-            <a href={artifactDownloadUrl(path)} key={`${label}-${path}`} target="_blank" rel="noreferrer">
-              {label.replaceAll("_", " ")}
-            </a>
-          ))}
-          {experimentId ? (
-            <a href={getManagedExperimentReportUrl(experimentId)} target="_blank" rel="noreferrer">
-              benchmark report
-            </a>
-          ) : null}
+    <section className="nebius-result-block experiment-artifact-browser" aria-label="Execution artifacts">
+      <div className="artifact-browser-heading">
+        <div>
+          <span>Execution artifacts</span>
+          <strong>{entries.length ? `${entries.length} files and reports` : "No artifacts yet"}</strong>
+        </div>
+        {experimentId ? <code>{experimentId}</code> : null}
+      </div>
+      {entries.length ? (
+        <div className="artifact-browser-table-wrap">
+          <table className="artifact-browser-table">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Artifact</th>
+                <th>Format</th>
+                <th>Source</th>
+                <th aria-label="Action" />
+              </tr>
+            </thead>
+            <tbody>
+              {entries.map((entry) => (
+                <tr key={`${entry.label}-${entry.path}`}>
+                  <td><span className={`artifact-category artifact-category-${entry.category.toLowerCase()}`}>{entry.category}</span></td>
+                  <td><strong>{entry.label}</strong></td>
+                  <td><code>{entry.format}</code></td>
+                  <td className="artifact-source" title={entry.path}>{compactArtifactSource(entry.path)}</td>
+                  <td><a className="artifact-open-action" href={entry.href} target="_blank" rel="noreferrer">Open</a></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       ) : (
         <p>Artifacts appear after benchmark generation, local execution, cloud jobs, aggregation, or AI Investigation.</p>
       )}
-    </div>
+    </section>
   );
 }
 
@@ -1896,6 +1990,32 @@ function mergeArtifactLinks(...groups: Array<Array<[string, string]>>): Array<[s
     seen.add(path);
     return true;
   });
+}
+
+function textField(record: Record<string, unknown>, key: string): string {
+  const value = record[key];
+  return typeof value === "string" ? value : "";
+}
+
+function artifactCategory(label: string): "Config" | "Data" | "Evidence" | "Metrics" | "Report" {
+  const normalized = label.toLowerCase();
+  if (/report|investigation|summary/.test(normalized)) return "Report";
+  if (/metric|leaderboard|result|score/.test(normalized)) return "Metrics";
+  if (/evidence|endpoint|job|log|stdout|response/.test(normalized)) return "Evidence";
+  if (/manifest|request|config|attack/.test(normalized)) return "Config";
+  return "Data";
+}
+
+function artifactFormat(path: string): string {
+  const filename = path.split(/[/?#]/).filter(Boolean).at(-1) ?? "";
+  const extension = filename.includes(".") ? filename.split(".").at(-1) : null;
+  return extension ? extension.toUpperCase() : "FILE";
+}
+
+function compactArtifactSource(path: string): string {
+  if (path.startsWith("Experiment ")) return path;
+  const parts = path.split("/").filter(Boolean);
+  return parts.slice(-2).join("/") || path;
 }
 
 function workflowStepLockedReason(step: number): string {

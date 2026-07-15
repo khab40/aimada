@@ -2,9 +2,10 @@ from hashlib import sha256
 from typing import Any, Literal, Protocol
 
 from pydantic import BaseModel, Field
+from app.scenarios.catalog import SCENARIO_LABELS, ScenarioType
 
 
-ManipulationType = Literal["spoofing", "layering", "wash_trading", "quote_stuffing"]
+ManipulationType = Literal["spoofing_like_wall", "layering_like", "quote_stuffing", "liquidity_evaporation"]
 ScenarioDifficulty = Literal["easy", "medium", "hard", "adversarial"]
 LiquidityRegime = Literal["thin", "normal", "deep"]
 VolatilityRegime = Literal["low", "medium", "high"]
@@ -12,7 +13,7 @@ ScenarioEventType = Literal["place_order", "cancel_order", "trade", "quote_updat
 
 
 class MarketAbuseScenarioGenerationRequest(BaseModel):
-    manipulation_type: ManipulationType = "spoofing"
+    manipulation_type: ManipulationType = "spoofing_like_wall"
     difficulty: ScenarioDifficulty = "medium"
     symbol: str = Field(default="AIMD", min_length=1, max_length=16)
     duration_ticks: int = Field(default=120, ge=30, le=600)
@@ -210,7 +211,7 @@ def mock_response(request: MarketAbuseScenarioGenerationRequest, *, reason: str)
 
 def project_attack_scenario(scenario: CanonicalMarketAbuseScenario) -> dict[str, Any]:
     attack_type = _attack_type_for_projection(scenario.manipulation_type)
-    target_side = "both" if scenario.manipulation_type in {"layering", "wash_trading"} else "sell"
+    target_side = "both" if scenario.manipulation_type in {"layering_like", "liquidity_evaporation"} else "sell"
     real_trade_side = "buy" if target_side != "buy" else "sell"
     return {
         "id": scenario.scenario_id,
@@ -251,26 +252,26 @@ def _events_for(
     agent_id: str,
     start_tick: int,
 ) -> list[ScenarioEvent]:
-    side: Literal["buy", "sell"] = "buy" if request.manipulation_type in {"spoofing", "wash_trading"} else "sell"
+    side: Literal["buy", "sell"] = "buy" if request.manipulation_type == "spoofing_like_wall" else "sell"
     base_price = 100.0 + (_stable_seed(request) % 250) / 100.0
     size = 250.0 if request.liquidity_regime == "thin" else 500.0 if request.liquidity_regime == "normal" else 800.0
     spread = 0.05 if request.volatility_regime == "low" else 0.15 if request.volatility_regime == "medium" else 0.35
     order_id = f"ord-{scenario_id}-{start_tick}"
     templates = {
-        "spoofing": [
+        "spoofing_like_wall": [
             ("place_order", "wall_placed", "Place large visible synthetic liquidity wall.", order_id, side, size),
             ("cancel_order", "wall_cancelled", "Cancel wall before execution.", order_id, side, size),
             ("trade", "incident_confirmed", "Submit small opposite-side trade after book reaction.", None, "sell" if side == "buy" else "buy", size / 8),
         ],
-        "layering": [
+        "layering_like": [
             ("place_order", "pressure_phase", "Layer synthetic orders across adjacent price levels.", order_id, side, size / 2),
             ("place_order", "pressure_phase", "Add second layer to deepen visible imbalance.", f"{order_id}-b", side, size / 3),
             ("cancel_order", "cancelled", "Cancel layered orders as price pressure appears.", order_id, side, size / 2),
         ],
-        "wash_trading": [
-            ("trade", "pressure_phase", "Cross synthetic accounts inside simulator labels.", None, "buy", size / 10),
-            ("trade", "pressure_phase", "Reverse synthetic cross-trade to preserve net position.", None, "sell", size / 10),
-            ("quote_update", "incident_confirmed", "Mark repeated self-crossing pattern for detector review.", None, None, None),
+        "liquidity_evaporation": [
+            ("quote_update", "pressure_phase", "Thin visible depth across the top three book levels.", None, None, None),
+            ("quote_update", "pressure_phase", "Maintain reduced two-sided top-of-book liquidity.", None, None, None),
+            ("quote_update", "incident_confirmed", "Widen the synthetic spread after depth collapse.", None, None, None),
         ],
         "quote_stuffing": [
             ("place_order", "pressure_phase", "Burst submit synthetic quotes at high message rate.", order_id, side, size / 10),
@@ -323,7 +324,7 @@ def _scenario_events(value: Any, fallback: list[ScenarioEvent], *, scenario_id: 
             "type": item.get("type") or item.get("event_type") or "quote_update",
             "scenario_id": item.get("scenario_id") or scenario_id,
             "scenario_name": item.get("scenario_name") or "AI generated scenario",
-            "scenario_family": item.get("scenario_family") or item.get("manipulation_type") or "spoofing",
+            "scenario_family": item.get("scenario_family") or item.get("manipulation_type") or "spoofing_like_wall",
             "stage": item.get("stage") or "pressure_phase",
             "message": item.get("message") or "Synthetic scenario event.",
         }
@@ -396,7 +397,7 @@ def _stable_seed(request: MarketAbuseScenarioGenerationRequest) -> int:
 
 def _manipulation_type(value: Any, fallback: ManipulationType) -> ManipulationType:
     normalized = str(value or fallback).lower().replace("-", "_").replace(" ", "_")
-    if normalized in {"spoofing", "layering", "wash_trading", "quote_stuffing"}:
+    if normalized in {"spoofing_like_wall", "layering_like", "quote_stuffing", "liquidity_evaporation"}:
         return normalized  # type: ignore[return-value]
     return fallback
 
@@ -437,29 +438,24 @@ def _risk_score(difficulty: ScenarioDifficulty, volatility: VolatilityRegime) ->
 
 def _signals(manipulation_type: ManipulationType) -> list[str]:
     return {
-        "spoofing": ["wall_size_ratio", "cancel_to_trade_ratio", "order_lifetime_ms"],
-        "layering": ["depth_imbalance", "rapid_cancel_cluster", "multi_level_pressure"],
-        "wash_trading": ["self_trade_ratio", "round_trip_volume", "matched_agent_pairs"],
+        "spoofing_like_wall": ["wall_size_ratio", "cancel_to_trade_ratio", "order_lifetime_ms"],
+        "layering_like": ["depth_imbalance", "rapid_cancel_cluster", "multi_level_pressure"],
         "quote_stuffing": ["message_rate", "cancel_to_trade_ratio", "spread_widening"],
+        "liquidity_evaporation": ["depth_change_pct", "spread_bps", "replenishment_rate"],
     }[manipulation_type]
 
 
 def _agent_id(manipulation_type: ManipulationType) -> str:
     return {
-        "spoofing": "AI-SPOOF-001",
-        "layering": "AI-LAYER-001",
-        "wash_trading": "AI-WASH-001",
+        "spoofing_like_wall": "AI-SPOOF-001",
+        "layering_like": "AI-LAYER-001",
         "quote_stuffing": "AI-STUFF-001",
+        "liquidity_evaporation": "AI-LIQUIDITY-001",
     }[manipulation_type]
 
 
 def _title(manipulation_type: ManipulationType, symbol: str) -> str:
-    return {
-        "spoofing": f"{symbol} Spoofing Pressure Near Mid",
-        "layering": f"{symbol} Layered Depth Pressure",
-        "wash_trading": f"{symbol} Wash Trading Loop",
-        "quote_stuffing": f"{symbol} Quote Stuffing Burst",
-    }[manipulation_type]
+    return f"{symbol} {SCENARIO_LABELS[ScenarioType(manipulation_type)]}"
 
 
 def _description(request: MarketAbuseScenarioGenerationRequest) -> str:
@@ -479,23 +475,21 @@ def _explanation(request: MarketAbuseScenarioGenerationRequest) -> str:
 
 def _replay_route(manipulation_type: ManipulationType) -> str:
     return {
-        "spoofing": "spoofing-like",
-        "layering": "layering-like",
-        "quote_stuffing": "quote-stuffing",
-        "wash_trading": "mixed",
+        "spoofing_like_wall": "spoofing_like_wall",
+        "layering_like": "layering_like",
+        "quote_stuffing": "quote_stuffing",
+        "liquidity_evaporation": "liquidity_evaporation",
     }[manipulation_type]
 
 
-def _attack_type_for_projection(manipulation_type: ManipulationType) -> Literal["spoofing", "layering", "quote_stuffing", "mixed"]:
-    if manipulation_type == "wash_trading":
-        return "mixed"
-    return manipulation_type  # type: ignore[return-value]
+def _attack_type_for_projection(manipulation_type: ManipulationType) -> ManipulationType:
+    return manipulation_type
 
 
 def _objective_for(manipulation_type: ManipulationType) -> str:
     return {
-        "spoofing": "Distort visible liquidity and measure detector response",
-        "layering": "Stress multi-level depth imbalance detectors",
-        "wash_trading": "Preserve synthetic ground truth for self-trade detector review",
+        "spoofing_like_wall": "Distort visible liquidity and measure detector response",
+        "layering_like": "Stress multi-level depth imbalance detectors",
         "quote_stuffing": "Stress message-rate and cancellation detectors",
+        "liquidity_evaporation": "Stress depth-collapse and spread-widening detectors",
     }[manipulation_type]

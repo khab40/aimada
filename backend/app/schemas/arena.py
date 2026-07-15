@@ -2,14 +2,7 @@ from enum import StrEnum
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
-
-
-class ScenarioType(StrEnum):
-    SPOOFING_LIKE_WALL = "spoofing_like_wall"
-    LAYERING_LIKE = "layering_like"
-    QUOTE_STUFFING = "quote_stuffing"
-    LIQUIDITY_EVAPORATION = "liquidity_evaporation"
-    PANIC_SELLOFF = "panic_selloff"
+from app.scenarios.catalog import ScenarioType
 
 
 class SimulationStatus(StrEnum):
@@ -31,7 +24,7 @@ class RedTeamGoal(StrEnum):
 
 
 class RedTeamScenarioGenerateRequest(BaseModel):
-    scenario_family: str
+    scenario_family: ScenarioType
     market_regime: MarketRegime
     goal: RedTeamGoal
     constraints: dict[str, Any] = Field(default_factory=dict)

@@ -54,8 +54,7 @@ export function AboutPage() {
           <ul>
             <li><strong>Spoofing-like pressure:</strong> fake visible liquidity can make other participants believe supply or demand is stronger than it is.</li>
             <li><strong>Layering-like pressure:</strong> repeated stacked orders can distort the apparent shape of the book across several price levels.</li>
-            <li><strong>Quote stuffing-like bursts:</strong> rapid message flow can make the market harder to read and increase surveillance and infrastructure load.</li>
-            <li><strong>Momentum ignition-like moves:</strong> a burst of activity can try to trigger follow-on orders, stops, or reactive algorithms.</li>
+            <li><strong>Quote Stuffing Burst:</strong> rapid message flow can make the market harder to read and increase surveillance and infrastructure load.</li>
           </ul>
           <p>
             In the educational narrative, an attacker may seek illegal profit by inducing a price move, trading on the

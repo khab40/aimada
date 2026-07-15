@@ -4,7 +4,7 @@ from app.scenarios.base import ScenarioBase
 
 
 class LiquidityEvaporationScenario(ScenarioBase):
-    scenario_name = "liquidity-evaporation"
+    scenario_name = "liquidity_evaporation"
     scenario_family = "liquidity_evaporation"
     agent_id = "SHOCK_01"
 

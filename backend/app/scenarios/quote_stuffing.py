@@ -3,8 +3,8 @@ from app.schemas.arena import AgentEvent, AttackStage
 from app.scenarios.base import ScenarioBase
 
 
-class QuoteStuffingLikeScenario(ScenarioBase):
-    scenario_name = "quote-stuffing"
+class QuoteStuffingScenario(ScenarioBase):
+    scenario_name = "quote_stuffing"
     scenario_family = "quote_stuffing"
     agent_id = "ABUSER_03"
 
@@ -16,7 +16,7 @@ class QuoteStuffingLikeScenario(ScenarioBase):
         if stage == AttackStage.WALL_CANCELLED:
             return [self._event(tick, "quote stuffing burst stopped", stage=stage)]
         if stage == AttackStage.INCIDENT_CONFIRMED:
-            return [self._event(tick, "quote-stuffing-like incident confirmed", stage=stage, confidence=0.94)]
+            return [self._event(tick, "quote stuffing incident confirmed", stage=stage, confidence=0.94)]
         return super().on_stage_enter(book, tick, stage)
 
     def on_tick(self, book: OrderBook, tick: int) -> list[AgentEvent]:

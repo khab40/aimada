@@ -12,18 +12,20 @@ const eventLabels: Record<AgentEventKind, string> = {
 };
 
 export function AgentTimeline({
+  activeAgents = [],
   events,
   layout = "full",
   limit = layout === "compact" ? 12 : 20,
   title = "Agent Timeline"
 }: {
+  activeAgents?: string[];
   events: AgentEvent[];
   layout?: AgentTimelineLayout;
   limit?: number;
   title?: string;
 }) {
   const latestEvents = [...events].sort((left, right) => (
-    Number(right.timestamp ?? 0) - Number(left.timestamp ?? 0)
+    eventTick(right) - eventTick(left)
   )).slice(0, limit);
 
   return (
@@ -31,6 +33,14 @@ export function AgentTimeline({
       <div className="section-heading-row">
         <h2>{title}</h2>
         <span>Last {latestEvents.length} events</span>
+      </div>
+      <div className="agent-timeline-context" role="note">
+        <div>
+          <span>Clock · simulation ticks</span>
+          <span>Venue · synthetic LOB</span>
+          <span>Runtime · {getRuntimeLabel(events, activeAgents)}</span>
+        </div>
+        <p>Software-agent actions inside the simulator. No orders are routed to a real exchange.</p>
       </div>
       {!latestEvents.length ? <div className="empty-state">No timeline events yet.</div> : null}
       <ul className="event-tape">
@@ -40,9 +50,12 @@ export function AgentTimeline({
             <li className={`event-tape-item ${kind}`} key={`${event.timestamp ?? "event"}-${index}`}>
               <div className="event-tape-topline">
                 <span className={`event-badge ${kind}`}>{eventLabels[kind]}</span>
-                <time>{formatTimestamp(event.timestamp)}</time>
+                <time title="Simulation tick">{formatSimulationTick(eventTick(event))}</time>
               </div>
-              <strong>{event.agent_id ?? event.aggressor_agent_id ?? "exchange"}</strong>
+              <div className="event-agent-row">
+                <strong>{event.agent_id ?? event.aggressor_agent_id ?? "exchange"}</strong>
+                <span className="event-runtime-source">{getEventSourceLabel(event, kind)}</span>
+              </div>
               {layout === "full" ? <small>{formatEvent(event)}</small> : null}
             </li>
           );
@@ -83,6 +96,37 @@ function formatScenario(name: string) {
     .join(" ");
 }
 
-function formatTimestamp(timestamp?: number) {
-  return timestamp ? new Date(timestamp).toLocaleTimeString() : "time pending";
+function formatSimulationTick(timestamp?: number) {
+  return typeof timestamp === "number" && Number.isFinite(timestamp)
+    ? `T${Math.max(0, Math.floor(timestamp))}`
+    : "tick pending";
+}
+
+function eventTick(event: AgentEvent) {
+  return Number(event.tick ?? event.timestamp ?? 0);
+}
+
+function getRuntimeLabel(events: AgentEvent[], activeAgents: string[]) {
+  const runnerConfigured = activeAgents.some((agentId) => agentId.startsWith("remote_runner:"));
+  const runnerActive = events.some((event) => event.runtime_source === "agent_runner" || event.agent_id?.startsWith("REMOTE_"));
+  if (runnerActive) {
+    return "backend + Agent Runner";
+  }
+  return runnerConfigured ? "backend + Agent Runner configured" : "backend simulator";
+}
+
+function getEventSourceLabel(event: AgentEvent, kind: AgentEventKind) {
+  if (event.runtime_source === "agent_runner" || event.agent_id?.startsWith("REMOTE_")) {
+    return "Agent Runner";
+  }
+  if (kind === "red_team") {
+    return "Scenario engine";
+  }
+  if (kind === "detector") {
+    return "Detector engine";
+  }
+  if (kind === "nebius") {
+    return "Nebius AI";
+  }
+  return "Backend agent";
 }

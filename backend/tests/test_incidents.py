@@ -38,7 +38,7 @@ def test_runtime_health_uses_live_probe_results_without_ready_defaults() -> None
 def test_incident_is_created_when_detector_crosses_threshold() -> None:
     engine = SimulationEngine()
 
-    engine.launch_scenario("quote-stuffing")
+    engine.launch_scenario("quote_stuffing")
     for _ in range(5):
         state = engine.step()
 
@@ -53,7 +53,7 @@ def test_incident_is_created_when_detector_crosses_threshold() -> None:
 def test_incident_creation_is_deduplicated_per_scenario_detector() -> None:
     engine = SimulationEngine()
 
-    engine.launch_scenario("quote-stuffing")
+    engine.launch_scenario("quote_stuffing")
     for _ in range(8):
         state = engine.step()
 
@@ -67,7 +67,7 @@ def test_incident_creation_is_deduplicated_per_scenario_detector() -> None:
 def test_incident_lookup_and_mock_explanation() -> None:
     async def run() -> None:
         engine = SimulationEngine()
-        engine.launch_scenario("quote-stuffing")
+        engine.launch_scenario("quote_stuffing")
         for _ in range(5):
             engine.step()
 
@@ -89,7 +89,7 @@ def test_incident_lookup_and_mock_explanation() -> None:
 def test_nebius_client_posts_structured_incident_evidence(monkeypatch: Any) -> None:
     async def run() -> None:
         engine = SimulationEngine()
-        engine.launch_scenario("quote-stuffing")
+        engine.launch_scenario("quote_stuffing")
         for _ in range(5):
             engine.step()
 
@@ -153,7 +153,7 @@ def test_nebius_client_posts_structured_incident_evidence(monkeypatch: Any) -> N
 def test_compact_replay_payload_contains_bounded_market_context() -> None:
     async def run() -> None:
         engine = SimulationEngine()
-        engine.launch_scenario("quote-stuffing")
+        engine.launch_scenario("quote_stuffing")
         for _ in range(5):
             engine.step()
 
@@ -179,7 +179,7 @@ def test_compact_replay_payload_contains_bounded_market_context() -> None:
 def test_incident_explanation_result_is_persisted(tmp_path: Any) -> None:
     async def run() -> None:
         engine = SimulationEngine(store=LocalStore(tmp_path))
-        engine.launch_scenario("quote-stuffing")
+        engine.launch_scenario("quote_stuffing")
         for _ in range(5):
             engine.step()
 
@@ -225,7 +225,7 @@ def test_nebius_client_generates_mock_red_team_scenario_without_endpoint() -> No
 def test_nebius_client_generates_mock_market_abuse_scenario_without_endpoint() -> None:
     scenario = NebiusClient(market_abuse_scenario_url="").generate_market_abuse_scenario(
         MarketAbuseScenarioGenerationRequest(
-            manipulation_type="layering",
+            manipulation_type="layering_like",
             difficulty="hard",
             symbol="NBS",
             duration_ticks=180,
@@ -237,13 +237,13 @@ def test_nebius_client_generates_mock_market_abuse_scenario_without_endpoint() -
     projection = project_attack_scenario(scenario)
 
     assert scenario.mode == "mock"
-    assert scenario.manipulation_type == "layering"
-    assert scenario.ground_truth.label == "layering"
+    assert scenario.manipulation_type == "layering_like"
+    assert scenario.ground_truth.label == "layering_like"
     assert scenario.events
-    assert scenario.replay["route"] == "layering-like"
+    assert scenario.replay["route"] == "layering_like"
     assert projection["id"] == scenario.scenario_id
-    assert projection["attackType"] == "layering"
-    assert projection["source"]["ground_truth"]["label"] == "layering"
+    assert projection["attackType"] == "layering_like"
+    assert projection["source"]["ground_truth"]["label"] == "layering_like"
 
 
 def test_nebius_client_uses_compatible_scenario_route_when_specialized_route_is_missing(monkeypatch: Any) -> None:
@@ -290,7 +290,7 @@ def test_nebius_client_uses_deployed_orderbook_route_when_scenario_routes_are_mi
         calls.append(url)
         if not url.endswith("/orderbook-alert"):
             raise HTTPError(url, 404, "Not Found", None, None)
-        assert payload["scenario_hint"] == "spoofing"
+        assert payload["scenario_hint"] == "spoofing_like_wall"
         return {
             "confidence": 0.9,
             "detected_pattern": "Spoofing",
@@ -342,6 +342,7 @@ def test_nebius_endpoint_base_url_derives_backend_routes(monkeypatch: Any) -> No
     monkeypatch.setenv("NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE", "")
     monkeypatch.setenv("NEBIUS_JOB_STATUS_COMMAND_TEMPLATE", "")
     monkeypatch.setenv("NEBIUS_JOB_OUTPUT_URI", "")
+    monkeypatch.setenv("ARENA_REMOTE_AGENT_URLS", "")
     get_settings.cache_clear()
 
     captured: dict[str, Any] = {}
@@ -397,6 +398,37 @@ def test_nebius_endpoint_base_url_derives_backend_routes(monkeypatch: Any) -> No
         assert captured["authorization"] == "Bearer test-token"
     finally:
         get_settings.cache_clear()
+
+
+def test_runner_health_is_independent_from_serverless_jobs(monkeypatch: Any) -> None:
+    monkeypatch.setenv("ARENA_REMOTE_AGENT_URLS", "https://runner.example")
+    get_settings.cache_clear()
+
+    class FakeRunnerResponse:
+        def __enter__(self) -> "FakeRunnerResponse":
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+        def read(self) -> bytes:
+            return json.dumps({"status": "ok", "runner_id": "cloud-1", "agent_count": 24}).encode("utf-8")
+
+    def fake_urlopen(request: Any, timeout: float) -> FakeRunnerResponse:
+        assert request.full_url == "https://runner.example/health"
+        assert request.get_header("Authorization") is None
+        assert timeout > 0
+        return FakeRunnerResponse()
+
+    monkeypatch.setattr("app.nebius.client.urlopen", fake_urlopen)
+    try:
+        health = NebiusClient(api_key="endpoint-secret").runner_health()
+    finally:
+        get_settings.cache_clear()
+
+    assert health["status"] == "ok"
+    assert health["healthy_count"] == 1
+    assert health["agent_count"] == 24
 
 
 def test_nebius_job_health_requires_successful_live_probe(monkeypatch: Any) -> None:
@@ -676,4 +708,3 @@ def test_local_mock_client_disables_every_cloud_endpoint() -> None:
     assert client.investigation_report_url == ""
     assert client.investigation_team_url == ""
     assert client.market_abuse_scenario_url == ""
-

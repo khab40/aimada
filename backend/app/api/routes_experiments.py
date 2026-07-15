@@ -34,6 +34,7 @@ from app.nebius.client import NebiusClient, local_mock_nebius_client
 from app.schemas.arena import AttackTrackerState, BenchmarkResult
 from app.storage.history import append_history_artifact, history_window
 from app.storage.local_store import LocalStore
+from app.scenarios.catalog import BENCHMARK_SCENARIOS, SCENARIO_LAUNCH_ENDPOINTS, ScenarioType
 
 router = APIRouter(prefix="/api/experiments", tags=["experiments"])
 
@@ -911,30 +912,18 @@ def _matching_jsonl_tail(
 
 
 def _scenario_to_route_name(value: str) -> str:
-    normalized = _normalize_scenario(value)
-    mapping = {
-        "spoofing": "spoofing-like",
-        "layering": "layering-like",
-        "quote_stuffing": "quote-stuffing",
-        "liquidity_evaporation": "liquidity-evaporation",
-    }
-    return mapping.get(normalized, "spoofing-like")
+    return _normalize_scenario(value)
 
 
 def _scenario_launch_endpoint(value: str) -> str:
-    return f"/api/scenarios/{_scenario_to_route_name(value)}"
+    return SCENARIO_LAUNCH_ENDPOINTS[ScenarioType(_normalize_scenario(value))]
 
 
 def _normalize_scenario(value: str) -> str:
     normalized = value.lower().replace("-", "_").replace(" ", "_")
-    mapping = {
-        "spoofing_like": "spoofing",
-        "spoofing_like_wall": "spoofing",
-        "layering_like": "layering",
-        "quote_stuffing_like": "quote_stuffing",
-        "liquidity_shock": "liquidity_evaporation",
-    }
-    return mapping.get(normalized, normalized)
+    if normalized not in BENCHMARK_SCENARIOS:
+        raise ValueError(f"unsupported scenario: {value}")
+    return normalized
 
 
 def _detector_set(value: str) -> list[str]:
@@ -949,10 +938,10 @@ def _detector_set(value: str) -> list[str]:
 
 def _read_benchmark_results(metrics_path: Path) -> list[BenchmarkResult]:
     expected_detectors = {
-        "spoofing-like": "spoofing_like",
-        "layering-like": "layering_like",
-        "quote-stuffing": "quote_stuffing",
-        "liquidity-evaporation": "liquidity_shock",
+        "spoofing_like_wall": "spoofing_like",
+        "layering_like": "layering_like",
+        "quote_stuffing": "quote_stuffing",
+        "liquidity_evaporation": "liquidity_shock",
     }
     rows: list[dict[str, str]] = []
     with metrics_path.open("r", encoding="utf-8", newline="") as handle:

@@ -149,7 +149,7 @@ def test_structured_episode_summary_is_promoted_into_the_prompt_contract() -> No
             "trades": [{"trade_id": "T1", "quantity": 2.0}],
             "market_metrics": {"cancel_to_trade_ratio": 7.0},
             "episode_summary": {
-                "simulation_metadata": {"episode_id": "INC-42", "scenario_family": "spoofing"},
+                "simulation_metadata": {"episode_id": "INC-42", "scenario_family": "spoofing_like_wall"},
                 "market_regime": {"liquidity": "thin", "volatility": "low"},
                 "instrument": {"symbol": "AIMD"},
                 "event_timeline": [{"sequence": 1, "event": "wall placed"}],
