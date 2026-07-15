@@ -144,29 +144,51 @@ Using both products demonstrates more than a single inference request. The Endpo
 
 LOB Arena now demonstrates an end-to-end workflow from synthetic scenario generation to reviewable investigation and benchmark evidence.
 
-The initial six-Job production set exposed an evidence-quality bug: six different seeds were stored in experiment metadata but were not forwarded into Job arguments. After fixing the command path and seed derivation, I reran the complete six-Job set in Nebius:
+The corrected production benchmark consists of six completed Nebius Serverless Job executions.
 
-| Workflow | Result |
+Each experiment used a distinct base seed and generated 200 independently seeded workloads. Across the full production set, LOB Arena processed:
+
+- 6 Nebius Serverless Jobs
+- 1,200 synthetic workloads
+- 148,958 simulation events
+- 1,200 unique derived run seeds
+- zero seed overlap between experiments
+- six distinct event-stream SHA-256 digests
+- six distinct detector-metrics SHA-256 digests
+
+The aggregate detector results were:
+
+| Metric | Result |
 |---|---:|
-| New Nebius Serverless Jobs | 6 completed |
-| Synthetic workloads | 1,200: 960 attacks and 240 normal controls |
-| Generated order-book events | 148,958 |
-| Seed verification | 1,200 unique run seeds; zero cross-experiment overlap |
-| Artifact verification | 6 distinct event digests; 6 distinct metric digests; 42 Job outputs synchronized |
-| Measured aggregate Job lifecycle | 1,308.436 seconds |
-| Aggregate confusion counts | TP 710; FN 250; FP 0; TN 240 |
-| Aggregate precision / recall / F1 | 1.000 / 0.740 / 0.850 |
-| Real L40S/vLLM Endpoint calls | 25 completed; 0 fallbacks; 25 S3 uploads |
-| Endpoint usage | 25,084 prompt + 13,345 completion = 38,429 tokens |
-| Structured investigations | 17/17 validated and preserved; P50 Endpoint latency 27.141 s |
+| True positives | 710 |
+| False negatives | 250 |
+| False positives | 0 |
+| True negatives | 240 |
+| Precision | 1.000 |
+| Recall | 0.740 |
+| F1 | 0.850 |
+| Specificity | 1.000 |
+| False-positive rate | 0.000 |
+
+Spoofing-like Wall and Quote Stuffing Burst achieved recall of 1.0. Layering-like Pattern achieved 230 detections out of 240 workloads, for recall of 0.958.
+
+Liquidity Evaporation produced 240 false negatives and recall of 0.0. This is the principal benchmark finding: the detector suite performs strongly on three scenario families but has a complete blind spot for Liquidity Evaporation.
+
+This result demonstrates the purpose of LOB Arena. The platform is not designed merely to produce favorable scores; it is designed to expose detector weaknesses under reproducible, explicitly labeled workloads.
+
+The six Jobs produced 42 synchronized output artifacts. Their measured lifecycle time was 1,308.436 seconds in total, including queueing, status polling, and artifact collection. This is not equivalent to provider-billed compute time.
+
+Cloud pricing rates were not configured for the corrected production set, so no dollar cost is claimed for those six Jobs.
+
+The initial six-Job production set had exposed an evidence-quality bug: different seeds were stored in experiment metadata but were not forwarded into Job arguments. That repeated set remains audit history only and is not used in these benchmark claims.
+
+### Endpoint and manual UI evidence
+
+The production Endpoint evidence adds 25 completed L40S/vLLM calls: 17 Investigation Team requests, four investigation reports, and four scenario generations. All 25 completed without fallback and were uploaded to S3. They used 25,084 prompt tokens and 13,345 completion tokens, 38,429 tokens total; all 17 Investigation Team responses preserved the validated structured assessment, and P50 latency was 27.141 seconds.
 
 I then ran the workflow manually through the Control Panel. That session completed a separate 100-workload Nebius Job with 100 unique derived seeds and 12,414 events. Its matched confusion counts were TP 60, FN 20, FP 0, and TN 20: precision 1.000, recall 0.750, and F1 0.857. The same session made 12 real Endpoint calls (16,279 tokens), including two schema-validated Investigation Team responses and seven JSON investigation reports; all 12 evidence records were uploaded to S3. The [sanitized manual UI bundle](../evidence/manual-ui-2026-07-15/README.md) preserves the metrics and execution boundary.
 
 The manual result reinforced the main detector finding: Spoofing-like Wall, Layering-like Pattern, and Quote Stuffing Burst were detected in all 20 matched workloads, while Liquidity Evaporation was missed in all 20. The Polished E2E local stages also completed, but its cloud child lookup returned `NotFound`; I do not count that child as a completed Job. The independently submitted 100-workload managed experiment is the cloud-completion evidence.
-
-Pricing rates were not configured in the application for this evidence session, so the UI reports measured usage without inventing a dollar estimate. The lifecycle measurement includes queue, status, and collection overhead and is not presented as provider-billed compute time.
-
-The corrected Jobs used six base seeds and 1,200 disjoint derived run seeds. They produced six distinct event-stream hashes and six distinct metrics hashes. The earlier repeated set remains audit history only and is not used in the performance claim.
 
 The detector metrics validate the synthetic evaluation and execution contracts. They should not be interpreted as claims about production-market surveillance accuracy.
 
