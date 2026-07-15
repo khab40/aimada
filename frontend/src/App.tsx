@@ -3,13 +3,10 @@ import { useEffect, useRef, useState } from "react";
 import { BrowserRouter, Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
 import "./App.css";
 import { AboutPage } from "@/pages/AboutPage";
-import { useAuth } from "@/auth/useAuth";
-import { getNebiusStatus, type ArenaRole } from "@/api/client";
+import { getNebiusStatus } from "@/api/client";
 import { ArenaPage } from "@/pages/ArenaPage";
 import { AttackScenarioGeneratorPage } from "@/pages/AttackScenarioGeneratorPage";
 import { NebiusControlPanelPage } from "@/pages/NebiusControlPanelPage";
-import { featureFlags } from "@/featureFlags";
-import { productRoleLabel } from "@/platform/identity";
 import {
   getStoredRuntimeMode,
   runtimeComponents,
@@ -26,8 +23,8 @@ const disclaimer =
 type ThemePreference = "system" | "light" | "dark";
 type ResolvedTheme = "light" | "dark";
 
-const THEME_PREFERENCE_KEY = "aimada.themePreference";
-const SIDEBAR_WIDTH_KEY = "aimada.sidebarWidth";
+const THEME_PREFERENCE_KEY = "lob-arena.themePreference";
+const SIDEBAR_WIDTH_KEY = "lob-arena.sidebarWidth";
 const SIDEBAR_MIN_WIDTH = 220;
 const SIDEBAR_MAX_WIDTH = 420;
 const SIDEBAR_DEFAULT_WIDTH = 292;
@@ -40,7 +37,6 @@ export function App() {
   const [themePreference, setThemePreference] = useState<ThemePreference>(() => getStoredThemePreference());
   const [systemTheme, setSystemTheme] = useState<ResolvedTheme>(() => getSystemTheme());
   const resolvedTheme = themePreference === "system" ? systemTheme : themePreference;
-  const visibleSidebarItems = sidebarItems.filter((item) => item.primary || featureFlags.enableLegacyPages);
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
@@ -116,13 +112,12 @@ export function App() {
           </div>
 
           <nav className="side-nav" aria-label="Main screens">
-            {visibleSidebarItems.map((item) => (
+            {sidebarItems.map((item) => (
               <SidebarLink
                 icon={item.icon}
                 key={item.to}
                 label={item.label}
                 shortLabel={item.shortLabel}
-                team={item.team}
                 to={item.to}
               />
             ))}
@@ -152,7 +147,6 @@ export function App() {
               preference={themePreference}
               resolvedTheme={resolvedTheme}
             />
-            {featureFlags.enableGoogleAuth ? <IdentityPanel /> : null}
           </header>
           <WorkspaceBanner />
 
@@ -163,7 +157,6 @@ export function App() {
             <Route path="/nebius" element={<NebiusControlPanelPage />} />
             <Route path="/about" element={<AboutPage />} />
           </Routes>
-          <ArenaSplashOverlay />
         </section>
       </main>
     </BrowserRouter>
@@ -234,66 +227,6 @@ function getSystemTheme(): ResolvedTheme {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
-const SPLASH_HIDE_KEY = "aimada.hideArenaSplash";
-const oneSlideUrl = "/img/ai_market_abuse_arena_one_slide.jpg";
-
-function ArenaSplashOverlay() {
-  const location = useLocation();
-  const { session } = useAuth();
-  const [dismissedSessionId, setDismissedSessionId] = useState<string | null>(null);
-  const [dontShowAgain, setDontShowAgain] = useState(false);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const sessionId = session?.session_id ?? null;
-    const hidden = window.localStorage.getItem(SPLASH_HIDE_KEY) === "true";
-    const demoLaunch = new URLSearchParams(location.search).has("demo");
-    setDontShowAgain(hidden);
-    setVisible(Boolean(sessionId && location.pathname === "/arena" && !demoLaunch && !hidden && dismissedSessionId !== sessionId));
-  }, [dismissedSessionId, location.pathname, location.search, session?.session_id]);
-
-  if (!visible || !session) {
-    return null;
-  }
-
-  function closeSplash() {
-    if (dontShowAgain) {
-      window.localStorage.setItem(SPLASH_HIDE_KEY, "true");
-    }
-    setDismissedSessionId(session?.session_id ?? null);
-    setVisible(false);
-  }
-
-  return (
-    <div className="arena-splash-backdrop" role="presentation">
-      <section aria-labelledby="arena-splash-title" aria-modal="true" className="arena-splash-panel" role="dialog">
-        <div className="arena-splash-copy">
-          <h2 id="arena-splash-title">LOB Arena</h2>
-          <p>
-            Adversarial synthetic market simulation for surveillance benchmarking.
-          </p>
-        </div>
-        <img
-          alt="One-slide overview of the LOB Arena workflow"
-          className="arena-splash-image"
-          src={oneSlideUrl}
-        />
-        <div className="arena-splash-actions">
-          <label>
-            <input
-              checked={dontShowAgain}
-              onChange={(event) => setDontShowAgain(event.target.checked)}
-              type="checkbox"
-            />
-            Don&apos;t show on next login
-          </label>
-          <button onClick={closeSplash} type="button">Enter Arena</button>
-        </div>
-      </section>
-    </div>
-  );
-}
-
 function SidebarToggleIcon({ direction }: { direction: "left" | "right" }) {
   const paths = direction === "left"
     ? ["M13 6l-5 6 5 6", "M18 6l-5 6 5 6"]
@@ -309,17 +242,15 @@ function SidebarLink({
   label,
   shortLabel,
   icon,
-  team,
   to
 }: {
   label: string;
   shortLabel: string;
   icon: AppIconName;
-  team?: "red" | "blue";
   to: string;
 }) {
   return (
-    <NavLink className={team ? `team-nav-link ${team}` : undefined} title={label} to={to}>
+    <NavLink title={label} to={to}>
       <span className="nav-short">{shortLabel}</span>
       <AppIcon name={icon} />
       <span className="nav-label">{label}</span>
@@ -327,19 +258,15 @@ function SidebarLink({
   );
 }
 
-type AppIconName = "arena" | "attack" | "cloud" | "about";
+type AppIconName = "arena" | "cloud" | "about";
 
 type SidebarItem = {
   icon: AppIconName;
   label: string;
-  primary?: boolean;
   shortLabel: string;
-  team?: "red" | "blue";
   to: string;
-  visibleFor: ArenaRole[];
 };
 
-const allRoles: ArenaRole[] = ["observer", "attacker", "defender", "judge"];
 const workspaceBanners: Record<string, { title: string; description: string }> = {
   "/nebius": {
     title: "Command Center",
@@ -355,17 +282,15 @@ const workspaceBanners: Record<string, { title: string; description: string }> =
   }
 };
 const sidebarItems: SidebarItem[] = [
-  { icon: "cloud", label: "Command Center", primary: true, shortLabel: "CC", to: "/nebius", visibleFor: allRoles },
-  { icon: "arena", label: "Arena / Workload Generator", primary: true, shortLabel: "WG", to: "/arena", visibleFor: allRoles },
-  { icon: "about", label: "About / Docs", primary: true, shortLabel: "AD", to: "/about", visibleFor: allRoles },
-  { icon: "attack", label: "Scenario Setup", shortLabel: "SS", team: "red", to: "/attack-scenarios", visibleFor: allRoles }
+  { icon: "cloud", label: "Command Center", shortLabel: "CC", to: "/nebius" },
+  { icon: "arena", label: "Arena / Workload Generator", shortLabel: "WG", to: "/arena" },
+  { icon: "about", label: "About / Docs", shortLabel: "AD", to: "/about" }
 ];
 
 function AppIcon({ name }: { name: AppIconName }) {
   const paths: Record<AppIconName, string[]> = {
     about: ["M12 17v-5", "M12 8h.01", "M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"],
     arena: ["M4 17h16", "M6 14l3-4 3 2 4-6 2 3", "M5 5v14h14"],
-    attack: ["M4 12h10", "M10 6l6 6-6 6", "M16 4h4v4", "M16 20h4v-4"],
     cloud: ["M7 18h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.4 8.4 4.5 4.5 0 0 0 7 18Z"]
   };
   return (
@@ -447,7 +372,7 @@ function ThemeIcon({ mode }: { mode: ThemePreference | ResolvedTheme }) {
   );
 }
 
-function AuthToggleIcon({ expanded }: { expanded: boolean }) {
+function DrawerToggleIcon({ expanded }: { expanded: boolean }) {
   return (
     <svg aria-hidden="true" className="auth-toggle-mark" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
       <path d={expanded ? "M6 15l6-6 6 6" : "M6 9l6 6 6-6"} />
@@ -554,7 +479,7 @@ function RuntimePanel() {
       >
         <span aria-hidden="true">{runtime.marker}</span>
         <strong>{runtime.label}</strong>
-        <AuthToggleIcon expanded={menuOpen} />
+        <DrawerToggleIcon expanded={menuOpen} />
       </button>
       {menuOpen ? (
         <div className="runtime-drawer" role="menu">
@@ -615,64 +540,4 @@ function runtimeProbeStatus(probe: Record<string, unknown> | undefined): Runtime
 
 function runtimeStatusText(status: RuntimeStatus): string {
   return status.toLowerCase();
-}
-
-function IdentityPanel() {
-  const { busy, clearAuthError, error, lastMessage, loginWithGoogle, logout, platformUser, role, saveNow, session, workspace } = useAuth();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const accountName = platformUser.name;
-  const initial = (platformUser.name || platformUser.email || "A").trim().charAt(0).toUpperCase() || "A";
-  const connected = Boolean(session);
-
-  return (
-    <section className={`auth-panel identity-panel ${connected ? "connected" : "not-connected"} ${error ? "error" : ""}`} aria-label="User and workspace">
-      <button
-        aria-expanded={menuOpen}
-        className="auth-compact-toggle identity-chip"
-        onClick={() => setMenuOpen((value) => !value)}
-        title="User and workspace"
-        type="button"
-      >
-        <span className="auth-avatar" aria-hidden="true">{initial}</span>
-        <span className="auth-compact-copy">
-          <strong>👤 {accountName}</strong>
-          <span>{connected ? "Google connected" : "Local Demo"}</span>
-        </span>
-        <AuthToggleIcon expanded={menuOpen} />
-      </button>
-      {menuOpen ? (
-        <div className="auth-details" role="menu">
-          <div className="auth-detail-block">
-            <span>Current User</span>
-            <strong>{accountName}</strong>
-            <small>{platformUser.email}</small>
-          </div>
-          <div className="auth-detail-block">
-            <span>Workspace</span>
-            <strong>{workspace.name}</strong>
-            <small>{productRoleLabel(role)}</small>
-          </div>
-          <div className="auth-actions">
-            {connected ? (
-              <>
-                <button disabled={busy} onClick={() => void saveNow()} type="button">Save history</button>
-                <button disabled={busy} onClick={() => void logout()} type="button">Disconnect</button>
-              </>
-            ) : (
-              <button className="google-login-button" disabled={busy} onClick={() => void loginWithGoogle(role)} type="button">
-                <span className="google-icon" aria-hidden="true">G</span>
-                {busy ? "Connecting..." : "Connect Google Account"}
-              </button>
-            )}
-          </div>
-          {error ? (
-            <div className="auth-actions">
-              <span className="auth-status warning">{error}</span>
-              <button onClick={clearAuthError} type="button">Continue in Demo Mode</button>
-            </div>
-          ) : <span className="auth-status">{lastMessage ?? "Demo mode requires no login."}</span>}
-        </div>
-      ) : null}
-    </section>
-  );
 }

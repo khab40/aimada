@@ -19,7 +19,7 @@ LOB Arena is a Nebius AI Serverless-powered market surveillance platform for syn
 
 | Actor | Needs |
 | --- | --- |
-| Demo Operator | Run a reliable local or cloud-backed product demo without Google Auth. |
+| Demo Operator | Run a reliable local or cloud-backed product demo without an external identity provider. |
 | Surveillance Reviewer | Read synthetic incident explanations and evidence. |
 | Scenario Designer | Generate bounded suspicious workload scenarios. |
 | Detector Engineer | Compare detector behavior over many labeled synthetic runs. |
@@ -300,5 +300,5 @@ sequenceDiagram
 - No real market surveillance claims.
 - No trading signal generation.
 - No browser-side Nebius API key.
-- No Google Auth dependency for local demo.
+- No external authentication dependency for Local Demo.
 - No rewrite of simulator, detectors, jobs, or report pipeline.

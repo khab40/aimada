@@ -65,7 +65,7 @@ Open:
 - Backend: http://localhost:8000
 - WebSocket: ws://localhost:8000/ws/arena
 
-The default Compose path builds `agent-runner`, `backend`, and `frontend` from source. It does not require Nebius credentials, does not pull private GHCR images, and does not start GPU/vLLM work. Cloud calls use deterministic local fallback unless real Nebius mode is explicitly configured.
+The default Compose path builds `agent-runner`, `backend`, and `frontend` from source with `NEBIUS_ENDPOINT_MODE=mock`. Local Mock requires no Nebius credentials, private images, or GPU/vLLM runtime. Cloud calls use deterministic local fallback unless Nebius Cloud mode is explicitly configured.
 
 ## Recommended Demo Flow
 

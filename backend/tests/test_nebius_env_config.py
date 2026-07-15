@@ -25,6 +25,26 @@ def test_backend_settings_reads_legacy_nebius_endpoint_token(monkeypatch: Any) -
     assert settings.endpoint_token == "legacy-endpoint-token"
 
 
+def test_backend_defaults_to_mock_mode_without_nebius_cloud(monkeypatch: Any) -> None:
+    monkeypatch.delenv("NEBIUS_ENDPOINT_MODE", raising=False)
+    monkeypatch.delenv("NEBIUS_ENDPOINT_BASE_URL", raising=False)
+    monkeypatch.delenv("ENDPOINT_TOKEN", raising=False)
+    monkeypatch.delenv("NEBIUS_ENDPOINT_TOKEN", raising=False)
+
+    settings = Settings(_env_file=None)
+
+    assert settings.nebius_endpoint_mode == "mock"
+    assert settings.nebius_endpoint_base_url is None
+    assert settings.endpoint_token is None
+
+
+def test_compose_defaults_backend_to_mock_mode() -> None:
+    repo_root = Path(__file__).resolve().parents[2]
+    compose = (repo_root / "docker-compose.yml").read_text(encoding="utf-8")
+
+    assert "NEBIUS_ENDPOINT_MODE: ${NEBIUS_ENDPOINT_MODE:-mock}" in compose
+
+
 def test_backend_settings_has_no_model_gateway_config() -> None:
     settings = Settings(_env_file=None)
 
@@ -32,15 +52,12 @@ def test_backend_settings_has_no_model_gateway_config() -> None:
     assert not hasattr(settings, "nebius_model")
 
 
-def test_demo_surface_flags_default_to_reduced_demo_mode(monkeypatch: Any) -> None:
-    monkeypatch.delenv("ENABLE_GOOGLE_AUTH", raising=False)
-    monkeypatch.delenv("ENABLE_ADVANCED_ATTACK_CONTROLS", raising=False)
-    monkeypatch.delenv("ENABLE_LEGACY_PAGES", raising=False)
+def test_archived_feature_settings_are_not_active() -> None:
     settings = Settings(_env_file=None)
 
-    assert settings.enable_google_auth is False
-    assert settings.enable_advanced_attack_controls is False
-    assert settings.enable_legacy_pages is False
+    assert not hasattr(settings, "enable_google_auth")
+    assert not hasattr(settings, "enable_advanced_attack_controls")
+    assert not hasattr(settings, "enable_legacy_pages")
 
 
 def test_backend_settings_default_to_lean_local_runtime(monkeypatch: Any) -> None:

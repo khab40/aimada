@@ -132,7 +132,7 @@ const experimentScenarioOptions = [
 const initialExperimentForm: ExperimentFormState = {
   attack_count: 100,
   batch_size: 20,
-  name: "AI-MADA detector tournament",
+    name: "LOB Arena detector tournament",
   scenarios: ["normal_market", "spoofing", "layering", "quote_stuffing", "pump_and_cancel"],
   seed: 42
 };
@@ -390,7 +390,7 @@ export function NebiusControlPanelPage() {
       const created = await createManagedExperiment({
         attack_count: Math.max(1, experimentForm.attack_count),
         batch_size: Math.max(1, experimentForm.batch_size),
-        name: experimentForm.name.trim() || "AI-MADA benchmark",
+        name: experimentForm.name.trim() || "LOB Arena benchmark",
         scenarios: experimentForm.scenarios,
         seed: experimentForm.seed
       });
@@ -801,7 +801,7 @@ export function NebiusControlPanelPage() {
             <MetricBlock label="Artifacts" value={String(artifacts.length)} />
             <MetricBlock label="Replay storage" value="not reported" />
           </InfrastructureMetricGrid>
-          <p className="fallback-note">No credentials, Google login, or deployment are required in Local Demo. Benchmark results use deterministic mock data until Cloud mode is selected.</p>
+          <p className="fallback-note">No credentials or deployment are required in Local Demo. Benchmark results use deterministic mock data until Cloud mode is selected.</p>
           <UsageCostMonitor metrics={usageMetrics} />
           <div className="nebius-button-row">
             <button

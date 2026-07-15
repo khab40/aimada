@@ -352,7 +352,7 @@ Deliverables:
 - `[done]` `docs/research-notes.md`
 - `[done]` committed benchmark report and production evidence under `outputs/benchmark/`
 - `[done]` final disclaimer and safety language in README/docs/UI
-- `[done]` professional UI shell controls: collapsible Google/auth widget, compact sidebar toggle, day/night/system theme selector, and paused-state-stable Liquidity Map
+- `[done]` professional UI shell controls: compact sidebar toggle, day/night/system theme selector, and paused-state-stable Liquidity Map
 - `[done]` multiuser platform foundation with demo fallback user/workspace, global workspace/user menu, case ownership metadata, report attribution, and audit trail records.
 - `[done]` compact primary navigation: Command Center, Arena / Workload Generator, Scenario Generator, and About
 - `[done]` Command Center orchestrates endpoint status, scenario generation, AI investigation, detector tournaments, jobs, and artifacts

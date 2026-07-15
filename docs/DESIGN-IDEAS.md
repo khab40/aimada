@@ -4,17 +4,17 @@
 
 Status: `[done]`
 
-The shared UI shell includes a compact day/night/system theme selector in the sidebar controls. The selected preference is persisted locally as `aimada.themePreference`, applied through the document `data-theme` attribute, and updated when system mode follows `prefers-color-scheme`. The theme layer now covers shared panels, widget cards, status chips, order-book levels, timeline charts, Recharts tooltips, and the canvas Liquidity Map so Arena, Scenario Generator, Detection, Experiments, Nebius AI, and About screens use a coherent day/night visual language.
+The shared UI shell includes a compact day/night/system theme selector in the sidebar controls. The selected preference is persisted locally as `lob-arena.themePreference`, applied through the document `data-theme` attribute, and updated when system mode follows `prefers-color-scheme`. The theme layer now covers shared panels, widget cards, status chips, order-book levels, timeline charts, Recharts tooltips, and the canvas Liquidity Map so Arena, Scenario Generator, Detection, Experiments, Nebius AI, and About screens use a coherent day/night visual language.
 
 Follow-up polish:
 
 - Add an accessibility contrast pass once the final screenshot set is ready.
 
-## Professional Shell And Auth Widget
+## Professional Shell
 
 Status: `[done]`
 
-The shell now treats authentication and display preferences like professional product chrome rather than permanent marketing content. The Google/auth panel can collapse to a compact account control, the vertical navigation toggle is smaller and closer to browser vertical-tab controls, and the product subtitle has been removed from the shell.
+The vertical navigation toggle is compact, display preferences use professional product chrome, and the product subtitle has been removed from the shell.
 
 The Liquidity Map is also gated by simulation tick progression, so it does not animate or append frames while the arena is paused or has not started from the UI.
 
@@ -59,35 +59,6 @@ Future design work:
 - Add a UI control for baseline ladder levels, base size, and quote cap.
 - Add a drifting reference-price model for market regimes where the mid should move materially.
 - Add per-agent inventory and risk budgets so richer strategies can quote based on exposure.
-
-## 3D Market Battlefield Simulator
-
-Status: `[partial]`
-
-Create an optional visual simulator that renders the live limit order book as terrain.
-
-Core idea:
-
-- X-axis: price levels around mid-price.
-- Y-axis: simulation ticks / time.
-- Z-axis: visible liquidity volume.
-- Color / heat: imbalance, anomaly pressure, or detector confidence.
-
-In this model, normal liquidity appears as stable terrain ridges. Spoofing-like or layering-like behavior appears as sudden tall walls that form away from the mid-price valley and disappear quickly. A blue-team scanner overlay can show deterministic detector observation, while red-team markers show synthetic scenario agents.
-
-Possible product shape:
-
-- Main widget: 3D order-book canyon with bid and ask terrain on opposite sides of the mid-price valley.
-- Side panel: red-team actions, blue-team detections, spoofing probability, and evidence summary.
-- Bottom panel: replay timeline with attack start, cancellation, price move, and detection markers.
-- Toggle: 3D terrain view vs flat heatmap view.
-
-Current prototype status:
-
-- The concept is captured in `docs/3d-concept-lob.md`.
-- A detached frontend prototype exists under `frontend/src/tabs/MarketBattlefield3D/`.
-- The prototype adapts the same arena exchange ticker, order book, detector scores, incidents, and agent events into battlefield frames.
-- It is intentionally detached from the main navigation until the core Arena and Lab flows are stable enough to support it as a polished demo surface.
 
 
 ## ABIDES inspired

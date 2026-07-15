@@ -33,63 +33,17 @@ describe("LOB Arena branding contract", () => {
       "A multi-agent platform that generates realistic synthetic limit-order-book activity and benchmarks market-surveillance systems against adaptive manipulation strategies.",
       "github.com/khab40/lob-arena"
     ]);
-    expectIncludes(app, ["<strong>LOB Arena</strong>", "Adversarial synthetic market simulation"]);
+    expectIncludes(app, ["<strong>LOB Arena</strong>"]);
     expectIncludes(index, ["<title>LOB Arena</title>", 'name="description"']);
     expectIncludes(manifest, ['"name": "LOB Arena"', '"short_name": "LOB Arena"']);
     assert.doesNotMatch(`${readme}\n${app}\n${index}\n${manifest}`, /AI Market Abuse Detection Arena/);
   });
 });
 
-describe("Battlefield visualization UI contract", () => {
-  const terrain = read("src/tabs/MarketBattlefield3D/components/OrderBookTerrain.tsx");
-  const data = read("src/tabs/MarketBattlefield3D/hooks/useMarketBattlefieldData.ts");
-  const types = read("src/tabs/MarketBattlefield3D/types.ts");
-
-  it("keeps explicit camera controls and smooth animation hooks", () => {
-    expectIncludes(terrain, [
-      "DEFAULT_CAMERA",
-      "MIN_ZOOM",
-      "MAX_ZOOM",
-      "requestAnimationFrame",
-      "interpolateCamera",
-      "Auto orbit",
-      "Pause camera",
-      "Reset camera",
-      "Focus alerts",
-      "Zoom"
-    ]);
-  });
-
-  it("keeps suspicious activity readable and distinguishable", () => {
-    expectIncludes(terrain, [
-      "Bid",
-      "Ask",
-      "Suspicious",
-      "Cancelled",
-      "Trade",
-      "Manipulation path",
-      "Alert zone",
-      "onPointerMove",
-      "drawSideBands",
-      "drawPriceLevelLabels",
-      "drawTimeDirection",
-      "drawDepthHaze",
-      "drawDetectorAlertZone",
-      "drawManipulationPath",
-      "drawCancelMarker",
-      "drawTradeMarker"
-    ]);
-    expectIncludes(types, ["\"alert\"", "\"cancelled\"", "\"normal\"", "\"suspicious\"", "\"trade\""]);
-    expectIncludes(data, ["hasCancel", "hasTrade", "agentId", "state: BattlefieldCell[\"state\"]"]);
-  });
-});
-
 describe("Core UI navigation and workflow contracts", () => {
   const app = read("src/App.tsx");
   const arena = read("src/pages/ArenaPage.tsx");
-  const identity = read("src/platform/identity.ts");
   const nebius = read("src/pages/NebiusControlPanelPage.tsx");
-  const mockNebiusClients = read("src/features/nebius/services/mockNebiusClients.ts");
   const runtimeModes = read("src/runtimeModes.ts");
   const css = read("src/App.css");
   const trace = read("src/components/NebiusExecutionTrace.tsx");
@@ -141,11 +95,12 @@ describe("Core UI navigation and workflow contracts", () => {
     ]);
     expectIncludes(arena, ["storeControlCenterIncident", "controlCenterIncidentPath", "onSendToControlCenter"]);
     assert.doesNotMatch(arena, /aria-label="Market visualization"/);
+    assert.doesNotMatch(arena, /MarketBattlefield3D|OrderBookTerrain|battlefieldFrames/);
   });
 
   it("transfers the selected Arena incident into the investigation workflow", () => {
     expectIncludes(incidentTransfer, [
-      "aimada.control-center.incident",
+      "lob-arena.control-center.incident",
       "incidentInvestigationRequest",
       "detector_outputs",
       "market_metrics"
@@ -269,7 +224,7 @@ describe("Core UI navigation and workflow contracts", () => {
       "cloud artifacts automatically",
       "Simulated / Local Demo",
       "mock fallback",
-      "No credentials, Google login, or deployment are required in Local Demo",
+      "No credentials or deployment are required in Local Demo",
       "deterministic mock results"
     ]);
     assert.doesNotMatch(nebius, /Run Nebius AI Detector Tournament/);
@@ -297,14 +252,12 @@ describe("Core UI navigation and workflow contracts", () => {
       "not metered",
       "not reported"
     ]);
-    assert.doesNotMatch(mockNebiusClients, /status: "healthy"|status: "connected"|status: "ready"/);
   });
 
-  it("keeps demo runtime as the default auth experience", () => {
+  it("keeps demo runtime as the default experience", () => {
     expectIncludes(app, [
       "className=\"global-workspace-header\"",
       "<RuntimePanel />",
-      "featureFlags.enableGoogleAuth ? <IdentityPanel /> : null",
       "Runtime mode",
       "Local Demo",
       "Nebius Cloud",
@@ -312,9 +265,7 @@ describe("Core UI navigation and workflow contracts", () => {
       "Checking live Nebius services",
       "runtimeProbeStatus",
       "status.job_health",
-      "status.storage_health",
-      "Connect Google Account",
-      "Continue in Demo Mode"
+      "status.storage_health"
     ]);
     expectIncludes(runtimeModes, [
       "Local Demo",
@@ -335,8 +286,7 @@ describe("Core UI navigation and workflow contracts", () => {
     ]);
     assert.doesNotMatch(runtimeModes, /"AI Endpoint": "Connected"/);
     assert.doesNotMatch(runtimeModes, /Jobs: "Connected"/);
-    expectIncludes(identity, ["Demo Analyst", "Local Demo"]);
-    assert.equal((app.match(/google-login-button/g) ?? []).length, 1);
+    assert.doesNotMatch(app, /Google|AuthProvider|IdentityPanel|useAuth/);
     assert.doesNotMatch(app, /Switch to Hybrid/);
   });
 
@@ -377,37 +327,22 @@ describe("Core UI navigation and workflow contracts", () => {
   });
 });
 
-describe("Demo surface feature flags", () => {
-  const flags = read("src/featureFlags.ts");
+describe("Archived feature boundaries", () => {
+  const app = read("src/App.tsx");
+  const arena = read("src/pages/ArenaPage.tsx");
+  const client = read("src/api/client.ts");
   const attackBuilder = read("src/components/AttackBuilder.tsx");
   const attackPage = read("src/pages/AttackScenarioGeneratorPage.tsx");
+  const archiveIndex = read("../archived/README.md");
 
-  it("keeps auth, advanced attack controls, and legacy pages hidden by default", () => {
-    expectIncludes(flags, [
-      "VITE_ENABLE_GOOGLE_AUTH",
-      "VITE_ENABLE_ADVANCED_ATTACK_CONTROLS",
-      "VITE_ENABLE_LEGACY_PAGES"
-    ]);
+  it("excludes archived features from active frontend imports and routes", () => {
+    expectIncludes(archiveIndex, ["3d-lob-ui/", "google-auth/", "advanced-controls/", "unused-modules/"]);
     expectIncludes(attackBuilder, ["Scenario Setup", "Manipulation type", "Difficulty", "Send to Nebius investigation", "storeControlCenterIncident", "controlCenterIncidentPath"]);
-    expectIncludes(attackPage, ["AI Scenario Generator", "featureFlags.enableAdvancedAttackControls", "sendToInvestigation", "storeControlCenterIncident"]);
+    expectIncludes(attackPage, ["AI Scenario Generator", "sendToInvestigation", "storeControlCenterIncident"]);
+    assert.doesNotMatch(`${app}\n${arena}\n${client}`, /GoogleAuth|AuthProvider|IdentityPanel|MarketBattlefield3D|OrderBookTerrain/);
+    assert.doesNotMatch(`${attackBuilder}\n${attackPage}`, /featureFlags|enableAdvancedAttackControls/);
     assert.doesNotMatch(attackBuilder, /to="\/investigations/);
     assert.doesNotMatch(attackPage, /to={`\/investigations/);
-  });
-});
-
-describe("Google auth UI contract", () => {
-  const auth = read("src/auth/AuthContext.tsx");
-
-  it("rejects popup and script-load failures so Connecting state can clear", () => {
-    expectIncludes(auth, [
-      "GOOGLE_AUTH_TIMEOUT_MS",
-      "GOOGLE_SCRIPT_TIMEOUT_MS",
-      "error_callback",
-      "popup_closed",
-      "popup_failed_to_open",
-      "Timed out loading Google Identity Services.",
-      "Google sign-in timed out. Check popup blockers and try again."
-    ]);
   });
 });
 

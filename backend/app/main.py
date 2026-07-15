@@ -3,7 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 
 from app.api.routes_arena import router as arena_router
-from app.api.routes_auth import router as auth_router
 from app.api.routes_experiments import router as experiments_router
 from app.api.routes_health import router as health_router
 from app.api.routes_incidents import router as incidents_router
@@ -12,7 +11,6 @@ from app.api.routes_red_team import router as red_team_router
 from app.api.routes_scenarios import router as scenarios_router
 from app.api.routes_simulation import router as simulation_router
 from app.arena.engine import SimulationEngine
-from app.auth.store import AuthStore
 from app.config import get_settings
 from app.nebius.evidence_archive import configure_default_evidence_archive
 from app.storage.local_store import LocalStore
@@ -29,7 +27,6 @@ app.state.nebius_evidence = (
     else None
 )
 app.state.retention_cleanup = cleanup_output_data(app.state.store.output_dir, settings.arena_data_retention_days)
-app.state.auth_store = AuthStore(settings.arena_output_dir / "auth" / "auth.db")
 app.state.settings = settings
 app.state.simulation = SimulationEngine(
     store=app.state.store,
@@ -56,7 +53,6 @@ app.add_middleware(
 )
 
 app.include_router(health_router)
-app.include_router(auth_router)
 app.include_router(arena_router)
 app.include_router(simulation_router)
 app.include_router(experiments_router)

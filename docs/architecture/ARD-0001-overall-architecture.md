@@ -16,9 +16,7 @@ Implemented:
 - Synthetic exchange, matching engine, normal agents, scenario agents, deterministic detectors, evidence objects, and local artifact storage.
 - In-process and remote agent runners with HTTP `MarketSnapshot` / `AgentIntent` protocol, heavy-agent worker pools, and LangGraph-compatible generic remote agents.
 - Baseline liquidity invariant with additive per-agent quote ownership and quote-size guardrails.
-- Google-authenticated user persistence with app-issued JWT sessions.
-- Multiuser platform foundation with demo fallback identity, workspace metadata, case ownership, report attribution, and audit trail records.
-- UI shell with AI-MADA banner asset, compact navigation control, collapsible auth widget, persisted day/night/system theme, Command Center orchestration, and paused-state-stable Liquidity Map behavior.
+- UI shell with compact navigation, persisted day/night/system theme, Command Center orchestration, and paused-state-stable Liquidity Map behavior.
 - Serverless endpoint/job scaffolds, Dockerfiles, configs, scripts, and local mock/cloud-adapter paths.
 - Production Serverless Job and Endpoint evidence archived in the commit-safe [benchmark bundle](../../outputs/benchmark/EXP-18E88EAF/README.md) and frozen deployment evidence.
 - Measured runtime/cost records are linked from the submission index; sanitized UI screenshots are committed under `assets/screenshots/`.
@@ -51,11 +49,8 @@ graph TD
     Nebius["Nebius Serverless Cloud - model selection, inference, batch jobs, GPU runtime, datasets, artifacts"]
     Store["Artifacts - events, snapshots, incidents, reports, benchmark outputs"]
     ObjectStore["Object Storage - S3-compatible evidence archive"]
-    Identity["Platform Identity - user, workspace, role, case ownership, audit"]
 
     Front -->|REST and WebSocket| Back
-    Front -->|Google or demo identity| Identity
-    Identity -->|case ownership and audit metadata| Back
     Back -->|read-only MarketSnapshot| Runners
     Runners -->|bounded AgentIntent| Back
     Back -->|LLM calls and managed jobs| Nebius
@@ -78,7 +73,6 @@ graph TD
     ScenarioAgents["Bounded scenario agents"]
     Detectors["Deterministic Detectors - microstructure features"]
     Incidents["Incident Store - evidence + confidence"]
-    Identity["Platform Identity - users, workspaces, roles, audit"]
     Endpoint["Nebius Serverless Cloud - Nebius AI inference + Managed Experiment jobs"]
     Store["Local Artifacts - events, snapshots, incidents, reports"]
 
@@ -101,7 +95,6 @@ graph TD
     Runtime --> Store
     Incidents --> Store
     Store --> Detection
-    Identity -->|owner, analyst, reviewer, audit| Detection
 ```
 
 The batch path runs separately:
@@ -140,8 +133,6 @@ Responsibilities:
 - show incident cards and Incident Details
 - show Nebius AI operations for inference, batch execution, GPU utilization, experiments, artifacts, and cost context
 - show evidence for persisted jobs, explanations, screenshots, exports, and promoted report artifacts
-- provide role-aware Google auth/session controls that can collapse to a compact account widget
-- provide the global workspace/user menu and show case ownership, reviewer, generated-by, and audit metadata where investigations are reviewed
 - provide persisted day/night/system theme behavior across the shell
 - keep paused visualizations stable by updating timeline-style widgets only when the arena tick advances
 - show the educational disclaimer
@@ -344,9 +335,7 @@ Architecture records:
 
 - `docs/architecture/README.md` - ARD index and conventions
 - `docs/architecture/ARD-0001-overall-architecture.md` - this record
-- `docs/architecture/ARD-0012-google-authentication.md` - Google verification, user persistence, and app sessions
 - `docs/architecture/ARD-0013-ui-shell-preferences.md` - UI shell preferences and demo presentation
-- `docs/architecture/ARD-0014-multiuser-platform-foundation.md` - Users, workspaces, roles, case ownership, report attribution, and audit trail model
 
 ## Phased Implementation Approach
 
@@ -554,7 +543,6 @@ Tradeoffs:
 - WebSocket state contract needs to stay synchronized with UI needs
 - benchmark and live runtime may diverge if shared logic is not kept aligned
 - serverless deployment requires separate configuration and observability artifacts
-- platform identity metadata needs durable backend persistence before it can become an authorization boundary
 
 ## Follow-Up ARDs
 
@@ -567,9 +555,7 @@ Architecture records that refine this decision:
 - [ARD-0006: Scenario Labeling and Reproducibility](ARD-0006-scenario-labeling-and-reproducibility.md)
 - [ARD-0010: Agent Runner Execution Architecture](ARD-0010-agent-runner-execution.md)
 - [ARD-0011: Exchange Liquidity Invariant And Agent Quote Ownership](ARD-0011-exchange-liquidity-invariant.md)
-- [ARD-0012: Google Authentication And App Sessions](ARD-0012-google-authentication.md)
 - [ARD-0013: UI Shell Preferences And Demo Presentation](ARD-0013-ui-shell-preferences.md)
-- [ARD-0014: Multiuser Platform Foundation](ARD-0014-multiuser-platform-foundation.md)
 
 
 

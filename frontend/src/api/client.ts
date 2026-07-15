@@ -8,7 +8,6 @@ import type {
 } from "@/features/nebius/types";
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
-export const AUTH_SESSION_HEADER = "X-AIMADA-Session-ID";
 
 export async function getHealth(): Promise<{ status: string }> {
   const response = await fetch(`${API_BASE_URL}/health`);
@@ -312,58 +311,6 @@ export type ClearReportsResponse = {
 };
 
 export type ArenaRole = "attacker" | "defender" | "observer" | "judge";
-
-export type AuthUser = {
-  id?: string;
-  user_id: string;
-  email: string;
-  name: string;
-  avatar_url?: string | null;
-  google_id?: string | null;
-  google_subject?: string | null;
-  auth_provider?: "google" | string;
-  provider: string;
-  provider_mode?: string | null;
-  created_at: string;
-  updated_at?: string;
-};
-
-export type AuthSession = {
-  session_id: string;
-  user_id: string;
-  role: ArenaRole;
-  created_at: string;
-  last_seen_at: string;
-  active: boolean;
-};
-
-export type GoogleAuthConfig = {
-  mode: "google" | "stub" | string;
-  configured: boolean;
-  client_id?: string | null;
-  authorization_url?: string | null;
-  detail: string;
-};
-
-export type GoogleCompletePayload = {
-  authorization_code?: string;
-  code?: string;
-  id_token?: string;
-  redirect_uri?: string;
-};
-
-export type AuthSessionResponse = {
-  user: AuthUser;
-  session: AuthSession;
-  restored_history?: Record<string, unknown> | null;
-  access_token?: string | null;
-  token_type?: string | null;
-};
-
-export type SessionSaveResponse = {
-  saved: boolean;
-  snapshot?: Record<string, unknown> | null;
-};
 
 export type ReportsSummary = {
   experiments: Record<string, unknown>[];
@@ -982,73 +929,6 @@ export async function getReportsSummary(): Promise<ReportsSummary> {
   return response.json();
 }
 
-export async function getGoogleAuthConfig(): Promise<GoogleAuthConfig> {
-  const response = await fetch(`${API_BASE_URL}/api/auth/google/config`);
-  if (!response.ok) {
-    throw new Error(`Google auth config failed: ${response.status}`);
-  }
-  return response.json();
-}
-
-export async function completeGoogleLogin(role: ArenaRole, payload: GoogleCompletePayload = {}): Promise<AuthSessionResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/auth/google/complete`, {
-    body: JSON.stringify({ ...payload, role }),
-    headers: { "Content-Type": "application/json" },
-    method: "POST"
-  });
-  if (!response.ok) {
-    throw new Error(await apiErrorMessage(response, "Google login failed"));
-  }
-  return response.json();
-}
-
-export async function getCurrentAuthSession(sessionId: string, accessToken?: string | null): Promise<AuthSessionResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
-    headers: authHeaders(sessionId, accessToken)
-  });
-  if (!response.ok) {
-    throw new Error(`Auth session lookup failed: ${response.status}`);
-  }
-  return response.json();
-}
-
-export async function updateAuthRole(sessionId: string, role: ArenaRole, accessToken?: string | null): Promise<AuthSessionResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/auth/role`, {
-    body: JSON.stringify({ role }),
-    headers: { "Content-Type": "application/json", ...authHeaders(sessionId, accessToken) },
-    method: "PATCH"
-  });
-  if (!response.ok) {
-    throw new Error(`Role update failed: ${response.status}`);
-  }
-  return response.json();
-}
-
-export async function saveAuthSession(sessionId: string, keepalive = false, accessToken?: string | null): Promise<SessionSaveResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/auth/session/save`, {
-    body: JSON.stringify({ window_hours: 24 }),
-    headers: { "Content-Type": "application/json", ...authHeaders(sessionId, accessToken) },
-    keepalive,
-    method: "POST"
-  });
-  if (!response.ok) {
-    throw new Error(`Session save failed: ${response.status}`);
-  }
-  return response.json();
-}
-
-export async function logoutAuthSession(sessionId: string, accessToken?: string | null): Promise<SessionSaveResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/auth/logout`, {
-    body: JSON.stringify({ window_hours: 24 }),
-    headers: { "Content-Type": "application/json", ...authHeaders(sessionId, accessToken) },
-    method: "POST"
-  });
-  if (!response.ok) {
-    throw new Error(`Logout failed: ${response.status}`);
-  }
-  return response.json();
-}
-
 export async function replayHistoryWindow(windowHours = 1, limit = 5000): Promise<HistoryReplayResponse> {
   const params = new URLSearchParams({
     limit: String(limit),
@@ -1493,11 +1373,4 @@ function formatApiErrorDetail(detail: unknown): string | null {
     return [message, stderr && `stderr: ${stderr}`, stdout && `stdout: ${stdout}`].filter(Boolean).join(" - ") || null;
   }
   return null;
-}
-
-function authHeaders(sessionId: string, accessToken?: string | null): Record<string, string> {
-  return {
-    [AUTH_SESSION_HEADER]: sessionId,
-    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
-  };
 }

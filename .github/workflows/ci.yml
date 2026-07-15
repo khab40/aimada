@@ -73,6 +73,9 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
+      - name: Run frontend contract tests
+        run: npm test
+
       - name: Run ESLint
         run: npm run lint
 
@@ -203,13 +206,13 @@ jobs:
         run: |
           docker compose config --format json | jq -e '
             .services.backend.environment as $env
-            | [
+            | ($env.NEBIUS_ENDPOINT_MODE == "mock") and ([
                 $env.NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE,
                 $env.NEBIUS_JOB_STATUS_COMMAND_TEMPLATE,
                 $env.NEBIUS_JOB_LOGS_COMMAND_TEMPLATE,
                 $env.NEBIUS_JOB_ARTIFACTS_COMMAND_TEMPLATE
               ]
-            | all(. == "")
+            | all(. == ""))
           '
 
   secret-scan:

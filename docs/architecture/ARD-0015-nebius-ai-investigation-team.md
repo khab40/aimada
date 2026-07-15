@@ -85,7 +85,7 @@ Turn a compact replay summary into a structured multi-agent investigation throug
 - AI Command Center exposes one primary action: `Run Nebius AI Investigation Team`.
 - Show consensus, risk score, confidence, agent findings, evidence timeline, recommended action, and fallback mode.
 - If mode is mock/fallback, show it as deterministic fallback.
-- Keep Google Auth hidden from this flow.
+- Keep external identity concerns outside this flow.
 
 ## Data Contracts
 
@@ -181,7 +181,7 @@ Response from backend:
 - Response includes `investigation_id`, `agents`, `consensus`, `evidence_timeline`, `recommended_action`, and `executive_summary`.
 - `POST /api/experiments/{id}/run-investigations` writes investigation artifacts.
 - UI displays final verdict, confidence, agent findings, evidence timeline, recommended action, and fallback mode.
-- No frontend route requires Google Auth.
+- No frontend route requires external authentication.
 - Report never claims real market abuse detection.
 
 ## Risks And Shortcuts

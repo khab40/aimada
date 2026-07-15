@@ -12,9 +12,6 @@ import { OrderBookLadder } from "@/components/OrderBookLadder";
 import { useArenaSource } from "@/hooks/useArenaSource";
 import { getProductDemoConfig, type ProductDemoConfig } from "@/demoModes";
 import { controlCenterIncidentPath, investigationContextFromArenaState, storeControlCenterIncident } from "@/controlCenterIncident";
-import { OrderBookTerrain } from "@/tabs/MarketBattlefield3D/components/OrderBookTerrain";
-import { arenaStateToFrame } from "@/tabs/MarketBattlefield3D/hooks/useMarketBattlefieldData";
-import type { BattlefieldFrame } from "@/tabs/MarketBattlefield3D/types";
 import type { ArenaState, Incident, OrderBookSnapshot } from "@/types/arena";
 
 const WIDGET_TICK_WINDOW = 48;
@@ -24,7 +21,6 @@ type HeatmapSnapshotFrame = {
   tick: number;
 };
 
-type ArenaVisualizationMode = "standard" | "battlefield";
 type DetectionSecondaryView = "evidence" | "timeline";
 type MarketSecondaryView = "heatmap" | "timeline";
 
@@ -50,11 +46,9 @@ export function ArenaPage() {
     demoScenario: demoConfig?.scenarioType,
     symbol: demoConfig?.marketSymbol
   });
-  const [visualizationMode] = useState<ArenaVisualizationMode>("standard");
   const [secondaryView, setSecondaryView] = useState<DetectionSecondaryView>("evidence");
   const [marketSecondaryView, setMarketSecondaryView] = useState<MarketSecondaryView>("heatmap");
   const [heatmapSnapshots, setHeatmapSnapshots] = useState<HeatmapSnapshotFrame[]>(() => [toHeatmapSnapshotFrame(state)]);
-  const [battlefieldFrames, setBattlefieldFrames] = useState<BattlefieldFrame[]>(() => [arenaStateToFrame(state)]);
   const [timeline, setTimeline] = useState<MarketTimelineFrame[]>(() => [toTimelineFrame(state)]);
   const lastRecordedTickRef = useRef(state.tick);
   const [pendingControl, setPendingControl] = useState<"pause" | "reset" | "start" | null>(null);
@@ -88,7 +82,6 @@ export function ArenaPage() {
     }
     lastRecordedTickRef.current = state.tick;
     setHeatmapSnapshots((snapshots) => [...snapshots, toHeatmapSnapshotFrame(state)].slice(-WIDGET_TICK_WINDOW));
-    setBattlefieldFrames((frames) => [...frames, arenaStateToFrame(state)].slice(-WIDGET_TICK_WINDOW));
     setTimeline((points) => [...points, toTimelineFrame(state)].slice(-WIDGET_TICK_WINDOW));
   }, [state]);
 
@@ -120,7 +113,6 @@ export function ArenaPage() {
     reset();
     lastRecordedTickRef.current = -1;
     setHeatmapSnapshots([]);
-    setBattlefieldFrames([]);
     setTimeline([]);
     setLastIncident(null);
   }, [canReset, connected, reset]);
@@ -234,27 +226,21 @@ export function ArenaPage() {
               </div>
             </div>
           </header>
-          <div className="market-mode-panel" key={visualizationMode}>
-            {visualizationMode === "standard" ? (
-              <>
-                <OrderBookLadder snapshot={state.book} />
-                <section className="market-secondary-view">
-                  <div className="widget-tab-row" role="tablist" aria-label="Secondary market views">
-                    <button className={marketSecondaryView === "heatmap" ? "active" : ""} onClick={() => setMarketSecondaryView("heatmap")} type="button">Heatmap</button>
-                    <button className={marketSecondaryView === "timeline" ? "active" : ""} onClick={() => setMarketSecondaryView("timeline")} type="button">Timeline</button>
-                  </div>
-                  <div className="tab-content-panel" key={marketSecondaryView}>
-                    {marketSecondaryView === "heatmap" ? (
-                      <LiquidityHeatmap maxFrames={WIDGET_TICK_WINDOW} snapshots={heatmapSnapshots} visibleLevels={20} />
-                    ) : (
-                      <MarketTimeline frames={timeline} />
-                    )}
-                  </div>
-                </section>
-              </>
-            ) : (
-              <OrderBookTerrain currentTick={tick} frames={battlefieldFrames.length ? battlefieldFrames : [arenaStateToFrame(state)]} />
-            )}
+          <div className="market-mode-panel">
+            <OrderBookLadder snapshot={state.book} />
+            <section className="market-secondary-view">
+              <div className="widget-tab-row" role="tablist" aria-label="Secondary market views">
+                <button className={marketSecondaryView === "heatmap" ? "active" : ""} onClick={() => setMarketSecondaryView("heatmap")} type="button">Heatmap</button>
+                <button className={marketSecondaryView === "timeline" ? "active" : ""} onClick={() => setMarketSecondaryView("timeline")} type="button">Timeline</button>
+              </div>
+              <div className="tab-content-panel" key={marketSecondaryView}>
+                {marketSecondaryView === "heatmap" ? (
+                  <LiquidityHeatmap maxFrames={WIDGET_TICK_WINDOW} snapshots={heatmapSnapshots} visibleLevels={20} />
+                ) : (
+                  <MarketTimeline frames={timeline} />
+                )}
+              </div>
+            </section>
           </div>
         </section>
 

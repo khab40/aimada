@@ -17,7 +17,7 @@ docker compose up --build
 
 Open http://localhost:5173. The app should land on `AI Command Center`.
 
-Local demo mode requires no Google login, no endpoint token, and no deployed endpoint.
+Local Demo requires no login, endpoint token, or deployed Nebius endpoint.
 
 ## Step 1: Generate AI Scenario
 

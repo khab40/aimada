@@ -5,11 +5,17 @@ Update this file with each significant commit before pushing.
 
 ## Unreleased
 
+### Current - chore: archive inactive product modules
+
+- Moved the experimental 3D LOB UI, Google Auth, disabled advanced controls, and orphan modules under `archived/` outside active build roots.
+- Removed their active routes, imports, configuration, styles, dependencies, and stale architecture claims.
+- Kept Local Mock as the credential-free default and added backend, Compose, frontend contract, lint, and build coverage.
+
 ### Current - chore: rename project to LOB Arena
 
 - Renamed user-facing product, package, service, image, documentation, and repository references to LOB Arena.
 - Added the surveillance-benchmarking tagline, canonical one-line description, and a frontend branding contract test.
-- Preserved legacy `AIMADA_*`, session-header, schema-version, storage-key, and deployed artifact identifiers for compatibility.
+- Preserved legacy `AIMADA_*`, session-header, schema-version, and deployed artifact identifiers for compatibility.
 
 ### Current - chore: compact command center and remove stale docs
 

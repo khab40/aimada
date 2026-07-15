@@ -69,15 +69,9 @@ Phase 2 adds out-of-process agent runners. A runner exposes `POST /decide`, rece
 
 Phase 3 adds heavy and LangGraph-compatible remote agents. Heavy agents run their expensive decision function through a worker pool inside `agent-runner`. Generic LangGraph agents use `StateGraph` with `observe` and `decide` nodes, then emit the same `AgentIntent` contract. The backend does not import LangGraph and does not know whether a remote intent came from a simple function, a process-pool worker, or a LangGraph graph.
 
-## Authentication Runtime
-
-Google OAuth is completed server-side through `/api/auth/google/complete`. In configured mode, the backend verifies a Google ID token with `GOOGLE_CLIENT_ID`, or exchanges an authorization code with `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` before verification. The frontend Google Identity Services popup flow sends the browser origin as `redirect_uri`; redirect-mode clients can send their callback URI explicitly. The stable external user key is `payload.sub`, stored as `google_id` in `ARENA_OUTPUT_DIR/auth/auth.db`.
-
-The stored user row contains `id`, `email`, `name`, `avatar_url`, `google_id`, `auth_provider`, `created_at`, and `updated_at`. After verification, the backend issues its own JWT using `AIMADA_JWT_SECRET`; clients may send it as `Authorization: Bearer <token>`. The legacy `X-AIMADA-Session-ID` header remains for existing session-history flows.
-
 ## UI Shell Runtime
 
-The shared shell keeps presentation preferences in browser-local state, not backend state. Theme mode is stored as `aimada.themePreference` with `system`, `light`, and `dark` values. System mode follows `prefers-color-scheme` and applies the resolved mode through the document `data-theme` attribute. Shared widgets, status chips, order-book levels, Recharts timelines, tooltips, and the Liquidity Map canvas read semantic theme tokens rather than fixed dark colors. The auth widget expansion state is stored as `aimada.authPanelExpanded`, so the account area can collapse to a compact control for demos and screenshots without logging the user out.
+The shared shell keeps presentation preferences in browser-local state, not backend state. Theme mode is stored as `lob-arena.themePreference` with `system`, `light`, and `dark` values. System mode follows `prefers-color-scheme` and applies the resolved mode through the document `data-theme` attribute. Shared widgets, status chips, order-book levels, Recharts timelines, tooltips, and the Liquidity Map canvas read semantic theme tokens rather than fixed dark colors.
 
 Arena timeline-style widgets should only append frames when the backend tick advances. This keeps the Liquidity Map visually stable while the arena is paused or has not started from the UI.
 

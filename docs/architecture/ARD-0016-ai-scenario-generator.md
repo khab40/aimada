@@ -360,4 +360,4 @@ Backend response:
 - Risk: canonical event replay is richer than current Arena scenario launch. Shortcut: store canonical events now, project to existing scenario names for replay, then add direct event replay later.
 - Risk: `wash_trading` has no first-class Arena route. Shortcut: return a canonical event scenario and project replay to `mixed` until a dedicated simulator agent exists.
 - Risk: AI output violates enums. Shortcut: backend schema validation plus deterministic fallback.
-- Risk: too many controls in demo. Shortcut: only six controls are visible; all legacy tuning stays behind `VITE_ENABLE_ADVANCED_ATTACK_CONTROLS`.
+- Risk: too many controls in demo. The active page keeps only the core controls; legacy tuning is preserved under `archived/advanced-controls/`.

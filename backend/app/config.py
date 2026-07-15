@@ -126,15 +126,6 @@ class Settings(BaseSettings):
     arena_output_dir: Path = Field(default=Path("../outputs"), alias="ARENA_OUTPUT_DIR")
     arena_data_retention_days: int = Field(default=1, ge=1, le=3650, alias="ARENA_DATA_RETENTION_DAYS")
     arena_sample_data_dir: Path = Field(default=Path("../data/sample"), alias="ARENA_SAMPLE_DATA_DIR")
-    google_client_id: str | None = Field(default=None, alias="GOOGLE_CLIENT_ID")
-    google_client_secret: str | None = Field(default=None, alias="GOOGLE_CLIENT_SECRET")
-    google_redirect_uri: str | None = Field(default=None, alias="GOOGLE_REDIRECT_URI")
-    enable_google_auth: bool = Field(default=False, alias="ENABLE_GOOGLE_AUTH")
-    enable_advanced_attack_controls: bool = Field(default=False, alias="ENABLE_ADVANCED_ATTACK_CONTROLS")
-    enable_legacy_pages: bool = Field(default=False, alias="ENABLE_LEGACY_PAGES")
-    aimada_jwt_secret: str = Field(default="dev-only-change-me", alias="AIMADA_JWT_SECRET")
-    aimada_jwt_issuer: str = Field(default="lob-arena", alias="AIMADA_JWT_ISSUER")
-    aimada_jwt_expires_in_seconds: int = Field(default=43_200, ge=300, le=2_592_000, alias="AIMADA_JWT_EXPIRES_IN_SECONDS")
     arena_agent_count: int = Field(default=200, ge=1, le=1000, alias="ARENA_AGENT_COUNT")
     arena_agent_decision_timeout_seconds: float = Field(
         default=0.05,

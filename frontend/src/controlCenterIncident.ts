@@ -1,7 +1,7 @@
 import type { AIInvestigationTeamRequest } from "@/api/client";
 import type { Incident, InvestigationContext } from "@/types/arena";
 
-const STORAGE_KEY = "aimada.control-center.incident";
+const STORAGE_KEY = "lob-arena.control-center.incident";
 
 export function storeControlCenterIncident(incident: Incident) {
   window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(incident));

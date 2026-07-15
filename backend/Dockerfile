@@ -22,7 +22,6 @@ ENV PATH="/root/.nebius/bin:${PATH}"
 COPY backend/pyproject.toml ./
 RUN pip install --no-cache-dir \
   fastapi \
-  google-auth \
   numpy \
   pydantic \
   pydantic-settings \

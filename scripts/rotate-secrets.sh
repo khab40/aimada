@@ -6,14 +6,13 @@ ENV_FILE="${ROOT_DIR}/.env"
 IMPORT_FILE=""
 APPLY=false
 RESTART=false
-ENDPOINT_ONLY=false
 
 usage() {
   printf '%s\n' \
-    "Usage: $0 [--env-file PATH] [--import-env PATH] [--endpoint-only] [--apply] [--restart]" \
+    "Usage: $0 [--env-file PATH] [--import-env PATH] [--apply] [--restart]" \
     "" \
-    "Generates new AIMADA_JWT_SECRET and ENDPOINT_TOKEN values." \
-    "--import-env accepts only GOOGLE_CLIENT_SECRET and Nebius Object Storage keys." \
+    "Generates a new ENDPOINT_TOKEN value." \
+    "--import-env accepts only Nebius Object Storage keys." \
     "Dry-run is the default; secret values are never printed."
 }
 
@@ -21,7 +20,6 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --env-file) ENV_FILE="$2"; shift 2 ;;
     --import-env) IMPORT_FILE="$2"; shift 2 ;;
-    --endpoint-only) ENDPOINT_ONLY=true; shift ;;
     --apply) APPLY=true; shift ;;
     --restart) RESTART=true; shift ;;
     -h|--help) usage; exit 0 ;;
@@ -34,21 +32,15 @@ done
 [[ "${RESTART}" != "true" || "${APPLY}" == "true" ]] || { printf '%s\n' '--restart requires --apply' >&2; exit 2; }
 command -v openssl >/dev/null 2>&1 || { printf '%s\n' 'openssl is required' >&2; exit 2; }
 
-JWT_SECRET="$(openssl rand -base64 48 | tr -d '\n')"
 ENDPOINT_TOKEN_VALUE="$(openssl rand -hex 32)"
-if [[ "${ENDPOINT_ONLY}" == "true" ]]; then
-  ROTATION_KEYS=(ENDPOINT_TOKEN)
-  ROTATION_VALUES=("${ENDPOINT_TOKEN_VALUE}")
-else
-  ROTATION_KEYS=(AIMADA_JWT_SECRET ENDPOINT_TOKEN)
-  ROTATION_VALUES=("${JWT_SECRET}" "${ENDPOINT_TOKEN_VALUE}")
-fi
+ROTATION_KEYS=(ENDPOINT_TOKEN)
+ROTATION_VALUES=("${ENDPOINT_TOKEN_VALUE}")
 
 if [[ -n "${IMPORT_FILE}" ]]; then
   while IFS='=' read -r key value || [[ -n "${key:-}" ]]; do
     [[ -z "${key:-}" || "${key}" == \#* ]] && continue
     case "${key}" in
-      GOOGLE_CLIENT_SECRET|NEBIUS_OBJECT_STORAGE_ACCESS_KEY_ID|NEBIUS_OBJECT_STORAGE_SECRET_ACCESS_KEY|NEBIUS_OBJECT_STORAGE_SESSION_TOKEN)
+      NEBIUS_OBJECT_STORAGE_ACCESS_KEY_ID|NEBIUS_OBJECT_STORAGE_SECRET_ACCESS_KEY|NEBIUS_OBJECT_STORAGE_SESSION_TOKEN)
         [[ -n "${value}" ]] || { printf 'Imported value is empty: %s\n' "${key}" >&2; exit 2; }
         ROTATION_KEYS+=("${key}")
         ROTATION_VALUES+=("${value}")

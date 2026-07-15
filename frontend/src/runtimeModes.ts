@@ -11,8 +11,8 @@ export type RuntimeStatus =
   | "Error";
 export type RuntimeComponent = "Frontend" | "Backend" | "Runner" | "AI Endpoint" | "Jobs" | "Storage";
 
-export const RUNTIME_MODE_KEY = "aimada.runtimeMode";
-export const RUNTIME_MODE_EVENT = "aimada-runtime-mode-change";
+export const RUNTIME_MODE_KEY = "lob-arena.runtimeMode";
+export const RUNTIME_MODE_EVENT = "lob-arena-runtime-mode-change";
 
 export const runtimeComponents: RuntimeComponent[] = ["Frontend", "Backend", "Runner", "AI Endpoint", "Jobs", "Storage"];
 export const runtimeOptions: { description: string; label: string; marker: string; matrix: Record<RuntimeComponent, RuntimeStatus>; value: RuntimeMode }[] = [
