@@ -181,6 +181,8 @@ Benchmark execution additionally produces metrics, leaderboard reports, manifest
 
 ## Demo
 
+**Video walkthrough:** [LOB Arena — real Nebius cloud E2E demo](https://youtu.be/PZOrEwa4lqg)
+
 1. Open the AI Command Center.
 2. Run the Serverless E2E demo.
 3. Review the generated scenario and order-book events.

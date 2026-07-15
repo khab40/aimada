@@ -13,6 +13,8 @@ LOB Arena is an open-source platform for generating synthetic limit-order-book a
 
 **Repository:** [https://github.com/khab40/lob-arena](https://github.com/khab40/lob-arena)
 
+**Video demo:** [LOB Arena — real Nebius cloud E2E walkthrough](https://youtu.be/PZOrEwa4lqg)
+
 I built the project for the **#NebiusServerlessChallenge** as an engineering environment rather than as a claim that an AI model can independently detect real market manipulation.
 
 The goal is to create a controlled, reproducible arena in which the ground truth is known because the scenarios are generated deliberately.

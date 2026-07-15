@@ -4,7 +4,7 @@
 
 - **Repository:** [github.com/khab40/lob-arena](https://github.com/khab40/lob-arena)
 - **Technical article:** [Technical article draft](linkedin-technical-blog-post.md) — publication URL not yet available.
-- **Video:** Rendered demo not yet published; [narration script](../assets/demo-video/lob-arena-ceo-demo-script-v2.txt) and [captions](../assets/demo-video/lob-arena-ceo-demo-captions.srt) are included.
+- **Video:** [LOB Arena — real Nebius cloud E2E demo](https://youtu.be/PZOrEwa4lqg); the [narration script](../assets/demo-video/lob-arena-ceo-demo-script-v2.txt) and [captions](../assets/demo-video/lob-arena-ceo-demo-captions.srt) are also included.
 - **Challenge category:** Nebius Serverless AI Builders Challenge.
 - **Hashtag:** `#NebiusServerlessChallenge`
 
@@ -57,7 +57,7 @@ The `EXP-390EFAC2` run did not drop 20 workloads. The checked-in `labels.jsonl` 
 
 - Production execution is validated, compact redacted evidence bundles are committed, and the runtime/cost statement above records the measured cloud run used for publication. Private console screenshots are intentionally not required to reproduce the public evidence chain.
 - The manual Polished E2E workflow completed its local pipeline and evidence upload, but its cloud child lookup returned `NotFound`; it is not counted as a completed cloud Job. The separate managed experiment is the completed manual cloud run.
-- The rendered demo video and published article URL remain missing.
+- The published article URL remains missing; the rendered demo video is linked above.
 - The committed 100-workload evidence contains 80 labeled attack rows and 20 normal-market control rows; this is a denominator distinction, not an unexplained data loss.
 - Results cover five synthetic scenario labels with one deterministic detector suite/model dimension; broader seeds and learned-detector comparisons are required before comparative claims are credible.
 - The system is an educational research scaffold and must not be used for compliance decisions, trading signals, or allegations of market manipulation.
