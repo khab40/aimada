@@ -1238,6 +1238,15 @@ function AIScenarioGeneratorPanel({
               <option value="high">High</option>
             </select>
           </label>
+          <label>
+            Fixed seed
+            <input
+              disabled={controlsDisabled}
+              onChange={(event) => onUpdate("seed", Number(event.target.value))}
+              type="number"
+              value={form.seed ?? 42}
+            />
+          </label>
         </div>
         <div className="nebius-button-row">
           <button className="primary-button" disabled={controlsDisabled || !endpointAvailable} onClick={onGenerate} title={endpointAvailable ? undefined : "The configured scenario route did not pass the live Endpoint probe."} type="button">
@@ -1498,6 +1507,7 @@ function ExperimentLab({
       </div>
       <div className="experiment-summary-grid benchmark-status-strip" aria-label="Benchmark status">
         <MetricBlock label="Workloads" value={String(experiment?.attack_count ?? 0)} />
+        <MetricBlock label="Seed" value={experiment ? String(experiment.seed) : "not set"} />
         <MetricBlock label="Latest execution" value={latestJob ? `${latestJob.backend.replaceAll("_", " ")} · ${latestJob.status.replaceAll("_", " ")}` : "not run"} />
         <MetricBlock label="Detectors compared" value={leaderboard.length ? String(detectorCount) : "not aggregated"} />
         <MetricBlock label="Models compared" value={leaderboard.length ? String(modelCount) : "not aggregated"} />
@@ -1571,7 +1581,7 @@ function ExperimentLab({
           <div className="experiment-active-summary">
             <span>Current Benchmark</span>
             <strong>{experiment?.name ?? "Create or refresh a detector tournament"}</strong>
-            <p>{experiment ? `${experiment.id} · ${experiment.attack_count} workloads · batch ${experiment.batch_size}` : "Local Demo benchmark runs deterministic mock results locally, then Cloud mode can run the same benchmark as serverless jobs."}</p>
+            <p>{experiment ? `${experiment.id} · ${experiment.attack_count} workloads · batch ${experiment.batch_size} · seed ${experiment.seed}` : "Local Demo benchmark runs deterministic mock results locally, then Cloud mode can run the same benchmark as serverless jobs."}</p>
           </div>
           <div className="experiment-flow-actions">
             <button disabled={controlsDisabled || !canRun || cloudJobInFlight} onClick={onGenerateManifest} type="button">Generate manifest</button>

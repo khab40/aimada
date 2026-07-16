@@ -16,6 +16,8 @@ venv/
 # Node
 node_modules/
 npm-debug.log*
+playwright-report/
+test-results/
 yarn-debug.log*
 yarn-error.log*
 package-lock.json

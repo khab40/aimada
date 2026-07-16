@@ -215,7 +215,11 @@ function getStoredThemePreference(): ThemePreference {
 }
 
 function getStoredSidebarWidth() {
-  const stored = Number(window.localStorage.getItem(SIDEBAR_WIDTH_KEY));
+  const storedValue = window.localStorage.getItem(SIDEBAR_WIDTH_KEY);
+  if (storedValue === null) {
+    return SIDEBAR_DEFAULT_WIDTH;
+  }
+  const stored = Number(storedValue);
   return clampSidebarWidth(Number.isFinite(stored) ? stored : SIDEBAR_DEFAULT_WIDTH);
 }
 
@@ -382,6 +386,7 @@ function DrawerToggleIcon({ expanded }: { expanded: boolean }) {
 
 function RuntimePanel() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const panelRef = useRef<HTMLElement>(null);
   const [runtimeMode, setRuntimeMode] = useState<RuntimeMode>(() => getStoredRuntimeMode());
   const [cloudMessage, setCloudMessage] = useState("Checking live Nebius services...");
   const [runtimeOverrides, setRuntimeOverrides] = useState<Partial<Record<RuntimeMode, Partial<Record<RuntimeComponent, RuntimeStatus>>>>>({});
@@ -394,6 +399,27 @@ function RuntimePanel() {
     storeRuntimeMode(runtimeMode);
     void refreshNebiusRuntimeStatus();
   }, [runtimeMode]);
+
+  useEffect(() => {
+    if (!menuOpen) {
+      return undefined;
+    }
+    function closeRuntimeMenu(event: KeyboardEvent | MouseEvent) {
+      if (event instanceof KeyboardEvent && event.key === "Escape") {
+        setMenuOpen(false);
+        return;
+      }
+      if (event instanceof MouseEvent && !panelRef.current?.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener("keydown", closeRuntimeMenu);
+    document.addEventListener("mousedown", closeRuntimeMenu);
+    return () => {
+      document.removeEventListener("keydown", closeRuntimeMenu);
+      document.removeEventListener("mousedown", closeRuntimeMenu);
+    };
+  }, [menuOpen]);
 
   function switchRuntime(mode: RuntimeMode) {
     setRuntimeMode(mode);
@@ -476,9 +502,11 @@ function RuntimePanel() {
   }
 
   return (
-    <section className="runtime-control" aria-label="Runtime mode">
+    <section className="runtime-control" aria-label="Runtime mode" ref={panelRef}>
       <button
+        aria-controls="runtime-mode-dialog"
         aria-expanded={menuOpen}
+        aria-haspopup="dialog"
         className="runtime-status-pill"
         onClick={() => setMenuOpen((value) => !value)}
         title="Runtime mode"
@@ -489,7 +517,14 @@ function RuntimePanel() {
         <DrawerToggleIcon expanded={menuOpen} />
       </button>
       {menuOpen ? (
-        <div className="runtime-drawer" role="menu">
+        <div aria-label="Runtime mode selection" className="runtime-drawer" id="runtime-mode-dialog" role="dialog">
+          <div className="runtime-drawer-header">
+            <div>
+              <span>Execution environment</span>
+              <strong>{runtime.label}</strong>
+            </div>
+            <button aria-label="Close runtime mode selection" className="runtime-drawer-close" onClick={() => setMenuOpen(false)} type="button">×</button>
+          </div>
           <p>{runtime.description}</p>
           <table className="runtime-matrix">
             <thead>

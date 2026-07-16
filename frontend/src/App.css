@@ -404,7 +404,9 @@ button.active {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 14px;
-  min-height: 100vh;
+  box-sizing: border-box;
+  height: 100vh;
+  min-height: 0;
   overflow: visible;
   padding: 14px 12px;
   position: sticky;
@@ -698,7 +700,9 @@ body[data-sidebar-resizing="true"] {
   align-content: flex-start;
   display: grid;
   gap: 7px;
-  padding-bottom: 118px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 8px;
 }
 
 .side-nav a {
@@ -748,6 +752,123 @@ body[data-sidebar-resizing="true"] {
   z-index: 70;
 }
 
+.runtime-control {
+  min-width: 0;
+  position: relative;
+}
+
+.runtime-status-pill {
+  align-items: center;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--control-bg);
+  color: var(--control-text);
+  display: inline-flex;
+  gap: 8px;
+  min-height: 36px;
+  padding: 7px 10px;
+}
+
+.runtime-status-pill:hover,
+.runtime-status-pill[aria-expanded="true"] {
+  border-color: var(--color-primary);
+  background: var(--control-hover-bg);
+  color: var(--control-hover-text);
+}
+
+.runtime-drawer {
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--panel-bg);
+  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.42);
+  color: var(--text-soft);
+  display: grid;
+  gap: 12px;
+  max-height: calc(100vh - 24px);
+  overflow: auto;
+  padding: 14px;
+  position: absolute;
+  width: min(650px, calc(100vw - var(--sidebar-width, var(--layout-sidebar-width)) - 36px));
+  z-index: 100;
+}
+
+.runtime-drawer-header {
+  align-items: flex-start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.runtime-drawer-header > div {
+  display: grid;
+  gap: 2px;
+}
+
+.runtime-drawer-header span,
+.runtime-matrix th {
+  color: var(--text-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.runtime-drawer-header strong {
+  color: var(--heading);
+}
+
+.runtime-drawer-close {
+  align-items: center;
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 18px;
+  height: 30px;
+  justify-content: center;
+  min-height: 30px;
+  min-width: 30px;
+  padding: 0;
+  width: 30px;
+}
+
+.runtime-drawer > p {
+  margin: 0;
+}
+
+.runtime-matrix {
+  border-collapse: collapse;
+  font-size: 12px;
+  width: 100%;
+}
+
+.runtime-matrix th,
+.runtime-matrix td {
+  border-bottom: 1px solid var(--color-border);
+  padding: 7px 6px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.runtime-matrix td.current {
+  background: var(--color-primary-soft);
+}
+
+.runtime-actions {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.runtime-actions button.active,
+.runtime-actions button[aria-pressed="true"] {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--heading);
+}
+
+.runtime-fallback-note {
+  border-left: 3px solid var(--color-primary);
+  background: var(--color-primary-soft);
+  padding: 8px 10px;
+}
+
 .sidebar-controls .runtime-control,
 .sidebar-controls .disclaimer-popover {
   width: 100%;
@@ -761,13 +882,13 @@ body[data-sidebar-resizing="true"] {
 
 .sidebar-controls .runtime-drawer,
 .sidebar-controls .disclaimer-popover-panel {
-  left: 0;
+  left: calc(100% + 22px);
   right: auto;
-  z-index: 40;
+  z-index: 100;
 }
 
 .sidebar-controls .runtime-drawer {
-  bottom: calc(100% + 8px);
+  bottom: 0;
   top: auto;
 }
 
@@ -783,32 +904,16 @@ body[data-sidebar-resizing="true"] {
 
 .sidebar-collapsed .sidebar-controls .runtime-drawer,
 .sidebar-collapsed .sidebar-controls .disclaimer-popover-panel {
-  bottom: calc(100% + 8px);
-  left: 0;
-  min-width: 0;
+  bottom: 0;
+  left: calc(100% + 22px);
   max-height: min(420px, calc(100vh - 140px));
   overflow: auto;
   right: auto;
-  width: calc(var(--sidebar-width, var(--layout-sidebar-width)) - 24px);
+  width: min(650px, calc(100vw - var(--sidebar-width, 78px) - 36px));
 }
 
 .sidebar-collapsed .sidebar-controls .runtime-drawer {
-  padding: 7px;
-}
-
-.sidebar-collapsed .sidebar-controls .runtime-drawer p,
-.sidebar-collapsed .sidebar-controls .runtime-matrix,
-.sidebar-collapsed .sidebar-controls .runtime-fallback-note {
-  display: none;
-}
-
-.sidebar-collapsed .sidebar-controls .runtime-actions {
-  grid-template-columns: 1fr;
-}
-
-.sidebar-collapsed .sidebar-controls .runtime-actions button {
-  min-height: 30px;
-  padding: 4px 6px;
+  padding: 14px;
 }
 
 .sidebar-collapsed .sidebar-controls .disclaimer-popover-panel {
@@ -5680,7 +5785,6 @@ kbd {
   color: var(--heading);
 }
 
-.app-sidebar,
 .nav-short,
 .theme-panel,
 .runtime-status-pill,
@@ -6488,6 +6592,7 @@ kbd,
     border-bottom: 1px solid rgba(43, 90, 120, 0.42);
     gap: 8px;
     grid-template-rows: auto auto auto;
+    height: auto;
     min-height: 0;
     overflow: visible;
     padding: 8px;
@@ -6597,12 +6702,18 @@ kbd,
 
   .sidebar-collapsed .sidebar-controls .runtime-drawer,
   .sidebar-collapsed .sidebar-controls .disclaimer-popover-panel {
-    width: calc(var(--sidebar-width, 78px) - 16px);
+    width: calc(100vw - 16px);
   }
 
   .runtime-drawer {
+    bottom: calc(100% + 8px) !important;
+    left: 0 !important;
     min-width: 0;
-    width: 100%;
+    width: calc(100vw - 16px);
+  }
+
+  .runtime-actions {
+    grid-template-columns: 1fr;
   }
 
   .cockpit-controls button,
