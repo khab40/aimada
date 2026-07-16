@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-RUN pip install --no-cache-dir fastapi pydantic langgraph "uvicorn[standard]"
+RUN pip install --no-cache-dir "fastapi>=0.111.0" pydantic "starlette>=1.3.1" langgraph "uvicorn[standard]"
 
 COPY backend/app ./app
 COPY agent-runner/app.py ./agent_runner_app.py

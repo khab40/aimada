@@ -21,13 +21,14 @@ ENV PATH="/root/.nebius/bin:${PATH}"
 
 COPY backend/pyproject.toml ./
 RUN pip install --no-cache-dir \
-  fastapi \
+  "fastapi>=0.111.0" \
   numpy \
   pydantic \
-  pydantic-settings \
+  "pydantic-settings>=2.14.2" \
   pytest \
   python-dotenv \
   requests \
+  "starlette>=1.3.1" \
   pyyaml \
   awscli \
   "uvicorn[standard]"
