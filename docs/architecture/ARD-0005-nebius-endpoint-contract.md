@@ -14,7 +14,7 @@ Implemented:
 - Backend `NebiusClient` shapes typed requests, handles environment-based URLs, and falls back to deterministic typed mock responses.
 - UI and backend routes support incident explanation, smart detection, investigation report generation, and scenario drafting without exposing endpoint credentials to the browser.
 - Endpoint contract tests cover the local serverless app.
-- Real Endpoint investigations, response evidence, latency, fallback state, and S3 upload state are archived in the [benchmark bundle](../../outputs/benchmark/EXP-18E88EAF/README.md).
+- Real Endpoint investigations, response evidence, latency, fallback state, and S3 upload state are archived in the frozen [benchmark bundle](../../evidence/deployment-2026-07-14-1412/benchmarks/outputs/benchmark/EXP-390EFAC2/README.md).
 
 Before final submission:
 

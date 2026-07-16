@@ -5,6 +5,14 @@ Update this file with each significant commit before pushing.
 
 ## Unreleased
 
+### Current - chore: harden automated grading and repository packaging
+
+- Renamed the local default branch to `main` and updated CI, README, and submission references from `master`.
+- Added `make grader-smoke`, a credential-free fixed-seed Local Mock check for backend, frontend, scenario submission, detector/results/event output, and artifacts.
+- Replaced broad Docker ignore rules with context-specific allow-lists and excluded reproducible downloads and accidental local object-store materializations.
+- Added local Markdown link/anchor validation and repaired active submission links.
+- Preserved compact sanitized Nebius execution evidence while removing reproducible generated binaries from the tracked project tree.
+
 ### Current - chore: archive inactive product modules
 
 - Moved the experimental 3D LOB UI, Google Auth, disabled advanced controls, and orphan modules under `archived/` outside active build roots.

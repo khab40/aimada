@@ -2,7 +2,7 @@
 
 This folder contains open/public research references used for LOB Arena: agent-based market simulation, order-book spoofing-like behavior, LOB realism metrics, and synthetic market simulation.
 
-The PDFs were downloaded from public arXiv or public proceedings pages where available. Use them for project research and cite the original sources in the README/blog.
+Downloaded PDFs are intentionally not tracked because they are large, reproducible third-party artifacts. The canonical source and PDF URLs remain in `metadata.json`, citations remain in `references.bib`, and `download_articles.sh` can recreate a local research cache. Cite the original sources rather than repository copies.
 
 ## Core references
 

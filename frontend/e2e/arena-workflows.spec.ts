@@ -382,13 +382,13 @@ test("simulation configuration sends the same deterministic request for a fixed 
   await page.getByLabel("Difficulty").selectOption("hard");
   await page.getByLabel("Symbol").fill("seedx");
   await page.getByLabel("Duration (ticks)").fill("180");
-  await page.getByLabel("Liquidity", { exact: true }).selectOption("deep");
-  await page.getByLabel("Volatility", { exact: true }).selectOption("low");
+  await page.getByRole("combobox", { name: "Liquidity", exact: true }).selectOption("deep");
+  await page.getByRole("combobox", { name: "Volatility", exact: true }).selectOption("low");
   await page.getByLabel("Fixed seed").fill("8675309");
 
   const generate = page.getByRole("button", { name: "Generate AI Scenario" });
   await generate.click();
-  await expect(page.getByText("Seeded scenario 8675309")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Seeded scenario 8675309", exact: true })).toBeVisible();
   await expect(page.getByText("tick 12: Seeded wall placed")).toBeVisible();
   await generate.click();
   await expect.poll(() => state.scenarioRequests?.length).toBe(2);

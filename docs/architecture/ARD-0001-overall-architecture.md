@@ -18,7 +18,7 @@ Implemented:
 - Baseline liquidity invariant with additive per-agent quote ownership and quote-size guardrails.
 - UI shell with compact navigation, persisted day/night/system theme, Command Center orchestration, and paused-state-stable Liquidity Map behavior.
 - Serverless endpoint/job scaffolds, Dockerfiles, configs, scripts, and local mock/cloud-adapter paths.
-- Production Serverless Job and Endpoint evidence archived in the commit-safe [benchmark bundle](../../outputs/benchmark/EXP-18E88EAF/README.md) and frozen deployment evidence.
+- Production Serverless Job and Endpoint evidence archived in the compact frozen [benchmark bundle](../../evidence/deployment-2026-07-14-1412/benchmarks/outputs/benchmark/EXP-390EFAC2/README.md).
 - Measured runtime/cost records are linked from the submission index; sanitized UI screenshots are committed under `assets/screenshots/`.
 
 Production-grade surveillance integrations, real market data ingestion, compliance workflows, and trading signals remain intentionally out of scope.

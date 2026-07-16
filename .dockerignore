@@ -1,20 +1,24 @@
-.git
-.github
-.env
-.env.*
-!.env.example
-!**/.env.example
-.DS_Store
-.venv
-**/.venv
-**/__pycache__
-**/.pytest_cache
-**/.ruff_cache
-**/node_modules
-**/dist
-**/build
-**/coverage
-outputs
-evidence
-attachments
-*.log
+# Root-context images use an allow-list. Everything else (including .git,
+# credentials, docs, evidence, outputs, tests, and reproducible assets) stays
+# outside the Docker build context.
+**
+
+!.dockerignore
+
+!backend/
+backend/**
+!backend/Dockerfile
+!backend/pyproject.toml
+!backend/app/
+!backend/app/**
+
+!agent-runner/
+agent-runner/**
+!agent-runner/Dockerfile
+!agent-runner/app.py
+!agent-runner/langgraph_agents.py
+
+!serverless/
+serverless/**
+!serverless/jobs/
+!serverless/jobs/**

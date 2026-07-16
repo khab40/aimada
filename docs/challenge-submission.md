@@ -4,7 +4,7 @@
 
 - **Repository:** [github.com/khab40/lob-arena](https://github.com/khab40/lob-arena)
 - **Technical article:** [Technical article draft](linkedin-technical-blog-post.md) — publication URL not yet available.
-- **Video:** [LOB Arena — real Nebius cloud E2E demo](https://youtu.be/PZOrEwa4lqg); the [narration script](../assets/demo-video/lob-arena-ceo-demo-script-v2.txt) and [captions](../assets/demo-video/lob-arena-ceo-demo-captions.srt) are also included.
+- **Video:** [LOB Arena — real Nebius cloud E2E demo](https://youtu.be/PZOrEwa4lqg).
 - **Challenge category:** Nebius Serverless AI Builders Challenge.
 - **Hashtag:** `#NebiusServerlessChallenge`
 
@@ -20,7 +20,8 @@ LOB Arena is a synthetic market-surveillance arena that makes order-book abuse-l
 
 ## Reproduction
 
-- **Local path:** Follow the four commands in [Getting Started](../README.md#getting-started), then open `http://localhost:5173` and run the Serverless E2E demo. Generated evidence is written under `outputs/serverless-smoke/`.
+- **Automated grader path:** The repository default branch is `main`. From a fresh checkout, run exactly `make grader-smoke`. This deterministic Local Mock check needs no credentials, Docker, GPU, or Nebius access; it validates backend and frontend startup, submits one fixed-seed scenario, verifies detector/results/event output and all expected artifacts, and prints `GRADER_OK` only on success.
+- **Interactive local path:** Follow [Quick start](../README.md#quick-start), then open `http://localhost:5173` and run the Serverless E2E demo. Generated evidence is written under `outputs/serverless-smoke/`.
 - **Real Nebius path:** Build and push both images, deploy the endpoint, create the job, and run the smoke workflow using [Nebius deployment instructions](nebius-deployment.md). Cloud completion must be confirmed by job status and collected artifacts; submission alone is not treated as success.
 - **Runtime and usage:** Six corrected 200-workload Jobs completed with hash-derived, non-overlapping run seeds and synchronized Object Storage artifacts. The earlier default-seed repetitions are retained only as audit history. Pricing rates were not configured, so no dollar estimate is fabricated.
 
@@ -49,8 +50,8 @@ The `EXP-390EFAC2` run did not drop 20 workloads. The checked-in `labels.jsonl` 
 
 - **Job ID/status screenshot:** More than ten production jobs completed successfully and are visible in Nebius production logs; sanitized UI screenshots are listed in the [screenshot checklist](../assets/screenshots/README.md).
 - **Endpoint screenshot:** A vLLM-backed endpoint executed scenario generation, incident analysis, investigation reporting, and structured market-event explanation routes; see the [runtime status screenshot](../assets/screenshots/Screenshot%202026-07-14%20at%2019.06.53.png) and [investigation screenshot](../assets/screenshots/Screenshot%202026-07-14%20at%2017.41.43.png).
-- **Logs:** The sanitized [Nebius evidence index](../outputs/benchmark/EXP-18E88EAF/nebius_evidence_index.json) records completed Job operations whose evidence bundles were uploaded to S3. Raw logs remain excluded because they can contain environment-specific values.
-- **Output artifacts:** The committed [benchmark evidence bundle](../outputs/benchmark/EXP-18E88EAF/README.md) includes job records, aggregate metrics, a detector/model leaderboard, Endpoint request/response examples, the benchmark report, a manifest, and SHA-256 checksums. The frozen `EXP-390EFAC2` evidence remains available under [deployment evidence](../evidence/deployment-2026-07-14-1412/benchmarks/outputs/benchmark/EXP-390EFAC2/README.md).
+- **Logs:** The sanitized [Nebius evidence index](../evidence/deployment-2026-07-14-1412/benchmarks/outputs/benchmark/EXP-390EFAC2/nebius_evidence_index.json) records completed Job operations whose evidence bundles were uploaded to S3. Raw logs remain excluded because they can contain environment-specific values.
+- **Output artifacts:** The frozen [benchmark evidence bundle](../evidence/deployment-2026-07-14-1412/benchmarks/outputs/benchmark/EXP-390EFAC2/README.md) includes job records, aggregate metrics, a detector/model leaderboard, Endpoint request/response examples, the benchmark report, a manifest, and SHA-256 checksums.
 - **CI and secret scanning:** [GitHub Actions](../.github/workflows/ci.yml) runs backend, frontend, deterministic-evaluation, agent-workspace, Compose, image, and Gitleaks checks without building the long-running Nebius deployment images.
 
 ## Limitations

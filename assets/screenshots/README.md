@@ -1,16 +1,15 @@
-# AIMADA Publication Screenshot Checklist
+# LOB Arena Publication Screenshot Checklist
 
-Only commit screenshots captured from the real AIMADA application. Do not use fabricated product UI or generic market imagery.
+Only commit screenshots captured from the real LOB Arena application. Do not use fabricated product UI or generic market imagery. The repository keeps one compact, reviewed screenshot per published README state; intermediate captures are intentionally excluded.
 
 ## Required screenshots
 
 | File | UI page/state | Required content | Publication use |
 |---|---|---|---|
-| `aimada-live-arena.png` | Command Center or Workload Generator, dark mode, bounded scenario active | Order book/liquidity view, scenario state, detector confidence or incident | GitHub social preview, LinkedIn Live Arena image, optional README gallery |
-| `aimada-investigation-team.png` | Completed real Nebius-backed Investigation Team result | Specialist findings, consensus, evidence timeline, recommended action, real/Nebius mode indication | GitHub social preview candidate, LinkedIn article, README gallery |
-| `aimada-detector-tournament.png` | Completed representative tournament | Serverless Jobs label, completed state, leaderboard, precision/recall/F1, latency, artifacts | GitHub social preview candidate, LinkedIn results section, README gallery |
-| `aimada-production-evidence-sync.png` | Execution Trace or Evidence view after S3 sync | Completed Job/Endpoint evidence records, upload/sync status, safe download links | LinkedIn production-evidence section |
-| `aimada-architecture.png` | Clean rendered architecture export | Frontend, backend, authoritative runtime, detectors, agents, Endpoint, Jobs, Object Storage/evidence | LinkedIn architecture section |
+| `Screenshot 2026-07-14 at 19.06.53.png` | Runtime status | Nebius runtime status and safe configuration | README runtime gallery |
+| `Screenshot 2026-07-14 at 17.41.43.png` | Investigation Team | Completed investigation output | README investigation gallery |
+| `Screenshot 2026-07-14 at 19.07.47.png` | Detector Tournament | Leaderboard and precision/recall/F1 output | README results gallery |
+| `Screenshot 2026-07-14 at 19.08.40.png` | Execution Trace | Completed execution and artifact trace | README evidence gallery |
 
 ## Standard capture settings
 
@@ -50,10 +49,4 @@ For every final publication copy:
 
 ## README gallery gate
 
-Do not add a README screenshot gallery until these three files are present and reviewed:
-
-- `aimada-live-arena.png`
-- `aimada-investigation-team.png`
-- `aimada-detector-tournament.png`
-
-When ready, add only a compact three-image gallery with short captions and links to full-resolution files.
+Keep the README gallery limited to the four reviewed files listed above. Replace an image only after applying the redaction and validation checklist, and remove superseded intermediate captures rather than accumulating them.

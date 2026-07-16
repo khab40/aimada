@@ -1,7 +1,10 @@
-.PHONY: help backend-test backend-dev frontend-dev serverless-benchmark serverless-build serverless-push serverless-smoke nebius-partial-plan nebius-partial-deploy nebius-vm-plan nebius-vm-deploy nebius-k8s-plan nebius-k8s-deploy secrets-plan secrets-rotate secrets-check secrets-test docker-up docker-down
+.PHONY: help grader-smoke backend-test backend-dev frontend-dev serverless-benchmark serverless-build serverless-push serverless-smoke nebius-partial-plan nebius-partial-deploy nebius-vm-plan nebius-vm-deploy nebius-k8s-plan nebius-k8s-deploy secrets-plan secrets-rotate secrets-check secrets-test docker-up docker-down
 
 help:
-	@printf "%s\n" "Targets: backend-test backend-dev frontend-dev serverless-benchmark serverless-build serverless-push serverless-smoke nebius-partial-plan nebius-partial-deploy nebius-vm-plan nebius-vm-deploy nebius-k8s-plan nebius-k8s-deploy secrets-plan secrets-rotate secrets-check secrets-test docker-up docker-down"
+	@printf "%s\n" "Targets: grader-smoke backend-test backend-dev frontend-dev serverless-benchmark serverless-build serverless-push serverless-smoke nebius-partial-plan nebius-partial-deploy nebius-vm-plan nebius-vm-deploy nebius-k8s-plan nebius-k8s-deploy secrets-plan secrets-rotate secrets-check secrets-test docker-up docker-down"
+
+grader-smoke:
+	./scripts/grader-smoke.sh
 
 backend-test:
 	cd backend && uv run pytest

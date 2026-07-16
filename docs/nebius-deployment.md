@@ -504,7 +504,7 @@ Keep run counts small for first deployment checks.
 The React `Nebius AI` page reads `/api/nebius/observatory` and displays measured
 request, latency, Job, and artifact data. Production Job and Endpoint records,
 including S3 upload state, are preserved in the committed
-[benchmark evidence bundle](../outputs/benchmark/EXP-18E88EAF/README.md).
+[frozen benchmark evidence bundle](../evidence/deployment-2026-07-14-1412/benchmarks/outputs/benchmark/EXP-390EFAC2/README.md).
 
 Before final review, add Nebius console screenshots and consolidated billing and
 runtime records to the [submission index](challenge-submission.md). Do not replace

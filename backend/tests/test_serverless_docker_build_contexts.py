@@ -11,8 +11,12 @@ def test_serverless_builds_use_context_specific_dockerignore_files() -> None:
 
     assert '"${ROOT_DIR}/serverless/endpoint"' in build_script
     assert '"${ROOT_DIR}"' in build_script
-    assert ".env" in root_ignore
-    assert "outputs" in root_ignore
+    assert root_ignore.splitlines()[3] == "**"
+    assert "backend/**" in root_ignore
+    assert "!backend/app/**" in root_ignore
+    assert "!serverless/jobs/**" in root_ignore
+    assert "!assets/" not in root_ignore
+    assert "!evidence/" not in root_ignore
     assert "test_*.py" in endpoint_ignore
     assert "endpoint_config*.yaml" in endpoint_ignore
 

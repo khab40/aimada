@@ -1,3 +1,0 @@
-FAILED: neural-stochastic-agent-based-lob-simulation.pdf
-FAILED: multi-agent-rl-realistic-lob-market-simulation.pdf
-FAILED: world-agent-lob-simulation.pdf

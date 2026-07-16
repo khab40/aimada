@@ -13,7 +13,7 @@ Implemented:
 - Local detector tournament writes benchmark JSON, CSV, Markdown report, and optional chart artifacts.
 - Synthetic dataset factory writes events, incidents, labels, snapshots, and manifest artifacts, with a JSONL fallback when Parquet dependencies are unavailable.
 - Smart batch runner writes serverless-batch style artifacts for attack/detect experiments.
-- A sanitized production evidence sample is committed under [`outputs/benchmark/EXP-18E88EAF`](../../outputs/benchmark/EXP-18E88EAF/README.md).
+- A sanitized production evidence sample is retained in the compact frozen [`EXP-390EFAC2` bundle](../../evidence/deployment-2026-07-14-1412/benchmarks/outputs/benchmark/EXP-390EFAC2/README.md).
 
 Future work:
 

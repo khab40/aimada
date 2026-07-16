@@ -47,6 +47,12 @@ aimada-latest.zip
 backend/.coverage
 backend/test-results.xml
 
+# Reproducible downloads and accidental local object-storage materializations
+/assets/*.pdf
+/assets/articles/*.pdf
+/assets/articles/download_errors.txt
+/s3:/
+
 # Build artifacts
 dist/
 build/

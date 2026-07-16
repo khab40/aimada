@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/khab40/lob-arena"><img src="https://img.shields.io/badge/GitHub-khab40%2Flob--arena-181717?logo=github&amp;logoColor=white" alt="LOB Arena repository"></a>
-  <a href="https://github.com/khab40/lob-arena/actions/workflows/ci.yml"><img src="https://github.com/khab40/lob-arena/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI status"></a>
+  <a href="https://github.com/khab40/lob-arena/actions/workflows/ci.yml"><img src="https://github.com/khab40/lob-arena/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI status"></a>
   <a href="https://github.com/nebius"><img src="https://img.shields.io/badge/Nebius-Serverless_AI-6C47FF?logo=nebius&amp;logoColor=white" alt="Nebius Serverless AI"></a>
   <a href="https://github.com/python/cpython"><img src="https://img.shields.io/badge/Python-3.11-3776AB?logo=python&amp;logoColor=white" alt="Python 3.11"></a>
   <a href="https://github.com/fastapi/fastapi"><img src="https://img.shields.io/badge/FastAPI-Backend-009688?logo=fastapi&amp;logoColor=white" alt="FastAPI backend"></a>
@@ -112,6 +112,16 @@ Open:
 
 The default Compose path builds `agent-runner`, `backend`, and `frontend` from source with `NEBIUS_ENDPOINT_MODE=mock`. Local Mock requires no Nebius credentials, private images, or GPU/vLLM runtime. Cloud calls use deterministic local fallback unless Nebius Cloud mode is explicitly configured.
 
+## Automated grader
+
+From a fresh checkout of the default `main` branch, run exactly:
+
+```bash
+make grader-smoke
+```
+
+This credential-free command installs locked dependencies when needed, launches the backend and frontend on local ephemeral ports, submits one fixed-seed Local Mock scenario, and validates backend health, the rendered frontend, detector output, results metrics, event data, and all eight artifacts. It uses temporary output and prints `GRADER_OK` only after every check succeeds. It does not require Docker, cloud credentials, a GPU, or access to Nebius services.
+
 
 ## Hardware Configuration, Runtime, Cost and Expected Outputs
 
@@ -202,7 +212,7 @@ The public evidence is sanitized and checksum-verified: credentials, bearer toke
 - [Six-job production E2E evidence (1,200 workloads)](evidence/production-e2e-2026-07-15/README.md)
 - [Production L40S/vLLM Endpoint evidence (25 real calls)](evidence/production-endpoint-2026-07-15/README.md)
 - [Representative scenario benchmark](evidence/deployment-2026-07-14-1412/representative-scenario-benchmark.md)
-- [Committed benchmark bundle](outputs/benchmark/EXP-18E88EAF/README.md)
+- [Frozen benchmark bundle](evidence/deployment-2026-07-14-1412/benchmarks/outputs/benchmark/EXP-390EFAC2/README.md)
 - [Frozen Nebius deployment bundle](evidence/deployment-2026-07-14-1412/README.md)
 
 The corrected production evidence records six completed Nebius Jobs with 1,200 disjoint-seed workloads plus 25 real L40S/vLLM Endpoint calls. A separate manual Control Panel session adds one completed 100-workload Job, 12,414 events, seven AI investigation reports, 12 real Endpoint calls, and synchronized Object Storage artifacts.
@@ -253,6 +263,7 @@ docker compose --env-file .env.example config --quiet
 Common dev commands:
 
 ```bash
+make grader-smoke
 make backend-dev
 make frontend-dev
 make backend-test

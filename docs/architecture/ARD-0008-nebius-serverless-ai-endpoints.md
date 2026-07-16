@@ -13,7 +13,7 @@ Implemented:
 - Serverless endpoint app, endpoint Dockerfile/configs, prompt scaffolding, and endpoint contract tests.
 - FastAPI backend integration boundary with URL/env configuration, optional API key, timeout handling, and typed fallback responses.
 - UI flows for AI incident explanation, smart order-book alert scoring, investigation reports, and bounded red-team scenario drafting.
-- Real Endpoint investigations with latency, fallback, response, and S3 evidence are archived in the [benchmark bundle](../../outputs/benchmark/EXP-18E88EAF/README.md), with consolidated latency in the submission index.
+- Real Endpoint investigations with latency, fallback, response, and S3 evidence are archived in the frozen [benchmark bundle](../../evidence/deployment-2026-07-14-1412/benchmarks/outputs/benchmark/EXP-390EFAC2/README.md), with consolidated latency in the submission index.
 
 Scope boundary:
 

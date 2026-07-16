@@ -1,0 +1,18 @@
+# The frontend image only needs its locked build inputs.
+**
+!.dockerignore
+!Dockerfile
+!package.json
+!package-lock.json
+!index.html
+!eslint.config.js
+!postcss.config.js
+!tailwind.config.js
+!tsconfig.json
+!tsconfig.app.json
+!tsconfig.node.json
+!vite.config.ts
+!public/
+!public/**
+!src/
+!src/**
