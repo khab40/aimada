@@ -232,6 +232,20 @@ async function openWorkflowStep(page: Page, name: string) {
   await tab.click();
 }
 
+function contrastRatio(foreground: string, background: string) {
+  const channelValues = (color: string) => (color.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
+  const luminance = (color: string) => {
+    const channels = channelValues(color).map((value) => {
+      const normalized = value / 255;
+      return normalized <= 0.03928 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
+    });
+    return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+  };
+  const first = luminance(foreground);
+  const second = luminance(background);
+  return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05);
+}
+
 test("sidebar curtain and Local/Cloud chooser stay usable when expanded and collapsed", async ({ page }) => {
   await mockApi(page);
   await page.setViewportSize({ height: 900, width: 1440 });
@@ -258,6 +272,10 @@ test("sidebar curtain and Local/Cloud chooser stay usable when expanded and coll
   await page.getByRole("button", { name: "Collapse navigation" }).click();
   const collapsedSidebar = await sidebar.boundingBox();
   expect(collapsedSidebar!.width).toBeLessThanOrEqual(80);
+  await expect(page.locator(".sidebar-wordmark")).toBeHidden();
+  await expect(page.locator(".side-nav .nav-label").first()).toBeHidden();
+  const collapsedWorkspace = await workspace.boundingBox();
+  expect(collapsedWorkspace!.x).toBeGreaterThanOrEqual(collapsedSidebar!.x + collapsedSidebar!.width);
 
   await runtimeButton.click();
   dialog = page.getByRole("dialog", { name: "Runtime mode selection" });
@@ -267,6 +285,91 @@ test("sidebar curtain and Local/Cloud chooser stay usable when expanded and coll
   await dialog.getByRole("button", { name: "Nebius Cloud", exact: true }).click();
   await expect(runtimeButton).toContainText("Nebius Cloud");
   await expect.poll(() => page.evaluate(() => localStorage.getItem("lob-arena.runtimeMode"))).toBe("nebius-cloud");
+  await dialog.getByRole("button", { name: "Close runtime mode selection" }).click();
+  await page.getByRole("button", { name: "Expand navigation" }).click();
+  await expect(page.locator(".sidebar-wordmark")).toBeVisible();
+  await expect(page.locator(".side-nav .nav-label").first()).toBeVisible();
+  const restoredSidebar = await sidebar.boundingBox();
+  expect(restoredSidebar!.width).toBe(292);
+
+  await page.setViewportSize({ height: 900, width: 900 });
+  expect((await sidebar.boundingBox())!.width).toBe(292);
+  await page.getByRole("button", { name: "Collapse navigation" }).click();
+  expect((await sidebar.boundingBox())!.width).toBeLessThanOrEqual(80);
+  await page.getByRole("button", { name: "Expand navigation" }).click();
+
+  await page.setViewportSize({ height: 900, width: 620 });
+  const mobileExpandedHeight = (await sidebar.boundingBox())!.height;
+  await page.getByRole("button", { name: "Collapse navigation" }).click();
+  await expect(page.getByRole("navigation", { name: "Main screens" })).toBeHidden();
+  await expect(page.getByLabel("Runtime and safety controls")).toBeHidden();
+  expect((await sidebar.boundingBox())!.height).toBeLessThan(mobileExpandedHeight);
+  await page.getByRole("button", { name: "Expand navigation" }).click();
+  await expect(page.getByRole("navigation", { name: "Main screens" })).toBeVisible();
+});
+
+test("day and night palettes keep sidebar text and buttons consistent", async ({ page }) => {
+  await mockApi(page);
+  await page.goto("/arena?demo=real");
+
+  const sidebar = page.getByRole("complementary", { name: "Application navigation" });
+  const wordmark = page.locator(".sidebar-wordmark strong");
+  const primary = page.getByRole("button", { name: "Send to Nebius investigation" });
+  const secondary = page.getByRole("button", { name: "Disclaimer" });
+
+  await page.getByTitle("Light").click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  const light = await page.evaluate(() => {
+    const styles = (selector: string) => {
+      const computed = getComputedStyle(document.querySelector(selector)!);
+      return {
+        backgroundColor: computed.backgroundColor,
+        backgroundImage: computed.backgroundImage,
+        color: computed.color
+      };
+    };
+    return {
+      primary: styles(".primary-link-button"),
+      secondary: styles(".disclaimer-popover-button"),
+      sidebar: styles(".app-sidebar"),
+      wordmark: styles(".sidebar-wordmark strong")
+    };
+  });
+  expect(light.sidebar.backgroundColor).toBe("rgb(248, 250, 252)");
+  expect(light.wordmark.color).toBe("rgb(23, 32, 51)");
+  expect(contrastRatio(light.wordmark.color, light.sidebar.backgroundColor)).toBeGreaterThanOrEqual(4.5);
+  expect(light.primary.color).toBe("rgb(255, 255, 255)");
+  expect(light.primary.backgroundImage).toContain("linear-gradient");
+  await expect(primary).toBeVisible();
+  await expect(secondary).toBeVisible();
+
+  await page.getByTitle("Dark").click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  const dark = await page.evaluate(() => {
+    const styles = (selector: string) => {
+      const computed = getComputedStyle(document.querySelector(selector)!);
+      return {
+        backgroundColor: computed.backgroundColor,
+        backgroundImage: computed.backgroundImage,
+        color: computed.color
+      };
+    };
+    return {
+      primary: styles(".primary-link-button"),
+      secondary: styles(".disclaimer-popover-button"),
+      sidebar: styles(".app-sidebar"),
+      wordmark: styles(".sidebar-wordmark strong")
+    };
+  });
+  expect(dark.sidebar.backgroundColor).toBe("rgb(7, 11, 22)");
+  expect(dark.wordmark.color).toBe("rgb(248, 250, 252)");
+  expect(contrastRatio(dark.wordmark.color, dark.sidebar.backgroundColor)).toBeGreaterThanOrEqual(4.5);
+  expect(dark.primary.color).toBe("rgb(255, 255, 255)");
+  expect(dark.primary.backgroundImage).toContain("linear-gradient");
+  expect(dark.primary.backgroundImage).not.toBe(light.primary.backgroundImage);
+  expect(dark.secondary.backgroundColor).not.toBe(light.secondary.backgroundColor);
+  await expect(sidebar).toHaveCSS("background-color", "rgb(7, 11, 22)");
+  await expect(wordmark).toHaveCSS("color", "rgb(248, 250, 252)");
 });
 
 test("simulation configuration sends the same deterministic request for a fixed seed", async ({ page }) => {
