@@ -63,15 +63,13 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v6
 
-      - name: Install Node.js
-        uses: actions/setup-node@v6
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
         with:
-          node-version: "24"
+          version: 10.30.3
+          run_install: false
 
-      - name: Enable pnpm
-        run: corepack enable
-
-      - name: Configure pnpm cache
+      - name: Install Node.js
         uses: actions/setup-node@v6
         with:
           node-version: "24"
