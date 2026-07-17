@@ -1,19 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { API_BASE_URL, ARENA_MODE, ARENA_WS_URL, type ArenaMode } from "@/config/runtime";
 import { useMockArena, type MockScenarioType } from "@/hooks/useMockArena";
 import type { ArenaState, ArenaWebSocketMessage } from "@/types/arena";
 
-export type ArenaMode = "demo" | "mock" | "websocket";
+export type { ArenaMode };
 export type ArenaScenarioType = MockScenarioType;
 export type ArenaSourceStatus = "demo" | "mock" | "connecting" | "connected" | "disconnected" | "error";
-
-const DEFAULT_WS_URL = "ws://localhost:8000/ws/arena";
-const DEFAULT_API_BASE_URL = "http://localhost:8000";
 
 export function useArenaSource({ demo = false, demoScenario, symbol }: { demo?: boolean; demoScenario?: ArenaScenarioType; symbol?: string } = {}) {
   const mode = demo ? "demo" : getArenaMode();
   const mockArena = useMockArena({ demo: mode === "demo", initialScenario: demoScenario, symbol });
-  const wsUrl = import.meta.env.VITE_ARENA_WS_URL ?? DEFAULT_WS_URL;
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? DEFAULT_API_BASE_URL;
+  const wsUrl = ARENA_WS_URL;
+  const apiBaseUrl = API_BASE_URL;
   const socketRef = useRef<WebSocket | null>(null);
   const [sourceStatus, setSourceStatus] = useState<ArenaSourceStatus>(mode === "websocket" ? "connecting" : mode);
   const [websocketState, setWebsocketState] = useState<ArenaState>(() => mockArena.state);
@@ -136,10 +134,7 @@ export function useArenaSource({ demo = false, demoScenario, symbol }: { demo?: 
 }
 
 function getArenaMode(): ArenaMode {
-  if (import.meta.env.VITE_ARENA_MODE === "demo") {
-    return "demo";
-  }
-  return import.meta.env.VITE_ARENA_MODE === "mock" ? "mock" : "websocket";
+  return ARENA_MODE;
 }
 
 function scenarioToBackendName(scenario: ArenaScenarioType) {

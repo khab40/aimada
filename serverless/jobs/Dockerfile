@@ -4,7 +4,7 @@ WORKDIR /job
 
 ENV PYTHONPATH=/job/backend
 
-COPY backend /job/backend
+COPY backend/app /job/backend/app
 COPY serverless/jobs /job/serverless/jobs
 
 RUN pip install --no-cache-dir -r /job/serverless/jobs/requirements.txt

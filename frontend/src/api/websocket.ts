@@ -1,6 +1,5 @@
 import type { ArenaState } from "@/types/arena";
-
-const WS_URL = import.meta.env.VITE_ARENA_WS_URL ?? "ws://localhost:8000/ws/arena";
+import { ARENA_WS_URL } from "@/config/runtime";
 
 export type ArenaWebSocketMessage = {
   type: "arena_state";
@@ -8,7 +7,7 @@ export type ArenaWebSocketMessage = {
 };
 
 export function connectArenaWebSocket(onMessage: (payload: ArenaWebSocketMessage) => void): WebSocket {
-  const socket = new WebSocket(WS_URL);
+  const socket = new WebSocket(ARENA_WS_URL);
   socket.onmessage = (event) => onMessage(JSON.parse(event.data));
   return socket;
 }

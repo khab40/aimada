@@ -1,4 +1,5 @@
 import type { BenchmarkResult, Incident, ScenarioConfig } from "@/types/arena";
+import { API_BASE_URL } from "@/config/runtime";
 import type {
   AttackScenario,
   AttackScenarioInput,
@@ -7,7 +8,7 @@ import type {
   ScenarioGridConfig
 } from "@/features/nebius/types";
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
+export { API_BASE_URL };
 
 export async function getHealth(): Promise<{ status: string }> {
   const response = await fetch(`${API_BASE_URL}/health`);

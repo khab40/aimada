@@ -27,3 +27,16 @@ def test_serverless_images_use_distinct_dockerfiles_and_tags() -> None:
     assert 'serverless/endpoint/Dockerfile"' in build_script
     assert 'serverless/jobs/Dockerfile"' in build_script
     assert 'if [[ "${ENDPOINT_IMAGE}" == "${JOBS_IMAGE}" ]]' in build_script
+
+
+def test_runtime_images_exclude_development_dependencies() -> None:
+    backend_dockerfile = (ROOT / "backend" / "Dockerfile").read_text(encoding="utf-8")
+    jobs_requirements = (ROOT / "serverless" / "jobs" / "requirements.txt").read_text(encoding="utf-8")
+    frontend_dockerfile = (ROOT / "frontend" / "Dockerfile").read_text(encoding="utf-8")
+
+    assert "pytest" not in backend_dockerfile
+    assert "numpy" not in backend_dockerfile
+    assert "numpy" not in jobs_requirements
+    assert "fastapi" not in jobs_requirements
+    assert "COPY --from=build /app/dist /dist" in frontend_dockerfile
+    assert 'CMD ["npm", "run", "dev"' not in frontend_dockerfile

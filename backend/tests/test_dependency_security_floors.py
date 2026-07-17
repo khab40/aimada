@@ -26,12 +26,10 @@ def test_every_python_install_surface_enforces_security_floors() -> None:
         ROOT / "backend" / "Dockerfile",
         ROOT / "agent-runner" / "Dockerfile",
         ROOT / "serverless" / "endpoint" / "requirements.txt",
-        ROOT / "serverless" / "jobs" / "requirements.txt",
     ]
     pydantic_settings_surfaces = [
         ROOT / "backend" / "pyproject.toml",
         ROOT / "backend" / "Dockerfile",
-        ROOT / "serverless" / "jobs" / "requirements.txt",
     ]
 
     for path in starlette_surfaces:
