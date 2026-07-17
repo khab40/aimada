@@ -40,3 +40,4 @@ def test_runtime_images_exclude_development_dependencies() -> None:
     assert "fastapi" not in jobs_requirements
     assert "COPY --from=build /app/dist /dist" in frontend_dockerfile
     assert 'CMD ["npm", "run", "dev"' not in frontend_dockerfile
+    assert 'CMD ["pnpm", "run", "dev"' not in frontend_dockerfile

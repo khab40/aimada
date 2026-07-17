@@ -3,7 +3,7 @@
 !.dockerignore
 !Dockerfile
 !package.json
-!package-lock.json
+!pnpm-lock.yaml
 !index.html
 !eslint.config.js
 !postcss.config.js

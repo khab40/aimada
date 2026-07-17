@@ -15,13 +15,13 @@ venv/
 
 # Node
 node_modules/
+.pnpm-store/
 npm-debug.log*
 playwright-report/
 test-results/
 yarn-debug.log*
 yarn-error.log*
 package-lock.json
-!frontend/package-lock.json
 yarn.lock
 
 # VS Code

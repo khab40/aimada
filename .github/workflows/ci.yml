@@ -67,20 +67,28 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: "24"
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Configure pnpm cache
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
 
       - name: Install locked dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Run frontend contract tests
-        run: npm test
+        run: pnpm test
 
       - name: Run ESLint
-        run: npm run lint
+        run: pnpm run lint
 
       - name: Build production frontend
-        run: npm run build
+        run: pnpm run build
 
   deterministic-evaluation:
     name: Deterministic CPU evaluation

@@ -11,6 +11,6 @@ Vite React UI for the arena demo.
 ## Local Development
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```

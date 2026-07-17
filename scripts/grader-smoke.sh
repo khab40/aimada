@@ -9,7 +9,9 @@ FRONTEND_LOG="${TMP_DIR}/frontend.log"
 BACKEND_PID=""
 FRONTEND_PID=""
 export UV_CACHE_DIR="${UV_CACHE_DIR:-${TMP_DIR}/uv-cache}"
-export npm_config_cache="${npm_config_cache:-${TMP_DIR}/npm-cache}"
+export PNPM_HOME="${PNPM_HOME:-${TMP_DIR}/pnpm-home}"
+export PNPM_STORE_DIR="${PNPM_STORE_DIR:-${TMP_DIR}/pnpm-store}"
+export PATH="${PNPM_HOME}:${PATH}"
 
 cleanup() {
   local status=$?
@@ -33,17 +35,22 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-for command_name in uv npm curl; do
+for command_name in uv corepack curl; do
   if ! command -v "${command_name}" >/dev/null 2>&1; then
     printf 'required command not found: %s\n' "${command_name}" >&2
     exit 1
   fi
 done
+corepack enable
+if ! command -v pnpm >/dev/null 2>&1; then
+  printf '%s\n' 'required command not found: pnpm' >&2
+  exit 1
+fi
 
 mkdir -p "${ARTIFACT_DIR}"
 uv sync --project "${ROOT_DIR}/backend" --dev --frozen >/dev/null
 if [[ ! -x "${ROOT_DIR}/frontend/node_modules/.bin/vite" ]]; then
-  npm --prefix "${ROOT_DIR}/frontend" ci --ignore-scripts --no-audit --no-fund >/dev/null
+  pnpm --dir "${ROOT_DIR}/frontend" install --frozen-lockfile --ignore-scripts >/dev/null
 fi
 
 free_port() {
@@ -86,7 +93,7 @@ BACKEND_PID=$!
 env \
   VITE_API_BASE_URL="${BACKEND_URL}" \
   VITE_ARENA_WS_URL="ws://127.0.0.1:${BACKEND_PORT}/ws/arena" \
-  npm --prefix "${ROOT_DIR}/frontend" run dev -- --host 127.0.0.1 --port "${FRONTEND_PORT}" \
+  pnpm --dir "${ROOT_DIR}/frontend" run dev -- --host 127.0.0.1 --port "${FRONTEND_PORT}" \
     >"${FRONTEND_LOG}" 2>&1 &
 FRONTEND_PID=$!
 

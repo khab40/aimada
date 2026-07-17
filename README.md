@@ -255,7 +255,7 @@ Run the main checks locally:
 uv sync --project backend --dev --frozen
 PYTHONPATH=. uv run --project backend ruff check backend serverless scripts
 PYTHONPATH=. uv run --project backend pytest -c backend/pyproject.toml backend/tests
-(cd frontend && npm ci && npm run lint && npm run build)
+(cd frontend && corepack enable && pnpm install --frozen-lockfile && pnpm run lint && pnpm run build)
 docker compose --env-file .env.example config --quiet
 ./scripts/check-secrets.sh
 ```

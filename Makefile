@@ -13,7 +13,7 @@ backend-dev:
 	cd backend && uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 frontend-dev:
-	cd frontend && npm run dev
+	cd frontend && pnpm run dev
 
 serverless-benchmark:
 	cd serverless/jobs && uv run python run_batch_benchmark.py --config job_config.example.yaml
