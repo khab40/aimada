@@ -3,6 +3,8 @@
 This changelog lists significant commits in reverse chronological order.
 Update this file with each significant commit before pushing.
 
+- Hardened Java CI with production-JAR parity replay, explicit process cleanup and timeouts, retained failure diagnostics, Java test reports, and per-image Docker cache scopes.
+
 - Made Java the default versioned kernel authority with a non-root Java 25 Compose image, sampled runtime Python replay, fallback/rollback, Java image CI, and permanent full-corpus Python-to-Java gRPC replay.
 
 - Added controlled Python/shadow/Java kernel authority routing with deterministic percentage cohorts, sampled Python replay, mismatch/error fallback, fail-closed behavior, Protobuf HTTP execution/status endpoints, persisted decisions, and rollback configuration.

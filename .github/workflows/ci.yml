@@ -91,6 +91,7 @@ jobs:
   java-kernel:
     name: Java 25 kernel and control plane
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: java
@@ -112,9 +113,18 @@ jobs:
       - name: Validate Java modules
         run: ./gradlew clean check --no-daemon
 
+      - name: Upload Java test reports
+        if: ${{ always() && hashFiles('java/**/build/reports/tests/test/**') != '' }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: java-test-reports
+          path: java/**/build/reports/tests/test
+          if-no-files-found: ignore
+
   cross-language-parity:
     name: Permanent Python and Java parity replay
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       PYTHONPATH: backend
     steps:
@@ -127,6 +137,10 @@ jobs:
           distribution: temurin
           java-version: "25"
           cache: gradle
+          cache-dependency-path: |
+            java/*.gradle.kts
+            java/gradle/wrapper/gradle-wrapper.properties
+            java/**/build.gradle.kts
 
       - name: Install Python
         uses: actions/setup-python@v6
@@ -142,25 +156,42 @@ jobs:
       - name: Install locked Python dependencies
         run: uv sync --project backend --dev --frozen
 
-      - name: Start Java kernel
+      - name: Build production Java kernel
         working-directory: java
+        run: ./gradlew :control-plane:bootJar --no-daemon
+
+      - name: Replay permanent cross-language corpus
         env:
           LOB_KERNEL_GRPC_ENABLED: "true"
-        run: nohup ./gradlew :control-plane:bootRun --no-daemon > ../java-kernel-ci.log 2>&1 &
-
-      - name: Wait for Java gRPC port
         run: |
+          set -euo pipefail
+          kernel_jar="$(find java/control-plane/build/libs -maxdepth 1 -name 'control-plane-*.jar' ! -name '*-plain.jar' -print -quit)"
+          test -n "$kernel_jar"
+          java -jar "$kernel_jar" > java-kernel-ci.log 2>&1 &
+          kernel_pid=$!
+          trap 'kill "$kernel_pid" 2>/dev/null || true' EXIT
+
           for attempt in {1..60}; do
             if python -c 'import socket; socket.create_connection(("127.0.0.1", 50051), 1).close()'; then
+              uv run --project backend python scripts/run_kernel_shadow_corpus.py --target 127.0.0.1:50051
               exit 0
+            fi
+            if ! kill -0 "$kernel_pid" 2>/dev/null; then
+              cat java-kernel-ci.log
+              exit 1
             fi
             sleep 1
           done
           cat java-kernel-ci.log
           exit 1
 
-      - name: Replay permanent cross-language corpus
-        run: uv run --project backend python scripts/run_kernel_shadow_corpus.py --target 127.0.0.1:50051
+      - name: Upload Java parity service log
+        if: ${{ failure() && hashFiles('java-kernel-ci.log') != '' }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: java-kernel-parity-log
+          path: java-kernel-ci.log
+          if-no-files-found: ignore
 
   deterministic-evaluation:
     name: Deterministic CPU evaluation
@@ -259,8 +290,8 @@ jobs:
           file: ${{ matrix.file }}
           push: false
           tags: lob-arena-ci/${{ matrix.name }}:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
 
   compose:
     name: Validate Compose configurations
