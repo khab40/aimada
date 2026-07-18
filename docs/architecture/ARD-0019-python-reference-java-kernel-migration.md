@@ -4,7 +4,7 @@ Status: Accepted
 
 Date: 2026-07-18
 
-Implementation Status: `[partial: step 3 of 17]`
+Implementation Status: `[partial: step 4 of 17]`
 
 ## Context
 
@@ -71,6 +71,14 @@ The first Java boundary owns the simulation clock, deterministic scheduler, mana
 - Added SHA-256-derived named PRNG stream seeds so components do not share order-sensitive random state.
 - Froze simulation identifier, logical-time, modify, FIFO matching, execution emission, and tick-phase rules.
 - Added executable language-neutral JSON vectors and Python reference tests for PRNG output, stream derivation, ordering, units, midpoints, rounding, and identifiers.
+
+## Step 4 Implementation Record
+
+- Defined fixed-width big-endian primitive encoding, NFC UTF-8 strings, explicit optional presence, and ordered repeated values.
+- Added payload-discriminated canonical bytes for all five exchange events and a standalone canonical L2 book encoding.
+- Added per-event and book SHA-256 digests plus a domain-separated rolling stream hash chain.
+- Required matching schema version and contiguous sequence starting at 1 before stream hashing.
+- Added golden canonical bytes/digests and tests for all payloads, optional presence, state sensitivity, sequence/version rejection, Unicode normalization, and independence from Protobuf wire serialization.
 
 ## Consequences
 

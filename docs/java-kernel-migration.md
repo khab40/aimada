@@ -67,7 +67,7 @@ Java kernel authority requires all of the following:
 | 1 | Done | Scope, authority boundary, gates, toolchain policy, and rollback rules |
 | 2 | Done | `lob.exchange.v1` Protobuf messages, checked-in Python bindings, freshness validation, and round-trip tests |
 | 3 | Done | Fixed-point units, total ordering, SplitMix64 streams, identifiers, rounding, semantics, and executable vectors |
-| 4 | Planned | Canonical cross-language hashes |
+| 4 | Done | Explicit canonical event/book bytes, SHA-256 digests, stream hash chain, and golden vectors |
 | 5 | Planned | Python Protobuf reference adapter |
 | 6 | Planned | Golden parity corpus |
 | 7 | Planned | Java 25 multi-module scaffold and CI |
@@ -89,3 +89,4 @@ Java kernel authority requires all of the following:
 - [High-Level Architecture](architecture.md)
 - [Runtime Model](runtime-model.md)
 - [Determinism Contract V1](determinism-contract-v1.md)
+- [Canonical Hashing V1](canonical-hashing-v1.md)

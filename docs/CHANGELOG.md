@@ -12,6 +12,7 @@ Update this file with each significant commit before pushing.
 - Recorded repository-owned Java 25 toolchain, Gradle wrapper, and Protobuf generation requirements because global build tools are not assumed.
 - Added the versioned `lob.exchange.v1` Protobuf request/event/result contract, checked-in Python bindings, locked generation tooling, and stale-binding/round-trip tests.
 - Added the executable determinism contract with fixed-point units, total event ordering, SplitMix64/named stream vectors, half-even metrics, midpoint, identifier, and exchange rules.
+- Added domain-separated canonical event/book encoding, SHA-256 event/book digests, a rolling stream hash chain, and golden vectors for Java/Python parity.
 
 ### Current - feat: define canonical exchange event schema
 
