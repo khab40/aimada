@@ -14,6 +14,7 @@ dependencies = [
   "uvloop>=0.22.1",
   "httptools>=0.7.1",
   "websockets>=15.0.1",
+  "protobuf>=7.35.1",
 ]
 
 [tool.pytest.ini_options]
@@ -22,6 +23,7 @@ testpaths = ["tests"]
 
 [dependency-groups]
 dev = [
+  "grpcio-tools>=1.82.1",
   "langgraph>=0.2.0",
   "pytest>=8.2.0",
   "pytest-cov>=7.1.0",

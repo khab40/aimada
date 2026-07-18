@@ -1,0 +1,1 @@
+"""Exchange generated contract namespace."""

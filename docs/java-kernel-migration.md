@@ -65,7 +65,7 @@ Java kernel authority requires all of the following:
 | Step | Status | Deliverable |
 | --- | --- | --- |
 | 1 | Done | Scope, authority boundary, gates, toolchain policy, and rollback rules |
-| 2 | Planned | Versioned Protobuf contract and cross-language round trips |
+| 2 | Done | `lob.exchange.v1` Protobuf messages, checked-in Python bindings, freshness validation, and round-trip tests |
 | 3 | Planned | Determinism specification and golden vectors |
 | 4 | Planned | Canonical cross-language hashes |
 | 5 | Planned | Python Protobuf reference adapter |

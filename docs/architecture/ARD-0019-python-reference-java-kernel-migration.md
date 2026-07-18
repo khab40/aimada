@@ -4,7 +4,7 @@ Status: Accepted
 
 Date: 2026-07-18
 
-Implementation Status: `[partial: step 1 of 17]`
+Implementation Status: `[partial: step 2 of 17]`
 
 ## Context
 
@@ -53,6 +53,15 @@ The first Java boundary owns the simulation clock, deterministic scheduler, mana
 - Recorded Java 25, repository-owned Gradle/toolchain, and build-owned Protobuf generation policy.
 - Explicitly excluded Kafka, Chronicle Queue, Agrona, ClickHouse, Parquet, and full Spring migration from correctness parity work unless later gates justify them.
 - Confirmed the current workstation has Java 21 and no global Gradle or `protoc`; repository-owned tooling is required before Java compilation.
+
+## Step 2 Implementation Record
+
+- Added the versioned `lob.exchange.v1` Protobuf package with Java package and multiple-file generation options.
+- Defined language-neutral simulation requests/configuration, scenario parameters, all five exchange event payloads, L2 books, quantized metrics, hashes, and simulation results.
+- Represented price and quantity state as integer ticks/lots and midpoint as twice-price ticks; no floating-point fields or maps exist in the deterministic request/result boundary.
+- Added checked-in Python bindings plus a build script that generates them with the locked compiler and detects stale generated sources.
+- Added descriptor, oneof discriminator, all-event, request/result, integer-unit, and round-trip tests.
+- Java generation remains owned by the Gradle scaffold in step 7; step 2 does not require global Gradle or `protoc`.
 
 ## Consequences
 

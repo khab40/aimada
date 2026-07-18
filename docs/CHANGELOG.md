@@ -10,6 +10,7 @@ Update this file with each significant commit before pushing.
 - Added ARD-0019 and the Java kernel migration tracker with the Python reference, Java candidate, authority modes, parity gates, rollback rules, and component ownership boundary.
 - Kept REST, WebSocket, persistence, orchestration, detectors, and frontend authority outside the initial Java hot-loop scope.
 - Recorded repository-owned Java 25 toolchain, Gradle wrapper, and Protobuf generation requirements because global build tools are not assumed.
+- Added the versioned `lob.exchange.v1` Protobuf request/event/result contract, checked-in Python bindings, locked generation tooling, and stale-binding/round-trip tests.
 
 ### Current - feat: define canonical exchange event schema
 

@@ -1,0 +1,175 @@
+syntax = "proto3";
+
+package lob.exchange.v1;
+
+option java_multiple_files = true;
+option java_outer_classname = "ExchangeContract";
+option java_package = "ai.lobarena.exchange.v1";
+
+enum EventSource {
+  EVENT_SOURCE_UNSPECIFIED = 0;
+  EVENT_SOURCE_SIMULATION = 1;
+  EVENT_SOURCE_HISTORICAL = 2;
+}
+
+enum Side {
+  SIDE_UNSPECIFIED = 0;
+  SIDE_BUY = 1;
+  SIDE_SELL = 2;
+}
+
+enum TerminationReason {
+  TERMINATION_REASON_UNSPECIFIED = 0;
+  TERMINATION_REASON_COMPLETED = 1;
+  TERMINATION_REASON_EVENT_LIMIT = 2;
+  TERMINATION_REASON_TICK_LIMIT = 3;
+  TERMINATION_REASON_REJECTED = 4;
+  TERMINATION_REASON_FAILED = 5;
+}
+
+message EventMetadata {
+  uint32 schema_version = 1;
+  string event_id = 2;
+  uint64 sequence = 3;
+  EventSource source = 4;
+  optional uint64 source_sequence = 5;
+  string symbol = 6;
+  string venue = 7;
+  optional uint64 tick = 8;
+  optional int64 exchange_timestamp_ns = 9;
+  optional int64 received_timestamp_ns = 10;
+  optional string scenario_id = 11;
+  optional string scenario_name = 12;
+  optional string scenario_family = 13;
+}
+
+message PriceLevel {
+  int64 price_ticks = 1;
+  int64 quantity_lots = 2;
+  optional string owner = 3;
+}
+
+message BookSnapshot {
+  repeated PriceLevel bids = 1;
+  repeated PriceLevel asks = 2;
+  optional int64 best_bid_ticks = 3;
+  optional int64 best_ask_ticks = 4;
+  optional int64 mid_price_ticks_x2 = 5;
+  optional int64 spread_ticks = 6;
+}
+
+message AddOrder {
+  string order_id = 1;
+  string agent_id = 2;
+  Side side = 3;
+  int64 price_ticks = 4;
+  int64 quantity_lots = 5;
+  string owner = 6;
+}
+
+message ModifyOrder {
+  string order_id = 1;
+  string agent_id = 2;
+  Side side = 3;
+  int64 previous_price_ticks = 4;
+  int64 previous_quantity_lots = 5;
+  int64 price_ticks = 6;
+  int64 quantity_lots = 7;
+  bool priority_preserved = 8;
+  string owner = 9;
+}
+
+message CancelOrder {
+  string order_id = 1;
+  string agent_id = 2;
+  Side side = 3;
+  int64 price_ticks = 4;
+  int64 quantity_lots = 5;
+  string owner = 6;
+}
+
+message ExecuteOrder {
+  string execution_id = 1;
+  string aggressor_order_id = 2;
+  string resting_order_id = 3;
+  string aggressor_agent_id = 4;
+  string resting_agent_id = 5;
+  Side aggressor_side = 6;
+  int64 price_ticks = 7;
+  int64 quantity_lots = 8;
+  int64 aggressor_remaining_quantity_lots = 9;
+  int64 resting_remaining_quantity_lots = 10;
+}
+
+message LobSnapshot {
+  uint32 depth = 1;
+  BookSnapshot book = 2;
+}
+
+message ExchangeEvent {
+  EventMetadata metadata = 1;
+
+  oneof payload {
+    AddOrder add = 10;
+    ModifyOrder modify = 11;
+    CancelOrder cancel = 12;
+    ExecuteOrder execute = 13;
+    LobSnapshot snapshot = 14;
+  }
+}
+
+message ScenarioParameter {
+  string name = 1;
+
+  oneof value {
+    sint64 integer_value = 2;
+    string string_value = 3;
+    bool boolean_value = 4;
+  }
+}
+
+message ScenarioInput {
+  string scenario_id = 1;
+  string scenario_name = 2;
+  string scenario_family = 3;
+  uint64 seed = 4;
+  uint64 max_ticks = 5;
+  repeated ScenarioParameter parameters = 6;
+}
+
+message SimulationConfig {
+  string symbol = 1;
+  string venue = 2;
+  int64 price_tick_size_nanos = 3;
+  int64 quantity_lot_size_nanos = 4;
+  uint32 snapshot_depth = 5;
+  uint64 max_events = 6;
+  int64 reference_price_ticks = 7;
+  uint32 baseline_liquidity_levels = 8;
+  int64 baseline_liquidity_base_lots = 9;
+}
+
+message SimulationRequest {
+  uint32 contract_version = 1;
+  string run_id = 2;
+  ScenarioInput scenario = 3;
+  SimulationConfig config = 4;
+}
+
+message MetricValue {
+  string name = 1;
+  sint64 quantized_value = 2;
+  uint32 decimal_scale = 3;
+}
+
+message SimulationResult {
+  uint32 contract_version = 1;
+  string run_id = 2;
+  repeated ExchangeEvent events = 3;
+  BookSnapshot final_book = 4;
+  repeated MetricValue metrics = 5;
+  bytes event_stream_hash = 6;
+  bytes final_book_hash = 7;
+  TerminationReason termination_reason = 8;
+  optional string termination_detail = 9;
+}
