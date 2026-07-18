@@ -4,7 +4,7 @@ Status: Accepted
 
 Date: 2026-07-18
 
-Implementation Status: `[partial: step 11 of 17]`
+Implementation Status: `[partial: step 12 of 17]`
 
 ## Context
 
@@ -136,6 +136,14 @@ The first Java boundary owns the simulation clock, deterministic scheduler, mana
 - Added a separate Java `kernel-grpc` module that delegates to the framework-free candidate kernel and keeps transport code outside the hot loop.
 - Verified the Java endpoint through an in-process generated client against the complete exact golden Protobuf result; no runtime authority changed.
 
+## Step 12 Implementation Record
+
+- Added a reusable differential runner that serializes each request once and gives Python and Java independent copies of identical deterministic bytes.
+- Added structured parity reports for contract identity, ordered events, event hashes, executions, LOB snapshots, final book/hash, quantized metrics, and termination.
+- Localized the first ordered event divergence by canonical sequence and retained both complete Protobuf results for deeper investigation.
+- Added a JSON-compatible summary for later persistence and observability without copying full event payloads into routine reports.
+- Verified all six golden cases plus targeted mismatch injection for trades, books, metrics, hashes, termination, identity, and missing events; authority remains Python.
+
 ## Consequences
 
 Positive:
@@ -161,3 +169,4 @@ Tradeoffs:
 - [Runtime Model](../runtime-model.md)
 - [Golden Parity Corpus V1](../golden-parity-corpus-v1.md)
 - [gRPC Kernel Boundary](../grpc-kernel-boundary.md)
+- [Differential Parity Harness](../differential-parity-harness.md)

@@ -75,7 +75,7 @@ Java kernel authority requires all of the following:
 | 9 | Done | Integer tick/lot order book, best-price/FIFO matching, modify/cancel rules, executions, owner aggregation, and deterministic Protobuf snapshots/events |
 | 10 | Done | Java Protobuf simulation runner with logical clock, ordered normal agents, all active scenarios, baseline repair, per-tick snapshots, deterministic features/detectors, limits, and exact golden outputs |
 | 11 | Done | Shared unary gRPC contract, generated Python/Java stubs, Python reference adapter, Java candidate adapter, error mapping, and exact in-process golden-result test |
-| 12 | Planned | Differential parity harness |
+| 12 | Done | Immutable dual-runner execution, structured event/execution/snapshot/book/hash/metric/termination comparison, first-divergence localization, and full-corpus/mutation tests |
 | 13 | Planned | Offline and live shadow modes |
 | 14 | Planned | Benchmarks and profiling gates |
 | 15 | Planned | OpenTelemetry and Prometheus observability |
@@ -94,3 +94,4 @@ Java kernel authority requires all of the following:
 - [Java Integer Order Book](java-order-book.md)
 - [Java Simulation Kernel](java-simulation-kernel.md)
 - [gRPC Kernel Boundary](grpc-kernel-boundary.md)
+- [Differential Parity Harness](differential-parity-harness.md)

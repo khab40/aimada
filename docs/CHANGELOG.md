@@ -3,6 +3,8 @@
 This changelog lists significant commits in reverse chronological order.
 Update this file with each significant commit before pushing.
 
+- Added the differential parity harness with immutable dual-runner inputs, structured first-divergence reporting, and explicit event, execution, snapshot, final-book, hash, metric, and termination comparisons.
+
 - Added the shared Python/Java gRPC kernel boundary with generated stubs, reference and candidate service adapters, deterministic error mapping, and exact golden-result integration tests.
 
 - Added the executable Java simulation kernel with logical tick phases, normal agents, all active scenarios, baseline repair, snapshots, deterministic metrics, resource validation, and exact golden output tests.
