@@ -4,7 +4,7 @@ Status: Accepted
 
 Date: 2026-07-18
 
-Implementation Status: `[partial: step 12 of 17]`
+Implementation Status: `[partial: step 13 of 17]`
 
 ## Context
 
@@ -144,6 +144,14 @@ The first Java boundary owns the simulation clock, deterministic scheduler, mana
 - Added a JSON-compatible summary for later persistence and observability without copying full event payloads into routine reports.
 - Verified all six golden cases plus targeted mismatch injection for trades, books, metrics, hashes, termination, identity, and missing events; authority remains Python.
 
+## Step 13 Implementation Record
+
+- Added a runnable plain-Java gRPC server and a deadline-bound Python candidate client with explicit channel lifecycle.
+- Added synchronous offline shadow replay that retains both results and returns Python as the authoritative result on match, mismatch, or Java failure.
+- Added live shadow mirroring that returns Python before bounded background Java comparison completes.
+- Added `match`, `mismatch`, `error`, and capacity-pressure `skipped` outcomes plus drain/close lifecycle controls; candidate transport failures cannot replace the Python result.
+- Added a corpus replay command and verified all six golden scenarios over a real local gRPC socket: 320 events, 10 executions, and 51 snapshots with no divergence.
+
 ## Consequences
 
 Positive:
@@ -170,3 +178,4 @@ Tradeoffs:
 - [Golden Parity Corpus V1](../golden-parity-corpus-v1.md)
 - [gRPC Kernel Boundary](../grpc-kernel-boundary.md)
 - [Differential Parity Harness](../differential-parity-harness.md)
+- [Kernel Shadow Mode](../kernel-shadow-mode.md)

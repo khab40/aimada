@@ -23,4 +23,12 @@ On macOS or Linux, run:
 ./gradlew clean check
 ```
 
+Start the candidate gRPC server for offline shadow replay with:
+
+```bash
+./gradlew :kernel-grpc:run --args=50051
+```
+
+See [Kernel Shadow Mode](../docs/kernel-shadow-mode.md) for the Python replay command and live-mirroring guarantees.
+
 The checksum-pinned wrapper owns Gradle 9.6.1. The Foojay resolver auto-provisions a Java 25 toolchain when one is not installed, so a developer-global Gradle or Java 25 installation is not required. Generated Protobuf Java sources stay under `build/` and are not committed.

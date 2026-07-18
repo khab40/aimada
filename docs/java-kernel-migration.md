@@ -76,7 +76,7 @@ Java kernel authority requires all of the following:
 | 10 | Done | Java Protobuf simulation runner with logical clock, ordered normal agents, all active scenarios, baseline repair, per-tick snapshots, deterministic features/detectors, limits, and exact golden outputs |
 | 11 | Done | Shared unary gRPC contract, generated Python/Java stubs, Python reference adapter, Java candidate adapter, error mapping, and exact in-process golden-result test |
 | 12 | Done | Immutable dual-runner execution, structured event/execution/snapshot/book/hash/metric/termination comparison, first-divergence localization, and full-corpus/mutation tests |
-| 13 | Planned | Offline and live shadow modes |
+| 13 | Done | Runnable Java gRPC server, deadline-bound Python client, offline corpus replay, bounded live background mirroring, Python-authority failure isolation, and real six-case socket verification |
 | 14 | Planned | Benchmarks and profiling gates |
 | 15 | Planned | OpenTelemetry and Prometheus observability |
 | 16 | Planned | Incremental Java authority rollout |
@@ -95,3 +95,4 @@ Java kernel authority requires all of the following:
 - [Java Simulation Kernel](java-simulation-kernel.md)
 - [gRPC Kernel Boundary](grpc-kernel-boundary.md)
 - [Differential Parity Harness](differential-parity-harness.md)
+- [Kernel Shadow Mode](kernel-shadow-mode.md)

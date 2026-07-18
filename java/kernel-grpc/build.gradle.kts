@@ -1,4 +1,5 @@
 plugins {
+    application
     `java-library`
 }
 
@@ -25,4 +26,8 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("io.grpc:grpc-inprocess:1.81.0")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+application {
+    mainClass = "ai.lobarena.grpc.JavaKernelGrpcServer"
 }
