@@ -73,7 +73,7 @@ Java kernel authority requires all of the following:
 | 7 | Done | Repository-owned Gradle 9.6.1 wrapper, Java 25 toolchains, generated shared Protobuf module, framework-free kernel module, Spring Boot control plane, and CI |
 | 8 | Done | Java total ordering, fixed-point/metric rules, SplitMix64 named streams, identifiers, canonical encodings, and SHA-256 event/book/stream hashes with exact golden parity |
 | 9 | Done | Integer tick/lot order book, best-price/FIFO matching, modify/cancel rules, executions, owner aggregation, and deterministic Protobuf snapshots/events |
-| 10 | Planned | Java simulation kernel |
+| 10 | Done | Java Protobuf simulation runner with logical clock, ordered normal agents, all active scenarios, baseline repair, per-tick snapshots, deterministic features/detectors, limits, and exact golden outputs |
 | 11 | Planned | gRPC integration |
 | 12 | Planned | Differential parity harness |
 | 13 | Planned | Offline and live shadow modes |
@@ -92,3 +92,4 @@ Java kernel authority requires all of the following:
 - [Canonical Hashing V1](canonical-hashing-v1.md)
 - [Golden Parity Corpus V1](golden-parity-corpus-v1.md)
 - [Java Integer Order Book](java-order-book.md)
+- [Java Simulation Kernel](java-simulation-kernel.md)

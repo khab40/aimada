@@ -251,8 +251,11 @@ public final class IntegerOrderBook {
         queue.add(updated);
         sideLevels.put(priceTicks, queue);
         orders.put(updated.orderId(), updated);
-        mutationListener.accept(
-                replaced == null ? BookMutation.add(updated) : BookMutation.modify(replaced, updated, true));
+        if (replaced == null) {
+            mutationListener.accept(BookMutation.add(updated));
+        } else if (!replaced.equals(updated)) {
+            mutationListener.accept(BookMutation.modify(replaced, updated, true));
+        }
     }
 
     public void ensureLevelMinimum(Side side, long priceTicks, long minimumLots, String agentId, String owner) {
@@ -312,6 +315,28 @@ public final class IntegerOrderBook {
 
     public List<String> orderIdsAt(Side side, long priceTicks) {
         return levels(side).getOrDefault(priceTicks, List.of()).stream().map(KernelOrder::orderId).toList();
+    }
+
+    public long levelQuantity(Side side, long priceTicks) {
+        return levels(side).getOrDefault(priceTicks, List.of()).stream()
+                .mapToLong(KernelOrder::quantityLots)
+                .reduce(0, Math::addExact);
+    }
+
+    public double levelQuantityAsReferenceDouble(Side side, long priceTicks) {
+        BigDecimal exactBinarySum = BigDecimal.ZERO;
+        for (KernelOrder order : levels(side).getOrDefault(priceTicks, List.of())) {
+            double value = BigDecimal.valueOf(order.quantityLots())
+                    .multiply(BigDecimal.valueOf(quantityLotSizeNanos))
+                    .movePointLeft(9)
+                    .doubleValue();
+            exactBinarySum = exactBinarySum.add(new BigDecimal(value));
+        }
+        return exactBinarySum.doubleValue();
+    }
+
+    public List<Long> prices(Side side, int depth) {
+        return levels(side).keySet().stream().limit(depth).toList();
     }
 
     private void addWithoutMutation(KernelOrder order) {

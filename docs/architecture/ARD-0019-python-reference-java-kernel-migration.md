@@ -4,7 +4,7 @@ Status: Accepted
 
 Date: 2026-07-18
 
-Implementation Status: `[partial: step 9 of 17]`
+Implementation Status: `[partial: step 10 of 17]`
 
 ## Context
 
@@ -119,6 +119,14 @@ The first Java boundary owns the simulation clock, deterministic scheduler, mana
 - Implemented actual-state cancel, same-price priority preservation, price-change priority loss, ownership validation, baseline/agent level maintenance, and deterministic synthetic IDs.
 - Emitted contiguous version 1 Protobuf add, modify, cancel, execute, and depth-limited snapshot events directly from the Java matching boundary.
 - Added tests for ordering, both sides, limits, remainders, modification queues/timestamps, cancel state, owners, baseline construction, empty optionals, all payloads, sequences, and canonical hashability.
+
+## Step 10 Implementation Record
+
+- Added a framework-free `JavaSimulationKernel` that validates and executes the shared Protobuf request and returns the shared result.
+- Implemented the logical clock and frozen per-tick phases for ordered normal-agent intents, scenarios, baseline repair, snapshots, and metrics.
+- Implemented reference market-maker, noise-trader, and liquidity-taker behavior plus all four active scenario state machines.
+- Implemented deterministic market features and detector confidences with sorted scale-six metric output and event-limit enforcement.
+- Matched all six checked-in golden cases exactly for every ordered event, event-stream hash, final book/hash, and quantized metric while retaining Python authority.
 
 ## Consequences
 

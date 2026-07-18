@@ -90,6 +90,16 @@ public final class IntegerMatchingEngine {
         return book;
     }
 
+    public void runWithMutationContext(MutationContext context, Runnable action) {
+        MutationContext previous = mutationContext;
+        mutationContext = context;
+        try {
+            action.run();
+        } finally {
+            mutationContext = previous;
+        }
+    }
+
     private void recordExecutions(KernelOrder order, List<Execution> executions) {
         for (Execution execution : executions) {
             String eventId = nextEventId("execute");

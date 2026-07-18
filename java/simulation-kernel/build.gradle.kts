@@ -8,6 +8,14 @@ java {
     }
 }
 
+sourceSets {
+    test {
+        resources {
+            srcDir("../../contracts/golden")
+        }
+    }
+}
+
 dependencies {
     api(project(":exchange-proto"))
     testImplementation(platform("org.junit:junit-bom:6.0.3"))

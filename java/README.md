@@ -12,6 +12,8 @@ The kernel currently includes the frozen Java 25 implementations of event orderi
 
 It also includes the integer-tick/lot order book and matching engine described in [Java Integer Order Book](../docs/java-order-book.md).
 
+The complete candidate tick runner, normal agents, scenarios, baseline phase, and metric calculation are described in [Java Simulation Kernel](../docs/java-simulation-kernel.md).
+
 On macOS or Linux, run:
 
 ```bash
