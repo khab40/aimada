@@ -4,7 +4,7 @@ Status: Accepted
 
 Date: 2026-07-18
 
-Implementation Status: `[partial: step 8 of 17]`
+Implementation Status: `[partial: step 9 of 17]`
 
 ## Context
 
@@ -111,6 +111,14 @@ The first Java boundary owns the simulation clock, deterministic scheduler, mana
 - Implemented exact base-10 tick/lot conversion, round-half-even metric quantization, midpoint overflow checks, and simulation event identifiers.
 - Implemented all five canonical event payload encodings, book encoding, per-object SHA-256 digests, and the rolling stream hash chain.
 - Matched Java outputs to every frozen PRNG, seed, ordering, numeric, identifier, canonical-byte, event-hash, book-hash, and rolling-hash vector.
+
+## Step 9 Implementation Record
+
+- Added a signed-int64 tick/lot order model and deterministic bid/ask price maps with FIFO queues at each level.
+- Implemented best-price matching for both aggressor sides, crossing limits, partial fills, one execution per resting fill, and residual limit-order resting.
+- Implemented actual-state cancel, same-price priority preservation, price-change priority loss, ownership validation, baseline/agent level maintenance, and deterministic synthetic IDs.
+- Emitted contiguous version 1 Protobuf add, modify, cancel, execute, and depth-limited snapshot events directly from the Java matching boundary.
+- Added tests for ordering, both sides, limits, remainders, modification queues/timestamps, cancel state, owners, baseline construction, empty optionals, all payloads, sequences, and canonical hashability.
 
 ## Consequences
 

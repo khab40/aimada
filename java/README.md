@@ -10,6 +10,8 @@ Modules:
 
 The kernel currently includes the frozen Java 25 implementations of event ordering, fixed-point conversion, half-even metric quantization, SplitMix64 and named streams, simulation identifiers, canonical event/book bytes, SHA-256 digests, and the rolling event-stream hash.
 
+It also includes the integer-tick/lot order book and matching engine described in [Java Integer Order Book](../docs/java-order-book.md).
+
 On macOS or Linux, run:
 
 ```bash

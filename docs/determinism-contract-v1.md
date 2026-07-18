@@ -43,6 +43,8 @@ Frozen phases are agent `10`, scenario `20`, baseline repair `30`, snapshot `40`
 
 ## Exchange Semantics
 
+The Java implementation of these rules is documented in [Java Integer Order Book](java-order-book.md).
+
 - Same-price quantity modification retains queue position and original priority timestamp.
 - Price modification removes the order and appends it behind existing orders at the new price.
 - Side and agent ownership cannot change through modify.
@@ -58,5 +60,6 @@ Raw JSON and raw Protobuf serialization are not canonical hash encodings. Step 4
 ## Related Documentation
 
 - [Java Kernel Migration](java-kernel-migration.md)
+- [Java Integer Order Book](java-order-book.md)
 - [ARD-0018: Canonical Exchange Event Stream](architecture/ARD-0018-canonical-exchange-event-stream.md)
 - [ARD-0019: Python Reference And Java Kernel Migration](architecture/ARD-0019-python-reference-java-kernel-migration.md)

@@ -3,6 +3,8 @@
 This changelog lists significant commits in reverse chronological order.
 Update this file with each significant commit before pushing.
 
+- Added the Java integer tick/lot order book and matching engine with FIFO execution, exact modify/cancel semantics, deterministic Protobuf events/snapshots, tests, and architecture documentation.
+
 - Added bit-exact Java deterministic primitives and canonical SHA-256 hashing with complete parity against the frozen Python/JSON vectors.
 
 - Added the Java 25 multi-module Gradle scaffold with shared Protobuf generation, a framework-free kernel boundary, separate Spring Boot control plane, repository wrapper/toolchain policy, smoke tests, and CI job.
