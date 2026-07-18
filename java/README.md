@@ -6,6 +6,7 @@ Modules:
 
 - `exchange-proto` generates Java types directly from `contracts/proto` and reads the shared golden corpus in tests;
 - `simulation-kernel` is the framework-free deterministic hot-loop boundary;
+- `kernel-grpc` exposes the candidate kernel through the shared generated gRPC service without adding transport concerns to the hot loop;
 - `control-plane` is the separate Spring Boot API boundary and may depend on the kernel, never the reverse.
 
 The kernel currently includes the frozen Java 25 implementations of event ordering, fixed-point conversion, half-even metric quantization, SplitMix64 and named streams, simulation identifiers, canonical event/book bytes, SHA-256 digests, and the rolling event-stream hash.
@@ -13,6 +14,8 @@ The kernel currently includes the frozen Java 25 implementations of event orderi
 It also includes the integer-tick/lot order book and matching engine described in [Java Integer Order Book](../docs/java-order-book.md).
 
 The complete candidate tick runner, normal agents, scenarios, baseline phase, and metric calculation are described in [Java Simulation Kernel](../docs/java-simulation-kernel.md).
+
+The cross-language service and failure contract are described in [gRPC Kernel Boundary](../docs/grpc-kernel-boundary.md).
 
 On macOS or Linux, run:
 

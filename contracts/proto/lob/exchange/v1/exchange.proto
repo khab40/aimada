@@ -177,3 +177,7 @@ message SimulationResult {
   TerminationReason termination_reason = 8;
   optional string termination_detail = 9;
 }
+
+service SimulationKernel {
+  rpc RunSimulation(SimulationRequest) returns (SimulationResult);
+}

@@ -3,6 +3,8 @@
 This changelog lists significant commits in reverse chronological order.
 Update this file with each significant commit before pushing.
 
+- Added the shared Python/Java gRPC kernel boundary with generated stubs, reference and candidate service adapters, deterministic error mapping, and exact golden-result integration tests.
+
 - Added the executable Java simulation kernel with logical tick phases, normal agents, all active scenarios, baseline repair, snapshots, deterministic metrics, resource validation, and exact golden output tests.
 
 - Added the Java integer tick/lot order book and matching engine with FIFO execution, exact modify/cancel semantics, deterministic Protobuf events/snapshots, tests, and architecture documentation.

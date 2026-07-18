@@ -4,7 +4,7 @@ Status: Accepted
 
 Date: 2026-07-18
 
-Implementation Status: `[partial: step 10 of 17]`
+Implementation Status: `[partial: step 11 of 17]`
 
 ## Context
 
@@ -128,6 +128,14 @@ The first Java boundary owns the simulation clock, deterministic scheduler, mana
 - Implemented deterministic market features and detector confidences with sorted scale-six metric output and event-limit enforcement.
 - Matched all six checked-in golden cases exactly for every ordered event, event-stream hash, final book/hash, and quantized metric while retaining Python authority.
 
+## Step 11 Implementation Record
+
+- Added the unary `lob.exchange.v1.SimulationKernel.RunSimulation` operation directly to the shared Protobuf contract.
+- Generated checked-in Python gRPC bindings and build-owned Java message/service stubs from the same schema.
+- Added a Python service adapter that delegates to the authoritative reference kernel and maps deterministic contract failures to `INVALID_ARGUMENT`.
+- Added a separate Java `kernel-grpc` module that delegates to the framework-free candidate kernel and keeps transport code outside the hot loop.
+- Verified the Java endpoint through an in-process generated client against the complete exact golden Protobuf result; no runtime authority changed.
+
 ## Consequences
 
 Positive:
@@ -152,3 +160,4 @@ Tradeoffs:
 - [High-Level Architecture](../architecture.md)
 - [Runtime Model](../runtime-model.md)
 - [Golden Parity Corpus V1](../golden-parity-corpus-v1.md)
+- [gRPC Kernel Boundary](../grpc-kernel-boundary.md)

@@ -74,7 +74,7 @@ Java kernel authority requires all of the following:
 | 8 | Done | Java total ordering, fixed-point/metric rules, SplitMix64 named streams, identifiers, canonical encodings, and SHA-256 event/book/stream hashes with exact golden parity |
 | 9 | Done | Integer tick/lot order book, best-price/FIFO matching, modify/cancel rules, executions, owner aggregation, and deterministic Protobuf snapshots/events |
 | 10 | Done | Java Protobuf simulation runner with logical clock, ordered normal agents, all active scenarios, baseline repair, per-tick snapshots, deterministic features/detectors, limits, and exact golden outputs |
-| 11 | Planned | gRPC integration |
+| 11 | Done | Shared unary gRPC contract, generated Python/Java stubs, Python reference adapter, Java candidate adapter, error mapping, and exact in-process golden-result test |
 | 12 | Planned | Differential parity harness |
 | 13 | Planned | Offline and live shadow modes |
 | 14 | Planned | Benchmarks and profiling gates |
@@ -93,3 +93,4 @@ Java kernel authority requires all of the following:
 - [Golden Parity Corpus V1](golden-parity-corpus-v1.md)
 - [Java Integer Order Book](java-order-book.md)
 - [Java Simulation Kernel](java-simulation-kernel.md)
+- [gRPC Kernel Boundary](grpc-kernel-boundary.md)

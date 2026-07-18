@@ -13,6 +13,7 @@ OUTPUT_ROOT = ROOT / "backend" / "app" / "contracts" / "generated"
 GENERATED_FILES = (
     Path("lob/exchange/v1/exchange_pb2.py"),
     Path("lob/exchange/v1/exchange_pb2.pyi"),
+    Path("lob/exchange/v1/exchange_pb2_grpc.py"),
 )
 
 
@@ -24,11 +25,18 @@ def generate(output_root: Path) -> None:
             f"-I{PROTO_ROOT}",
             f"--python_out={output_root}",
             f"--pyi_out={output_root}",
+            f"--grpc_python_out={output_root}",
             str(PROTO_FILE),
         ]
     )
     if result != 0:
         raise RuntimeError(f"protoc failed with exit code {result}")
+    grpc_file = output_root / "lob/exchange/v1/exchange_pb2_grpc.py"
+    grpc_source = grpc_file.read_text(encoding="utf-8").replace(
+        "from lob.exchange.v1 import exchange_pb2 as lob_dot_exchange_dot_v1_dot_exchange__pb2",
+        "from app.contracts.generated.lob.exchange.v1 import exchange_pb2 as lob_dot_exchange_dot_v1_dot_exchange__pb2",
+    )
+    grpc_file.write_text(grpc_source.replace("import warnings\n", ""), encoding="utf-8")
 
 
 def check_generated() -> bool:
