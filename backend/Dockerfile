@@ -23,6 +23,8 @@ RUN pip install --no-cache-dir \
   pydantic \
   "pydantic-settings>=2.14.2" \
   "starlette>=1.3.1" \
+  "protobuf>=7.35.1" \
+  "grpcio>=1.82.1" \
   pyyaml \
   uvicorn \
   uvloop \

@@ -289,9 +289,18 @@ jobs:
           context: ${{ matrix.context }}
           file: ${{ matrix.file }}
           push: false
+          load: true
           tags: lob-arena-ci/${{ matrix.name }}:${{ github.sha }}
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+      - name: Smoke test backend runtime imports
+        if: ${{ matrix.name == 'backend' }}
+        run: docker run --rm lob-arena-ci/backend:${{ github.sha }} python -c 'import app.main'
+
+      - name: Smoke test Java runtime layout
+        if: ${{ matrix.name == 'java-kernel' }}
+        run: docker run --rm --entrypoint sh lob-arena-ci/java-kernel:${{ github.sha }} -c 'test "$(id -u)" -ne 0 && test -r /app/app.jar'
 
   compose:
     name: Validate Compose configurations

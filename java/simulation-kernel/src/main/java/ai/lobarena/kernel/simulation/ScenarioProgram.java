@@ -226,13 +226,14 @@ final class ScenarioProgram {
         for (Side side : List.of(Side.SIDE_BUY, Side.SIDE_SELL)) {
             for (long price : book.prices(side, 3)) {
                 double current = book.levelQuantityAsReferenceDouble(side, price);
-                BigDecimal target = new BigDecimal(current * 0.35).setScale(3, RoundingMode.HALF_EVEN);
-                if (target.compareTo(new BigDecimal("0.2")) < 0) {
-                    target = new BigDecimal("0.2");
-                }
-                book.updateLevel(side, price, lots(target), "normal");
+                book.updateLevel(side, price, lots(thinQuantity(current)), "normal");
             }
         }
+    }
+
+    static BigDecimal thinQuantity(double current) {
+        BigDecimal target = new BigDecimal(current * 0.35).setScale(3, RoundingMode.HALF_EVEN);
+        return target.max(new BigDecimal("0.2"));
     }
 
     private void updateScenarioLevel(

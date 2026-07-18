@@ -1,6 +1,27 @@
+from collections.abc import Iterable
+from decimal import Decimal, ROUND_HALF_EVEN
+
 from app.exchange.order_book import OrderBook
 from app.schemas.arena import AgentEvent, AttackStage
 from app.scenarios.base import ScenarioBase
+
+
+_THINNING_FACTOR = Decimal("0.35")
+_MINIMUM_QUANTITY = Decimal("0.2")
+_QUANTITY_QUANTUM = Decimal("0.001")
+
+
+def reference_level_quantity(quantities: Iterable[float]) -> float:
+    """Mirror Java's exact binary-value sum followed by one double conversion."""
+    exact_binary_sum = sum((Decimal.from_float(quantity) for quantity in quantities), Decimal())
+    return float(exact_binary_sum)
+
+
+def thin_quantity(current: float) -> Decimal:
+    """Mirror Java's frozen binary-product to scale-three half-even conversion."""
+    binary_product = current * float(_THINNING_FACTOR)
+    target = Decimal.from_float(binary_product).quantize(_QUANTITY_QUANTUM, rounding=ROUND_HALF_EVEN)
+    return max(_MINIMUM_QUANTITY, target)
 
 
 class LiquidityEvaporationScenario(ScenarioBase):
@@ -36,8 +57,8 @@ class LiquidityEvaporationScenario(ScenarioBase):
             levels = book.bids if side == "bid" else book.asks
             prices = sorted(levels, reverse=side == "bid")[:3]
             for price in prices:
-                current = book._level_quantity(side, price)
-                book.update_level(side, price, max(0.2, round(current * 0.35, 3)), owner="normal")
+                current = reference_level_quantity(order.quantity for order in levels[price])
+                book.update_level(side, price, float(thin_quantity(current)), owner="normal")
 
     def _widen_spread(self, book: OrderBook) -> None:
         best_bid = book.best_bid()

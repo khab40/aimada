@@ -3,6 +3,9 @@
 This changelog lists significant commits in reverse chronological order.
 Update this file with each significant commit before pushing.
 
+- Fixed Linux/macOS Python-to-Java parity at a liquidity-thinning boundary by making Python use Java-equivalent exact binary-value summation and scale-three half-even conversion.
+- Restored the minimized backend image's Protobuf/gRPC runtime imports and added backend/Java container smoke checks to CI.
+
 - Hardened Java CI with production-JAR parity replay, explicit process cleanup and timeouts, retained failure diagnostics, Java test reports, and per-image Docker cache scopes.
 
 - Made Java the default versioned kernel authority with a non-root Java 25 Compose image, sampled runtime Python replay, fallback/rollback, Java image CI, and permanent full-corpus Python-to-Java gRPC replay.

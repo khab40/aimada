@@ -13,12 +13,19 @@ import ai.lobarena.exchange.v1.TerminationReason;
 import ai.lobarena.kernel.hashing.CanonicalHashes;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 final class JavaSimulationKernelTest {
+    @Test
+    void liquidityThinningUsesPortableBinaryToDecimalHalfEvenRounding() {
+        assertEquals(new BigDecimal("1.522"), ScenarioProgram.thinQuantity(4.35));
+        assertEquals(new BigDecimal("0.2"), ScenarioProgram.thinQuantity(0.3));
+    }
+
     @Test
     void repeatedRequestProducesByteIdenticalResultWithValidHashes() throws IOException {
         SimulationRequest request = request("normal-market-seed-42");
