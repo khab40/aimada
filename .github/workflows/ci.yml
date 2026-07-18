@@ -112,6 +112,56 @@ jobs:
       - name: Validate Java modules
         run: ./gradlew clean check --no-daemon
 
+  cross-language-parity:
+    name: Permanent Python and Java parity replay
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: backend
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Install Java 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: gradle
+
+      - name: Install Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Install locked Python dependencies
+        run: uv sync --project backend --dev --frozen
+
+      - name: Start Java kernel
+        working-directory: java
+        env:
+          LOB_KERNEL_GRPC_ENABLED: "true"
+        run: nohup ./gradlew :control-plane:bootRun --no-daemon > ../java-kernel-ci.log 2>&1 &
+
+      - name: Wait for Java gRPC port
+        run: |
+          for attempt in {1..60}; do
+            if python -c 'import socket; socket.create_connection(("127.0.0.1", 50051), 1).close()'; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat java-kernel-ci.log
+          exit 1
+
+      - name: Replay permanent cross-language corpus
+        run: uv run --project backend python scripts/run_kernel_shadow_corpus.py --target 127.0.0.1:50051
+
   deterministic-evaluation:
     name: Deterministic CPU evaluation
     runs-on: ubuntu-latest
@@ -192,6 +242,9 @@ jobs:
           - name: agent-runner
             context: .
             file: agent-runner/Dockerfile
+          - name: java-kernel
+            context: .
+            file: java/Dockerfile
     steps:
       - name: Check out repository
         uses: actions/checkout@v6

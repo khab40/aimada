@@ -3,23 +3,18 @@ from threading import Event
 import pytest
 
 from app.config import Settings
-from app.contracts.authority import KernelAuthorityError, KernelAuthorityRouter, create_authority_router
+from app.contracts.authority import KernelAuthorityError, KernelAuthorityRouter
 from app.contracts.generated.lob.exchange.v1 import exchange_pb2
 from app.contracts.python_reference import PythonReferenceKernel
 from tests.test_python_reference_kernel import request
 
 
-def test_default_settings_keep_python_authoritative_without_java_channel() -> None:
+def test_default_settings_select_full_java_with_sampled_python_replay_and_fallback() -> None:
     settings = Settings(_env_file=None)
-    router = create_authority_router(settings)
-
-    run = router.run(request(max_ticks=2))
-
-    assert run.result.events
-    assert run.decision.selected_authority == "python"
-    assert run.decision.outcome == "python"
-    assert router.status()["rollout_percentage"] == 0
-    router.close()
+    assert settings.kernel_authority_mode == "java"
+    assert settings.java_kernel_rollout_percentage == 100
+    assert settings.java_kernel_python_replay_percentage == 10
+    assert settings.java_kernel_fallback_to_python is True
 
 
 def test_java_rollout_holdback_never_calls_candidate() -> None:

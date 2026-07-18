@@ -2,12 +2,12 @@
 
 The Python control plane now owns one explicit authority router for versioned Protobuf kernel requests. The router is used by `POST /api/kernel/run`; its result headers identify the authority and rollout decision.
 
-Python remains the default:
+Java is the default for the versioned kernel API after the step 17 cutover:
 
 ```text
-KERNEL_AUTHORITY_MODE=python
-JAVA_KERNEL_ROLLOUT_PERCENTAGE=0
-JAVA_KERNEL_PYTHON_REPLAY_PERCENTAGE=100
+KERNEL_AUTHORITY_MODE=java
+JAVA_KERNEL_ROLLOUT_PERCENTAGE=100
+JAVA_KERNEL_PYTHON_REPLAY_PERCENTAGE=10
 JAVA_KERNEL_FALLBACK_TO_PYTHON=true
 ```
 
@@ -52,4 +52,4 @@ Rollback is one configuration change: set `KERNEL_AUTHORITY_MODE=python` and res
 
 `GET /api/kernel/status` exposes mode, rollout/replay percentages, fallback policy, and shadow queue metrics without exposing the Java target or run ids.
 
-This step makes Java authority available and controllable but does not make it the default. Step 17 owns the final default change and permanent Python replay policy.
+The default runtime samples 10% of Java-selected requests for synchronous Python replay and keeps fallback enabled. CI permanently replays 100% of the immutable cross-language corpus. Operators can still force `python` or `shadow` without rebuilding.

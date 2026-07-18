@@ -199,7 +199,7 @@ class Settings(BaseSettings):
     )
     arena_persist_all_events: bool = Field(default=False, alias="ARENA_PERSIST_ALL_EVENTS")
     kernel_authority_mode: Literal["python", "shadow", "java"] = Field(
-        default="python",
+        default="java",
         alias="KERNEL_AUTHORITY_MODE",
     )
     java_kernel_grpc_target: str = Field(default="127.0.0.1:50051", alias="JAVA_KERNEL_GRPC_TARGET")
@@ -210,13 +210,13 @@ class Settings(BaseSettings):
         alias="JAVA_KERNEL_GRPC_TIMEOUT_SECONDS",
     )
     java_kernel_rollout_percentage: int = Field(
-        default=0,
+        default=100,
         ge=0,
         le=100,
         alias="JAVA_KERNEL_ROLLOUT_PERCENTAGE",
     )
     java_kernel_python_replay_percentage: int = Field(
-        default=100,
+        default=10,
         ge=0,
         le=100,
         alias="JAVA_KERNEL_PYTHON_REPLAY_PERCENTAGE",

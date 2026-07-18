@@ -6,7 +6,7 @@ scrape_configs:
   - job_name: lob-arena-java-kernel
     metrics_path: /actuator/prometheus
     static_configs:
-      - targets: ["java-control-plane:8080"]
+      - targets: ["java-kernel:8080"]
 
   - job_name: lob-arena-python-control-plane
     metrics_path: /metrics

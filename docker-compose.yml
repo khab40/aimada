@@ -1,6 +1,26 @@
 name: lob-arena
 
 services:
+  java-kernel:
+    build:
+      context: .
+      dockerfile: java/Dockerfile
+    environment:
+      LOB_KERNEL_GRPC_ENABLED: "true"
+      LOB_KERNEL_GRPC_PORT: "50051"
+      LOB_KERNEL_OTLP_ENABLED: ${LOB_KERNEL_OTLP_ENABLED:-false}
+      LOB_KERNEL_OTLP_METRICS_ENABLED: ${LOB_KERNEL_OTLP_METRICS_ENABLED:-false}
+      LOB_KERNEL_TRACE_SAMPLE_PROBABILITY: ${LOB_KERNEL_TRACE_SAMPLE_PROBABILITY:-0.1}
+    ports:
+      - "8081:8080"
+      - "50051:50051"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080'"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 20s
+
   agent-runner:
     build:
       context: .
@@ -50,11 +70,11 @@ services:
       ARENA_MAX_AGENT_QUOTE_SIZE: ${ARENA_MAX_AGENT_QUOTE_SIZE:-25.0}
       ARENA_TICK_HISTORY_INTERVAL: ${ARENA_TICK_HISTORY_INTERVAL:-10}
       ARENA_PERSIST_ALL_EVENTS: ${ARENA_PERSIST_ALL_EVENTS:-false}
-      KERNEL_AUTHORITY_MODE: ${KERNEL_AUTHORITY_MODE:-python}
-      JAVA_KERNEL_GRPC_TARGET: ${JAVA_KERNEL_GRPC_TARGET:-host.docker.internal:50051}
+      KERNEL_AUTHORITY_MODE: ${KERNEL_AUTHORITY_MODE:-java}
+      JAVA_KERNEL_GRPC_TARGET: ${JAVA_KERNEL_GRPC_TARGET:-java-kernel:50051}
       JAVA_KERNEL_GRPC_TIMEOUT_SECONDS: ${JAVA_KERNEL_GRPC_TIMEOUT_SECONDS:-5}
-      JAVA_KERNEL_ROLLOUT_PERCENTAGE: ${JAVA_KERNEL_ROLLOUT_PERCENTAGE:-0}
-      JAVA_KERNEL_PYTHON_REPLAY_PERCENTAGE: ${JAVA_KERNEL_PYTHON_REPLAY_PERCENTAGE:-100}
+      JAVA_KERNEL_ROLLOUT_PERCENTAGE: ${JAVA_KERNEL_ROLLOUT_PERCENTAGE:-100}
+      JAVA_KERNEL_PYTHON_REPLAY_PERCENTAGE: ${JAVA_KERNEL_PYTHON_REPLAY_PERCENTAGE:-10}
       JAVA_KERNEL_FALLBACK_TO_PYTHON: ${JAVA_KERNEL_FALLBACK_TO_PYTHON:-true}
       JAVA_KERNEL_SHADOW_WORKERS: ${JAVA_KERNEL_SHADOW_WORKERS:-1}
       JAVA_KERNEL_SHADOW_MAX_PENDING: ${JAVA_KERNEL_SHADOW_MAX_PENDING:-16}
@@ -94,6 +114,8 @@ services:
       - "8000:8000"
     depends_on:
       agent-runner:
+        condition: service_healthy
+      java-kernel:
         condition: service_healthy
     volumes:
       - ./outputs:/app/outputs

@@ -74,7 +74,7 @@ flowchart LR
 
 The exchange produces a versioned canonical stream of `add`, `modify`, `cancel`, `execute`, and `snapshot` events. Simulation is the live source; future venue datasets enter through a historical normalizer and preserve their upstream sequence/timestamps separately from canonical replay order. Arena state/WebSocket messages carry a bounded event tail, `/api/arena/exchange-events` provides cursor replay, and append-only history stores full events plus snapshot-only checkpoints.
 
-The deterministic exchange kernel is being migrated through a Python-reference/Java-candidate architecture. The plain Java 25 kernel implements the scheduler, managed PRNG streams, order book, matching, canonical events, snapshots, and metrics behind a shared Protobuf/gRPC contract. The Python control plane exposes a Protobuf kernel API and explicit `python`, `shadow`, and percentage-based `java` routing with sampled reference replay and automatic mismatch/error fallback. Python remains the default until the final gate; Spring Boot, rollout policy, and later component migration remain outside the hot loop.
+The versioned deterministic kernel API now uses the plain Java 25 kernel by default for the scheduler, managed PRNG streams, order book, matching, canonical events, snapshots, and metrics behind the shared Protobuf/gRPC contract. The Python control plane retains `python`, `shadow`, and percentage-based `java` routing, samples Python reference replay, and automatically falls back on Java error or known mismatch. FastAPI remains the REST/WebSocket, persistence, Nebius, and interactive-simulation control plane; Spring Boot and rollout policy remain outside the hot loop.
 
 ### Runtime Flow
 

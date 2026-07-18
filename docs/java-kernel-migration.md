@@ -80,7 +80,7 @@ Java kernel authority requires all of the following:
 | 14 | Done | JMH simulation/matching benchmarks, GC allocation profiling, portable p99/throughput/allocation smoke ceilings, and correctness checks inside measured kernel runs |
 | 15 | Done | Failure-isolated gRPC metrics/spans, Prometheus actuator, opt-in OpenTelemetry/OTLP, bounded Python shadow metrics, scrape template, and Grafana dashboard |
 | 16 | Done | Protobuf kernel API, explicit python/shadow/java router, deterministic percentage cohorts, sampled Python replay, mismatch/error fallback, fail-closed option, persisted decisions, and rollback settings |
-| 17 | Planned | Permanent Python reference replay policy |
+| 17 | Done | Java-default Protobuf kernel API, four-service Compose deployment, non-root Java 25 image, 10% runtime Python replay, fallback/rollback, and permanent 100% real-gRPC corpus replay in CI |
 
 ## Related Documentation
 
@@ -99,3 +99,4 @@ Java kernel authority requires all of the following:
 - [Java Kernel Performance](java-kernel-performance.md)
 - [Kernel Observability](kernel-observability.md)
 - [Kernel Authority Rollout](kernel-authority-rollout.md)
+- [Java Kernel Default Cutover](java-kernel-cutover.md)

@@ -1,10 +1,10 @@
 # ARD-0019: Python Reference And Java Kernel Migration
 
-Status: Accepted
+Status: Accepted and Implemented
 
 Date: 2026-07-18
 
-Implementation Status: `[partial: step 16 of 17]`
+Implementation Status: `[done: step 17 of 17]`
 
 ## Context
 
@@ -176,6 +176,14 @@ The first Java boundary owns the simulation clock, deterministic scheduler, mana
 - Added a bounded Protobuf HTTP kernel endpoint, status endpoint, persisted authority decisions, result authority headers, and FastAPI shadow metric attachment.
 - Added environment/Compose controls and a staged 1/5/25/50/100 percent rollout and one-setting rollback runbook without adding a container.
 
+## Step 17 Implementation Record
+
+- Changed the versioned Protobuf kernel API default to 100% Java authority with 10% synchronous Python replay and Python fallback retained.
+- Added a fourth purposeful Compose service for the Java kernel and made the Python backend wait for its health before connecting over gRPC.
+- Added a multi-stage, non-root Java 25 runtime image with an allow-listed 476 KB source context and no Gradle/JDK/tests/docs/outputs/Windows launchers in the runtime image.
+- Added the Java image to CI and a permanent real-service cross-language job that replays 100% of the Python golden corpus through Java gRPC.
+- Verified the built 149.6 MB image locally and confirmed a default-authority golden request selected Java with complete parity and no fallback.
+
 ## Consequences
 
 Positive:
@@ -206,3 +214,4 @@ Tradeoffs:
 - [Java Kernel Performance](../java-kernel-performance.md)
 - [Kernel Observability](../kernel-observability.md)
 - [Kernel Authority Rollout](../kernel-authority-rollout.md)
+- [Java Kernel Default Cutover](../java-kernel-cutover.md)
