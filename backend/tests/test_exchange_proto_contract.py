@@ -124,6 +124,10 @@ def test_simulation_request_and_result_round_trip_without_maps_or_floats() -> No
             reference_price_ticks=68_125,
             baseline_liquidity_levels=12,
             baseline_liquidity_base_lots=1_500,
+            tick_interval_ns=500_000_000,
+            normal_agent_count=3,
+            baseline_liquidity_tick_size_ticks=1,
+            max_agent_quote_lots=25_000,
         ),
     )
     result = exchange_pb2.SimulationResult(

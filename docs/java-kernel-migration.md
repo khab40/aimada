@@ -68,7 +68,7 @@ Java kernel authority requires all of the following:
 | 2 | Done | `lob.exchange.v1` Protobuf messages, checked-in Python bindings, freshness validation, and round-trip tests |
 | 3 | Done | Fixed-point units, total ordering, SplitMix64 streams, identifiers, rounding, semantics, and executable vectors |
 | 4 | Done | Explicit canonical event/book bytes, SHA-256 digests, stream hash chain, and golden vectors |
-| 5 | Planned | Python Protobuf reference adapter |
+| 5 | Done | Authoritative Python Protobuf runner with exact event/book conversion, hashes, and quantized metrics |
 | 6 | Planned | Golden parity corpus |
 | 7 | Planned | Java 25 multi-module scaffold and CI |
 | 8 | Planned | Java clock, PRNG, ordering, identifiers, and hashing |

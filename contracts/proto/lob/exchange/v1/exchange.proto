@@ -147,6 +147,10 @@ message SimulationConfig {
   int64 reference_price_ticks = 7;
   uint32 baseline_liquidity_levels = 8;
   int64 baseline_liquidity_base_lots = 9;
+  uint64 tick_interval_ns = 10;
+  uint32 normal_agent_count = 11;
+  int64 baseline_liquidity_tick_size_ticks = 12;
+  int64 max_agent_quote_lots = 13;
 }
 
 message SimulationRequest {

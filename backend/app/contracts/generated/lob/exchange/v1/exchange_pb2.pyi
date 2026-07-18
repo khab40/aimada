@@ -227,7 +227,7 @@ class ScenarioInput(_message.Message):
     def __init__(self, scenario_id: _Optional[str] = ..., scenario_name: _Optional[str] = ..., scenario_family: _Optional[str] = ..., seed: _Optional[int] = ..., max_ticks: _Optional[int] = ..., parameters: _Optional[_Iterable[_Union[ScenarioParameter, _Mapping]]] = ...) -> None: ...
 
 class SimulationConfig(_message.Message):
-    __slots__ = ("symbol", "venue", "price_tick_size_nanos", "quantity_lot_size_nanos", "snapshot_depth", "max_events", "reference_price_ticks", "baseline_liquidity_levels", "baseline_liquidity_base_lots")
+    __slots__ = ("symbol", "venue", "price_tick_size_nanos", "quantity_lot_size_nanos", "snapshot_depth", "max_events", "reference_price_ticks", "baseline_liquidity_levels", "baseline_liquidity_base_lots", "tick_interval_ns", "normal_agent_count", "baseline_liquidity_tick_size_ticks", "max_agent_quote_lots")
     SYMBOL_FIELD_NUMBER: _ClassVar[int]
     VENUE_FIELD_NUMBER: _ClassVar[int]
     PRICE_TICK_SIZE_NANOS_FIELD_NUMBER: _ClassVar[int]
@@ -237,6 +237,10 @@ class SimulationConfig(_message.Message):
     REFERENCE_PRICE_TICKS_FIELD_NUMBER: _ClassVar[int]
     BASELINE_LIQUIDITY_LEVELS_FIELD_NUMBER: _ClassVar[int]
     BASELINE_LIQUIDITY_BASE_LOTS_FIELD_NUMBER: _ClassVar[int]
+    TICK_INTERVAL_NS_FIELD_NUMBER: _ClassVar[int]
+    NORMAL_AGENT_COUNT_FIELD_NUMBER: _ClassVar[int]
+    BASELINE_LIQUIDITY_TICK_SIZE_TICKS_FIELD_NUMBER: _ClassVar[int]
+    MAX_AGENT_QUOTE_LOTS_FIELD_NUMBER: _ClassVar[int]
     symbol: str
     venue: str
     price_tick_size_nanos: int
@@ -246,7 +250,11 @@ class SimulationConfig(_message.Message):
     reference_price_ticks: int
     baseline_liquidity_levels: int
     baseline_liquidity_base_lots: int
-    def __init__(self, symbol: _Optional[str] = ..., venue: _Optional[str] = ..., price_tick_size_nanos: _Optional[int] = ..., quantity_lot_size_nanos: _Optional[int] = ..., snapshot_depth: _Optional[int] = ..., max_events: _Optional[int] = ..., reference_price_ticks: _Optional[int] = ..., baseline_liquidity_levels: _Optional[int] = ..., baseline_liquidity_base_lots: _Optional[int] = ...) -> None: ...
+    tick_interval_ns: int
+    normal_agent_count: int
+    baseline_liquidity_tick_size_ticks: int
+    max_agent_quote_lots: int
+    def __init__(self, symbol: _Optional[str] = ..., venue: _Optional[str] = ..., price_tick_size_nanos: _Optional[int] = ..., quantity_lot_size_nanos: _Optional[int] = ..., snapshot_depth: _Optional[int] = ..., max_events: _Optional[int] = ..., reference_price_ticks: _Optional[int] = ..., baseline_liquidity_levels: _Optional[int] = ..., baseline_liquidity_base_lots: _Optional[int] = ..., tick_interval_ns: _Optional[int] = ..., normal_agent_count: _Optional[int] = ..., baseline_liquidity_tick_size_ticks: _Optional[int] = ..., max_agent_quote_lots: _Optional[int] = ...) -> None: ...
 
 class SimulationRequest(_message.Message):
     __slots__ = ("contract_version", "run_id", "scenario", "config")

@@ -4,7 +4,7 @@ Status: Accepted
 
 Date: 2026-07-18
 
-Implementation Status: `[partial: step 4 of 17]`
+Implementation Status: `[partial: step 5 of 17]`
 
 ## Context
 
@@ -79,6 +79,14 @@ The first Java boundary owns the simulation clock, deterministic scheduler, mana
 - Added per-event and book SHA-256 digests plus a domain-separated rolling stream hash chain.
 - Required matching schema version and contiguous sequence starting at 1 before stream hashing.
 - Added golden canonical bytes/digests and tests for all payloads, optional presence, state sensitivity, sequence/version rejection, Unicode normalization, and independence from Protobuf wire serialization.
+
+## Step 5 Implementation Record
+
+- Added an authoritative `PythonReferenceKernel` that accepts `SimulationRequest` and returns `SimulationResult` without changing runtime authority.
+- Added missing deterministic inputs for tick interval, agent count, baseline tick spacing, and maximum agent quote size to the additive Protobuf config.
+- Converted all canonical Python event variants and L2 books into exact integer-tick/lot Protobuf messages.
+- Returned contiguous events, final book, canonical event/book hashes, sorted quantized market/detector metrics, and explicit termination status.
+- Added repeat-run byte determinism, five-event scenario coverage, snapshot cadence, hash verification, metadata propagation, metric ordering, parameter rejection, and event-limit tests.
 
 ## Consequences
 

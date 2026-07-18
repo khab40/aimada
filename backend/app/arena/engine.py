@@ -49,6 +49,8 @@ class SimulationEngine:
         persist_all_events: bool = True,
         exchange_snapshot_depth: int = 12,
         exchange_event_window: int = 100,
+        exchange_symbol: str = "LOB",
+        exchange_venue: str = "SIM",
     ) -> None:
         self.tick_interval_seconds = tick_interval_seconds
         self.seed = seed
@@ -66,6 +68,8 @@ class SimulationEngine:
         self.persist_all_events = persist_all_events
         self.exchange_snapshot_depth = max(1, exchange_snapshot_depth)
         self.exchange_event_window = max(1, exchange_event_window)
+        self.exchange_symbol = exchange_symbol
+        self.exchange_venue = exchange_venue
         self.normal_agent_count = normal_agent_count
         self.agent_decision_timeout_seconds = agent_decision_timeout_seconds
         self.remote_agent_urls = remote_agent_urls or []
@@ -102,7 +106,12 @@ class SimulationEngine:
         )
 
     def _new_matching_engine(self) -> MatchingEngine:
-        return MatchingEngine(symbol="LOB", venue="SIM", source="simulation", book=self._new_order_book())
+        return MatchingEngine(
+            symbol=self.exchange_symbol,
+            venue=self.exchange_venue,
+            source="simulation",
+            book=self._new_order_book(),
+        )
 
     def _new_exchange_stream_id(self) -> str:
         return f"{self.run_id}-STREAM-{self._exchange_stream_generation:03d}"

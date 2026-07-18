@@ -13,6 +13,7 @@ Update this file with each significant commit before pushing.
 - Added the versioned `lob.exchange.v1` Protobuf request/event/result contract, checked-in Python bindings, locked generation tooling, and stale-binding/round-trip tests.
 - Added the executable determinism contract with fixed-point units, total event ordering, SplitMix64/named stream vectors, half-even metrics, midpoint, identifier, and exchange rules.
 - Added domain-separated canonical event/book encoding, SHA-256 event/book digests, a rolling stream hash chain, and golden vectors for Java/Python parity.
+- Added the authoritative Python Protobuf reference runner with complete event/book conversion, canonical hashes, quantized metrics, deterministic repeat tests, and resource validation.
 
 ### Current - feat: define canonical exchange event schema
 
