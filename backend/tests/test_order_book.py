@@ -1,3 +1,5 @@
+import pytest
+
 from app.exchange.order_book import OrderBook
 from app.exchange.schemas import Order
 
@@ -42,6 +44,69 @@ def test_cancel_unknown_order_is_noop() -> None:
     assert book.cancel_order("missing") is None
     assert book.snapshot()["bids"] == []
     assert book.snapshot()["asks"] == []
+
+
+def test_same_price_modify_preserves_queue_position_and_original_timestamp() -> None:
+    book = OrderBook()
+    book.add_limit_order(Order("a-old", "maker-old", "sell", 3.0, 100.0, timestamp=1))
+    book.add_limit_order(Order("a-new", "maker-new", "sell", 4.0, 100.0, timestamp=2))
+
+    result = book.modify_order(
+        Order("a-old", "maker-old", "sell", 6.0, 100.0, order_type="modify", timestamp=9)
+    )
+
+    assert result is not None
+    before, after, priority_preserved = result
+    assert before.quantity == 3.0
+    assert after.quantity == 6.0
+    assert after.timestamp == 1
+    assert priority_preserved is True
+    assert [order.order_id for order in book.asks[100.0]] == ["a-old", "a-new"]
+
+
+def test_price_change_modify_loses_priority_at_the_new_level() -> None:
+    book = OrderBook()
+    book.add_limit_order(Order("a-existing", "maker-existing", "sell", 2.0, 101.0, timestamp=1))
+    book.add_limit_order(Order("a-moving", "maker-moving", "sell", 3.0, 102.0, timestamp=2))
+
+    result = book.modify_order(
+        Order("a-moving", "maker-moving", "sell", 4.0, 101.0, order_type="modify", timestamp=8)
+    )
+
+    assert result is not None
+    _, after, priority_preserved = result
+    assert priority_preserved is False
+    assert after.timestamp == 8
+    assert 102.0 not in book.asks
+    assert [order.order_id for order in book.asks[101.0]] == ["a-existing", "a-moving"]
+
+
+def test_modify_rejects_side_or_agent_change_and_requires_explicit_cancel() -> None:
+    book = OrderBook()
+    book.add_limit_order(Order("bid-1", "maker", "buy", 2.0, 99.0))
+
+    with pytest.raises(ValueError, match="cannot change side"):
+        book.modify_order(Order("bid-1", "maker", "sell", 2.0, 99.0, order_type="modify"))
+    with pytest.raises(ValueError, match="cannot change agent ownership"):
+        book.modify_order(Order("bid-1", "other", "buy", 2.0, 99.0, order_type="modify"))
+    with pytest.raises(ValueError, match="use cancel"):
+        book.modify_order(Order("bid-1", "maker", "buy", 0.0, 99.0, order_type="modify"))
+
+    assert book.modify_order(Order("missing", "maker", "buy", 1.0, 99.0, order_type="modify")) is None
+
+
+def test_typed_snapshot_respects_depth_and_matches_dictionary_boundary() -> None:
+    book = OrderBook(mid_price=100.0, levels=3, tick_size=1.0, base_size=5.0)
+
+    snapshot = book.get_snapshot(depth=2)
+
+    assert [level.price for level in snapshot.bids] == [99.0, 98.0]
+    assert [level.price for level in snapshot.asks] == [101.0, 102.0]
+    assert snapshot.mid == 100.0
+    assert book.get_l2_snapshot(depth=2) == snapshot.to_dict()
+
+    with pytest.raises(ValueError, match="depth must be positive"):
+        book.get_snapshot(depth=0)
 
 
 def test_agent_level_modify_replaces_only_that_agents_quantity() -> None:

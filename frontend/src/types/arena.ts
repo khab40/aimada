@@ -64,6 +64,77 @@ export type AgentEvent = {
   [key: string]: unknown;
 };
 
+export type ExchangeEventType = "add" | "modify" | "cancel" | "execute" | "snapshot";
+export type ExchangeEventSource = "simulation" | "historical";
+
+type ExchangeEventBase = {
+  schema_version: 1;
+  event_type: ExchangeEventType;
+  event_id: string;
+  sequence: number;
+  source: ExchangeEventSource;
+  source_sequence: number | null;
+  symbol: string;
+  venue: string;
+  tick: number | null;
+  exchange_timestamp_ns: number | null;
+  received_timestamp_ns: number | null;
+  scenario_id: string | null;
+  scenario_name: string | null;
+  scenario_family: string | null;
+};
+
+type RestingOrderPayload = {
+  order_id: string;
+  agent_id: string;
+  side: "buy" | "sell";
+  price: number;
+  quantity: number;
+  owner: string;
+};
+
+export type AddExchangeEvent = ExchangeEventBase & RestingOrderPayload & {
+  event_type: "add";
+};
+
+export type ModifyExchangeEvent = ExchangeEventBase & RestingOrderPayload & {
+  event_type: "modify";
+  previous_price: number;
+  previous_quantity: number;
+  priority_preserved: boolean;
+};
+
+export type CancelExchangeEvent = ExchangeEventBase & RestingOrderPayload & {
+  event_type: "cancel";
+};
+
+export type ExecuteExchangeEvent = ExchangeEventBase & {
+  event_type: "execute";
+  execution_id: string;
+  aggressor_order_id: string;
+  resting_order_id: string;
+  aggressor_agent_id: string;
+  resting_agent_id: string;
+  side: "buy" | "sell";
+  price: number;
+  quantity: number;
+  aggressor_remaining_quantity: number;
+  resting_remaining_quantity: number;
+};
+
+export type SnapshotExchangeEvent = ExchangeEventBase & {
+  event_type: "snapshot";
+  depth: number;
+  book: OrderBookSnapshot;
+};
+
+export type ExchangeEvent =
+  | AddExchangeEvent
+  | ModifyExchangeEvent
+  | CancelExchangeEvent
+  | ExecuteExchangeEvent
+  | SnapshotExchangeEvent;
+
 export type EvidenceItem = {
   key: string;
   label: string;
@@ -140,6 +211,7 @@ export type ArenaState = {
   tick: number;
   running: boolean;
   events: AgentEvent[];
+  exchange_events: ExchangeEvent[];
   book: OrderBookSnapshot;
   best_bid: number | null;
   best_ask: number | null;

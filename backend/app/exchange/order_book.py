@@ -1,7 +1,22 @@
 from collections import defaultdict
-from dataclasses import replace
+from collections.abc import Callable
+from dataclasses import dataclass, replace
+from typing import Literal
 
-from app.exchange.schemas import BookSide, Order, PriceLevel, Side
+from app.exchange.schemas import BookSide, Order, OrderBookSnapshot, PriceLevel, Side
+
+OrderBookMutationType = Literal["add", "modify", "cancel"]
+
+
+@dataclass(frozen=True)
+class OrderBookMutation:
+    mutation_type: OrderBookMutationType
+    before: Order | None
+    after: Order | None
+    priority_preserved: bool = False
+
+
+OrderBookMutationListener = Callable[[OrderBookMutation], None]
 
 
 class OrderBook:
@@ -11,6 +26,7 @@ class OrderBook:
         levels: int = 0,
         tick_size: float = 1.0,
         base_size: float = 10.0,
+        mutation_listener: OrderBookMutationListener | None = None,
     ) -> None:
         self.bids: dict[float, list[Order]] = defaultdict(list)
         self.asks: dict[float, list[Order]] = defaultdict(list)
@@ -18,6 +34,7 @@ class OrderBook:
         self.level_owners: dict[tuple[BookSide, float], str] = {}
         self.mid_price: float | None = None
         self.spread: float | None = None
+        self._mutation_listener = mutation_listener
 
         if mid_price is not None and levels > 0:
             self.initialize(mid_price=mid_price, levels=levels, tick_size=tick_size, base_size=base_size)
@@ -97,6 +114,14 @@ class OrderBook:
         self.orders[order.order_id] = order
         self.level_owners[(book_side, price)] = owner
         self.recalculate()
+        replaced = next((item for item in existing_orders if item.order_id == order.order_id), None)
+        for existing in existing_orders:
+            if existing.order_id != order.order_id:
+                self._emit_mutation("cancel", before=existing)
+        if replaced is None:
+            self._emit_mutation("add", after=order)
+        elif replaced != order:
+            self._emit_mutation("modify", before=replaced, after=order, priority_preserved=True)
 
     def update_agent_level(
         self,
@@ -121,9 +146,11 @@ class OrderBook:
         levels = self._levels_for_side(book_side)
         existing_orders = levels.get(price, [])
         kept_orders: list[Order] = []
+        replaced: Order | None = None
         for order in existing_orders:
             if order.order_id == order_id:
                 self.orders.pop(order.order_id, None)
+                replaced = order
             else:
                 kept_orders.append(order)
 
@@ -143,6 +170,10 @@ class OrderBook:
         self.orders[order.order_id] = order
         self._recompute_level_owner(book_side, price)
         self.recalculate()
+        if replaced is None:
+            self._emit_mutation("add", after=order)
+        elif replaced != order:
+            self._emit_mutation("modify", before=replaced, after=order, priority_preserved=True)
 
     def ensure_level_minimum(
         self,
@@ -165,19 +196,27 @@ class OrderBook:
     def remove_level(self, side: Side | BookSide, price: float) -> None:
         book_side = self._normalize_side(side)
         levels = self._levels_for_side(book_side)
-        for order in levels.pop(price, []):
+        removed_orders = levels.pop(price, [])
+        for order in removed_orders:
             self.orders.pop(order.order_id, None)
         self.level_owners.pop((book_side, price), None)
         self.recalculate()
+        for order in removed_orders:
+            self._emit_mutation("cancel", before=order)
 
     def add_limit_order(self, order: Order) -> None:
         if order.price is None:
             raise ValueError("limit order requires a price")
+        if order.quantity <= 0:
+            raise ValueError("limit order quantity must be positive")
+        if order.order_id in self.orders:
+            raise ValueError(f"duplicate order id: {order.order_id}")
         levels = self.bids if order.side == "buy" else self.asks
         levels[order.price].append(order)
         self.orders[order.order_id] = order
         self._recompute_level_owner("bid" if order.side == "buy" else "ask", order.price)
         self.recalculate()
+        self._emit_mutation("add", after=order)
 
     def add(self, order: Order) -> None:
         self.add_limit_order(order)
@@ -195,10 +234,68 @@ class OrderBook:
         else:
             self._recompute_level_owner(book_side, order.price)
         self.recalculate()
+        self._emit_mutation("cancel", before=order)
         return order
 
     def cancel(self, order_id: str) -> Order | None:
         return self.cancel_order(order_id)
+
+    def modify_order(self, request: Order) -> tuple[Order, Order, bool] | None:
+        """Modify a resting order and report before/after state plus priority outcome."""
+
+        existing = self.orders.get(request.order_id)
+        if existing is None:
+            return None
+        if request.order_type != "modify":
+            raise ValueError("modify_order requires a modify order")
+        if request.quantity <= 0:
+            raise ValueError("modify order quantity must be positive; use cancel to remove an order")
+        if request.side != existing.side:
+            raise ValueError("modify order cannot change side")
+        if request.agent_id != existing.agent_id:
+            raise ValueError("modify order cannot change agent ownership")
+
+        new_price = request.price if request.price is not None else existing.price
+        if new_price is None or new_price <= 0:
+            raise ValueError("modify order requires a positive price")
+        if existing.price is None:
+            raise ValueError("only resting limit orders can be modified")
+
+        priority_preserved = new_price == existing.price
+        updated = replace(
+            existing,
+            quantity=request.quantity,
+            price=new_price,
+            timestamp=existing.timestamp if priority_preserved else request.timestamp,
+            scenario_id=request.scenario_id or existing.scenario_id,
+            scenario_name=request.scenario_name or existing.scenario_name,
+            scenario_family=request.scenario_family or existing.scenario_family,
+            order_type="limit",
+        )
+
+        old_levels = self.bids if existing.side == "buy" else self.asks
+        old_book_side: BookSide = "bid" if existing.side == "buy" else "ask"
+        if priority_preserved:
+            old_levels[existing.price] = [updated if item.order_id == existing.order_id else item for item in old_levels[existing.price]]
+            self.orders[updated.order_id] = updated
+            self._recompute_level_owner(old_book_side, existing.price)
+        else:
+            old_levels[existing.price] = [item for item in old_levels[existing.price] if item.order_id != existing.order_id]
+            if not old_levels[existing.price]:
+                del old_levels[existing.price]
+                self.level_owners.pop((old_book_side, existing.price), None)
+            else:
+                self._recompute_level_owner(old_book_side, existing.price)
+            new_levels = self.bids if updated.side == "buy" else self.asks
+            new_levels[updated.price].append(updated)
+            self.orders[updated.order_id] = updated
+            self._recompute_level_owner(old_book_side, updated.price)
+        self.recalculate()
+        self._emit_mutation("modify", before=existing, after=updated, priority_preserved=priority_preserved)
+        return existing, updated, priority_preserved
+
+    def modify(self, request: Order) -> tuple[Order, Order, bool] | None:
+        return self.modify_order(request)
 
     def match_order(self, order: Order, limit_price: float | None = None) -> list[dict[str, object]]:
         opposite_levels = self.asks if order.side == "buy" else self.bids
@@ -234,6 +331,8 @@ class OrderBook:
                         "side": order.side,
                         "price": price,
                         "quantity": traded_quantity,
+                        "aggressor_remaining_quantity": remaining,
+                        "resting_remaining_quantity": resting.quantity - traded_quantity,
                         "timestamp": order.timestamp,
                         "scenario_id": order.scenario_id or resting.scenario_id,
                         "scenario_name": order.scenario_name or resting.scenario_name,
@@ -285,17 +384,22 @@ class OrderBook:
         return {"best_bid": self.best_bid(), "best_ask": self.best_ask()}
 
     def get_l2_snapshot(self, depth: int = 5) -> dict[str, object]:
+        return self.get_snapshot(depth).to_dict()
+
+    def get_snapshot(self, depth: int = 5) -> OrderBookSnapshot:
+        if depth <= 0:
+            raise ValueError("snapshot depth must be positive")
         bid_prices = sorted(self.bids, reverse=True)[:depth]
         ask_prices = sorted(self.asks)[:depth]
         self.recalculate()
-        return {
-            "bids": [self._price_level("bid", price).to_dict() for price in bid_prices],
-            "asks": [self._price_level("ask", price).to_dict() for price in ask_prices],
-            "best_bid": self.best_bid(),
-            "best_ask": self.best_ask(),
-            "mid": self.mid_price,
-            "spread": self.spread,
-        }
+        return OrderBookSnapshot(
+            bids=[self._price_level("bid", price) for price in bid_prices],
+            asks=[self._price_level("ask", price) for price in ask_prices],
+            best_bid=self.best_bid(),
+            best_ask=self.best_ask(),
+            mid=self.mid_price,
+            spread=self.spread,
+        )
 
     def _price_level(self, side: BookSide, price: float) -> PriceLevel:
         return PriceLevel(
@@ -313,6 +417,27 @@ class OrderBook:
             (order.owner for order in orders if order.owner != "normal"),
             "normal",
         )
+
+    def set_mutation_listener(self, listener: OrderBookMutationListener | None) -> None:
+        self._mutation_listener = listener
+
+    def _emit_mutation(
+        self,
+        mutation_type: OrderBookMutationType,
+        *,
+        before: Order | None = None,
+        after: Order | None = None,
+        priority_preserved: bool = False,
+    ) -> None:
+        if self._mutation_listener is not None:
+            self._mutation_listener(
+                OrderBookMutation(
+                    mutation_type=mutation_type,
+                    before=before,
+                    after=after,
+                    priority_preserved=priority_preserved,
+                )
+            )
 
     def snapshot(self, depth: int = 5) -> dict[str, object]:
         return self.get_l2_snapshot(depth)

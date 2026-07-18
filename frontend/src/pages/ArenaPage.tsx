@@ -5,6 +5,7 @@ import { AttackTracker } from "@/components/AttackTracker";
 import { AgentTimeline } from "@/components/AgentTimeline";
 import { DetectorConfidence } from "@/components/DetectorConfidence";
 import { EvidencePanel } from "@/components/EvidencePanel";
+import { ExchangeEventTape } from "@/components/ExchangeEventTape";
 import { IncidentDrawer } from "@/components/IncidentDrawer";
 import { LiquidityHeatmap } from "@/components/LiquidityHeatmap";
 import { MarketTimeline, type MarketTimelineFrame, type TimelineMarkerType } from "@/components/MarketTimeline";
@@ -22,7 +23,7 @@ type HeatmapSnapshotFrame = {
   tick: number;
 };
 
-type DetectionSecondaryView = "evidence" | "timeline";
+type DetectionSecondaryView = "evidence" | "exchange" | "timeline";
 type MarketSecondaryView = "heatmap" | "timeline";
 
 function formatScenarioLabel(name?: string | null) {
@@ -251,10 +252,13 @@ export function ArenaPage() {
             <div className="widget-tab-row" role="tablist" aria-label="Secondary detection widgets">
               <button className={secondaryView === "evidence" ? "active" : ""} onClick={() => setSecondaryView("evidence")} type="button">📄 Evidence</button>
               <button className={secondaryView === "timeline" ? "active" : ""} onClick={() => setSecondaryView("timeline")} type="button">🕒 Agent Events</button>
+              <button className={secondaryView === "exchange" ? "active" : ""} onClick={() => setSecondaryView("exchange")} type="button">⇄ Exchange Tape</button>
             </div>
             <div className="tab-content-panel" key={secondaryView}>
               {secondaryView === "evidence" ? (
                 <EvidencePanel state={state} />
+              ) : secondaryView === "exchange" ? (
+                <ExchangeEventTape events={state.exchange_events ?? []} />
               ) : (
                 <AgentTimeline activeAgents={state.active_agents} events={state.events} layout="compact" title="Agent Event Timeline" />
               )}

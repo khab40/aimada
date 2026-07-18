@@ -196,10 +196,54 @@ class AttackTrackerState(BaseModel):
     label: ScenarioLabel | None = None
 
 
+class ExchangeEventRecord(BaseModel):
+    schema_version: int = 1
+    event_type: Literal["add", "modify", "cancel", "execute", "snapshot"]
+    event_id: str
+    sequence: int = Field(ge=1)
+    source: Literal["simulation", "historical"]
+    source_sequence: int | None = None
+    symbol: str
+    venue: str
+    tick: int | None = None
+    exchange_timestamp_ns: int | None = None
+    received_timestamp_ns: int | None = None
+    scenario_id: str | None = None
+    scenario_name: str | None = None
+    scenario_family: str | None = None
+    order_id: str | None = None
+    agent_id: str | None = None
+    side: Literal["buy", "sell"] | None = None
+    price: float | None = None
+    quantity: float | None = None
+    owner: str | None = None
+    previous_price: float | None = None
+    previous_quantity: float | None = None
+    priority_preserved: bool | None = None
+    execution_id: str | None = None
+    aggressor_order_id: str | None = None
+    resting_order_id: str | None = None
+    aggressor_agent_id: str | None = None
+    resting_agent_id: str | None = None
+    aggressor_remaining_quantity: float | None = None
+    resting_remaining_quantity: float | None = None
+    depth: int | None = None
+    book: OrderBookSnapshot | None = None
+
+
+class ExchangeEventReplay(BaseModel):
+    events: list[ExchangeEventRecord]
+    after_sequence: int = Field(ge=0)
+    next_after_sequence: int = Field(ge=0)
+    latest_sequence: int = Field(ge=0)
+    has_more: bool
+
+
 class ArenaState(BaseModel):
     tick: int
     running: bool
     events: list[AgentEvent]
+    exchange_events: list[ExchangeEventRecord] = Field(default_factory=list)
     book: OrderBookSnapshot
     best_bid: float | None
     best_ask: float | None

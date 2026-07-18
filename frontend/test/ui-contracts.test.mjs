@@ -52,6 +52,8 @@ describe("Core UI navigation and workflow contracts", () => {
   const app = read("src/App.tsx");
   const arena = read("src/pages/ArenaPage.tsx");
   const agentTimeline = read("src/components/AgentTimeline.tsx");
+  const exchangeTape = read("src/components/ExchangeEventTape.tsx");
+  const arenaTypes = read("src/types/arena.ts");
   const marketTimeline = read("src/components/MarketTimeline.tsx");
   const nebius = read("src/pages/NebiusControlPanelPage.tsx");
   const runtimeModes = read("src/runtimeModes.ts");
@@ -129,6 +131,23 @@ describe("Core UI navigation and workflow contracts", () => {
       "spread in basis points (amber)",
       "order-book imbalance (violet)",
       "simulation tick, not wall-clock time"
+    ]);
+  });
+
+  it("renders the canonical exchange stream as a typed compact tape", () => {
+    expectIncludes(arena, ["⇄ Exchange Tape", "<ExchangeEventTape events={state.exchange_events ?? []}"]);
+    expectIncludes(arenaTypes, [
+      'ExchangeEventType = "add" | "modify" | "cancel" | "execute" | "snapshot"',
+      "export type ExchangeEvent =",
+      "exchange_events: ExchangeEvent[]"
+    ]);
+    expectIncludes(exchangeTape, [
+      "Canonical exchange event tape",
+      "Canonical simulation stream · newest first",
+      "event.event_type === \"snapshot\"",
+      "event.event_type === \"execute\"",
+      "priority kept",
+      "MAX_VISIBLE_EVENTS"
     ]);
   });
 

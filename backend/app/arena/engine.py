@@ -10,10 +10,23 @@ from app.arena.state import (
 )
 from app.detectors.aggregate import AggregateDetectorEngine, flatten_evidence
 from app.detectors.features import extract_features
+from app.exchange.matching_engine import MatchingEngine
+from app.exchange.event_log import EventLog
 from app.exchange.order_book import OrderBook
-from app.schemas.arena import AgentEvent, ArenaState, AttackTrackerState, DetectorScore, EvidenceItem, Incident
+from app.exchange.schemas import ExecuteOrderEvent, Order
+from app.exchange.sources import SimulationEventSource
+from app.schemas.arena import (
+    AgentEvent,
+    ArenaState,
+    AttackTrackerState,
+    DetectorScore,
+    EvidenceItem,
+    ExchangeEventRecord,
+    ExchangeEventReplay,
+    Incident,
+)
 from app.scenarios.controller import ScenarioController
-from app.storage.history import append_history_artifact, append_tick_snapshot
+from app.storage.history import append_exchange_event, append_history_artifact, append_tick_snapshot
 from app.storage.local_store import LocalStore
 
 
@@ -34,10 +47,15 @@ class SimulationEngine:
         max_agent_quote_size: float = 25.0,
         tick_history_interval: int = 1,
         persist_all_events: bool = True,
+        exchange_snapshot_depth: int = 12,
+        exchange_event_window: int = 100,
     ) -> None:
         self.tick_interval_seconds = tick_interval_seconds
         self.seed = seed
         self.run_id = f"RUN-{seed:06d}"
+        self._exchange_stream_generation = 0
+        self.exchange_stream_id = self._new_exchange_stream_id()
+        self._persisted_exchange_sequence = 0
         self.clock = SimulationClock(tick_interval_ms=int(tick_interval_seconds * 1000))
         self.baseline_liquidity_levels = max(0, baseline_liquidity_levels)
         self.baseline_liquidity_base_size = max(0.0, baseline_liquidity_base_size)
@@ -46,6 +64,8 @@ class SimulationEngine:
         self.max_agent_quote_size = max(0.0, max_agent_quote_size)
         self.tick_history_interval = max(1, tick_history_interval)
         self.persist_all_events = persist_all_events
+        self.exchange_snapshot_depth = max(1, exchange_snapshot_depth)
+        self.exchange_event_window = max(1, exchange_event_window)
         self.normal_agent_count = normal_agent_count
         self.agent_decision_timeout_seconds = agent_decision_timeout_seconds
         self.remote_agent_urls = remote_agent_urls or []
@@ -56,7 +76,9 @@ class SimulationEngine:
             decision_timeout_seconds=agent_decision_timeout_seconds,
             remote_timeout_seconds=remote_agent_timeout_seconds,
         )
-        self.order_book = self._new_order_book()
+        self.matching_engine = self._new_matching_engine()
+        self.order_book = self.matching_engine.book
+        self.exchange_event_source = SimulationEventSource(self.exchange_event_log)
         self.events: deque[AgentEvent] = deque(maxlen=20)
         self.scenarios = ScenarioController()
         self.detectors = AggregateDetectorEngine()
@@ -79,6 +101,16 @@ class SimulationEngine:
             base_size=self.baseline_liquidity_base_size,
         )
 
+    def _new_matching_engine(self) -> MatchingEngine:
+        return MatchingEngine(symbol="LOB", venue="SIM", source="simulation", book=self._new_order_book())
+
+    def _new_exchange_stream_id(self) -> str:
+        return f"{self.run_id}-STREAM-{self._exchange_stream_generation:03d}"
+
+    @property
+    def exchange_event_log(self) -> EventLog:
+        return self.matching_engine.event_log
+
     async def start(self) -> ArenaState:
         async with self._lock:
             self.running = True
@@ -97,7 +129,12 @@ class SimulationEngine:
         async with self._lock:
             self.running = False
             self.clock.reset()
-            self.order_book = self._new_order_book()
+            self._exchange_stream_generation += 1
+            self.exchange_stream_id = self._new_exchange_stream_id()
+            self._persisted_exchange_sequence = 0
+            self.matching_engine = self._new_matching_engine()
+            self.order_book = self.matching_engine.book
+            self.exchange_event_source = SimulationEventSource(self.exchange_event_log)
             self.agent_manager = build_agent_manager(
                 local_agent_count=self.normal_agent_count,
                 remote_agent_urls=self.remote_agent_urls,
@@ -124,6 +161,17 @@ class SimulationEngine:
     async def get_state(self) -> ArenaState:
         async with self._lock:
             return self.state
+
+    async def replay_exchange_events(self, *, after_sequence: int = 0, limit: int = 100) -> ExchangeEventReplay:
+        async with self._lock:
+            batch = self.exchange_event_source.read(after_sequence=after_sequence, limit=limit)
+            return ExchangeEventReplay(
+                events=[ExchangeEventRecord.model_validate(event.to_dict()) for event in batch.events],
+                after_sequence=batch.after_sequence,
+                next_after_sequence=batch.next_after_sequence,
+                latest_sequence=batch.latest_sequence,
+                has_more=batch.has_more,
+            )
 
     async def list_incidents(self) -> list[Incident]:
         async with self._lock:
@@ -188,9 +236,29 @@ class SimulationEngine:
     def _advance_tick(self, running: bool) -> None:
         tick = self.clock.step()
         previous_depth_top_n = self._top_depth()
-        tick_events = self._apply_agent_intents(self.agent_manager.collect_intents_sync(self._market_snapshot(tick)))
-        tick_events.extend(self.scenarios.advance(self.order_book, tick))
-        self._maintain_baseline_liquidity()
+        with self.matching_engine.mutation_context(tick=tick):
+            tick_events = self._apply_agent_intents(
+                self.agent_manager.collect_intents_sync(self._market_snapshot(tick))
+            )
+        scenario = self.scenarios.tracker_state(run_id=self.run_id, seed=self.seed)
+        with self.matching_engine.mutation_context(
+            tick=tick,
+            scenario_id=scenario.scenario_id if scenario else None,
+            scenario_name=scenario.scenario_name if scenario else None,
+            scenario_family=scenario.scenario_family if scenario else None,
+        ):
+            tick_events.extend(self.scenarios.advance(self.order_book, tick))
+        with self.matching_engine.mutation_context(tick=tick):
+            self._maintain_baseline_liquidity()
+        scenario = self.scenarios.tracker_state(run_id=self.run_id, seed=self.seed)
+        self.matching_engine.record_snapshot(
+            tick=tick,
+            depth=self.exchange_snapshot_depth,
+            scenario_id=scenario.scenario_id if scenario else None,
+            scenario_name=scenario.scenario_name if scenario else None,
+            scenario_family=scenario.scenario_family if scenario else None,
+        )
+        self._persist_exchange_stream()
 
         for event in tick_events:
             self.events.appendleft(event)
@@ -207,9 +275,29 @@ class SimulationEngine:
     async def _advance_tick_async(self, running: bool) -> None:
         tick = self.clock.step()
         previous_depth_top_n = self._top_depth()
-        tick_events = self._apply_agent_intents(await self.agent_manager.collect_intents(self._market_snapshot(tick)))
-        tick_events.extend(self.scenarios.advance(self.order_book, tick))
-        self._maintain_baseline_liquidity()
+        with self.matching_engine.mutation_context(tick=tick):
+            tick_events = self._apply_agent_intents(
+                await self.agent_manager.collect_intents(self._market_snapshot(tick))
+            )
+        scenario = self.scenarios.tracker_state(run_id=self.run_id, seed=self.seed)
+        with self.matching_engine.mutation_context(
+            tick=tick,
+            scenario_id=scenario.scenario_id if scenario else None,
+            scenario_name=scenario.scenario_name if scenario else None,
+            scenario_family=scenario.scenario_family if scenario else None,
+        ):
+            tick_events.extend(self.scenarios.advance(self.order_book, tick))
+        with self.matching_engine.mutation_context(tick=tick):
+            self._maintain_baseline_liquidity()
+        scenario = self.scenarios.tracker_state(run_id=self.run_id, seed=self.seed)
+        self.matching_engine.record_snapshot(
+            tick=tick,
+            depth=self.exchange_snapshot_depth,
+            scenario_id=scenario.scenario_id if scenario else None,
+            scenario_name=scenario.scenario_name if scenario else None,
+            scenario_family=scenario.scenario_family if scenario else None,
+        )
+        self._persist_exchange_stream()
 
         for event in tick_events:
             self.events.appendleft(event)
@@ -255,6 +343,7 @@ class SimulationEngine:
                 quantity,
                 agent_id=intent.agent_id,
                 owner="normal",
+                timestamp=intent.tick,
             )
             return AgentEvent(
                 type=intent.event_type,
@@ -269,9 +358,10 @@ class SimulationEngine:
 
         if intent.kind == "market":
             order = intent.to_order()
-            trades = self.order_book.apply_market_order(order)
-            traded_quantity = sum(float(trade["quantity"]) for trade in trades)
-            trade_price = trades[0]["price"] if trades else None
+            exchange_events = self.matching_engine.submit(order)
+            executions = [event for event in exchange_events if isinstance(event, ExecuteOrderEvent)]
+            traded_quantity = sum(event.quantity for event in executions)
+            trade_price = executions[0].price if executions else None
             return AgentEvent(
                 type=intent.event_type,
                 timestamp=intent.tick,
@@ -285,7 +375,7 @@ class SimulationEngine:
 
         if intent.kind == "limit":
             order = intent.to_order()
-            self.order_book.add_limit_order(order)
+            self.matching_engine.submit(order)
             return AgentEvent(
                 type=intent.event_type,
                 timestamp=intent.tick,
@@ -299,18 +389,29 @@ class SimulationEngine:
             )
 
         if intent.kind == "cancel" and intent.order_id:
-            cancelled = self.order_book.cancel_order(intent.order_id)
-            if cancelled is None:
+            resting = self.order_book.orders.get(intent.order_id)
+            if resting is None:
+                return None
+            request = Order(
+                order_id=resting.order_id,
+                agent_id=intent.agent_id,
+                side=resting.side,
+                quantity=0.0,
+                order_type="cancel",
+                timestamp=intent.tick,
+            )
+            exchange_events = self.matching_engine.submit(request)
+            if not exchange_events:
                 return None
             return AgentEvent(
                 type=intent.event_type,
                 timestamp=intent.tick,
-                order_id=cancelled.order_id,
+                order_id=resting.order_id,
                 agent_id=intent.agent_id,
                 runtime_source=intent.runtime_source,
-                side=cancelled.side,
-                price=cancelled.price,
-                quantity=cancelled.quantity,
+                side=resting.side,
+                price=resting.price,
+                quantity=resting.quantity,
                 message=intent.message or "cancelled resting order",
             )
         return AgentEvent(
@@ -377,6 +478,10 @@ class SimulationEngine:
             running=running,
             book=book,
             events=list(self.events),
+            exchange_events=[
+                ExchangeEventRecord.model_validate(event.to_dict())
+                for event in self.exchange_event_log.tail(self.exchange_event_window)
+            ],
             features=features.to_arena_features(),
             active_agents=active_agents,
             active_scenario=active_scenario,
@@ -447,6 +552,19 @@ class SimulationEngine:
                 source="simulation_engine",
                 source_path="events/significant_events.jsonl",
             )
+
+    def _persist_exchange_stream(self) -> None:
+        if self.store is None:
+            return
+        pending = self.exchange_event_log.replay_events(after_sequence=self._persisted_exchange_sequence)
+        for event in pending:
+            append_exchange_event(
+                self.store,
+                event=event,
+                run_id=self.run_id,
+                stream_id=self.exchange_stream_id,
+            )
+            self._persisted_exchange_sequence = event.sequence or self._persisted_exchange_sequence
 
     def _persist_attack(self, tracker: AttackTrackerState) -> None:
         if self.store is None:

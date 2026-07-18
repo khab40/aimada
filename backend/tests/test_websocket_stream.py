@@ -74,3 +74,21 @@ def test_websocket_manager_sends_versioned_arena_message_envelope() -> None:
         assert message["payload"]["book"]["bids"]
 
     asyncio.run(run())
+
+
+def test_websocket_arena_state_includes_recent_canonical_exchange_events() -> None:
+    async def run() -> None:
+        websocket = FakeWebSocket()
+        manager = WebSocketManager()
+        engine = SimulationEngine(exchange_event_window=5)
+        engine.step()
+
+        await manager.connect(websocket)
+        await manager.send_state(websocket, await engine.get_state())
+
+        exchange_events = websocket.messages[0]["payload"]["exchange_events"]
+        assert 1 <= len(exchange_events) <= 5
+        assert exchange_events[-1]["event_type"] == "snapshot"
+        assert exchange_events[-1]["sequence"] == engine.exchange_event_log.next_sequence - 1
+
+    asyncio.run(run())

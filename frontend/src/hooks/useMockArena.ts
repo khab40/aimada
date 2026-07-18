@@ -7,6 +7,7 @@ import type {
   AttackTrackerState,
   DetectorScore,
   EvidenceItem,
+  ExchangeEvent,
   Incident,
   MarketFeatures,
   OrderBookSnapshot,
@@ -157,6 +158,7 @@ function createInitialState(demo = false, initialScenario: MockScenarioType = "s
         type: "limit_order"
       }
     ],
+    exchange_events: createInitialExchangeEvents(book, symbol),
     features,
     mid: book.mid,
     running: demo,
@@ -226,11 +228,99 @@ function advanceState(current: ArenaState, { demo = false, symbol = DEFAULT_SYMB
     book,
     detectors,
     events: nextEvents,
+    exchange_events: appendMockExchangeEvents(current, book, nextTick, symbol),
     features,
     incidents,
     mid: book.mid,
     spread: book.spread,
     tick: nextTick
+  };
+}
+
+function createInitialExchangeEvents(book: OrderBookSnapshot, symbol: string): ExchangeEvent[] {
+  return [
+    {
+      schema_version: 1,
+      event_type: "add",
+      event_id: "MOCK:add:1",
+      sequence: 1,
+      source: "simulation",
+      source_sequence: null,
+      symbol,
+      venue: "MOCK",
+      tick: 0,
+      exchange_timestamp_ns: null,
+      received_timestamp_ns: null,
+      scenario_id: null,
+      scenario_name: null,
+      scenario_family: null,
+      order_id: "mock-market-maker-bid",
+      agent_id: "MarketMakerAgent",
+      side: "buy",
+      price: book.best_bid ?? BASE_MID,
+      quantity: book.bids[0]?.quantity ?? 0.1,
+      owner: "normal"
+    },
+    createMockSnapshotEvent(book, symbol, 0, 2)
+  ];
+}
+
+function appendMockExchangeEvents(current: ArenaState, book: OrderBookSnapshot, tick: number, symbol: string): ExchangeEvent[] {
+  const nextSequence = (current.exchange_events.at(-1)?.sequence ?? 0) + 1;
+  const previousPrice = current.book.best_bid ?? BASE_MID;
+  const price = book.best_bid ?? previousPrice;
+  const modify: ExchangeEvent = {
+    schema_version: 1,
+    event_type: "modify",
+    event_id: `MOCK:modify:${nextSequence}`,
+    sequence: nextSequence,
+    source: "simulation",
+    source_sequence: null,
+    symbol,
+    venue: "MOCK",
+    tick,
+    exchange_timestamp_ns: null,
+    received_timestamp_ns: null,
+    scenario_id: current.active_scenario?.scenario_id ?? null,
+    scenario_name: current.active_scenario?.scenario_name ?? null,
+    scenario_family: current.active_scenario?.scenario_family ?? null,
+    order_id: "mock-market-maker-bid",
+    agent_id: "MarketMakerAgent",
+    side: "buy",
+    previous_price: previousPrice,
+    previous_quantity: current.book.bids[0]?.quantity ?? 0.1,
+    price,
+    quantity: book.bids[0]?.quantity ?? 0.1,
+    priority_preserved: price === previousPrice,
+    owner: "normal"
+  };
+  const snapshot = createMockSnapshotEvent(book, symbol, tick, nextSequence + 1);
+  return [...current.exchange_events, modify, snapshot].slice(-100);
+}
+
+function createMockSnapshotEvent(
+  book: OrderBookSnapshot,
+  symbol: string,
+  tick: number,
+  sequence: number
+): ExchangeEvent {
+  return {
+    schema_version: 1,
+    event_type: "snapshot",
+    event_id: `MOCK:snapshot:${sequence}`,
+    sequence,
+    source: "simulation",
+    source_sequence: null,
+    symbol,
+    venue: "MOCK",
+    tick,
+    exchange_timestamp_ns: null,
+    received_timestamp_ns: null,
+    scenario_id: null,
+    scenario_name: null,
+    scenario_family: null,
+    depth: Math.max(book.bids.length, book.asks.length),
+    book
   };
 }
 

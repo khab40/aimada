@@ -5,6 +5,21 @@ Update this file with each significant commit before pushing.
 
 ## Unreleased
 
+### Current - feat: define canonical exchange event schema
+
+- Added versioned canonical `add`, `modify`, `cancel`, `execute`, and `snapshot` event models for simulation and future historical feeds.
+- Separated canonical replay sequence from upstream feed sequence and retained venue, symbol, tick, nanosecond timestamps, and scenario lineage.
+- Added schema validation, serialization coverage, implementation documentation, and ARD-0018.
+- Added a typed append-only event log with canonical sequence assignment, duplicate/gap protection, cursor replay, and validated JSONL round trips.
+- Added explicit modify-order behavior with stable same-price queue priority and cancel/reinsert semantics for price changes.
+- Migrated matching output to typed, sequenced canonical events with deterministic IDs and complete execution remainders.
+- Added configurable-depth typed L2 snapshot checkpoints to the canonical matching stream.
+- Integrated agent, scenario, and baseline simulation mutations into one canonical stream with one post-mutation snapshot per tick.
+- Exposed a bounded canonical event tail in arena/WebSocket state and added cursor-based HTTP event replay.
+- Added discriminated frontend event types and an Exchange Event Tape for backend and local mock streams.
+- Added a common event-source reader with live simulation, canonical JSONL, and future historical record-normalizer adapters.
+- Persisted stream-scoped canonical and snapshot-only JSONL history with validated replay and end-to-end five-event coverage.
+
 ### Current - chore: harden automated grading and repository packaging
 
 - Renamed the local default branch to `main` and updated CI, README, and submission references from `master`.

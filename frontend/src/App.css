@@ -5160,6 +5160,85 @@ kbd {
   grid-template-columns: 1fr;
 }
 
+.exchange-event-tape {
+  display: grid;
+  gap: 8px;
+  min-height: 0;
+}
+
+.exchange-event-tape > header {
+  align-items: flex-start;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.exchange-event-tape h2,
+.exchange-event-tape p {
+  margin: 0;
+}
+
+.exchange-event-tape h2 {
+  font-size: 13px;
+}
+
+.exchange-event-tape p,
+.exchange-event-tape > header > span,
+.exchange-event-context {
+  color: var(--text-muted);
+  font-size: 9px;
+}
+
+.exchange-event-tape ol {
+  display: grid;
+  gap: 4px;
+  list-style: none;
+  margin: 0;
+  max-height: 310px;
+  overflow: auto;
+  padding: 0;
+}
+
+.exchange-event-row {
+  align-items: center;
+  border: 1px solid var(--widget-border);
+  border-left: 3px solid var(--neutral-text);
+  border-radius: 4px;
+  background: var(--widget-bg-muted);
+  display: grid;
+  gap: 3px 7px;
+  grid-template-columns: 44px 56px 1fr;
+  padding: 6px 7px;
+}
+
+.exchange-event-row.add { border-left-color: var(--success-text); }
+.exchange-event-row.modify { border-left-color: var(--info-text); }
+.exchange-event-row.cancel { border-left-color: var(--danger-text); }
+.exchange-event-row.execute { border-left-color: var(--warning-text); }
+.exchange-event-row.snapshot { border-left-color: var(--violet-text); }
+
+.exchange-event-row > strong {
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.exchange-sequence {
+  color: var(--text-muted);
+  font: 9px ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.exchange-event-summary {
+  color: var(--text-soft);
+  font-size: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.exchange-event-context {
+  grid-column: 2 / -1;
+}
+
 .agent-timeline-context {
   border: 1px solid rgba(34, 211, 238, 0.2);
   border-radius: 4px;

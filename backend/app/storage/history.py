@@ -4,6 +4,7 @@ from typing import Any, Literal
 from uuid import uuid4
 
 from app.schemas.arena import AgentEvent, ArenaState, AttackTrackerState, Incident, PriceLevel
+from app.exchange.schemas import CanonicalExchangeEvent, LobSnapshotEvent
 from app.storage.local_store import LocalStore
 
 HistoryKind = Literal[
@@ -21,6 +22,25 @@ HistoryKind = Literal[
 
 HISTORY_ARTIFACTS_FILE = "history/artifacts.jsonl"
 HISTORY_TICKS_FILE = "history/ticks.jsonl"
+EXCHANGE_EVENTS_FILE = "history/exchange_events.jsonl"
+LOB_SNAPSHOTS_FILE = "history/lob_snapshots.jsonl"
+
+
+def append_exchange_event(
+    store: LocalStore,
+    *,
+    event: CanonicalExchangeEvent,
+    run_id: str,
+    stream_id: str,
+) -> None:
+    payload = {
+        **event.to_dict(),
+        "run_id": run_id,
+        "stream_id": stream_id,
+    }
+    store.append_jsonl(EXCHANGE_EVENTS_FILE, payload)
+    if isinstance(event, LobSnapshotEvent):
+        store.append_jsonl(LOB_SNAPSHOTS_FILE, payload)
 
 
 def append_history_artifact(
