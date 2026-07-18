@@ -25,7 +25,8 @@ Status as of 2026-07-14:
 | [ARD-0015](ARD-0015-nebius-ai-investigation-team.md) | `[done]` | Investigation endpoint is the primary interactive Nebius AI Serverless workflow |
 | [ARD-0016](ARD-0016-ai-scenario-generator.md) | `[done]` | Scenario generation endpoint produces simulator-compatible AI Scenario Generator workloads |
 | [ARD-0017](ARD-0017-ai-detector-tournament.md) | `[done]` | Serverless Jobs contract and local fallback power the AI Detector Tournament workflow |
-| [ARD-0018](ARD-0018-canonical-exchange-event-stream.md) | `[done]` | Simulation, API/WebSocket, frontend, source adapters, and durable stream replay are implemented; vendor mappings wait for a selected dataset |
+| [ARD-0018](ARD-0018-canonical-exchange-event-stream.md) | `[done]` | All ten canonical exchange-stream steps are implemented and verified; future dataset mappings use the completed adapter boundary |
+| [ARD-0019](ARD-0019-python-reference-java-kernel-migration.md) | `[partial]` | Migration boundary is frozen; Protobuf, determinism, Java kernel, parity, and rollout steps remain |
 
 Current UI architecture note: the product shell now exposes AI Command Center, Arena / Workload Generator, and Docs / Demo as the primary demo destinations. Scenario setup, incidents, investigations, detector tournaments, deployment status, and experiment artifacts are folded into the AI Command Center or linked from the active workflow. The About and ARD-0001 diagrams document the four execution areas: Front, Back, Agent Runners Workspace, and Nebius Serverless Cloud.
 
@@ -50,6 +51,7 @@ Current UI architecture note: the product shell now exposes AI Command Center, A
 - [ARD-0010: Agent Runner Execution Architecture](ARD-0010-agent-runner-execution.md) — Local, remote, heavy, and LangGraph-compatible agent execution
 - [ARD-0011: Exchange Liquidity Invariant And Agent Quote Ownership](ARD-0011-exchange-liquidity-invariant.md) — Baseline ladder guard and additive per-agent quote ownership
 - [ARD-0018: Canonical Exchange Event Stream](ARD-0018-canonical-exchange-event-stream.md) — Versioned add, modify, cancel, execute, and L2 snapshot stream for simulation and historical data
+- [ARD-0019: Python Reference And Java Kernel Migration](ARD-0019-python-reference-java-kernel-migration.md) — Parity-gated migration from the Python reference kernel to plain Java 25 modules
 
 ### UI Shell And Presentation
 

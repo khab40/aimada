@@ -74,6 +74,8 @@ flowchart LR
 
 The exchange produces a versioned canonical stream of `add`, `modify`, `cancel`, `execute`, and `snapshot` events. Simulation is the live source; future venue datasets enter through a historical normalizer and preserve their upstream sequence/timestamps separately from canonical replay order. Arena state/WebSocket messages carry a bounded event tail, `/api/arena/exchange-events` provides cursor replay, and append-only history stores full events plus snapshot-only checkpoints.
 
+The deterministic exchange kernel is being migrated through a Python-reference/Java-candidate architecture. Python remains authoritative while Java 25 implements the scheduler, managed PRNG streams, order book, matching, canonical events, and snapshots behind a shared Protobuf contract. Spring Boot, gRPC delivery, authority rollout, and later component migration remain outside the hot loop and are gated by exact differential parity and rollback readiness.
+
 ### Runtime Flow
 
 1. The user starts from Demo or controls a scenario directly from the React / Vite UI.
@@ -237,3 +239,4 @@ Detailed architecture decisions are recorded in [Architecture Records (ARDs)](ar
 - [ARD-0016: AI Scenario Generator](architecture/ARD-0016-ai-scenario-generator.md) — Simulator-compatible AI scenario generation via Nebius AI Serverless Endpoint
 - [ARD-0017: AI Detector Tournament](architecture/ARD-0017-ai-detector-tournament.md) — Detector tournament facade and Serverless Jobs execution contract
 - [ARD-0018: Canonical Exchange Event Stream](architecture/ARD-0018-canonical-exchange-event-stream.md) — Simulation and historical-ready exchange events, replay, delivery, and persistence
+- [ARD-0019: Python Reference And Java Kernel Migration](architecture/ARD-0019-python-reference-java-kernel-migration.md) — Reference/candidate boundary, parity gates, Java authority rollout, and rollback policy

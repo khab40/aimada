@@ -1,16 +1,35 @@
 # ARD-0018: Canonical Exchange Event Stream
 
-Status: Accepted
+Status: Accepted and Implemented
 
 Date: 2026-07-18
 
-Implementation Status: `[done: steps 1-10]`
+Implementation Status: `[done]`
+
+Completion: All ten implementation steps are complete in commit `32dc799`.
 
 ## Context
 
-The current simulator mutates its in-memory book directly and passes loosely shaped dictionaries between the order book and matching engine. That is sufficient for synthetic UI state, but it does not provide a stable source contract for detector replay or future historical exchange data.
+Before this decision was implemented, the simulator mutated its in-memory book directly and passed loosely shaped dictionaries between the order book and matching engine. That was sufficient for synthetic UI state, but it did not provide a stable source contract for detector replay or future historical exchange data.
 
 Simulation and historical data need one ordered representation for order adds, modifications, cancellations, executions, and L2 snapshots. Historical venue fields and nanosecond timestamps must be preserved without forcing simulator ticks to imitate wall-clock exchange time.
+
+## Completion Scope
+
+This ARD is fully implemented. Completion includes:
+
+- canonical schemas for all five exchange event types;
+- sequence assignment, validation, cursor replay, and JSONL round trips;
+- modify-order and price-time-priority behavior;
+- matching and simulation event generation;
+- one L2 snapshot checkpoint per completed simulation tick;
+- REST and WebSocket delivery;
+- typed frontend consumption and the Exchange Event Tape;
+- live simulation, canonical JSONL, and historical-normalizer source boundaries;
+- append-only event and snapshot persistence with stream-scoped replay;
+- focused, end-to-end, backend, and frontend validation.
+
+A venue/vendor mapping for a future historical dataset is not unfinished ARD-0018 work. It is a new data-source integration performed after a dataset and its format are selected. That integration uses the completed `HistoricalRecordNormalizer` boundary without changing this architecture.
 
 ## Decision
 
@@ -23,7 +42,7 @@ Introduce a versioned canonical exchange-event model in `backend/app/exchange/sc
 - Simulation may use a logical `tick` without inventing exchange timestamps. Historical adapters preserve source timestamps independently.
 - Dictionary serialization is the stable boundary used by persistence, APIs, WebSockets, and frontend consumers.
 
-The migration is additive. Existing loose matching-engine dictionaries remain in place until step 4, so the schema introduction does not change runtime behavior.
+The migration was additive: the schema was introduced first, and matching output migrated to canonical events in step 4 without breaking the existing UI event projection.
 
 ## Architecture
 
@@ -48,7 +67,7 @@ flowchart LR
 - Added a common immutable event envelope and one typed payload per supported event.
 - Added stable `to_dict()` serialization for JSON-compatible downstream boundaries.
 - Added schema tests covering every discriminator, historical sequence/timestamp fidelity, invalid order state, and priority validation.
-- No existing matching, simulation, API, or frontend behavior changed in this step.
+- No existing matching, simulation, API, or frontend behavior changed during this step.
 
 ## Step 2 Implementation Record
 
@@ -56,7 +75,7 @@ flowchart LR
 - The log assigns contiguous canonical sequences, prevents duplicate event IDs, and rejects sequence gaps.
 - Added bounded tail reads and cursor-based replay after a canonical sequence.
 - Added JSONL writing/loading with typed deserialization, schema validation, ordering validation, and line-specific errors.
-- Existing runtime paths do not consume the log yet; integration begins in step 4.
+- At this stage, runtime paths did not consume the log; integration followed in step 4.
 
 ## Step 3 Implementation Record
 
@@ -110,7 +129,7 @@ flowchart LR
 - The simulation API now reads through a live `SimulationEventSource` instead of its concrete log.
 - Added validated canonical JSONL replay as another source implementation.
 - Added a historical record-normalizer boundary that preserves upstream sequence/timestamps and assigns independent canonical order.
-- Deferred vendor-specific CSV/JSON field mappings until a historical dataset is selected.
+- Established the completed extension point for vendor-specific CSV/JSON mappings after a historical dataset is selected.
 
 ## Step 10 Implementation Record
 

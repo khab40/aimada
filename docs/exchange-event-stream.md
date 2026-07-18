@@ -85,7 +85,7 @@ Consumers depend on the `ExchangeEventSource.read(after_sequence, limit)` contra
 - `CanonicalJsonlEventSource` replays an already-normalized and validated JSONL stream.
 - `HistoricalRecordEventSource` accepts raw records plus a venue/vendor normalizer. The normalizer must emit `source="historical"` events and preserve source sequence/timestamps; the source assigns independent contiguous canonical sequences.
 
-No vendor CSV column mapping is selected yet. A later dataset integration supplies a small `HistoricalRecordNormalizer` without changing matching, replay, API, detectors, or frontend consumers.
+ARD-0018 is complete without selecting a vendor CSV layout. When a historical dataset is selected, its integration supplies a small `HistoricalRecordNormalizer` without changing matching, replay, API, detectors, or frontend consumers.
 
 ## Durable Streams
 

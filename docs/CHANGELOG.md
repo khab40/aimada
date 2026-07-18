@@ -5,6 +5,12 @@ Update this file with each significant commit before pushing.
 
 ## Unreleased
 
+### Current - docs: freeze Python-to-Java kernel migration boundary
+
+- Added ARD-0019 and the Java kernel migration tracker with the Python reference, Java candidate, authority modes, parity gates, rollback rules, and component ownership boundary.
+- Kept REST, WebSocket, persistence, orchestration, detectors, and frontend authority outside the initial Java hot-loop scope.
+- Recorded repository-owned Java 25 toolchain, Gradle wrapper, and Protobuf generation requirements because global build tools are not assumed.
+
 ### Current - feat: define canonical exchange event schema
 
 - Added versioned canonical `add`, `modify`, `cancel`, `execute`, and `snapshot` event models for simulation and future historical feeds.
