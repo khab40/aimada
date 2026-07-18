@@ -1,6 +1,5 @@
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal
 from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -198,37 +197,6 @@ class Settings(BaseSettings):
         alias="ARENA_TICK_HISTORY_INTERVAL",
     )
     arena_persist_all_events: bool = Field(default=False, alias="ARENA_PERSIST_ALL_EVENTS")
-    kernel_authority_mode: Literal["python", "shadow", "java"] = Field(
-        default="java",
-        alias="KERNEL_AUTHORITY_MODE",
-    )
-    java_kernel_grpc_target: str = Field(default="127.0.0.1:50051", alias="JAVA_KERNEL_GRPC_TARGET")
-    java_kernel_grpc_timeout_seconds: float = Field(
-        default=5.0,
-        gt=0.0,
-        le=60.0,
-        alias="JAVA_KERNEL_GRPC_TIMEOUT_SECONDS",
-    )
-    java_kernel_rollout_percentage: int = Field(
-        default=100,
-        ge=0,
-        le=100,
-        alias="JAVA_KERNEL_ROLLOUT_PERCENTAGE",
-    )
-    java_kernel_python_replay_percentage: int = Field(
-        default=10,
-        ge=0,
-        le=100,
-        alias="JAVA_KERNEL_PYTHON_REPLAY_PERCENTAGE",
-    )
-    java_kernel_fallback_to_python: bool = Field(default=True, alias="JAVA_KERNEL_FALLBACK_TO_PYTHON")
-    java_kernel_shadow_workers: int = Field(default=1, ge=1, le=16, alias="JAVA_KERNEL_SHADOW_WORKERS")
-    java_kernel_shadow_max_pending: int = Field(
-        default=16,
-        ge=1,
-        le=10_000,
-        alias="JAVA_KERNEL_SHADOW_MAX_PENDING",
-    )
     cors_allowed_origins: str = Field(
         default="http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174",
         alias="CORS_ALLOWED_ORIGINS",

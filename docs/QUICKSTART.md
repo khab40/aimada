@@ -35,7 +35,8 @@ docker compose up --build
 # frontend | Local:   http://localhost:5173/
 ```
 
-This CPU-safe local path builds all three services from source, needs no Nebius
+This CPU-safe local path builds all four services (`java-kernel`, `agent-runner`,
+`backend`, and `frontend`) from source, needs no Nebius
 configuration or registry login, and falls back to deterministic mock responses.
 Real Nebius credentials are mounted only by the opt-in
 `docker-compose.nebius.yml` override documented in
@@ -49,6 +50,7 @@ Open your browser:
 - **Arena**: http://localhost:5173/arena
 - **Backend API**: http://localhost:8000
 - **API Docs**: http://localhost:8000/docs
+- **Java kernel status**: http://localhost:8081/api/kernel/status
 
 ## 4. Quick Test
 

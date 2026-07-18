@@ -121,8 +121,8 @@ jobs:
           path: java/**/build/reports/tests/test
           if-no-files-found: ignore
 
-  cross-language-parity:
-    name: Permanent Python and Java parity replay
+  java-golden-replay:
+    name: Permanent Java golden corpus replay
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -160,7 +160,7 @@ jobs:
         working-directory: java
         run: ./gradlew :control-plane:bootJar --no-daemon
 
-      - name: Replay permanent cross-language corpus
+      - name: Replay immutable golden corpus
         env:
           LOB_KERNEL_GRPC_ENABLED: "true"
         run: |
@@ -173,7 +173,16 @@ jobs:
 
           for attempt in {1..60}; do
             if python -c 'import socket; socket.create_connection(("127.0.0.1", 50051), 1).close()'; then
-              uv run --project backend python scripts/run_kernel_shadow_corpus.py --target 127.0.0.1:50051
+              uv run --project backend python scripts/run_java_golden_corpus.py --target 127.0.0.1:50051
+              curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 1 \
+                --header 'Content-Type: application/x-protobuf' \
+                --data-binary @contracts/golden/parity-v1/cases/normal-market-seed-42/request.pb \
+                --output java-kernel-http-result.pb \
+                http://127.0.0.1:8080/api/kernel/run
+              cmp \
+                java-kernel-http-result.pb \
+                contracts/golden/parity-v1/cases/normal-market-seed-42/expected-result.pb
+              python -c 'import json, urllib.request; status=json.load(urllib.request.urlopen("http://127.0.0.1:8080/api/kernel/status")); assert status == {"authority": "java", "implementation": "java", "pythonFallback": False, "pythonReplay": False, "contractVersion": 1}'
               exit 0
             fi
             if ! kill -0 "$kernel_pid" 2>/dev/null; then
@@ -185,11 +194,11 @@ jobs:
           cat java-kernel-ci.log
           exit 1
 
-      - name: Upload Java parity service log
+      - name: Upload Java golden replay service log
         if: ${{ failure() && hashFiles('java-kernel-ci.log') != '' }}
         uses: actions/upload-artifact@v6
         with:
-          name: java-kernel-parity-log
+          name: java-kernel-golden-replay-log
           path: java-kernel-ci.log
           if-no-files-found: ignore
 
@@ -296,7 +305,7 @@ jobs:
 
       - name: Smoke test backend runtime imports
         if: ${{ matrix.name == 'backend' }}
-        run: docker run --rm lob-arena-ci/backend:${{ github.sha }} python -c 'import app.main'
+        run: docker run --rm lob-arena-ci/backend:${{ github.sha }} python -c 'import app.main, importlib.util; assert importlib.util.find_spec("app.contracts.python_reference") is None; assert importlib.util.find_spec("grpc") is None; assert importlib.util.find_spec("google") is None'
 
       - name: Smoke test Java runtime layout
         if: ${{ matrix.name == 'java-kernel' }}

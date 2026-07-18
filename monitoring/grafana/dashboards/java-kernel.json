@@ -27,31 +27,8 @@
     },
     {
       "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
-      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
-      "id": 3,
-      "targets": [
-        {"expr": "lob_kernel_shadow_pending", "legendFormat": "pending", "refId": "A"},
-        {"expr": "lob_kernel_shadow_pending_limit", "legendFormat": "limit", "refId": "B"}
-      ],
-      "title": "Python shadow queue pressure",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
-      "fieldConfig": {"defaults": {"unit": "ops"}, "overrides": []},
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
-      "id": 4,
-      "targets": [
-        {"expr": "sum(increase(lob_kernel_shadow_outcomes_total[15m])) by (status)", "legendFormat": "{{status}}", "refId": "A"}
-      ],
-      "title": "Shadow outcomes (15m)",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
       "fieldConfig": {"defaults": {"unit": "Bps"}, "overrides": []},
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
       "id": 5,
       "targets": [
         {"expr": "rate(jvm_gc_memory_allocated_bytes_total{job=\"lob-arena-java-kernel\"}[5m])", "legendFormat": "allocated", "refId": "A"}
@@ -62,7 +39,7 @@
     {
       "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
       "fieldConfig": {"defaults": {"unit": "eps"}, "overrides": []},
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
       "id": 6,
       "targets": [
         {"expr": "rate(lob_kernel_grpc_events_count[5m])", "legendFormat": "events", "refId": "A"}

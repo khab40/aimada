@@ -4,46 +4,44 @@ Status: Accepted and Implemented
 
 Date: 2026-07-18
 
-Implementation Status: `[done: step 17 of 17]`
+Implementation Status: `[done: step 18 of 18]`
 
 ## Context
 
-LOB Arena now has a canonical, replayable exchange-event stream, but its deterministic simulation, order book, matching, scenarios, detectors, API, and orchestration are implemented in Python. Rewriting the complete backend at once would combine correctness, delivery, deployment, and operational risk while removing the working reference needed to prove behavioral equivalence.
+LOB Arena began with its deterministic simulation, order book, matching, scenarios, detectors, API, and orchestration implemented in Python. Rewriting the complete backend at once would have combined correctness, delivery, deployment, and operational risk while removing the working reference needed to prove behavioral equivalence.
 
 The performance-sensitive exchange kernel can move independently if both implementations share a language-neutral request/result contract and deterministic semantics.
 
 ## Decision
 
-Migrate through a reference-and-candidate architecture:
+Migrate through a reference-and-candidate architecture, then retire the duplicate runtime after parity and cut-over:
 
-- Python remains authoritative until parity is demonstrated.
+- Python remains authoritative only until parity is demonstrated.
 - Protobuf defines simulation input, canonical events, trades, snapshots, metrics, and result hashes.
 - Java 25 implements the candidate kernel as plain Java modules.
 - Spring Boot remains outside the kernel and becomes the Java control-plane framework only after kernel stability.
 - Python and Java receive identical scenario requests and are compared by a differential harness.
 - Authority moves by component and runtime mode only after correctness, performance, observability, and rollback gates pass.
-- Python replay remains in CI after Java becomes authoritative.
+- After the stability window, Java becomes the sole versioned deterministic-kernel implementation. The immutable golden corpus replaces executable Python-kernel replay as the compatibility oracle.
+- Python remains for ML/AI, Nebius integration, persistence, interactive arena orchestration, WebSocket delivery, and other capabilities that have no Java replacement yet.
 
-## Initial Component Boundary
+## Final Component Boundary
 
 ```mermaid
 graph LR
     Request["Versioned Protobuf request"]
-    Python["Python reference kernel"]
-    Java["Plain Java candidate kernel"]
-    Compare["Differential parity harness"]
-    PythonAPI["Python API, WebSocket, persistence"]
+    Corpus["Immutable v1 golden corpus"]
+    Java["Plain Java authoritative kernel"]
+    Client["Frontend or gRPC client"]
     Result["Canonical events, snapshots, metrics, hashes"]
 
-    Request --> Python
     Request --> Java
-    Python --> Compare
-    Java --> Compare
-    Compare --> Result
-    Python --> PythonAPI
+    Corpus --> Java
+    Java --> Result
+    Client --> Request
 ```
 
-The first Java boundary owns the simulation clock, deterministic scheduler, managed PRNG streams, order book, matching, canonical event production, and snapshots. Python initially retains scenarios, detector authority, persistence, REST, WebSocket delivery, agent orchestration, and Nebius integration.
+The Java boundary owns the versioned simulation clock, deterministic scheduler, managed PRNG streams, order book, matching, canonical event production, snapshots, metrics, and `/api/kernel` HTTP/gRPC endpoints. Python retains the interactive arena and scenarios, detector/ML authority, persistence, remaining REST/WebSocket delivery, agent orchestration, and Nebius integration until equivalent Java components are implemented.
 
 ## Step 1 Implementation Record
 
@@ -187,19 +185,28 @@ The first Java boundary owns the simulation clock, deterministic scheduler, mana
 - Added the Protobuf/gRPC runtime dependencies omitted from the minimized Python image and CI smoke checks for backend imports plus the non-root Java runtime JAR layout.
 - Verified the built 149.6 MB image locally and confirmed a default-authority golden request selected Java with complete parity and no fallback.
 
+## Step 18 Implementation Record
+
+- Made Spring Boot the sole owner of `POST /api/kernel/run` and `GET /api/kernel/status`, backed by one shared framework-free `JavaSimulationKernel` instance.
+- Removed the FastAPI kernel endpoint, Python reference kernel, authority router, differential/shadow runners, runtime replay/fallback settings, and their duplicate tests.
+- Kept Python runtime ownership only for ML/AI and application capabilities without a Java replacement: the interactive arena, scenarios, detectors, persistence, experiments, WebSocket delivery, agent orchestration, and Nebius integration.
+- Replaced executable Python-kernel parity with exact Java replay of the immutable versioned golden corpus in CI.
+- Routed same-origin frontend `/api/kernel/` traffic directly to the Java control plane while preserving `/dist` static delivery and the existing Python API/WebSocket configuration.
+
 ## Consequences
 
 Positive:
 
-- Python remains an executable behavioral specification.
-- Divergence is detected at the first canonical event rather than after a backend cutover.
+- Java has one production implementation for the versioned deterministic kernel.
+- Immutable corpus evidence continues to detect deterministic behavior drift without a duplicate runtime kernel.
+- CI detects any byte-level deterministic output drift against the versioned corpus.
 - Java performance work is isolated from HTTP and framework concerns.
-- Rollback remains available throughout migration.
+- Python and Java ownership boundaries are explicit, so later components can move independently.
 
 Tradeoffs:
 
-- Two kernels coexist during migration.
-- Protobuf adapters and parity infrastructure add temporary complexity.
+- Rollback now means deploying a previously verified Java release; there is no Python runtime fallback for the versioned kernel.
+- Python still owns the separate interactive arena implementation until a stateful Java replacement is developed and proven.
 - Exact cross-language determinism constrains numeric representation, PRNG choice, ordering, and hashing.
 - Java authority arrives later than a superficial rewrite but with measurable correctness.
 

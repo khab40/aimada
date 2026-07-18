@@ -1,10 +1,10 @@
 # Kernel Observability
 
-Kernel observability is implemented around gRPC and shadow orchestration, not inside the deterministic hot loop. Metric and trace failures are isolated from kernel results.
+Kernel observability is implemented around the Java HTTP/gRPC control plane, not inside the deterministic hot loop. Metric and trace failures are isolated from kernel results.
 
 ## Java Control Plane
 
-Spring Boot Actuator exposes health, diagnostic metrics, and Prometheus scrape endpoints. The candidate gRPC server remains disabled by default and can be started as a control-plane-managed boundary:
+Spring Boot Actuator exposes health, diagnostic metrics, and Prometheus scrape endpoints. The gRPC server can be started as a control-plane-managed boundary:
 
 ```bash
 LOB_KERNEL_GRPC_ENABLED=true ./gradlew :control-plane:bootRun
@@ -37,29 +37,20 @@ LOB_KERNEL_TRACE_SAMPLE_PROBABILITY=0.1 \
 
 OTLP metric push is separately controlled by `LOB_KERNEL_OTLP_METRICS_ENABLED`; it is off by default because Prometheus scraping is the primary metric path. Local tests never require a collector.
 
-## Python Shadow Metrics
-
-Every `LiveShadowKernel` owns a thread-safe `ShadowMetrics` registry with:
-
-- pending work and configured pending limit gauges;
-- bounded `match`, `mismatch`, `error`, and `skipped` outcome counters;
-- candidate-duration sum/count by the same bounded status.
-
-`snapshot()` supports API/status integration, while `prometheus()` renders scrape-ready text. Run ids and error details never become labels. Step 16 will attach the selected authority router's registry to the existing FastAPI `/metrics` response.
+The retired Python shadow/authority metrics are intentionally absent. Compatibility drift is a CI failure from exact golden-corpus replay, while production Java health, request outcomes, latency, and event counts remain available through Actuator and Prometheus.
 
 ## Prometheus and Grafana Templates
 
 - `monitoring/prometheus/java-kernel.yml` scrapes the Java actuator and existing Python metric endpoints.
-- `monitoring/grafana/dashboards/java-kernel.json` provides request rate, p95/p99 RPC latency, shadow pressure/outcomes, allocation rate, and canonical event-rate panels.
+- `monitoring/grafana/dashboards/java-kernel.json` provides Java request rate, p95/p99 RPC latency, allocation rate, and canonical event-rate panels. Historical shadow panels may be removed from deployed dashboards.
 
 These are provisioning templates only; this step adds no Docker containers. Adjust scrape targets to the deployment service names.
 
 Recommended alerts are:
 
-- any sustained `mismatch` increase;
-- any `error` increase after Java becomes a required candidate;
-- `skipped` outcomes or pending/limit above 80%;
+- Java error-rate increases;
+- failed golden-corpus replay in CI;
 - p99 latency above the rollout SLO;
-- absence of Java scrape data while shadow or Java mode is enabled.
+- absence of Java scrape data while the kernel service is deployed.
 
 Grafana is a visualization consumer, never a kernel dependency. Prometheus scraping and OTLP exporting remain outside simulation execution.

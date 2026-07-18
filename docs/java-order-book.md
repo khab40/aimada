@@ -1,6 +1,6 @@
 # Java Integer Order Book
 
-The Java candidate order book and matching engine live in the framework-free `simulation-kernel` module. They represent all prices as signed 64-bit ticks and all quantities as non-negative signed 64-bit lots; binary floating-point values do not enter book state.
+The authoritative Java order book and matching engine live in the framework-free `simulation-kernel` module. They represent all prices as signed 64-bit ticks and all quantities as non-negative signed 64-bit lots; binary floating-point values do not enter book state.
 
 ## Frozen Behavior
 
@@ -14,7 +14,7 @@ The Java candidate order book and matching engine live in the framework-free `si
 - Cancel events use the actual resting order state rather than fields supplied by the cancel request.
 - Snapshots aggregate quantities by price, retain deterministic bid/ask ordering, expose the first non-normal owner, and preserve optional-field absence for one-sided or empty books.
 
-The matching engine emits version 1 Protobuf events with contiguous sequences and deterministic `venue:type:sequence` identifiers. Initial book construction is event-free when performed before the matching listener is attached; explicit reinitialization through an active engine emits baseline add events, matching the Python reference lifecycle.
+The matching engine emits version 1 Protobuf events with contiguous sequences and deterministic `venue:type:sequence` identifiers. Initial book construction is event-free when performed before the matching listener is attached; explicit reinitialization through an active engine emits baseline add events, preserving the frozen version 1 behavior.
 
 ## Validation
 

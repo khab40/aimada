@@ -74,7 +74,7 @@ flowchart LR
 
 The exchange produces a versioned canonical stream of `add`, `modify`, `cancel`, `execute`, and `snapshot` events. Simulation is the live source; future venue datasets enter through a historical normalizer and preserve their upstream sequence/timestamps separately from canonical replay order. Arena state/WebSocket messages carry a bounded event tail, `/api/arena/exchange-events` provides cursor replay, and append-only history stores full events plus snapshot-only checkpoints.
 
-The versioned deterministic kernel API now uses the plain Java 25 kernel by default for the scheduler, managed PRNG streams, order book, matching, canonical events, snapshots, and metrics behind the shared Protobuf/gRPC contract. The Python control plane retains `python`, `shadow`, and percentage-based `java` routing, samples Python reference replay, and automatically falls back on Java error or known mismatch. FastAPI remains the REST/WebSocket, persistence, Nebius, and interactive-simulation control plane; Spring Boot and rollout policy remain outside the hot loop.
+The versioned deterministic kernel API is owned solely by the plain Java 25 kernel for the scheduler, managed PRNG streams, order book, matching, canonical events, snapshots, and metrics. Spring Boot exposes `/api/kernel/run` and `/api/kernel/status` while gRPC remains the language-neutral integration boundary; neither framework enters the hot loop. FastAPI retains the REST/WebSocket, persistence, ML/AI, Nebius, agent-orchestration, experiment, and interactive-simulation capabilities that do not yet have Java replacements.
 
 ### Runtime Flow
 
@@ -239,4 +239,4 @@ Detailed architecture decisions are recorded in [Architecture Records (ARDs)](ar
 - [ARD-0016: AI Scenario Generator](architecture/ARD-0016-ai-scenario-generator.md) — Simulator-compatible AI scenario generation via Nebius AI Serverless Endpoint
 - [ARD-0017: AI Detector Tournament](architecture/ARD-0017-ai-detector-tournament.md) — Detector tournament facade and Serverless Jobs execution contract
 - [ARD-0018: Canonical Exchange Event Stream](architecture/ARD-0018-canonical-exchange-event-stream.md) — Simulation and historical-ready exchange events, replay, delivery, and persistence
-- [ARD-0019: Python Reference And Java Kernel Migration](architecture/ARD-0019-python-reference-java-kernel-migration.md) — Reference/candidate boundary, parity gates, Java authority rollout, and rollback policy
+- [ARD-0019: Python Reference And Java Kernel Migration](architecture/ARD-0019-python-reference-java-kernel-migration.md) — Completed parity-gated Java kernel cut-over and retained Python ownership boundary

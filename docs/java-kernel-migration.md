@@ -1,6 +1,6 @@
 # Java Kernel Migration
 
-LOB Arena will migrate its deterministic exchange kernel from Python to Java 25 through differential parity, not through a one-time backend rewrite. Python remains the reference implementation until Java produces the same ordered exchange stream, book checkpoints, trades, hashes, and metrics.
+LOB Arena migrated its versioned deterministic exchange kernel from Python to Java 25 through differential parity. Java now owns the kernel, its public HTTP endpoint, and gRPC service; the duplicate Python kernel and runtime rollout machinery have been retired.
 
 ## Frozen Migration Boundary
 
@@ -20,13 +20,13 @@ The first Java authority boundary contains only deterministic hot-loop component
 
 Spring objects, dependency injection, HTTP concerns, persistence clients, telemetry exporters, and message brokers must not enter the kernel hot loop.
 
-## Authority Modes
+## Historical Authority Modes
 
 - `python`: Python is authoritative and Java is not invoked.
 - `shadow`: both kernels receive an identical Protobuf request; Python publishes results and Java produces a parity report only.
 - `java`: Java publishes results, with sampled Python replay retained for rollback and regression detection.
 
-The default cannot move from `python` to `shadow` or from `shadow` to `java` without the relevant parity, performance, observability, and rollback gates passing.
+These modes governed migration only. They no longer exist in runtime configuration; Java is the sole kernel authority.
 
 ## Completion Gates
 
@@ -41,7 +41,7 @@ Java kernel authority requires all of the following:
 7. Shadow mode reports no unexplained divergence for the agreed run/seed corpus.
 8. Java meets the agreed latency, throughput, allocation, and resource limits.
 9. Metrics, traces, health, parity failures, and rollback controls are operational.
-10. Python reference replay remains in CI after Java becomes authoritative.
+10. Permanent CI replay validates Java against an immutable, versioned golden corpus.
 
 ## Toolchain Policy
 
@@ -58,7 +58,7 @@ Java kernel authority requires all of the following:
 - No Chronicle Queue without a measured durable-journal requirement.
 - No Agrona adoption without profiling evidence.
 - No ClickHouse or Parquet migration as part of kernel correctness work.
-- No removal of the Python reference implementation during the stability period.
+- No removal of the Python reference implementation during the stability period; it was retired only after the final cut-over.
 
 ## Implementation Sequence
 
@@ -81,6 +81,7 @@ Java kernel authority requires all of the following:
 | 15 | Done | Failure-isolated gRPC metrics/spans, Prometheus actuator, opt-in OpenTelemetry/OTLP, bounded Python shadow metrics, scrape template, and Grafana dashboard |
 | 16 | Done | Protobuf kernel API, explicit python/shadow/java router, deterministic percentage cohorts, sampled Python replay, mismatch/error fallback, fail-closed option, persisted decisions, and rollback settings |
 | 17 | Done | Java-default Protobuf kernel API, four-service Compose deployment, non-root Java 25 image, 10% runtime Python replay, fallback/rollback, and permanent 100% real-gRPC corpus replay in CI |
+| 18 | Done | Java-only Protobuf HTTP/gRPC kernel, retired Python runtime duplicate and rollout paths, immutable Java golden replay, frontend Nginx routing, and documented retained Python ownership |
 
 ## Related Documentation
 

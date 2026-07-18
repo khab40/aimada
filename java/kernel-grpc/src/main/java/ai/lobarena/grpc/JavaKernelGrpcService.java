@@ -23,7 +23,7 @@ public final class JavaKernelGrpcService extends SimulationKernelGrpc.Simulation
         this(new JavaSimulationKernel(), telemetry);
     }
 
-    JavaKernelGrpcService(JavaSimulationKernel kernel, KernelGrpcTelemetry telemetry) {
+    public JavaKernelGrpcService(JavaSimulationKernel kernel, KernelGrpcTelemetry telemetry) {
         this.kernel = kernel;
         this.telemetry = telemetry == null ? KernelGrpcTelemetry.noop() : telemetry;
     }

@@ -7,13 +7,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/internal/kernel")
+@RequestMapping("/api/kernel/status")
 final class KernelStatusController {
     @GetMapping
     Map<String, Object> status() {
         return Map.of(
-                "authority", "python",
-                "candidate", "java",
+                "authority", "java",
+                "implementation", "java",
+                "pythonFallback", false,
+                "pythonReplay", false,
                 "contractVersion", KernelBoundary.CONTRACT_VERSION);
     }
 }

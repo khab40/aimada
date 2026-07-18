@@ -3,6 +3,8 @@
 This changelog lists significant commits in reverse chronological order.
 Update this file with each significant commit before pushing.
 
+- Completed the Java deterministic-kernel cut-over: Spring Boot now owns the public Protobuf run/status API, Python runtime kernel code/dependencies and fallback/shadow routing were removed, frontend Nginx proxies `/api/kernel/` to Java, and CI replays the immutable golden corpus directly against Java. Python remains for ML/AI and capabilities without Java replacements.
+
 - Fixed Linux/macOS Python-to-Java parity at a liquidity-thinning boundary by making Python use Java-equivalent exact binary-value summation and scale-three half-even conversion.
 - Restored the minimized backend image's Protobuf/gRPC runtime imports and added backend/Java container smoke checks to CI.
 

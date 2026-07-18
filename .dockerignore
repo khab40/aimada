@@ -47,6 +47,9 @@ backend/**
 !backend/pyproject.toml
 !backend/app/
 !backend/app/**
+# Protobuf bindings and deterministic contract helpers are CI/integration
+# tooling; the Python runtime no longer serves or executes the kernel.
+backend/app/contracts/**
 
 !agent-runner/
 agent-runner/**

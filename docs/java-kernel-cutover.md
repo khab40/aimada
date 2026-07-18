@@ -1,41 +1,25 @@
-# Java Kernel Default Cutover
+# Java Kernel Cut-over
 
-The versioned `SimulationRequest`/`SimulationResult` kernel API now selects Java by default:
+Java 25 is the sole implementation and runtime authority for the versioned `SimulationRequest`/`SimulationResult` kernel.
 
-- authority mode: `java`;
-- Java rollout: 100%;
-- synchronous Python replay sample: 10%;
-- Python fallback on Java error or known mismatch: enabled;
-- permanent CI corpus replay: 100%.
+## Runtime Boundary
 
-The cutover applies to `POST /api/kernel/run`. FastAPI still owns REST/WebSocket orchestration, persistence, Nebius integration, and the interactive continuous simulation control plane. The React frontend remains unchanged. This is the component boundary frozen in ARD-0019, not a claim that the full backend moved to Java.
+- `POST /api/kernel/run` accepts `application/x-protobuf` or `application/octet-stream` and returns `application/x-protobuf`.
+- `GET /api/kernel/status` reports the Java implementation and contract version.
+- gRPC `SimulationKernel.RunSimulation` remains available on port 50051 for service integration and verification.
+- The frontend Nginx service sends same-origin `/api/kernel/` requests directly to the Java control plane.
+- The Python backend does not proxy, replay, shadow, or fall back for kernel requests.
+
+FastAPI still owns the interactive arena, scenarios, detectors and ML/AI, persistence, experiments, WebSocket delivery, agent orchestration, and Nebius integration. Those components remain Python because equivalent stateful Java components have not been developed.
 
 ## Deployment
 
-Compose now runs four purposeful services: Java kernel, Python backend, agent runner, and frontend. The Java service is a multi-stage, non-root Java 25 image:
+Compose runs Java kernel, Python backend, agent runner, and frontend. The Java service exposes HTTP/Actuator on host port 8081 and gRPC on 50051. The frontend reaches Java through the Compose service name; the Python backend no longer depends on Java startup.
 
-- allow-listed build context contains the Java main sources and Protobuf schema only;
-- tests, benchmark sources, docs, Git data, outputs, credentials, and Windows scripts stay outside the image context;
-- build JDK and Gradle are absent from the runtime image;
-- runtime user is `lobarena`;
-- only the Spring Boot JAR and Java 25 JRE remain;
-- local verified image size is approximately 149.6 MB.
+The Java image remains a multi-stage, non-root Java 25 image. Its runtime contains the application JAR and Java runtime, not Gradle, the build JDK, tests, documentation, outputs, credentials, or platform-specific launchers.
 
-The Java service exposes HTTP/Actuator on host port 8081 and gRPC on 50051. The backend waits for Java health before starting and connects over the Compose network at `java-kernel:50051`.
+## Compatibility And Rollback
 
-## Permanent Reference Policy
+The immutable `contracts/golden/parity-v1` corpus is the compatibility oracle. CI starts the production Spring Boot JAR and requires exact Java output bytes for every case. Intentional deterministic changes require a new versioned corpus and an ARD update.
 
-Python is not removed. The following are permanent release gates:
-
-1. Python golden corpus generation and freshness tests remain.
-2. Java exact golden tests remain.
-3. The `cross-language-parity` CI job starts the real Spring/gRPC Java service and replays every corpus case from Python.
-4. Runtime Python replay remains configurable and defaults to 10%.
-5. A Java error or sampled mismatch falls back to Python and records the decision.
-6. `KERNEL_AUTHORITY_MODE=python` is the immediate operational rollback.
-
-An intentional deterministic behavior change still requires a new versioned contract/corpus decision; passing only one language's tests is insufficient.
-
-## Verification Record
-
-The final local cutover verification built the allow-listed image, started its health and gRPC endpoints, and sent the normal-market golden request through a default Java authority router with 100% verification replay. The response selected Java with no fallback and matched all 25 events, one execution, six snapshots, hashes, final book, and metrics.
+There is no Python kernel fallback. Operational rollback deploys the previous verified Java image or release.

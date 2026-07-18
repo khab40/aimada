@@ -1,8 +1,8 @@
 # Determinism Contract V1
 
-This contract defines behavior that must be identical in the Python reference kernel and Java candidate kernel. `contracts/golden/determinism-v1.json` contains executable vectors.
+This contract defines the frozen behavior of the authoritative Java kernel. `contracts/golden/determinism-v1.json` contains language-neutral executable vectors.
 
-The reference implementation is `backend/app/contracts/determinism.py`; the Java candidate implementation is under `java/simulation-kernel/src/main/java/ai/lobarena/kernel/determinism`. Both implementations execute the same frozen output vectors in their test suites.
+The production implementation is under `java/simulation-kernel/src/main/java/ai/lobarena/kernel/determinism`. Python contract tooling still verifies the same vectors independently, but no Python simulation-kernel runtime remains.
 
 ## Numeric Representation
 

@@ -51,7 +51,7 @@ Current UI architecture note: the product shell now exposes AI Command Center, A
 - [ARD-0010: Agent Runner Execution Architecture](ARD-0010-agent-runner-execution.md) — Local, remote, heavy, and LangGraph-compatible agent execution
 - [ARD-0011: Exchange Liquidity Invariant And Agent Quote Ownership](ARD-0011-exchange-liquidity-invariant.md) — Baseline ladder guard and additive per-agent quote ownership
 - [ARD-0018: Canonical Exchange Event Stream](ARD-0018-canonical-exchange-event-stream.md) — Versioned add, modify, cancel, execute, and L2 snapshot stream for simulation and historical data
-- [ARD-0019: Python Reference And Java Kernel Migration](ARD-0019-python-reference-java-kernel-migration.md) — Parity-gated migration from the Python reference kernel to plain Java 25 modules
+- [ARD-0019: Python Reference And Java Kernel Migration](ARD-0019-python-reference-java-kernel-migration.md) — Completed parity-gated cut-over to the sole Java 25 deterministic kernel
 
 ### UI Shell And Presentation
 

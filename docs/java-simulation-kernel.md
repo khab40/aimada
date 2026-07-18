@@ -22,6 +22,6 @@ The implementation includes the reference market maker, deterministic noise trad
 - Every completed tick emits exactly one snapshot.
 - Result events are contiguous and canonically hashed; the final book has its independent canonical hash.
 - Metrics are sorted, represented as integer values at decimal scale six, and use the frozen half-even policy.
-- Python remains authoritative even though the candidate currently matches every checked-in golden request for ordered events, books, hashes, and metrics.
+- Java is authoritative and must continue to match every checked-in golden request for ordered events, books, hashes, and metrics.
 
 Reusable arbitrary-result divergence diagnostics are added in the differential parity harness step; the simulation tests in this step establish deterministic execution and golden-envelope acceptance.

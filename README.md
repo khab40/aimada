@@ -109,9 +109,10 @@ Open:
 
 - Frontend: http://localhost:5173
 - Backend: http://localhost:8000
+- Java kernel status: http://localhost:8081/api/kernel/status
 - WebSocket: ws://localhost:8000/ws/arena
 
-The default Compose path builds `agent-runner`, `backend`, and `frontend` from source with `NEBIUS_ENDPOINT_MODE=mock`. Local Mock requires no Nebius credentials, private images, or GPU/vLLM runtime. Cloud calls use deterministic local fallback unless Nebius Cloud mode is explicitly configured.
+The default Compose path builds `java-kernel`, `agent-runner`, `backend`, and `frontend` from source with `NEBIUS_ENDPOINT_MODE=mock`. Java solely owns the versioned deterministic kernel; Python retains ML/AI and application capabilities without Java replacements. Local Mock requires no Nebius credentials, private images, or GPU/vLLM runtime. Cloud calls use deterministic local fallback unless Nebius Cloud mode is explicitly configured.
 
 ## Automated grader
 

@@ -17,6 +17,8 @@ final class ControlPlaneApplicationTest {
     void contextLoadsWithKernelBoundary() {
         assertThat(context).isNotNull();
         assertThat(context.containsBean("kernelStatusController")).isTrue();
+        assertThat(context.containsBean("kernelRunController")).isTrue();
+        assertThat(context.getBeansOfType(ai.lobarena.kernel.simulation.JavaSimulationKernel.class)).hasSize(1);
         assertThat(context.getBeansOfType(PrometheusMeterRegistry.class)).hasSize(1);
         assertThat(context.getBeansOfType(MicrometerKernelGrpcTelemetry.class)).hasSize(1);
         assertThat(context.getBeansOfType(ai.lobarena.grpc.JavaKernelGrpcServer.class)).isEmpty();
