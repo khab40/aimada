@@ -6,6 +6,7 @@ Modules:
 
 - `exchange-proto` generates Java types directly from `contracts/proto` and reads the shared golden corpus in tests;
 - `simulation-kernel` is the framework-free deterministic hot-loop boundary;
+- `kernel-benchmarks` owns JMH diagnostics and portable regression gates without adding benchmark libraries to the kernel;
 - `kernel-grpc` exposes the candidate kernel through the shared generated gRPC service without adding transport concerns to the hot loop;
 - `control-plane` is the separate Spring Boot API boundary and may depend on the kernel, never the reverse.
 
@@ -30,5 +31,7 @@ Start the candidate gRPC server for offline shadow replay with:
 ```
 
 See [Kernel Shadow Mode](../docs/kernel-shadow-mode.md) for the Python replay command and live-mirroring guarantees.
+
+Run forked kernel and matching diagnostics with `./gradlew :kernel-benchmarks:run --args='KernelBenchmarks -prof gc'`; see [Java Kernel Performance](../docs/java-kernel-performance.md) for gate policy and interpretation.
 
 The checksum-pinned wrapper owns Gradle 9.6.1. The Foojay resolver auto-provisions a Java 25 toolchain when one is not installed, so a developer-global Gradle or Java 25 installation is not required. Generated Protobuf Java sources stay under `build/` and are not committed.

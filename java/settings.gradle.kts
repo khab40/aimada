@@ -13,5 +13,6 @@ rootProject.name = "lob-arena-java"
 
 include("exchange-proto")
 include("simulation-kernel")
+include("kernel-benchmarks")
 include("kernel-grpc")
 include("control-plane")

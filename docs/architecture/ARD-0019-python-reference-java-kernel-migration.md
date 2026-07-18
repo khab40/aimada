@@ -4,7 +4,7 @@ Status: Accepted
 
 Date: 2026-07-18
 
-Implementation Status: `[partial: step 13 of 17]`
+Implementation Status: `[partial: step 14 of 17]`
 
 ## Context
 
@@ -152,6 +152,14 @@ The first Java boundary owns the simulation clock, deterministic scheduler, mana
 - Added `match`, `mismatch`, `error`, and capacity-pressure `skipped` outcomes plus drain/close lifecycle controls; candidate transport failures cannot replace the Python result.
 - Added a corpus replay command and verified all six golden scenarios over a real local gRPC socket: 320 events, 10 executions, and 51 snapshots with no divergence.
 
+## Step 14 Implementation Record
+
+- Added a separate Java benchmark module using OpenJDK JMH 1.37 without introducing benchmark dependencies into the hot-loop module.
+- Added forked simulation benchmarks for normal, quote-stuffing, and liquidity-evaporation requests plus a crossing integer-order-book match benchmark.
+- Added GC allocation profiling commands and verified forked Java 25 profiling on the current macOS/aarch64 environment.
+- Added portable CI smoke ceilings for p99 latency, throughput, and thread allocation on the largest golden kernel run and crossing-match path.
+- Kept event-count and canonical-hash assertions inside measured kernel runs, and deferred Agrona or data-structure changes until repeated profiles justify them.
+
 ## Consequences
 
 Positive:
@@ -179,3 +187,4 @@ Tradeoffs:
 - [gRPC Kernel Boundary](../grpc-kernel-boundary.md)
 - [Differential Parity Harness](../differential-parity-harness.md)
 - [Kernel Shadow Mode](../kernel-shadow-mode.md)
+- [Java Kernel Performance](../java-kernel-performance.md)
