@@ -8,6 +8,8 @@ Modules:
 - `simulation-kernel` is the framework-free deterministic hot-loop boundary;
 - `control-plane` is the separate Spring Boot API boundary and may depend on the kernel, never the reverse.
 
+The kernel currently includes the frozen Java 25 implementations of event ordering, fixed-point conversion, half-even metric quantization, SplitMix64 and named streams, simulation identifiers, canonical event/book bytes, SHA-256 digests, and the rolling event-stream hash.
+
 On macOS or Linux, run:
 
 ```bash

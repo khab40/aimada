@@ -2,6 +2,8 @@
 
 This contract defines behavior that must be identical in the Python reference kernel and Java candidate kernel. `contracts/golden/determinism-v1.json` contains executable vectors.
 
+The reference implementation is `backend/app/contracts/determinism.py`; the Java candidate implementation is under `java/simulation-kernel/src/main/java/ai/lobarena/kernel/determinism`. Both implementations execute the same frozen output vectors in their test suites.
+
 ## Numeric Representation
 
 - Prices are signed 64-bit integer ticks.

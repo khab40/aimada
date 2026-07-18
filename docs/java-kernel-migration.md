@@ -71,7 +71,7 @@ Java kernel authority requires all of the following:
 | 5 | Done | Authoritative Python Protobuf runner with exact event/book conversion, hashes, and quantized metrics |
 | 6 | Done | Immutable deterministic Protobuf parity corpus covering all scenarios, event types, empty-book optionals, checksums, and canonical hashes |
 | 7 | Done | Repository-owned Gradle 9.6.1 wrapper, Java 25 toolchains, generated shared Protobuf module, framework-free kernel module, Spring Boot control plane, and CI |
-| 8 | Planned | Java clock, PRNG, ordering, identifiers, and hashing |
+| 8 | Done | Java total ordering, fixed-point/metric rules, SplitMix64 named streams, identifiers, canonical encodings, and SHA-256 event/book/stream hashes with exact golden parity |
 | 9 | Planned | Java order book and matching |
 | 10 | Planned | Java simulation kernel |
 | 11 | Planned | gRPC integration |

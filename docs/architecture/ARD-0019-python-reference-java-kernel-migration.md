@@ -4,7 +4,7 @@ Status: Accepted
 
 Date: 2026-07-18
 
-Implementation Status: `[partial: step 7 of 17]`
+Implementation Status: `[partial: step 8 of 17]`
 
 ## Context
 
@@ -103,6 +103,14 @@ The first Java boundary owns the simulation clock, deterministic scheduler, mana
 - Generated Java Protobuf types directly from the root language-neutral schema and parsed a checked-in golden request in Java tests.
 - Kept Spring Boot dependencies outside the framework-free simulation kernel and added a control-plane context smoke test.
 - Added a dedicated Java 25 GitHub Actions job that runs the full Gradle `clean check` lifecycle.
+
+## Step 8 Implementation Record
+
+- Implemented Java total event ordering and the frozen phase codes with non-negative and ASCII boundary validation.
+- Implemented bit-exact SplitMix64, full-range rejection-sampled bounded integers, and SHA-256-derived named PRNG streams.
+- Implemented exact base-10 tick/lot conversion, round-half-even metric quantization, midpoint overflow checks, and simulation event identifiers.
+- Implemented all five canonical event payload encodings, book encoding, per-object SHA-256 digests, and the rolling stream hash chain.
+- Matched Java outputs to every frozen PRNG, seed, ordering, numeric, identifier, canonical-byte, event-hash, book-hash, and rolling-hash vector.
 
 ## Consequences
 
