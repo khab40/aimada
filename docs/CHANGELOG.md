@@ -3,6 +3,8 @@
 This changelog lists significant commits in reverse chronological order.
 Update this file with each significant commit before pushing.
 
+- Added controlled Python/shadow/Java kernel authority routing with deterministic percentage cohorts, sampled Python replay, mismatch/error fallback, fail-closed behavior, Protobuf HTTP execution/status endpoints, persisted decisions, and rollback configuration.
+
 - Added failure-isolated Java gRPC metrics and OpenTelemetry spans, Prometheus actuator exposure, bounded Python shadow metrics, and Prometheus/Grafana provisioning templates without adding runtime containers.
 
 - Added JMH simulation and matching benchmarks, GC allocation profiling, and portable CI regression gates for Java kernel latency, throughput, allocation, and measured-run correctness.

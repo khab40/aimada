@@ -4,7 +4,7 @@ Status: Accepted
 
 Date: 2026-07-18
 
-Implementation Status: `[partial: step 15 of 17]`
+Implementation Status: `[partial: step 16 of 17]`
 
 ## Context
 
@@ -168,6 +168,14 @@ The first Java boundary owns the simulation clock, deterministic scheduler, mana
 - Added thread-safe Python shadow pending gauges, bounded outcome counters, candidate durations, snapshots, and Prometheus rendering without high-cardinality run labels.
 - Added Prometheus scrape and Grafana dashboard templates without expanding the optimized Docker Compose service set.
 
+## Step 16 Implementation Record
+
+- Added an explicit Python control-plane authority router with `python`, `shadow`, and `java` modes; the default remains Python.
+- Added deterministic run-id percentage cohorts for Java rollout and independently sampled Python parity replay.
+- Added automatic Python fallback on Java transport error or known parity mismatch plus a fail-closed option that returns an error instead of publishing divergence.
+- Added a bounded Protobuf HTTP kernel endpoint, status endpoint, persisted authority decisions, result authority headers, and FastAPI shadow metric attachment.
+- Added environment/Compose controls and a staged 1/5/25/50/100 percent rollout and one-setting rollback runbook without adding a container.
+
 ## Consequences
 
 Positive:
@@ -197,3 +205,4 @@ Tradeoffs:
 - [Kernel Shadow Mode](../kernel-shadow-mode.md)
 - [Java Kernel Performance](../java-kernel-performance.md)
 - [Kernel Observability](../kernel-observability.md)
+- [Kernel Authority Rollout](../kernel-authority-rollout.md)

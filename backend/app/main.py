@@ -6,12 +6,14 @@ from app.api.routes_arena import router as arena_router
 from app.api.routes_experiments import router as experiments_router
 from app.api.routes_health import router as health_router
 from app.api.routes_incidents import router as incidents_router
+from app.api.routes_kernel import router as kernel_router
 from app.api.routes_nebius import nebius_client, router as nebius_router
 from app.api.routes_red_team import router as red_team_router
 from app.api.routes_scenarios import router as scenarios_router
 from app.api.routes_simulation import router as simulation_router
 from app.arena.engine import SimulationEngine
 from app.config import get_settings
+from app.contracts.authority import create_authority_router
 from app.nebius.evidence_archive import configure_default_evidence_archive
 from app.storage.local_store import LocalStore
 from app.storage.retention import cleanup_output_data
@@ -28,6 +30,15 @@ app.state.nebius_evidence = (
 )
 app.state.retention_cleanup = cleanup_output_data(app.state.store.output_dir, settings.arena_data_retention_days)
 app.state.settings = settings
+app.state.kernel_authority = create_authority_router(
+    settings,
+    decision_sink=lambda decision: app.state.store.append_jsonl(
+        "kernel/authority-decisions.jsonl", decision.to_dict()
+    ),
+    shadow_sink=lambda outcome: app.state.store.append_jsonl(
+        "kernel/shadow-outcomes.jsonl", outcome.to_dict()
+    ),
+)
 app.state.simulation = SimulationEngine(
     store=app.state.store,
     normal_agent_count=settings.arena_agent_count,
@@ -58,6 +69,7 @@ app.include_router(simulation_router)
 app.include_router(experiments_router)
 app.include_router(scenarios_router)
 app.include_router(incidents_router)
+app.include_router(kernel_router)
 app.include_router(nebius_router)
 app.include_router(red_team_router)
 app.include_router(websocket_router)
@@ -91,9 +103,14 @@ async def metrics(request: Request) -> PlainTextResponse:
         "# TYPE arena_websocket_clients gauge",
         f"arena_websocket_clients {websocket_clients}",
     ]
-    return PlainTextResponse("\n".join(lines) + "\n", media_type="text/plain; version=0.0.4")
+    kernel_metrics = request.app.state.kernel_authority.prometheus()
+    return PlainTextResponse(
+        "\n".join(lines) + "\n" + kernel_metrics,
+        media_type="text/plain; version=0.0.4",
+    )
 
 
 @app.on_event("shutdown")
 async def shutdown_simulation() -> None:
     await app.state.simulation.stop()
+    app.state.kernel_authority.close()
