@@ -4,7 +4,7 @@ Status: Accepted
 
 Date: 2026-07-18
 
-Implementation Status: `[partial: step 6 of 17]`
+Implementation Status: `[partial: step 7 of 17]`
 
 ## Context
 
@@ -95,6 +95,14 @@ The first Java boundary owns the simulation clock, deterministic scheduler, mana
 - Added a language-neutral manifest with raw-file SHA-256 checksums, canonical stream/book hashes, event-type counts, and metric counts.
 - Added authoritative regeneration and freshness validation plus semantic self-consistency and Python replay tests.
 - Required a new versioned corpus directory and ARD decision for intentional behavioral changes instead of mutating version 1 evidence.
+
+## Step 7 Implementation Record
+
+- Added a repository-owned Gradle 9.6.1 wrapper and Java 25 toolchain auto-provisioning; no developer-global Gradle or JDK 25 install is required.
+- Added `exchange-proto`, `simulation-kernel`, and `control-plane` modules with shared dependency and test conventions.
+- Generated Java Protobuf types directly from the root language-neutral schema and parsed a checked-in golden request in Java tests.
+- Kept Spring Boot dependencies outside the framework-free simulation kernel and added a control-plane context smoke test.
+- Added a dedicated Java 25 GitHub Actions job that runs the full Gradle `clean check` lifecycle.
 
 ## Consequences
 

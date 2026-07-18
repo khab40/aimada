@@ -49,7 +49,7 @@ Java kernel authority requires all of the following:
 - The repository owns a Gradle wrapper and Java toolchain declaration; developer-global Gradle is not required.
 - Protobuf and gRPC generation is owned by the build; developer-global `protoc` is not required.
 - CI verifies generated-source freshness and builds with the declared Java toolchain.
-- The current development machine has Java 21 and no global Gradle or `protoc`; repository-owned tooling is added before Java implementation begins.
+- A Java 21-only development machine can launch the repository wrapper, which auto-provisions the declared Java 25 compile/test toolchain; no global Gradle or `protoc` is required.
 
 ## Explicit Non-Goals During Parity
 
@@ -70,7 +70,7 @@ Java kernel authority requires all of the following:
 | 4 | Done | Explicit canonical event/book bytes, SHA-256 digests, stream hash chain, and golden vectors |
 | 5 | Done | Authoritative Python Protobuf runner with exact event/book conversion, hashes, and quantized metrics |
 | 6 | Done | Immutable deterministic Protobuf parity corpus covering all scenarios, event types, empty-book optionals, checksums, and canonical hashes |
-| 7 | Planned | Java 25 multi-module scaffold and CI |
+| 7 | Done | Repository-owned Gradle 9.6.1 wrapper, Java 25 toolchains, generated shared Protobuf module, framework-free kernel module, Spring Boot control plane, and CI |
 | 8 | Planned | Java clock, PRNG, ordering, identifiers, and hashing |
 | 9 | Planned | Java order book and matching |
 | 10 | Planned | Java simulation kernel |

@@ -76,6 +76,7 @@ The backend is the only writer to the exchange. Agents receive read-only market 
 
 ```text
 backend/          FastAPI simulator, detectors, experiments, evidence APIs
+java/             Java 25 candidate kernel, shared Protobuf types, and Spring control plane
 agent-runner/     Out-of-process normal, heavy, and LangGraph agents
 frontend/         React UI for the arena, investigations, and tournaments
 serverless/       Nebius Endpoint and Job images, prompts, and runners
@@ -247,7 +248,7 @@ If Job command templates are missing, the backend records `real_nebius_pending` 
 
 ## Development
 
-CI validates backend tests, Ruff, frontend lint/build, deterministic CPU evaluation, agent workspace contracts, Compose config, application Docker images, and Gitleaks. It intentionally does not build long-running Nebius Endpoint/Job images and does not run GPU/vLLM inference.
+CI validates backend tests, Ruff, frontend lint/build, the Java 25 candidate kernel and control plane, deterministic CPU evaluation, agent workspace contracts, Compose config, application Docker images, and Gitleaks. It intentionally does not build long-running Nebius Endpoint/Job images and does not run GPU/vLLM inference.
 
 Run the main checks locally:
 
@@ -256,6 +257,7 @@ uv sync --project backend --dev --frozen
 PYTHONPATH=. uv run --project backend ruff check backend serverless scripts
 PYTHONPATH=. uv run --project backend pytest -c backend/pyproject.toml backend/tests
 (cd frontend && corepack enable && pnpm install --frozen-lockfile && pnpm run lint && pnpm run build)
+(cd java && ./gradlew clean check)
 docker compose --env-file .env.example config --quiet
 ./scripts/check-secrets.sh
 ```
