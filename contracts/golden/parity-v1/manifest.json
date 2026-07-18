@@ -1,0 +1,129 @@
+{
+  "canonical_hash": "sha256-v1",
+  "cases": [
+    {
+      "case_id": "normal-market-seed-42",
+      "event_count": 25,
+      "event_stream_hash": "e9d7bcd7b758cc3057c2566fa1e0310e0264f4bf1f6cbbd3670c37a1df99a658",
+      "event_type_counts": {
+        "add": 8,
+        "execute": 1,
+        "modify": 10,
+        "snapshot": 6
+      },
+      "expected_result_file": "cases/normal-market-seed-42/expected-result.pb",
+      "expected_result_sha256": "996de6999a06ff2feb9a44e66a28a7f83e7026d78c83f243dababbeaa69bfacc",
+      "final_book_hash": "6bf63638b723b2db0112286fbedffe739f19b0185093818510e5495b216329a4",
+      "max_ticks": 6,
+      "metric_count": 24,
+      "request_file": "cases/normal-market-seed-42/request.pb",
+      "request_sha256": "aea602dbe86acfaa006d1e5ca301a69e10c32842ef488e45ce01e29c3df72203",
+      "scenario_name": "normal_market",
+      "seed": 42
+    },
+    {
+      "case_id": "empty-book-seed-7",
+      "event_count": 3,
+      "event_stream_hash": "aac818a7270dae43519146246ba3aadce20d2d98c97b13aba7f0b9591d152876",
+      "event_type_counts": {
+        "snapshot": 3
+      },
+      "expected_result_file": "cases/empty-book-seed-7/expected-result.pb",
+      "expected_result_sha256": "585c1dd7eec2b1c580d98f1d09992efa4171ddd5f91b5b3b4703dee402ed59b2",
+      "final_book_hash": "4714e08b48eedc17eda7c12ee8f557288535fb4d429aededf98826f25914dc87",
+      "max_ticks": 3,
+      "metric_count": 24,
+      "request_file": "cases/empty-book-seed-7/request.pb",
+      "request_sha256": "a537c51a24aef29e51bb367d983785518e6c8ef0c2cb1fa27ac9d2715a76a60d",
+      "scenario_name": "normal_market",
+      "seed": 7
+    },
+    {
+      "case_id": "spoofing-like-wall-seed-42",
+      "event_count": 45,
+      "event_stream_hash": "dc9d996ace5afb7a0f0d5c1c98abf403be625a8bb9e446d325b25f6b77a43b06",
+      "event_type_counts": {
+        "add": 13,
+        "cancel": 1,
+        "execute": 2,
+        "modify": 19,
+        "snapshot": 10
+      },
+      "expected_result_file": "cases/spoofing-like-wall-seed-42/expected-result.pb",
+      "expected_result_sha256": "365775a977f052130add7d9146c52a037082c7e3614b7064a4549199c09a68b5",
+      "final_book_hash": "8388e684de7e4b06db7593da5c9c3aa14572bb5098dec0c1952200bf12086bec",
+      "max_ticks": 10,
+      "metric_count": 24,
+      "request_file": "cases/spoofing-like-wall-seed-42/request.pb",
+      "request_sha256": "9c732f6a56c8289ebfb957e92dad43be31211d4e72f99ae836ce2346a07d42b9",
+      "scenario_name": "spoofing_like_wall",
+      "seed": 42
+    },
+    {
+      "case_id": "layering-like-seed-43",
+      "event_count": 60,
+      "event_stream_hash": "0e40912e00b68865a67f0430fa328eb16a6f18f2e57090697fd3e2e2b56422ef",
+      "event_type_counts": {
+        "add": 15,
+        "cancel": 3,
+        "execute": 3,
+        "modify": 27,
+        "snapshot": 12
+      },
+      "expected_result_file": "cases/layering-like-seed-43/expected-result.pb",
+      "expected_result_sha256": "626fd8cba40bb776bfd33cfd6a4365e7513be61c2a9c8183f2a8ade98148d60e",
+      "final_book_hash": "6a443148dd69d2820a333186b3cd7baf00e8eed25b5ec2f82f77e975aa46f8ec",
+      "max_ticks": 12,
+      "metric_count": 24,
+      "request_file": "cases/layering-like-seed-43/request.pb",
+      "request_sha256": "247e700fc3fa1da32175cc50e76bfc02b54fb7ac42c9a27cf9fa83dd6a550622",
+      "scenario_name": "layering_like",
+      "seed": 43
+    },
+    {
+      "case_id": "quote-stuffing-seed-44",
+      "event_count": 75,
+      "event_stream_hash": "da691908e03f766f90ee1df4615c8be7d4bf33b143bf3aa45c4c65f26a08357e",
+      "event_type_counts": {
+        "add": 27,
+        "cancel": 15,
+        "execute": 2,
+        "modify": 21,
+        "snapshot": 10
+      },
+      "expected_result_file": "cases/quote-stuffing-seed-44/expected-result.pb",
+      "expected_result_sha256": "4e8db5651db3974cc541aae8e1d78507e96af880524b915f8799d28ad36f647b",
+      "final_book_hash": "8388e684de7e4b06db7593da5c9c3aa14572bb5098dec0c1952200bf12086bec",
+      "max_ticks": 10,
+      "metric_count": 24,
+      "request_file": "cases/quote-stuffing-seed-44/request.pb",
+      "request_sha256": "cac643b52350b0d52448d7046fe5a691f40b6772200472638ead5998e0982c66",
+      "scenario_name": "quote_stuffing",
+      "seed": 44
+    },
+    {
+      "case_id": "liquidity-evaporation-seed-45",
+      "event_count": 112,
+      "event_stream_hash": "2eb72f693c9ae04fec8de966f81dabb13c6e3e35207d12d651d37dc14f980217",
+      "event_type_counts": {
+        "add": 39,
+        "cancel": 28,
+        "execute": 2,
+        "modify": 33,
+        "snapshot": 10
+      },
+      "expected_result_file": "cases/liquidity-evaporation-seed-45/expected-result.pb",
+      "expected_result_sha256": "2ff52dc7b98fbb3a0879af5723f07a6159931ff9a7625ecbc2b8fa2c099e13a6",
+      "final_book_hash": "00280587249b047b16527e49b5e9e1e587fa6abfc7629a9725184f18917fa411",
+      "max_ticks": 10,
+      "metric_count": 24,
+      "request_file": "cases/liquidity-evaporation-seed-45/request.pb",
+      "request_sha256": "21782f2d4f961f567eb79ff1e3ac322143ca3216b01e7c3ff034a1cf500a8e70",
+      "scenario_name": "liquidity_evaporation",
+      "seed": 45
+    }
+  ],
+  "contract_version": 1,
+  "corpus_version": 1,
+  "encoding": "deterministic-protobuf-binary"
+}

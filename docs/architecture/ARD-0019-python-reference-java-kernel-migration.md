@@ -4,7 +4,7 @@ Status: Accepted
 
 Date: 2026-07-18
 
-Implementation Status: `[partial: step 5 of 17]`
+Implementation Status: `[partial: step 6 of 17]`
 
 ## Context
 
@@ -88,6 +88,14 @@ The first Java boundary owns the simulation clock, deterministic scheduler, mana
 - Returned contiguous events, final book, canonical event/book hashes, sorted quantized market/detector metrics, and explicit termination status.
 - Added repeat-run byte determinism, five-event scenario coverage, snapshot cadence, hash verification, metadata propagation, metric ordering, parameter rejection, and event-limit tests.
 
+## Step 6 Implementation Record
+
+- Checked in immutable deterministic Protobuf request/result pairs for normal market, empty book, and every active abuse scenario.
+- Covered add, modify, cancel, execute, and L2 snapshot events across multiple seeds, including absent optional best-price fields.
+- Added a language-neutral manifest with raw-file SHA-256 checksums, canonical stream/book hashes, event-type counts, and metric counts.
+- Added authoritative regeneration and freshness validation plus semantic self-consistency and Python replay tests.
+- Required a new versioned corpus directory and ARD decision for intentional behavioral changes instead of mutating version 1 evidence.
+
 ## Consequences
 
 Positive:
@@ -111,3 +119,4 @@ Tradeoffs:
 - [ARD-0010: Agent Runner Execution](ARD-0010-agent-runner-execution.md)
 - [High-Level Architecture](../architecture.md)
 - [Runtime Model](../runtime-model.md)
+- [Golden Parity Corpus V1](../golden-parity-corpus-v1.md)

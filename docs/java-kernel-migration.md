@@ -69,7 +69,7 @@ Java kernel authority requires all of the following:
 | 3 | Done | Fixed-point units, total ordering, SplitMix64 streams, identifiers, rounding, semantics, and executable vectors |
 | 4 | Done | Explicit canonical event/book bytes, SHA-256 digests, stream hash chain, and golden vectors |
 | 5 | Done | Authoritative Python Protobuf runner with exact event/book conversion, hashes, and quantized metrics |
-| 6 | Planned | Golden parity corpus |
+| 6 | Done | Immutable deterministic Protobuf parity corpus covering all scenarios, event types, empty-book optionals, checksums, and canonical hashes |
 | 7 | Planned | Java 25 multi-module scaffold and CI |
 | 8 | Planned | Java clock, PRNG, ordering, identifiers, and hashing |
 | 9 | Planned | Java order book and matching |
@@ -90,3 +90,4 @@ Java kernel authority requires all of the following:
 - [Runtime Model](runtime-model.md)
 - [Determinism Contract V1](determinism-contract-v1.md)
 - [Canonical Hashing V1](canonical-hashing-v1.md)
+- [Golden Parity Corpus V1](golden-parity-corpus-v1.md)

@@ -3,6 +3,8 @@
 This changelog lists significant commits in reverse chronological order.
 Update this file with each significant commit before pushing.
 
+- Added the immutable version 1 golden parity corpus with deterministic Protobuf requests/results, all-scenario and all-event coverage, checksums, canonical hashes, regeneration checks, and versioning policy.
+
 ## Unreleased
 
 ### Current - docs: freeze Python-to-Java kernel migration boundary
