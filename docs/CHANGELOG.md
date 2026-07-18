@@ -3,6 +3,8 @@
 This changelog lists significant commits in reverse chronological order.
 Update this file with each significant commit before pushing.
 
+- Added failure-isolated Java gRPC metrics and OpenTelemetry spans, Prometheus actuator exposure, bounded Python shadow metrics, and Prometheus/Grafana provisioning templates without adding runtime containers.
+
 - Added JMH simulation and matching benchmarks, GC allocation profiling, and portable CI regression gates for Java kernel latency, throughput, allocation, and measured-run correctness.
 
 - Added offline and live Java-kernel shadow execution with a runnable gRPC server, deadline-bound Python client, bounded background comparison, failure isolation, corpus replay CLI, and real six-scenario cross-language verification.

@@ -2,7 +2,13 @@ from threading import Event
 
 from app.contracts.generated.lob.exchange.v1 import exchange_pb2
 from app.contracts.python_reference import PythonReferenceKernel
-from app.contracts.shadow import GrpcKernelRunner, LiveShadowKernel, OfflineShadowKernel, ShadowOutcome
+from app.contracts.shadow import (
+    GrpcKernelRunner,
+    LiveShadowKernel,
+    OfflineShadowKernel,
+    ShadowMetrics,
+    ShadowOutcome,
+)
 from tests.test_python_reference_kernel import request
 
 
@@ -81,6 +87,12 @@ def test_live_shadow_bounds_pending_work_without_changing_python_result() -> Non
     assert shadow.drain(timeout_seconds=5)
     shadow.close()
     assert sorted(outcome.status for outcome in outcomes) == ["match", "skipped"]
+    metrics = shadow.metrics.snapshot()
+    assert metrics["pending"] == 0
+    assert metrics["pending_limit"] == 1
+    assert metrics["outcomes"]["match"] == 1
+    assert metrics["outcomes"]["skipped"] == 1
+    assert "lob_kernel_shadow_pending 0" in shadow.metrics.prometheus()
 
 
 def test_grpc_candidate_runner_calls_generated_service_with_deadline() -> None:
@@ -123,6 +135,25 @@ def test_live_shadow_sink_failure_does_not_change_authoritative_result() -> None
     assert authoritative.events
     assert shadow.drain(timeout_seconds=5)
     shadow.close()
+
+
+def test_shadow_metrics_use_only_bounded_status_labels() -> None:
+    metrics = ShadowMetrics(pending_limit=4)
+    metrics.set_pending(2)
+    metrics.observe(
+        ShadowOutcome(
+            run_id="RUN-1",
+            mode="live",
+            status="error",
+            error_type="TimeoutError",
+            candidate_duration_seconds=0.25,
+        )
+    )
+
+    rendered = metrics.prometheus()
+    assert 'lob_kernel_shadow_outcomes_total{status="error"} 1' in rendered
+    assert 'lob_kernel_shadow_candidate_duration_seconds_sum{status="error"} 0.25' in rendered
+    assert "RUN-1" not in rendered
 
 
 def _clone(result: exchange_pb2.SimulationResult) -> exchange_pb2.SimulationResult:

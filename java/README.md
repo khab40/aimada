@@ -34,4 +34,6 @@ See [Kernel Shadow Mode](../docs/kernel-shadow-mode.md) for the Python replay co
 
 Run forked kernel and matching diagnostics with `./gradlew :kernel-benchmarks:run --args='KernelBenchmarks -prof gc'`; see [Java Kernel Performance](../docs/java-kernel-performance.md) for gate policy and interpretation.
 
+The Spring control plane exposes Prometheus and opt-in OpenTelemetry around the candidate gRPC boundary. See [Kernel Observability](../docs/kernel-observability.md) for bounded meters, OTLP settings, and the Grafana template.
+
 The checksum-pinned wrapper owns Gradle 9.6.1. The Foojay resolver auto-provisions a Java 25 toolchain when one is not installed, so a developer-global Gradle or Java 25 installation is not required. Generated Protobuf Java sources stay under `build/` and are not committed.

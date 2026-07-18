@@ -4,7 +4,7 @@ Status: Accepted
 
 Date: 2026-07-18
 
-Implementation Status: `[partial: step 14 of 17]`
+Implementation Status: `[partial: step 15 of 17]`
 
 ## Context
 
@@ -160,6 +160,14 @@ The first Java boundary owns the simulation clock, deterministic scheduler, mana
 - Added portable CI smoke ceilings for p99 latency, throughput, and thread allocation on the largest golden kernel run and crossing-match path.
 - Kept event-count and canonical-hash assertions inside measured kernel runs, and deferred Agrona or data-structure changes until repeated profiles justify them.
 
+## Step 15 Implementation Record
+
+- Added failure-isolated gRPC boundary telemetry without adding metrics or tracing objects to the deterministic simulation kernel.
+- Added bounded request outcomes, latency histograms, and event-count summaries plus Micrometer observations bridged to OpenTelemetry.
+- Added Spring Boot Actuator health/metrics/Prometheus exposure with OTLP traces and metrics explicitly opt-in, so local tests require no collector.
+- Added thread-safe Python shadow pending gauges, bounded outcome counters, candidate durations, snapshots, and Prometheus rendering without high-cardinality run labels.
+- Added Prometheus scrape and Grafana dashboard templates without expanding the optimized Docker Compose service set.
+
 ## Consequences
 
 Positive:
@@ -188,3 +196,4 @@ Tradeoffs:
 - [Differential Parity Harness](../differential-parity-harness.md)
 - [Kernel Shadow Mode](../kernel-shadow-mode.md)
 - [Java Kernel Performance](../java-kernel-performance.md)
+- [Kernel Observability](../kernel-observability.md)

@@ -78,7 +78,7 @@ Java kernel authority requires all of the following:
 | 12 | Done | Immutable dual-runner execution, structured event/execution/snapshot/book/hash/metric/termination comparison, first-divergence localization, and full-corpus/mutation tests |
 | 13 | Done | Runnable Java gRPC server, deadline-bound Python client, offline corpus replay, bounded live background mirroring, Python-authority failure isolation, and real six-case socket verification |
 | 14 | Done | JMH simulation/matching benchmarks, GC allocation profiling, portable p99/throughput/allocation smoke ceilings, and correctness checks inside measured kernel runs |
-| 15 | Planned | OpenTelemetry and Prometheus observability |
+| 15 | Done | Failure-isolated gRPC metrics/spans, Prometheus actuator, opt-in OpenTelemetry/OTLP, bounded Python shadow metrics, scrape template, and Grafana dashboard |
 | 16 | Planned | Incremental Java authority rollout |
 | 17 | Planned | Permanent Python reference replay policy |
 
@@ -97,3 +97,4 @@ Java kernel authority requires all of the following:
 - [Differential Parity Harness](differential-parity-harness.md)
 - [Kernel Shadow Mode](kernel-shadow-mode.md)
 - [Java Kernel Performance](java-kernel-performance.md)
+- [Kernel Observability](kernel-observability.md)

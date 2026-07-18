@@ -10,11 +10,18 @@ public final class JavaKernelGrpcServer implements AutoCloseable {
     private boolean started;
 
     public JavaKernelGrpcServer(int port) {
+        this(port, new JavaKernelGrpcService());
+    }
+
+    public JavaKernelGrpcServer(int port, JavaKernelGrpcService service) {
         if (port < 1 || port > 65_535) {
             throw new IllegalArgumentException("port must be between 1 and 65535");
         }
+        if (service == null) {
+            throw new IllegalArgumentException("service must not be null");
+        }
         server = ServerBuilder.forPort(port)
-                .addService(new JavaKernelGrpcService())
+                .addService(service)
                 .build();
     }
 

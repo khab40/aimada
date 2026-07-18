@@ -1,0 +1,92 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "panels": [
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "fieldConfig": {"defaults": {"unit": "reqps"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "id": 1,
+      "targets": [
+        {"expr": "sum(rate(lob_kernel_grpc_requests_total[5m])) by (outcome)", "legendFormat": "{{outcome}}", "refId": "A"}
+      ],
+      "title": "Java kernel request rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "id": 2,
+      "targets": [
+        {"expr": "histogram_quantile(0.95, sum(rate(lob_kernel_grpc_duration_seconds_bucket[5m])) by (le, outcome))", "legendFormat": "p95 {{outcome}}", "refId": "A"},
+        {"expr": "histogram_quantile(0.99, sum(rate(lob_kernel_grpc_duration_seconds_bucket[5m])) by (le, outcome))", "legendFormat": "p99 {{outcome}}", "refId": "B"}
+      ],
+      "title": "Java kernel RPC latency",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "id": 3,
+      "targets": [
+        {"expr": "lob_kernel_shadow_pending", "legendFormat": "pending", "refId": "A"},
+        {"expr": "lob_kernel_shadow_pending_limit", "legendFormat": "limit", "refId": "B"}
+      ],
+      "title": "Python shadow queue pressure",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "fieldConfig": {"defaults": {"unit": "ops"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+      "id": 4,
+      "targets": [
+        {"expr": "sum(increase(lob_kernel_shadow_outcomes_total[15m])) by (status)", "legendFormat": "{{status}}", "refId": "A"}
+      ],
+      "title": "Shadow outcomes (15m)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "fieldConfig": {"defaults": {"unit": "Bps"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+      "id": 5,
+      "targets": [
+        {"expr": "rate(jvm_gc_memory_allocated_bytes_total{job=\"lob-arena-java-kernel\"}[5m])", "legendFormat": "allocated", "refId": "A"}
+      ],
+      "title": "Java allocation rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "fieldConfig": {"defaults": {"unit": "eps"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+      "id": 6,
+      "targets": [
+        {"expr": "rate(lob_kernel_grpc_events_count[5m])", "legendFormat": "events", "refId": "A"}
+      ],
+      "title": "Canonical event output rate",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "15s",
+  "schemaVersion": 41,
+  "tags": ["lob-arena", "java-kernel"],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "label": "Prometheus",
+        "name": "DS_PROMETHEUS",
+        "query": "prometheus",
+        "type": "datasource"
+      }
+    ]
+  },
+  "time": {"from": "now-1h", "to": "now"},
+  "title": "LOB Arena Java Kernel",
+  "uid": "lob-arena-java-kernel",
+  "version": 1
+}
