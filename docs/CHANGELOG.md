@@ -11,6 +11,7 @@ Update this file with each significant commit before pushing.
 - Kept REST, WebSocket, persistence, orchestration, detectors, and frontend authority outside the initial Java hot-loop scope.
 - Recorded repository-owned Java 25 toolchain, Gradle wrapper, and Protobuf generation requirements because global build tools are not assumed.
 - Added the versioned `lob.exchange.v1` Protobuf request/event/result contract, checked-in Python bindings, locked generation tooling, and stale-binding/round-trip tests.
+- Added the executable determinism contract with fixed-point units, total event ordering, SplitMix64/named stream vectors, half-even metrics, midpoint, identifier, and exchange rules.
 
 ### Current - feat: define canonical exchange event schema
 

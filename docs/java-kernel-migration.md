@@ -66,7 +66,7 @@ Java kernel authority requires all of the following:
 | --- | --- | --- |
 | 1 | Done | Scope, authority boundary, gates, toolchain policy, and rollback rules |
 | 2 | Done | `lob.exchange.v1` Protobuf messages, checked-in Python bindings, freshness validation, and round-trip tests |
-| 3 | Planned | Determinism specification and golden vectors |
+| 3 | Done | Fixed-point units, total ordering, SplitMix64 streams, identifiers, rounding, semantics, and executable vectors |
 | 4 | Planned | Canonical cross-language hashes |
 | 5 | Planned | Python Protobuf reference adapter |
 | 6 | Planned | Golden parity corpus |
@@ -88,3 +88,4 @@ Java kernel authority requires all of the following:
 - [ARD-0019: Python Reference And Java Kernel Migration](architecture/ARD-0019-python-reference-java-kernel-migration.md)
 - [High-Level Architecture](architecture.md)
 - [Runtime Model](runtime-model.md)
+- [Determinism Contract V1](determinism-contract-v1.md)

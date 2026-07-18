@@ -56,6 +56,7 @@ graph TD
 
 - **[runtime-model.md](runtime-model.md)** — How the simulation engine works
 - **[java-kernel-migration.md](java-kernel-migration.md)** — Parity-gated Python-reference to Java-kernel migration
+- **[determinism-contract-v1.md](determinism-contract-v1.md)** — Cross-language numeric, ordering, PRNG, identifier, and exchange rules
 - **[benchmark-methodology.md](benchmark-methodology.md)** — Evaluating detector performance
 - **[nebius-deployment.md](nebius-deployment.md)** — Setting up Nebius serverless components
 - **[challenge-submission.md](challenge-submission.md)** — Submitting your work

@@ -4,7 +4,7 @@ Status: Accepted
 
 Date: 2026-07-18
 
-Implementation Status: `[partial: step 2 of 17]`
+Implementation Status: `[partial: step 3 of 17]`
 
 ## Context
 
@@ -62,6 +62,15 @@ The first Java boundary owns the simulation clock, deterministic scheduler, mana
 - Added checked-in Python bindings plus a build script that generates them with the locked compiler and detects stale generated sources.
 - Added descriptor, oneof discriminator, all-event, request/result, integer-unit, and round-trip tests.
 - Java generation remains owned by the Gradle scaffold in step 7; step 2 does not require global Gradle or `protoc`.
+
+## Step 3 Implementation Record
+
+- Froze signed 64-bit price ticks, quantity lots, exact nanounit conversion, twice-price midpoint representation, and quantized metric rounding.
+- Froze a six-field total event-order key and numeric phase order for agents, scenarios, baseline repair, snapshots, and final metrics.
+- Selected portable SplitMix64 with explicit unsigned overflow and rejection-sampled bounded integers.
+- Added SHA-256-derived named PRNG stream seeds so components do not share order-sensitive random state.
+- Froze simulation identifier, logical-time, modify, FIFO matching, execution emission, and tick-phase rules.
+- Added executable language-neutral JSON vectors and Python reference tests for PRNG output, stream derivation, ordering, units, midpoints, rounding, and identifiers.
 
 ## Consequences
 

@@ -1,0 +1,56 @@
+{
+  "contract_version": 1,
+  "splitmix64": [
+    {
+      "seed": 0,
+      "outputs_hex": [
+        "e220a8397b1dcdaf",
+        "6e789e6aa1b965f4",
+        "06c45d188009454f",
+        "f88bb8a8724c81ec",
+        "1b39896a51a8749b"
+      ]
+    },
+    {
+      "seed": 1,
+      "outputs_hex": [
+        "910a2dec89025cc1",
+        "beeb8da1658eec67",
+        "f893a2eefb32555e"
+      ]
+    }
+  ],
+  "stream_seeds": [
+    {"root_seed": 42, "stream_name": "agents", "derived_seed_hex": "e607c29a25b4dcd0"},
+    {"root_seed": 42, "stream_name": "scenarios", "derived_seed_hex": "32d2702900776bb0"},
+    {"root_seed": 42, "stream_name": "baseline", "derived_seed_hex": "263661d30d4b6d7b"}
+  ],
+  "event_order": {
+    "unordered": [
+      {"id": "snapshot", "logical_time": 7, "phase": 40, "source_priority": 0, "actor_id": "EXCHANGE", "source_sequence": 0, "insertion_sequence": 0},
+      {"id": "agent-b", "logical_time": 7, "phase": 10, "source_priority": 0, "actor_id": "B", "source_sequence": 0, "insertion_sequence": 0},
+      {"id": "scenario", "logical_time": 7, "phase": 20, "source_priority": 0, "actor_id": "ABUSER", "source_sequence": 0, "insertion_sequence": 0},
+      {"id": "agent-a-second", "logical_time": 7, "phase": 10, "source_priority": 0, "actor_id": "A", "source_sequence": 1, "insertion_sequence": 1},
+      {"id": "earlier", "logical_time": 6, "phase": 40, "source_priority": 0, "actor_id": "EXCHANGE", "source_sequence": 0, "insertion_sequence": 0},
+      {"id": "agent-a-first", "logical_time": 7, "phase": 10, "source_priority": 0, "actor_id": "A", "source_sequence": 0, "insertion_sequence": 0}
+    ],
+    "expected_ids": ["earlier", "agent-a-first", "agent-a-second", "agent-b", "scenario", "snapshot"]
+  },
+  "numeric": [
+    {"value": "68125", "unit_size_nanos": 1000000000, "expected_units": 68125},
+    {"value": "99.5", "unit_size_nanos": 100000000, "expected_units": 995},
+    {"value": "1.5", "unit_size_nanos": 1000000, "expected_units": 1500}
+  ],
+  "metrics": [
+    {"value": "0.9250005", "decimal_scale": 6, "expected_quantized": 925000},
+    {"value": "0.9250015", "decimal_scale": 6, "expected_quantized": 925002}
+  ],
+  "midpoints": [
+    {"best_bid_ticks": 99, "best_ask_ticks": 100, "expected_mid_ticks_x2": 199},
+    {"best_bid_ticks": 99, "best_ask_ticks": 101, "expected_mid_ticks_x2": 200}
+  ],
+  "event_ids": [
+    {"venue": "SIM", "event_type": "ADD", "sequence": 1, "expected": "SIM:add:1"},
+    {"venue": "XNAS", "event_type": "execute", "sequence": 42, "expected": "XNAS:execute:42"}
+  ]
+}
