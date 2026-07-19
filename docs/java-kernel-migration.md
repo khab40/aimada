@@ -14,7 +14,7 @@ The first Java authority boundary contains only deterministic hot-loop component
 | Order book and matching | Python reference | Events, trades, remainders, priority, and snapshots match |
 | Scenario execution | Python reference | Complete scenario event hashes match |
 | Market features and deterministic detectors | Python | Move only after kernel parity; metrics must match |
-| REST, WebSocket, persistence, and orchestration | Python/FastAPI | Remain Python during kernel migration |
+| Live REST, WebSocket, persistence, and orchestration | Java/Spring | Migrated after kernel cut-over under ARD-0020 |
 | Frontend | React/TypeScript | No migration planned |
 | Java control plane | None initially | Spring Boot is introduced after the plain Java kernel boundary is stable |
 

@@ -51,6 +51,7 @@ Open your browser:
 - **Backend API**: http://localhost:8000
 - **API Docs**: http://localhost:8000/docs
 - **Java kernel status**: http://localhost:8081/api/kernel/status
+- **Java arena state**: http://localhost:8081/api/arena/state
 
 ## 4. Quick Test
 
@@ -70,13 +71,13 @@ curl http://localhost:8000/api/status
 curl http://localhost:8000/api/nebius/status
 
 # Get current arena state
-curl http://localhost:8000/api/arena/state
+curl http://localhost:5173/api/arena/state
 
 # Start a simulation
-curl -X POST http://localhost:8000/api/simulation/start
+curl -X POST http://localhost:5173/api/simulation/start
 
 # Inject a scenario
-curl -X POST http://localhost:8000/api/scenarios/spoofing-like
+curl -X POST http://localhost:5173/api/scenarios/spoofing-like
 ```
 
 ## 5. Explore Features
@@ -98,7 +99,7 @@ curl -X POST http://localhost:8000/api/scenarios/spoofing-like
 - Click **Run AI Investigator** to get a Nebius AI explanation or a clearly labeled simulated fallback
 
 ### Advanced Features
-- WebSocket connection: `ws://localhost:8000/ws/arena`
+- WebSocket connection: `ws://localhost:5173/ws/arena`
 - Nebius AI: open `/nebius` in the frontend
 - Batch benchmark and smart attack/detect jobs: See [Nebius Deployment](nebius-deployment.md)
 - Red-team scenario generation: See [Use Cases](USE_CASES.md)
@@ -123,7 +124,7 @@ python scripts/call_endpoint.py --base-url http://localhost:9000 --route orderbo
 ## Troubleshooting
 
 ### Port Already in Use
-If ports 5173, 8000, or 9100 are in use:
+If ports 5173, 8000, 8081, 50051, or 9100 are in use:
 ```bash
 # Change ports in docker-compose.yml or use:
 docker compose up --build -p my-project
@@ -144,7 +145,7 @@ docker compose up --build
 ```
 
 ### WebSocket Connection Issues
-Ensure you're connecting to `ws://localhost:8000/ws/arena` (WebSocket), not `http://`.
+Ensure you're connecting to `ws://localhost:5173/ws/arena` (WebSocket), not `http://`.
 
 ## Stopping the System
 
@@ -165,12 +166,12 @@ curl http://localhost:8000/api/status
 curl http://localhost:8000/api/nebius/status
 
 # Simulation control
-curl -X POST http://localhost:8000/api/simulation/start
+curl -X POST http://localhost:5173/api/simulation/start
 curl -X POST http://localhost:8000/api/simulation/pause
 curl -X POST http://localhost:8000/api/simulation/reset
 
 # Scenarios
-curl -X POST http://localhost:8000/api/scenarios/spoofing-like
+curl -X POST http://localhost:5173/api/scenarios/spoofing-like
 curl -X POST http://localhost:8000/api/scenarios/layering-like
 curl -X POST http://localhost:8000/api/scenarios/quote-stuffing
 curl -X POST http://localhost:8000/api/scenarios/liquidity-evaporation

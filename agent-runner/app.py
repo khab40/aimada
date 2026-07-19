@@ -108,6 +108,6 @@ async def decide(payload: DecideRequest) -> DecideResponse:
     intents = await manager.collect_intents(snapshot)
     return DecideResponse(
         runner_id=RUNNER_ID,
-        agent_ids=[],
+        agent_ids=manager.agent_ids,
         intents=[asdict(intent) for intent in intents],
     )

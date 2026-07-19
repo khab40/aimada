@@ -10,13 +10,11 @@ from app.api.routes_nebius import nebius_client, router as nebius_router
 from app.api.routes_red_team import router as red_team_router
 from app.api.routes_scenarios import router as scenarios_router
 from app.api.routes_simulation import router as simulation_router
-from app.arena.engine import SimulationEngine
+from app.arena.java_client import JavaArenaClient
 from app.config import get_settings
 from app.nebius.evidence_archive import configure_default_evidence_archive
 from app.storage.local_store import LocalStore
 from app.storage.retention import cleanup_output_data
-from app.websocket.manager import WebSocketManager
-from app.websocket.routes import router as websocket_router
 
 app = FastAPI(title="LOB Arena")
 settings = get_settings()
@@ -28,21 +26,10 @@ app.state.nebius_evidence = (
 )
 app.state.retention_cleanup = cleanup_output_data(app.state.store.output_dir, settings.arena_data_retention_days)
 app.state.settings = settings
-app.state.simulation = SimulationEngine(
-    store=app.state.store,
-    normal_agent_count=settings.arena_agent_count,
-    agent_decision_timeout_seconds=settings.arena_agent_decision_timeout_seconds,
-    remote_agent_urls=settings.remote_agent_url_list,
-    remote_agent_timeout_seconds=settings.arena_remote_agent_timeout_seconds,
-    baseline_liquidity_levels=settings.arena_baseline_liquidity_levels,
-    baseline_liquidity_base_size=settings.arena_baseline_liquidity_base_size,
-    baseline_liquidity_tick_size=settings.arena_baseline_liquidity_tick_size,
-    baseline_liquidity_reference_price=settings.arena_baseline_liquidity_reference_price,
-    max_agent_quote_size=settings.arena_max_agent_quote_size,
-    tick_history_interval=settings.arena_tick_history_interval,
-    persist_all_events=settings.arena_persist_all_events,
+app.state.simulation = JavaArenaClient(
+    settings.java_arena_base_url,
+    timeout_seconds=settings.java_arena_timeout_seconds,
 )
-app.state.websocket_manager = WebSocketManager()
 
 app.add_middleware(
     CORSMiddleware,
@@ -60,7 +47,6 @@ app.include_router(scenarios_router)
 app.include_router(incidents_router)
 app.include_router(nebius_router)
 app.include_router(red_team_router)
-app.include_router(websocket_router)
 
 
 @app.get("/api/status", tags=["status"])
@@ -76,7 +62,6 @@ def api_status() -> dict[str, object]:
 async def metrics(request: Request) -> PlainTextResponse:
     state = await request.app.state.simulation.get_state()
     incidents = await request.app.state.simulation.list_incidents()
-    websocket_clients = request.app.state.websocket_manager.client_count
     lines = [
         "# HELP arena_tick Current simulation tick.",
         "# TYPE arena_tick gauge",
@@ -87,9 +72,6 @@ async def metrics(request: Request) -> PlainTextResponse:
         "# HELP arena_incidents_total Number of in-memory incidents.",
         "# TYPE arena_incidents_total gauge",
         f"arena_incidents_total {len(incidents)}",
-        "# HELP arena_websocket_clients Current websocket client count.",
-        "# TYPE arena_websocket_clients gauge",
-        f"arena_websocket_clients {websocket_clients}",
     ]
     return PlainTextResponse(
         "\n".join(lines) + "\n",

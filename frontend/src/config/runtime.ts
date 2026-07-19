@@ -13,6 +13,8 @@ declare global {
 }
 
 const runtimeConfig = typeof window === "undefined" ? undefined : window.__LOB_ARENA_CONFIG__;
+const browserOrigin = typeof window === "undefined" ? "http://localhost:5173" : window.location.origin;
+const browserWebSocketOrigin = browserOrigin.replace(/^http/, "ws");
 
 function configuredValue(runtimeValue: string | undefined, buildValue: string | undefined, fallback: string): string {
   return runtimeValue?.trim() || buildValue?.trim() || fallback;
@@ -21,13 +23,13 @@ function configuredValue(runtimeValue: string | undefined, buildValue: string | 
 export const API_BASE_URL = configuredValue(
   runtimeConfig?.VITE_API_BASE_URL,
   import.meta.env.VITE_API_BASE_URL,
-  "http://localhost:8000"
+  browserOrigin
 );
 
 export const ARENA_WS_URL = configuredValue(
   runtimeConfig?.VITE_ARENA_WS_URL,
   import.meta.env.VITE_ARENA_WS_URL,
-  "ws://localhost:8000/ws/arena"
+  `${browserWebSocketOrigin}/ws/arena`
 );
 
 const configuredMode = configuredValue(

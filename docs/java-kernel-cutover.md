@@ -10,7 +10,7 @@ Java 25 is the sole implementation and runtime authority for the versioned `Simu
 - The frontend Nginx service sends same-origin `/api/kernel/` requests directly to the Java control plane.
 - The Python backend does not proxy, replay, shadow, or fall back for kernel requests.
 
-FastAPI still owns the interactive arena, scenarios, detectors and ML/AI, persistence, experiments, WebSocket delivery, agent orchestration, and Nebius integration. Those components remain Python because equivalent stateful Java components have not been developed.
+ARD-0020 subsequently moved the interactive arena, scenarios, deterministic detectors/incidents, persistence, WebSocket delivery, and agent orchestration to Java. FastAPI now retains AI/ML, experiments, evidence, Nebius integration, and serverless jobs.
 
 ## Deployment
 

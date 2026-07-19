@@ -2,12 +2,11 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 from time import perf_counter
-from typing import Any, Literal
+from typing import Any, Literal, Protocol
 
 from pydantic import BaseModel, Field
 
 from app.api.routes_incidents import build_compact_replay_payload, persist_explanation_result
-from app.arena.engine import SimulationEngine
 from app.config import get_settings
 from app.experiments.manager import ExperimentManager
 from app.experiments.models import Experiment, ExperimentCreateRequest, utc_now
@@ -28,6 +27,17 @@ from app.storage.local_store import LocalStore
 
 SmokeMode = Literal["local", "real_nebius_pending", "real_nebius", "error"]
 SmokeExecutionMode = Literal["local", "nebius"]
+
+
+class ArenaSimulationClient(Protocol):
+    @property
+    def state(self) -> ArenaState: ...
+
+    async def reset(self) -> ArenaState: ...
+
+    def launch_scenario(self, scenario_name: str) -> dict[str, object]: ...
+
+    async def _advance_tick_async(self, running: bool = True) -> None: ...
 
 
 class ServerlessSmokeRequest(BaseModel):
@@ -87,7 +97,7 @@ class ServerlessSmokeFinalizeResponse(BaseModel):
 async def run_serverless_smoke_demo(
     *,
     client: NebiusClient,
-    simulation: SimulationEngine,
+    simulation: ArenaSimulationClient,
     store: LocalStore,
     repo_root: Path,
     execution_mode: SmokeExecutionMode = "local",
@@ -545,7 +555,7 @@ def _tournament_duration_seconds(tournament: DetectorTournamentResponse) -> floa
     return max(0.0, (completed - started).total_seconds())
 
 
-async def _run_simulation_window(simulation: SimulationEngine, *, max_ticks: int) -> ArenaState:
+async def _run_simulation_window(simulation: ArenaSimulationClient, *, max_ticks: int) -> ArenaState:
     state = simulation.state
     for _ in range(max_ticks):
         await simulation._advance_tick_async(running=True)

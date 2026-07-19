@@ -2,7 +2,7 @@
 
 This document describes how the live arena runs, how agents participate in the exchange simulator, what the main UI screens show, and how runtime APIs and Nebius components fit together.
 
-The continuous interactive arena described below remains in Python because its stateful Java replacement has not been developed. The separate versioned deterministic batch kernel is Java-only and is available through Spring Boot `/api/kernel/run` or gRPC.
+The continuous interactive arena and the versioned deterministic batch kernel are Java-only production authorities. Python remains for AI/ML, LangGraph-capable runner work, experiments, and serverless jobs.
 
 ## Live Exchange Loop
 
@@ -10,10 +10,9 @@ The exchange simulator ticks continuously while the arena is running. A normal l
 
 ```mermaid
 flowchart TD
-    Tick["Backend tick<br/>250-500 ms"]
-    Local["Local AgentManager<br/>read-only snapshot"]
-    Remote["agent-runner<br/>normal, heavy, LangGraph"]
-    Scenario["Bounded scenario agents"]
+    Tick["Java arena tick<br/>250-500 ms"]
+    Remote["Python agent-runner<br/>normal, heavy, ML/LangGraph"]
+    Scenario["Java bounded scenarios"]
     Sort["Validate + deadline-filter + deterministic sort"]
     Exchange["Single-writer exchange + matching"]
     Guard["Restore baseline two-sided liquidity"]
@@ -21,10 +20,8 @@ flowchart TD
     Persist["Events, incidents, snapshots, reports"]
     UI["WebSocket arena_state"]
 
-    Tick --> Local
     Tick -->|"MarketSnapshot"| Remote
     Tick --> Scenario
-    Local -->|"AgentIntent"| Sort
     Remote -->|"AgentIntent"| Sort
     Scenario -->|"labeled intent"| Sort
     Sort --> Exchange
@@ -35,25 +32,20 @@ flowchart TD
     UI --> Tick
 ```
 
-The backend owns the clock and publishes each state update to connected browser clients. REST endpoints control start, pause, reset, scenario launch, incident explanation, and benchmark summary retrieval.
+Java owns the clock and publishes each state update to connected browser clients. Java REST endpoints control start, pause, reset, scenario launch, incident lookup, and replay. FastAPI owns incident explanation, AI, experiment, and serverless APIs.
 
-Normal agents are scheduled in process by `AgentManager`. Agents receive a read-only market snapshot and return order intents. The exchange/order-book path remains a single writer: intents are sorted by tick, latency bucket, agent id, and sequence before they mutate the book. This lets the arena register hundreds of lightweight agents without allowing concurrent writes to shared market state.
+Agents run behind Python `agent-runner` `/decide` endpoints because this is the retained AI/ML and LangGraph boundary. Java concurrently gathers responses under a deadline, validates them, and sorts intents by tick, latency bucket, agent id, sequence, and kind before single-writer book mutation.
 
 Runtime scale knobs:
 
 ```text
-ARENA_AGENT_COUNT=3
 ARENA_DATA_RETENTION_DAYS=1
-ARENA_AGENT_DECISION_TIMEOUT_SECONDS=0.05
 ARENA_REMOTE_AGENT_URLS=http://agent-runner:9100
-ARENA_REMOTE_AGENT_TIMEOUT_SECONDS=0.05
-ARENA_BASELINE_LIQUIDITY_LEVELS=12
-ARENA_BASELINE_LIQUIDITY_BASE_SIZE=1.5
-ARENA_BASELINE_LIQUIDITY_TICK_SIZE=1.0
-ARENA_BASELINE_LIQUIDITY_REFERENCE_PRICE=68125.0
-ARENA_MAX_AGENT_QUOTE_SIZE=25.0
-ARENA_TICK_HISTORY_INTERVAL=10
-ARENA_PERSIST_ALL_EVENTS=false
+ARENA_REMOTE_AGENT_TIMEOUT_MS=250
+ARENA_TICK_INTERVAL_MS=500
+ARENA_WEBSOCKET_STREAM_INTERVAL_MS=500
+JAVA_ARENA_BASE_URL=http://java-kernel:8080
+JAVA_ARENA_TIMEOUT_SECONDS=2
 AGENT_RUNNER_AGENT_COUNT=24
 AGENT_RUNNER_MAX_AGENT_COUNT=48
 AGENT_RUNNER_HEAVY_AGENT_COUNT=0
@@ -65,11 +57,11 @@ AGENT_RUNNER_MAX_LANGGRAPH_AGENT_COUNT=4
 AGENT_RUNNER_LANGGRAPH_STRATEGY=liquidity_rebalancer
 ```
 
-Docker Compose starts `java-kernel`, `agent-runner`, `backend`, and `frontend` together by default. Agents that miss the per-tick decision deadline are skipped for that tick. Runtime agent `set_level` intents update that agent's own bounded synthetic quote at a price level, so hundreds of agents can share one price without overwriting each other or compounding aggregate depth. The backend caps these quotes with `ARENA_MAX_AGENT_QUOTE_SIZE`. Worker-side `AGENT_RUNNER_MAX_*` caps clamp stale or aggressive env values before agents are built. `ARENA_DATA_RETENTION_DAYS=1` removes generated output files older than one day on backend startup. `ARENA_TICK_HISTORY_INTERVAL` limits routine tick snapshots and `ARENA_PERSIST_ALL_EVENTS=false` writes only significant scenario/detector events to the full event log. After each tick, the backend applies a baseline liquidity guard that restores the configured minimum bid/ask ladder around `ARENA_BASELINE_LIQUIDITY_REFERENCE_PRICE`, including when a side has been fully consumed.
+Docker Compose starts `java-kernel`, `agent-runner`, `backend`, and `frontend` together. Agents that miss the Java-side decision deadline are skipped for that tick. Runtime `set_level` intents update bounded per-agent synthetic quotes, worker-side `AGENT_RUNNER_MAX_*` values cap runner size, and Java restores baseline two-sided liquidity after each tick. Java writes arena events, attacks, incidents, and snapshots under `ARENA_OUTPUT_DIR`; FastAPI applies retention to its AI/serverless artifacts.
 
-Phase 2 adds out-of-process agent runners. A runner exposes `POST /decide`, receives the same read-only `MarketSnapshot`, and returns `AgentIntent` JSON. In Compose, the backend points at `http://agent-runner:9100` by default. Only the backend applies accepted intents to the exchange. This preserves deterministic single-writer market state while allowing agent decision work to scale independently.
+A runner exposes `POST /decide`, receives a read-only `MarketSnapshot`, and returns `AgentIntent` JSON. In Compose, Java points at `http://agent-runner:9100` by default. Only Java applies accepted intents to the exchange.
 
-Phase 3 adds heavy and LangGraph-compatible remote agents. Heavy agents run their expensive decision function through a worker pool inside `agent-runner`. Generic LangGraph agents use `StateGraph` with `observe` and `decide` nodes, then emit the same `AgentIntent` contract. The backend does not import LangGraph and does not know whether a remote intent came from a simple function, a process-pool worker, or a LangGraph graph.
+Heavy agents run expensive decision functions through a worker pool inside `agent-runner`. Generic LangGraph agents use `StateGraph` with `observe` and `decide` nodes, then emit the same `AgentIntent` contract. Java is deliberately unaware of whether an intent came from a simple function, ML model, process-pool worker, or LangGraph graph.
 
 ## UI Shell Runtime
 

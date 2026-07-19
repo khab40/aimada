@@ -22,6 +22,7 @@ dependencies {
     implementation(project(":simulation-kernel"))
     implementation(project(":kernel-grpc"))
     implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-websocket")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-opentelemetry")
     runtimeOnly("io.micrometer:micrometer-registry-prometheus")

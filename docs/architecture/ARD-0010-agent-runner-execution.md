@@ -6,16 +6,16 @@ Date: 2026-06-23
 
 ## Implementation Status
 
-Status as of 2026-06-23: `[done]`
+Status as of 2026-07-18: `[done; Java orchestrator]`
 
 Implemented:
 
-- In-process `AgentManager` that gathers agent intents with per-tick deadlines.
+- Java `AgentOrchestrator` that gathers runner responses with per-tick deadlines and deterministic ordering.
 - Remote HTTP `agent-runner` service with `/health`, `/agents`, and `/decide` endpoints.
-- Backend `RemoteAgentClient` integration through `ARENA_REMOTE_AGENT_URLS`.
+- Spring HTTP/1.1 runner integration through `ARENA_REMOTE_AGENT_URLS`.
 - Heavy-agent worker-pool execution inside `agent-runner` using process-pool workers.
 - Generic LangGraph-compatible remote agents built with `StateGraph` and compiled graphs.
-- Docker Compose separation between backend/exchange and agent-runner containers.
+- Docker Compose separation between Java exchange/orchestrator, retained Python AI APIs, and agent-runner containers.
 
 Future work:
 
@@ -31,7 +31,7 @@ The live arena needs to support many agents without allowing concurrent writes t
 
 Separate agent decision work from exchange mutation.
 
-The backend remains the authoritative exchange and order-book writer. Agents receive a read-only `MarketSnapshot` and return `AgentIntent` objects. The backend sorts accepted intents by tick, latency bucket, agent id, sequence, and kind before applying them to the book. Runtime `set_level` intents update each agent's own bounded synthetic quote; the backend then restores the baseline ladder invariant before publishing state.
+The Java arena remains the authoritative exchange and order-book writer. Agents receive a read-only `MarketSnapshot` and return `AgentIntent` objects. Java sorts accepted intents by tick, latency bucket, agent id, sequence, and kind before applying them to the book. Runtime `set_level` intents update each agent's own bounded synthetic quote; Java then restores the baseline ladder invariant before publishing state.
 
 Remote runners expose a small HTTP protocol:
 
@@ -79,9 +79,8 @@ It returns:
 ```mermaid
 graph TD
     UI["React UI"]
-    Backend["FastAPI Backend - authoritative exchange"]
-    AgentManager["AgentManager - deadlines + sorting"]
-    LocalAgents["Local lightweight agents"]
+    Backend["Java Arena - authoritative exchange"]
+    AgentManager["Java AgentOrchestrator - deadlines + sorting"]
     Runner["agent-runner service"]
     LangGraphAgents["LangGraph StateGraph agents"]
     HeavyAgents["Heavy agents in worker pool"]
@@ -90,7 +89,6 @@ graph TD
 
     UI --> Backend
     Backend --> AgentManager
-    AgentManager --> LocalAgents
     AgentManager -->|MarketSnapshot / AgentIntent HTTP| Runner
     Runner --> LangGraphAgents
     Runner --> HeavyAgents

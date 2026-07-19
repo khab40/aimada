@@ -1,20 +1,20 @@
 # ARD-0001: Overall Architecture
 
-Status: Accepted
+Status: Superseded in part by [ARD-0020](ARD-0020-java-arena-websocket-agent-orchestration.md)
 
 Date: 2026-05-31
 
 ## Implementation Status
 
-Status as of 2026-07-14: `[partial]`
+Status as of 2026-07-19: `[partial; live runtime ownership replaced]`
 
 Implemented:
 
 - React/Vite routed UI for AI Command Center, Arena / Workload Generator, Scenario Generator, and About pages.
 - Old standalone demo, blue-team, report, experiment, and deployment pages have been removed or folded into current Command Center and Arena surfaces.
-- FastAPI backend with simulation lifecycle APIs, WebSocket live state, scenario launch, incident persistence, benchmark/report APIs, and Nebius endpoint client fallback behavior.
-- Synthetic exchange, matching engine, normal agents, scenario agents, deterministic detectors, evidence objects, and local artifact storage.
-- In-process and remote agent runners with HTTP `MarketSnapshot` / `AgentIntent` protocol, heavy-agent worker pools, and LangGraph-compatible generic remote agents.
+- Java/Spring live arena with simulation lifecycle APIs, WebSocket state, scenario launch, deterministic incidents, canonical replay, and JSONL journals.
+- FastAPI retained for AI/ML, Nebius, experiments, evidence, and serverless APIs through a thin Java arena client.
+- Java runner orchestration with remote Python HTTP `MarketSnapshot` / `AgentIntent` services, heavy-agent worker pools, and LangGraph-compatible agents.
 - Baseline liquidity invariant with additive per-agent quote ownership and quote-size guardrails.
 - UI shell with compact navigation, persisted day/night/system theme, Command Center orchestration, and paused-state-stable Liquidity Map behavior.
 - Serverless endpoint/job scaffolds, Dockerfiles, configs, scripts, and local mock/cloud-adapter paths.

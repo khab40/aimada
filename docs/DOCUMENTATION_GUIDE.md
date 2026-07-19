@@ -56,6 +56,7 @@ graph TD
 
 - **[runtime-model.md](runtime-model.md)** — How the simulation engine works
 - **[java-kernel-migration.md](java-kernel-migration.md)** — Parity-gated Python-reference to Java-kernel migration
+- **[architecture/ARD-0020-java-arena-websocket-agent-orchestration.md](architecture/ARD-0020-java-arena-websocket-agent-orchestration.md)** — Java live arena, WebSocket, agent orchestration, and retained Python boundary
 - **[determinism-contract-v1.md](determinism-contract-v1.md)** — Cross-language numeric, ordering, PRNG, identifier, and exchange rules
 - **[canonical-hashing-v1.md](canonical-hashing-v1.md)** — Cross-language canonical bytes and event/book/stream SHA-256 rules
 - **[benchmark-methodology.md](benchmark-methodology.md)** — Evaluating detector performance

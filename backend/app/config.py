@@ -141,62 +141,20 @@ class Settings(BaseSettings):
     arena_output_dir: Path = Field(default=Path("../outputs"), alias="ARENA_OUTPUT_DIR")
     arena_data_retention_days: int = Field(default=1, ge=1, le=3650, alias="ARENA_DATA_RETENTION_DAYS")
     arena_sample_data_dir: Path = Field(default=Path("../data/sample"), alias="ARENA_SAMPLE_DATA_DIR")
-    arena_agent_count: int = Field(default=200, ge=1, le=1000, alias="ARENA_AGENT_COUNT")
-    arena_agent_decision_timeout_seconds: float = Field(
-        default=0.05,
-        ge=0.001,
-        le=1.0,
-        alias="ARENA_AGENT_DECISION_TIMEOUT_SECONDS",
-    )
-    arena_remote_agent_urls: str = Field(default="", alias="ARENA_REMOTE_AGENT_URLS")
     arena_local_batch_max_workers: int = Field(
         default=1,
         ge=1,
         le=32,
         alias="ARENA_LOCAL_BATCH_MAX_WORKERS",
     )
-    arena_remote_agent_timeout_seconds: float = Field(
-        default=0.05,
-        ge=0.001,
-        le=2.0,
-        alias="ARENA_REMOTE_AGENT_TIMEOUT_SECONDS",
-    )
-    arena_baseline_liquidity_levels: int = Field(
-        default=12,
-        ge=0,
-        le=100,
-        alias="ARENA_BASELINE_LIQUIDITY_LEVELS",
-    )
-    arena_baseline_liquidity_base_size: float = Field(
-        default=1.5,
-        ge=0.0,
-        le=1_000.0,
-        alias="ARENA_BASELINE_LIQUIDITY_BASE_SIZE",
-    )
-    arena_baseline_liquidity_tick_size: float = Field(
-        default=1.0,
+    java_arena_base_url: str = Field(default="http://127.0.0.1:8081", alias="JAVA_ARENA_BASE_URL")
+    java_arena_timeout_seconds: float = Field(
+        default=2.0,
         gt=0.0,
-        le=1_000.0,
-        alias="ARENA_BASELINE_LIQUIDITY_TICK_SIZE",
+        le=30.0,
+        alias="JAVA_ARENA_TIMEOUT_SECONDS",
     )
-    arena_baseline_liquidity_reference_price: float = Field(
-        default=68_125.0,
-        gt=0.0,
-        alias="ARENA_BASELINE_LIQUIDITY_REFERENCE_PRICE",
-    )
-    arena_max_agent_quote_size: float = Field(
-        default=25.0,
-        ge=0.0,
-        le=1_000.0,
-        alias="ARENA_MAX_AGENT_QUOTE_SIZE",
-    )
-    arena_tick_history_interval: int = Field(
-        default=10,
-        ge=1,
-        le=10_000,
-        alias="ARENA_TICK_HISTORY_INTERVAL",
-    )
-    arena_persist_all_events: bool = Field(default=False, alias="ARENA_PERSIST_ALL_EVENTS")
+    arena_remote_agent_urls: str = Field(default="", alias="ARENA_REMOTE_AGENT_URLS")
     cors_allowed_origins: str = Field(
         default="http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174",
         alias="CORS_ALLOWED_ORIGINS",
@@ -204,12 +162,13 @@ class Settings(BaseSettings):
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
 
     @property
-    def remote_agent_url_list(self) -> list[str]:
-        return [url.strip() for url in self.arena_remote_agent_urls.split(",") if url.strip()]
-
-    @property
     def cors_allowed_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_allowed_origins.split(",") if origin.strip()]
+
+    @property
+    def remote_agent_url_list(self) -> list[str]:
+        """Runner endpoints retained for AI service health reporting only."""
+        return [url.strip() for url in self.arena_remote_agent_urls.split(",") if url.strip()]
 
     @property
     def nebius_explain_endpoint_url(self) -> str | None:

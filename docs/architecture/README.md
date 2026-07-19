@@ -6,7 +6,7 @@ ARDs capture architecture decisions, context, tradeoffs, implementation phases, 
 
 ## Implementation Summary
 
-Status as of 2026-07-14:
+Status as of 2026-07-18:
 
 | ARD | Implementation | Notes |
 |-----|----------------|-------|
@@ -26,7 +26,8 @@ Status as of 2026-07-14:
 | [ARD-0016](ARD-0016-ai-scenario-generator.md) | `[done]` | Scenario generation endpoint produces simulator-compatible AI Scenario Generator workloads |
 | [ARD-0017](ARD-0017-ai-detector-tournament.md) | `[done]` | Serverless Jobs contract and local fallback power the AI Detector Tournament workflow |
 | [ARD-0018](ARD-0018-canonical-exchange-event-stream.md) | `[done]` | All ten canonical exchange-stream steps are implemented and verified; future dataset mappings use the completed adapter boundary |
-| [ARD-0019](ARD-0019-python-reference-java-kernel-migration.md) | `[partial]` | Migration boundary is frozen; Protobuf, determinism, Java kernel, parity, and rollout steps remain |
+| [ARD-0019](ARD-0019-python-reference-java-kernel-migration.md) | `[done]` | All 18 parity and sole-Java-kernel migration steps are implemented |
+| [ARD-0020](ARD-0020-java-arena-websocket-agent-orchestration.md) | `[done]` | Java owns the live arena, WebSocket, agent orchestration, scenarios, detectors, incidents, and journals |
 
 Current UI architecture note: the product shell now exposes AI Command Center, Arena / Workload Generator, and Docs / Demo as the primary demo destinations. Scenario setup, incidents, investigations, detector tournaments, deployment status, and experiment artifacts are folded into the AI Command Center or linked from the active workflow. The About and ARD-0001 diagrams document the four execution areas: Front, Back, Agent Runners Workspace, and Nebius Serverless Cloud.
 
@@ -52,6 +53,7 @@ Current UI architecture note: the product shell now exposes AI Command Center, A
 - [ARD-0011: Exchange Liquidity Invariant And Agent Quote Ownership](ARD-0011-exchange-liquidity-invariant.md) — Baseline ladder guard and additive per-agent quote ownership
 - [ARD-0018: Canonical Exchange Event Stream](ARD-0018-canonical-exchange-event-stream.md) — Versioned add, modify, cancel, execute, and L2 snapshot stream for simulation and historical data
 - [ARD-0019: Python Reference And Java Kernel Migration](ARD-0019-python-reference-java-kernel-migration.md) — Completed parity-gated cut-over to the sole Java 25 deterministic kernel
+- [ARD-0020: Java Arena WebSocket And Agent Orchestration](ARD-0020-java-arena-websocket-agent-orchestration.md) — Live arena and orchestration cut-over with Python retained for AI/ML and serverless work
 
 ### UI Shell And Presentation
 

@@ -1,9 +1,9 @@
 # Backend
 
-FastAPI backend for the LOB Arena project.
-
-The current runtime exposes a simple synthetic L2 order book simulation for the
-arena UI. It ticks every 500 ms while running.
+Retained Python service for LOB Arena AI/ML, Nebius, experiments, evidence, and
+serverless workflows. Java owns the live arena, scenarios, deterministic
+detectors/incidents, agent orchestration, REST controls, and WebSocket stream.
+Compatibility arena routes below are thin HTTP clients to Java.
 
 ## Current Routes
 
@@ -23,12 +23,12 @@ arena UI. It ticks every 500 ms while running.
 - `GET /api/incidents`
 - `GET /api/incidents/{incident_id}`
 - `POST /api/incidents/{incident_id}/explain`
-- `WS /ws/arena`
 
 ## Local Development
 
 ```bash
 uv sync
+export JAVA_ARENA_BASE_URL=http://127.0.0.1:8081
 uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
@@ -67,10 +67,10 @@ ENDPOINT_TOKEN=optional-token
 
 The backend derives `/explain-event` and `/generate-scenario` from `NEBIUS_ENDPOINT_BASE_URL`. You can still set `NEBIUS_INCIDENT_EXPLAINER_URL` and `NEBIUS_SCENARIO_GENERATOR_URL` as explicit overrides. When endpoint URLs are not configured, the backend returns typed mock responses.
 
-WebSocket browser smoke test:
+Java WebSocket browser smoke test through the frontend Nginx gateway:
 
 ```js
-const ws = new WebSocket("ws://localhost:8000/ws/arena");
+const ws = new WebSocket("ws://localhost:5173/ws/arena");
 ws.onmessage = (event) => console.log(JSON.parse(event.data));
 ws.onopen = () => ws.send(JSON.stringify({ type: "arena_control", action: "start" }));
 ```
@@ -79,7 +79,7 @@ Frontend websocket mode:
 
 ```bash
 VITE_ARENA_MODE=websocket
-VITE_ARENA_WS_URL=ws://localhost:8000/ws/arena
+VITE_ARENA_WS_URL=ws://localhost:5173/ws/arena
 ```
 
 Tests:
@@ -93,4 +93,3 @@ Coverage:
 ```bash
 uv run pytest --cov=app --cov-report=term-missing
 ```
-

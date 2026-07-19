@@ -51,19 +51,21 @@ LOB Arena combines a live synthetic exchange, bounded multi-agent scenarios, det
 ```mermaid
 flowchart LR
     UI["React / Vite<br/>Command Center + Arena"]
-    API["FastAPI<br/>REST + WebSocket"]
-    Runtime["Authoritative Runtime<br/>Exchange + Matching"]
+    Java["Java 25 / Spring<br/>REST + WebSocket + Arena"]
+    API["FastAPI<br/>AI/ML + Serverless APIs"]
+    Runtime["Authoritative Java Runtime<br/>Exchange + Matching"]
     Detectors["Deterministic Detectors"]
     Runner["Agent Runner<br/>normal, heavy, LangGraph agents"]
     Endpoint["Nebius Serverless Endpoint<br/>investigation + generation"]
     Jobs["Nebius Serverless Jobs<br/>detector tournaments"]
     Store["Artifacts + Evidence<br/>local disk + S3"]
 
-    UI <-->|commands + arena state| API
-    API --> Runtime
+    UI <-->|commands + arena state| Java
+    Java --> Runtime
     Runtime --> Detectors
     Runtime -->|read-only snapshot| Runner
     Runner -->|bounded intents| Runtime
+    API <-->|arena evidence| Java
     API <-->|structured JSON| Endpoint
     API -->|job request| Jobs
     Detectors --> Store
@@ -72,11 +74,11 @@ flowchart LR
     Store --> API
 ```
 
-The backend is the only writer to the exchange. Agents receive read-only market snapshots and return bounded decisions. Detectors run deterministically over synthetic market state; the LLM receives summarized evidence rather than raw order-book streams.
+Java is the only writer to the exchange and owns browser WebSocket delivery and runner orchestration. Agents receive read-only market snapshots and return bounded decisions. Python is retained for AI/ML, LangGraph-capable runner work, experiments, and serverless components; the LLM receives summarized evidence rather than raw order-book streams.
 
 ```text
-backend/          FastAPI simulator, detectors, experiments, evidence APIs
-java/             Java 25 candidate kernel, shared Protobuf types, and Spring control plane
+backend/          FastAPI AI/ML, experiments, serverless, and evidence APIs
+java/             Java 25 arena, exchange kernel, orchestration, REST, and WebSocket
 agent-runner/     Out-of-process normal, heavy, and LangGraph agents
 frontend/         React UI for the arena, investigations, and tournaments
 serverless/       Nebius Endpoint and Job images, prompts, and runners
@@ -108,11 +110,11 @@ docker compose up --build
 Open:
 
 - Frontend: http://localhost:5173
-- Backend: http://localhost:8000
-- Java kernel status: http://localhost:8081/api/kernel/status
-- WebSocket: ws://localhost:8000/ws/arena
+- Retained Python AI API: http://localhost:8000
+- Java control plane: http://localhost:8081/api/kernel/status
+- Same-origin WebSocket: ws://localhost:5173/ws/arena
 
-The default Compose path builds `java-kernel`, `agent-runner`, `backend`, and `frontend` from source with `NEBIUS_ENDPOINT_MODE=mock`. Java solely owns the versioned deterministic kernel; Python retains ML/AI and application capabilities without Java replacements. Local Mock requires no Nebius credentials, private images, or GPU/vLLM runtime. Cloud calls use deterministic local fallback unless Nebius Cloud mode is explicitly configured.
+The default Compose path builds `java-kernel`, `agent-runner`, `backend`, and `frontend` from source with `NEBIUS_ENDPOINT_MODE=mock`. Java owns the deterministic kernel, live arena, scenarios, detectors, incidents, orchestration, REST controls, and WebSocket. Python retains AI/ML, experiments, and serverless work. Local Mock requires no Nebius credentials, private images, or GPU/vLLM runtime.
 
 ## Automated grader
 
@@ -249,7 +251,7 @@ If Job command templates are missing, the backend records `real_nebius_pending` 
 
 ## Development
 
-CI validates backend tests, Ruff, frontend lint/build, the Java 25 candidate kernel and control plane, deterministic CPU evaluation, agent workspace contracts, Compose config, application Docker images, and Gitleaks. It intentionally does not build long-running Nebius Endpoint/Job images and does not run GPU/vLLM inference.
+CI validates retained Python tests and Ruff, frontend lint/build, the authoritative Java 25 kernel and live control plane, deterministic CPU evaluation, agent workspace contracts, Compose config, application Docker images, and Gitleaks. It intentionally does not build long-running Nebius Endpoint/Job images and does not run GPU/vLLM inference.
 
 Run the main checks locally:
 

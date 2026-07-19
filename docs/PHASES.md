@@ -3,10 +3,11 @@
 LOB Arena is built as:
 
 - React visual arena
-- FastAPI simulator
-- synthetic exchange and order book
+- Java 25/Spring live arena and WebSocket control plane
+- Java synthetic exchange and order book
 - normal and abuse-like agents
-- deterministic detectors
+- Java deterministic detectors
+- FastAPI AI/ML, experiments, evidence, and serverless adapters
 - Nebius Serverless AI Job benchmark
 - Nebius AI / LLM explanations
 

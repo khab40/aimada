@@ -3,7 +3,8 @@ FROM eclipse-temurin:25-jdk-noble AS build
 WORKDIR /workspace
 COPY java/ java/
 COPY contracts/proto/ contracts/proto/
-RUN cd java && ./gradlew :control-plane:bootJar --no-daemon
+RUN --mount=type=cache,target=/root/.gradle \
+    cd java && ./gradlew :control-plane:bootJar --no-daemon
 
 FROM eclipse-temurin:25-jre-noble AS runtime
 

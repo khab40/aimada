@@ -6,14 +6,14 @@ Date: 2026-06-01
 
 ## Implementation Status
 
-Status as of 2026-06-23: `[done]`
+Status as of 2026-07-18: `[done; Java owner]`
 
 Implemented:
 
-- Versioned `arena_state` envelope in backend WebSocket schemas and routes.
-- Backend-owned complete state payloads for book levels, events, active agents, detector scores, incidents, and runtime flags.
+- Versioned `arena_state` envelope in Spring WebSocket handler and `/ws/arena` route.
+- Java-owned complete state payloads for book levels, events, active agents, detector scores, incidents, and runtime flags.
 - Frontend WebSocket source hook and UI components that render the latest complete backend state.
-- Focused WebSocket/runtime tests.
+- Focused Java WebSocket/runtime tests, including malformed commands and session cleanup.
 
 Follow-up:
 
@@ -21,9 +21,9 @@ Follow-up:
 
 ## Context
 
-The React arena needs frequent state updates from the FastAPI simulator. The UI should not reconstruct exchange state from raw events. It needs a compact, stable state envelope that can drive the order book ladder, charts, agent feed, active agents, detector confidence, and incident cards.
+The React arena needs frequent state updates from the Java live arena. The UI should not reconstruct exchange state from raw events. It needs a compact, stable state envelope that can drive the order book ladder, charts, agent feed, active agents, detector confidence, and incident cards.
 
-The backend already owns the live simulation clock and broadcasts messages through `/ws/arena`.
+Spring owns the live simulation clock and broadcasts messages through `/ws/arena`; FastAPI no longer hosts a WebSocket route.
 
 ## Decision
 

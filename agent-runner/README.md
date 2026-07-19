@@ -2,7 +2,7 @@
 
 Separate process/container for normal-agent decisions.
 
-The arena backend remains the authoritative exchange. This runner receives read-only market snapshots on `POST /decide` and returns `AgentIntent` objects. The backend sorts and applies those intents as a single writer.
+The Java arena remains the authoritative exchange. This Python runner is retained for AI/ML, heavy, and LangGraph-capable decision work: it receives read-only market snapshots on `POST /decide` and returns `AgentIntent` objects. Java validates, sorts, and applies those intents as a single writer.
 
 Environment:
 

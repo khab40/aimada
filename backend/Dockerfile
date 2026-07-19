@@ -27,7 +27,6 @@ RUN pip install --no-cache-dir \
   uvicorn \
   uvloop \
   httptools \
-  websockets \
   && if [ "${INSTALL_NEBIUS_CLI}" = "true" ]; then pip install --no-cache-dir awscli; fi
 
 COPY backend/app ./app

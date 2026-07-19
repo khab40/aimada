@@ -1,11 +1,12 @@
 # High-Level Architecture
 
-LOB Arena is organized around four execution areas and two execution paths.
+LOB Arena is organized around five execution areas and two execution paths.
 
-The four execution areas are:
+The five execution areas are:
 
 - **Front**: React/Vite browser UI for Command Center, Arena / Workload Generator, Scenario Generator, and About.
-- **Back**: FastAPI backend for REST, WebSocket streaming, orchestration, persistence, Smart Detection, and AI Investigator adapters.
+- **Java Arena**: Java 25/Spring owner of exchange state, live scheduling, scenarios, deterministic detectors/incidents, agent orchestration, persistence, REST controls, and WebSocket streaming.
+- **Python AI/Serverless**: FastAPI adapters for Nebius AI/ML, experiments, evidence, and serverless jobs; it reads arena evidence through a thin Java HTTP client.
 - **Agent Runners Workspace**: local Docker or remote `agent-runner` processes where normal, CPU-heavy, and LangGraph-compatible agents convert read-only market snapshots into bounded intents.
 - **Nebius Serverless Cloud**: Nebius AI model selection, LLM inference, Managed Experiment jobs, GPU utilization, datasets, and artifacts.
 
@@ -14,7 +15,7 @@ The two execution paths are:
 - an interactive demo path for orchestrating deterministic demo modes, live simulation, visualization, incident review, Smart Detection, and AI Investigator explanations
 - a batch benchmark path for running many synthetic simulations and measuring detector quality through Managed Experiments
 
-The design keeps the browser UI, demo orchestration backend, agent runner workspace, Nebius Serverless Cloud, and persisted event artifacts separate so each part can evolve independently.
+The design keeps the browser UI, Java arena, retained Python AI/serverless service, agent runner workspace, Nebius Serverless Cloud, and persisted event artifacts separate so each part can evolve independently.
 
 ## Interactive Demo Path
 
@@ -23,14 +24,17 @@ flowchart LR
     subgraph Front["Front"]
         UI["React / Vite<br/>Command Center + Arena"]
     end
-    subgraph Back["Back"]
-        API["FastAPI<br/>REST control plane"]
+    subgraph Java["Java Arena"]
+        Control["Spring REST + WebSocket"]
         WS["WebSocket<br/>arena_control + arena_state"]
         Runtime["Runtime<br/>250-500 ms ticks"]
         Exchange["Exchange + Matching Engine"]
         Guard["Baseline Liquidity Guard"]
         Detectors["Deterministic Detectors"]
         Incidents["Incident + Artifact Stores"]
+    end
+    subgraph Python["Python AI / Serverless"]
+        API["FastAPI<br/>AI + experiments + jobs"]
     end
     subgraph Workspace["Agent Runners Workspace"]
         Runner["agent-runner<br/>normal + heavy + LangGraph"]
@@ -41,8 +45,10 @@ flowchart LR
         ObjectStorage["Object Storage<br/>evidence archive"]
     end
 
-    UI -->|"REST"| API
+    UI -->|"arena REST"| Control
+    UI -->|"AI / experiment REST"| API
     UI -->|"live commands"| WS
+    Control --> Runtime
     WS --> Runtime
     Runtime -->|"MarketSnapshot"| Runner
     Runner -->|"AgentIntent"| Runtime
@@ -57,7 +63,7 @@ flowchart LR
     Endpoint -->|"execution metadata"| ObjectStorage
     Jobs -->|"metrics + artifacts"| ObjectStorage
     ObjectStorage -->|"S3 sync"| Incidents
-    Incidents --> API
+    API <-->|"bounded arena evidence"| Control
 ```
 
 ### Component Responsibilities
@@ -65,28 +71,28 @@ flowchart LR
 | Component | Responsibility |
 | --- | --- |
 | React / Vite UI | Presents the themed product shell, Command Center, Arena, Scenario Generator, About, 2D order-book views, detector output, Incident Details, and AI Investigator reports. Arena live controls and state use WebSocket; Nebius AI, experiment, artifact, and report actions use backend REST APIs. |
-| FastAPI demo backend | Owns the demo control plane. It starts and stops simulations, launches scenarios, broadcasts state to the UI, persists incidents, and calls Nebius AI endpoints for explanation and report generation. |
-| Local live simulation | Runs the authoritative exchange, scenario state, detector engine, local agent scheduling, single-writer book mutation, per-agent quote ownership, and baseline liquidity guard. |
-| Agent Runners Workspace | Runs out-of-process normal, CPU-heavy, and LangGraph-compatible agents behind the common intent protocol. The local `AgentManager` stays in the backend; both paths return intents and never mutate the exchange directly. |
+| Java arena/control plane | Owns the live exchange, scenarios, deterministic detectors/incidents, journals, REST controls, WebSocket sessions, and agent fan-out as the sole book writer. |
+| FastAPI AI/serverless service | Owns Nebius AI/ML, explanations, experiments, evidence archives, and serverless workflows. Its arena compatibility routes are thin Java clients. |
+| Agent Runners Workspace | Runs out-of-process normal, CPU-heavy, ML, and LangGraph-compatible agents behind the common intent protocol. Runners return intents and never mutate the exchange directly. |
 | Experiment manager | Owns Managed Experiment manifests on `/api/experiments`, persists `outputs/experiments/<experiment_id>/experiment.json`, and exposes smart-batch-compatible artifact paths to Detection without replacing the Nebius AI smart-batch API. |
 | Nebius Serverless Cloud | Provides Nebius AI inference for Smart Detection and AI Investigator reports, plus Managed Experiment batch execution, GPU utilization, datasets, and artifacts. |
 | Event / snapshot log | Stores replayable event streams, order book snapshots, detected incidents, and generated reports for inspection and offline analysis. |
 
 The exchange produces a versioned canonical stream of `add`, `modify`, `cancel`, `execute`, and `snapshot` events. Simulation is the live source; future venue datasets enter through a historical normalizer and preserve their upstream sequence/timestamps separately from canonical replay order. Arena state/WebSocket messages carry a bounded event tail, `/api/arena/exchange-events` provides cursor replay, and append-only history stores full events plus snapshot-only checkpoints.
 
-The versioned deterministic kernel API is owned solely by the plain Java 25 kernel for the scheduler, managed PRNG streams, order book, matching, canonical events, snapshots, and metrics. Spring Boot exposes `/api/kernel/run` and `/api/kernel/status` while gRPC remains the language-neutral integration boundary; neither framework enters the hot loop. FastAPI retains the REST/WebSocket, persistence, ML/AI, Nebius, agent-orchestration, experiment, and interactive-simulation capabilities that do not yet have Java replacements.
+Java 25 owns both the versioned deterministic kernel API and the stateful live arena. Spring Boot exposes kernel and arena REST plus `/ws/arena`, while framework objects remain outside the matching hot loop. FastAPI retains only AI/ML, Nebius, experiments, evidence, and serverless capabilities.
 
 ### Runtime Flow
 
 1. The user starts from Demo or controls a scenario directly from the React / Vite UI.
 2. The UI sends a WebSocket command to `/ws/arena`.
-3. The backend starts or updates the local simulation and returns complete `arena_state` messages over the same stream.
-4. Each tick, the backend sends read-only snapshots to local and remote agents and collects bounded `AgentIntent` responses.
-5. The backend sorts accepted intents and applies them to the exchange as the only writer; runtime `set_level` intents update that agent's own bounded quote.
-6. The backend restores the configured baseline bid/ask ladder before publishing state, so the live book remains two-sided.
+3. Spring starts or updates the Java arena and returns complete `arena_state` messages over the same stream.
+4. Each tick, Java concurrently sends read-only snapshots to configured Python agent runners and collects bounded `AgentIntent` responses.
+5. Java validates, sorts, and applies accepted intents as the only exchange writer; runtime `set_level` intents update that agent's own bounded quote.
+6. Java restores the baseline bid/ask ladder before publishing state, so the live book remains two-sided.
 7. The simulation emits order events, snapshots, agent actions, detector signals, and incidents.
-8. The backend persists events and snapshots, then broadcasts live updates to connected UI clients over WebSocket.
-9. When Smart Detection, AI Investigator, or report generation is requested, the backend calls Nebius AI or deterministic fallback adapters and stores the generated result.
+8. Java persists events and snapshots, then broadcasts live updates to connected UI clients over WebSocket.
+9. When AI Investigator or report generation is requested, FastAPI reads bounded Java evidence, calls Nebius AI or deterministic fallback adapters, and stores the generated result.
 10. The UI renders the latest market state, detector alerts, incident details, AI Investigator explanations, and AI cost/latency metrics. Day/night/system theme mode remains browser-side presentation state.
 
 ### Live Tick Sequence
@@ -94,7 +100,7 @@ The versioned deterministic kernel API is owned solely by the plain Java 25 kern
 ```mermaid
 sequenceDiagram
     participant UI as React Arena
-    participant API as FastAPI Runtime
+    participant API as Java Arena
     participant AR as agent-runner
     participant EX as Exchange
     participant DT as Detectors
@@ -240,3 +246,4 @@ Detailed architecture decisions are recorded in [Architecture Records (ARDs)](ar
 - [ARD-0017: AI Detector Tournament](architecture/ARD-0017-ai-detector-tournament.md) — Detector tournament facade and Serverless Jobs execution contract
 - [ARD-0018: Canonical Exchange Event Stream](architecture/ARD-0018-canonical-exchange-event-stream.md) — Simulation and historical-ready exchange events, replay, delivery, and persistence
 - [ARD-0019: Python Reference And Java Kernel Migration](architecture/ARD-0019-python-reference-java-kernel-migration.md) — Completed parity-gated Java kernel cut-over and retained Python ownership boundary
+- [ARD-0020: Java Arena WebSocket And Agent Orchestration](architecture/ARD-0020-java-arena-websocket-agent-orchestration.md) — Java live-arena ownership and Python AI/ML/serverless boundary

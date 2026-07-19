@@ -23,7 +23,7 @@ Migrate through a reference-and-candidate architecture, then retire the duplicat
 - Python and Java receive identical scenario requests and are compared by a differential harness.
 - Authority moves by component and runtime mode only after correctness, performance, observability, and rollback gates pass.
 - After the stability window, Java becomes the sole versioned deterministic-kernel implementation. The immutable golden corpus replaces executable Python-kernel replay as the compatibility oracle.
-- Python remains for ML/AI, Nebius integration, persistence, interactive arena orchestration, WebSocket delivery, and other capabilities that have no Java replacement yet.
+- Python remains for ML/AI, Nebius integration, experiments, serverless jobs, and capabilities that still have no Java replacement.
 
 ## Final Component Boundary
 
@@ -41,7 +41,7 @@ graph LR
     Client --> Request
 ```
 
-The Java boundary owns the versioned simulation clock, deterministic scheduler, managed PRNG streams, order book, matching, canonical event production, snapshots, metrics, and `/api/kernel` HTTP/gRPC endpoints. Python retains the interactive arena and scenarios, detector/ML authority, persistence, remaining REST/WebSocket delivery, agent orchestration, and Nebius integration until equivalent Java components are implemented.
+The Java boundary owns the versioned kernel and, after the follow-on ARD-0020 cut-over, the interactive arena clock, scenarios, deterministic detectors, incidents, persistence, REST/WebSocket delivery, and agent orchestration. Python retains ML/AI, Nebius integration, experiments, serverless jobs, and a thin Java arena client.
 
 ## Step 1 Implementation Record
 
@@ -206,13 +206,14 @@ Positive:
 Tradeoffs:
 
 - Rollback now means deploying a previously verified Java release; there is no Python runtime fallback for the versioned kernel.
-- Python still owns the separate interactive arena implementation until a stateful Java replacement is developed and proven.
+- The legacy Python simulation remains only in offline/serverless jobs; it is not a live backend authority.
 - Exact cross-language determinism constrains numeric representation, PRNG choice, ordering, and hashing.
 - Java authority arrives later than a superficial rewrite but with measurable correctness.
 
 ## Related Documentation
 
 - [Java Kernel Migration](../java-kernel-migration.md)
+- [ARD-0020: Java Arena WebSocket And Agent Orchestration](ARD-0020-java-arena-websocket-agent-orchestration.md)
 - [ARD-0018: Canonical Exchange Event Stream](ARD-0018-canonical-exchange-event-stream.md)
 - [ARD-0010: Agent Runner Execution](ARD-0010-agent-runner-execution.md)
 - [High-Level Architecture](../architecture.md)

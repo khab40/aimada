@@ -163,6 +163,7 @@ jobs:
       - name: Replay immutable golden corpus
         env:
           LOB_KERNEL_GRPC_ENABLED: "true"
+          ARENA_REMOTE_AGENT_URLS: ""
         run: |
           set -euo pipefail
           kernel_jar="$(find java/control-plane/build/libs -maxdepth 1 -name 'control-plane-*.jar' ! -name '*-plain.jar' -print -quit)"
@@ -183,6 +184,12 @@ jobs:
                 java-kernel-http-result.pb \
                 contracts/golden/parity-v1/cases/normal-market-seed-42/expected-result.pb
               python -c 'import json, urllib.request; status=json.load(urllib.request.urlopen("http://127.0.0.1:8080/api/kernel/status")); assert status == {"authority": "java", "implementation": "java", "pythonFallback": False, "pythonReplay": False, "contractVersion": 1}'
+              python -c 'import json, urllib.request; state=json.load(urllib.request.urlopen("http://127.0.0.1:8080/api/arena/state")); assert state["tick"] == 0 and state["running"] is False and state["book"]["bids"] and state["book"]["asks"]'
+              curl --fail --silent --show-error --request POST http://127.0.0.1:8080/api/scenarios/spoofing-like > /dev/null
+              curl --fail --silent --show-error --request POST http://127.0.0.1:8080/internal/arena/step > /dev/null
+              curl --fail --silent --show-error --request POST http://127.0.0.1:8080/internal/arena/step > /dev/null
+              curl --fail --silent --show-error --request POST http://127.0.0.1:8080/internal/arena/step > /dev/null
+              python -c 'import json, urllib.request; incidents=json.load(urllib.request.urlopen("http://127.0.0.1:8080/api/incidents")); assert len(incidents) == 1 and incidents[0]["scenario_family"] == "spoofing_like_wall"'
               exit 0
             fi
             if ! kill -0 "$kernel_pid" 2>/dev/null; then
@@ -305,7 +312,7 @@ jobs:
 
       - name: Smoke test backend runtime imports
         if: ${{ matrix.name == 'backend' }}
-        run: docker run --rm lob-arena-ci/backend:${{ github.sha }} python -c 'import app.main, importlib.util; assert importlib.util.find_spec("app.contracts.python_reference") is None; assert importlib.util.find_spec("grpc") is None; assert importlib.util.find_spec("google") is None'
+        run: docker run --rm lob-arena-ci/backend:${{ github.sha }} python -c 'import app.main, importlib.util, sys; assert "app.arena.engine" not in sys.modules; assert importlib.util.find_spec("app.websocket.routes") is None; assert importlib.util.find_spec("app.contracts.python_reference") is None; assert importlib.util.find_spec("grpc") is None; assert importlib.util.find_spec("google") is None'
 
       - name: Smoke test Java runtime layout
         if: ${{ matrix.name == 'java-kernel' }}

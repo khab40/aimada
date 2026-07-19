@@ -60,14 +60,14 @@ def test_archived_feature_settings_are_not_active() -> None:
     assert not hasattr(settings, "enable_legacy_pages")
 
 
-def test_backend_settings_default_to_lean_local_runtime(monkeypatch: Any) -> None:
+def test_backend_settings_default_to_java_arena_client_and_ai_runtime(monkeypatch: Any) -> None:
     monkeypatch.delenv("ARENA_REMOTE_AGENT_URLS", raising=False)
     monkeypatch.delenv("ARENA_DATA_RETENTION_DAYS", raising=False)
     monkeypatch.delenv("NEBIUS_HEALTH_TIMEOUT_SECONDS", raising=False)
     monkeypatch.delenv("NEBIUS_INFERENCE_TIMEOUT_SECONDS", raising=False)
     monkeypatch.delenv("NEBIUS_LOCAL_TOURNAMENT_SCENARIO_LIMIT", raising=False)
-    monkeypatch.delenv("ARENA_TICK_HISTORY_INTERVAL", raising=False)
-    monkeypatch.delenv("ARENA_PERSIST_ALL_EVENTS", raising=False)
+    monkeypatch.delenv("JAVA_ARENA_BASE_URL", raising=False)
+    monkeypatch.delenv("JAVA_ARENA_TIMEOUT_SECONDS", raising=False)
     settings = Settings(_env_file=None)
 
     assert settings.arena_remote_agent_urls == ""
@@ -75,8 +75,10 @@ def test_backend_settings_default_to_lean_local_runtime(monkeypatch: Any) -> Non
     assert settings.nebius_health_timeout_seconds == 0.5
     assert settings.nebius_inference_timeout_seconds == 180.0
     assert settings.nebius_local_tournament_scenario_limit == 24
-    assert settings.arena_tick_history_interval == 10
-    assert settings.arena_persist_all_events is False
+    assert settings.java_arena_base_url == "http://127.0.0.1:8081"
+    assert settings.java_arena_timeout_seconds == 2.0
+    assert not hasattr(settings, "arena_tick_history_interval")
+    assert not hasattr(settings, "arena_persist_all_events")
 
 
 def test_backend_settings_derives_investigation_team_endpoint_from_base_url(monkeypatch: Any) -> None:

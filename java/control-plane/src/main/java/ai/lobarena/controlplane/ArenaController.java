@@ -1,0 +1,78 @@
+package ai.lobarena.controlplane;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+import tools.jackson.databind.JsonNode;
+
+@RestController
+final class ArenaController {
+    private final LiveArenaService arena;
+
+    ArenaController(LiveArenaService arena) {
+        this.arena = arena;
+    }
+
+    @GetMapping("/api/arena/state")
+    JsonNode state() {
+        return arena.state();
+    }
+
+    @GetMapping("/api/arena/exchange-events")
+    JsonNode exchangeEvents(
+            @RequestParam(defaultValue = "0") long afterSequence,
+            @RequestParam(defaultValue = "100") int limit) {
+        if (afterSequence < 0 || limit < 1 || limit > 1000) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid replay cursor or limit");
+        }
+        return arena.exchangeEvents(afterSequence, limit);
+    }
+
+    @PostMapping("/api/simulation/start")
+    JsonNode start() {
+        return arena.start();
+    }
+
+    @PostMapping("/api/simulation/pause")
+    JsonNode pause() {
+        return arena.pause();
+    }
+
+    @PostMapping("/api/simulation/reset")
+    JsonNode reset() {
+        return arena.reset();
+    }
+
+    @PostMapping("/internal/arena/step")
+    JsonNode internalStep() {
+        return arena.stepForTest();
+    }
+
+    @PostMapping("/api/scenarios/{scenario}")
+    JsonNode launchScenario(@PathVariable String scenario) {
+        try {
+            return arena.launchScenario(scenario);
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, exception.getMessage(), exception);
+        }
+    }
+
+    @GetMapping("/api/incidents")
+    JsonNode incidents() {
+        return arena.incidents();
+    }
+
+    @GetMapping("/api/incidents/{incidentId}")
+    JsonNode incident(@PathVariable String incidentId) {
+        JsonNode incident = arena.incident(incidentId);
+        if (incident == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "unknown incident: " + incidentId);
+        }
+        return incident;
+    }
+}
