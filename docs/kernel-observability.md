@@ -35,7 +35,7 @@ LOB_KERNEL_TRACE_SAMPLE_PROBABILITY=0.1 \
 ./gradlew :control-plane:bootRun
 ```
 
-OTLP metric push is separately controlled by `LOB_KERNEL_OTLP_METRICS_ENABLED`; it is off by default because Prometheus scraping is the primary metric path. Local tests never require a collector.
+Trace export uses Spring Boot's `management.tracing.export.otlp.enabled` gate and defaults to disabled. OTLP metric push is separately controlled by `LOB_KERNEL_OTLP_METRICS_ENABLED`; it is off by default because Prometheus scraping is the primary metric path. Local tests and control-plane startup never require a collector.
 
 The retired Python shadow/authority metrics are intentionally absent. Compatibility drift is a CI failure from exact golden-corpus replay, while production Java health, request outcomes, latency, and event counts remain available through Actuator and Prometheus.
 

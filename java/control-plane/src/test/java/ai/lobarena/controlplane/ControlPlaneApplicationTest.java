@@ -3,7 +3,9 @@ package ai.lobarena.controlplane;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
+import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Properties;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -34,5 +36,17 @@ final class ControlPlaneApplicationTest {
 
         assertThat(output).isAbsolute();
         assertThat(output.getFileName().toString()).isEqualTo("outputs");
+    }
+
+    @Test
+    void otlpTraceExportIsOptInWithSpringBootProperty() throws IOException {
+        Properties properties = new Properties();
+        try (var input = ControlPlaneApplicationTest.class.getResourceAsStream("/application.properties")) {
+            properties.load(input);
+        }
+
+        assertThat(properties.getProperty("management.tracing.export.otlp.enabled"))
+                .isEqualTo("${LOB_KERNEL_OTLP_ENABLED:false}");
+        assertThat(properties).doesNotContainKey("management.opentelemetry.tracing.export.otlp.enabled");
     }
 }

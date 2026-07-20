@@ -24,10 +24,22 @@ On macOS or Linux, run:
 ./gradlew clean check
 ```
 
+SDKMAN users can pin the repo JDK with the checked-in `.sdkmanrc`:
+
+```bash
+sdk env
+```
+
 Start the candidate gRPC server for offline shadow replay with:
 
 ```bash
 ./gradlew :kernel-grpc:run --args=50051
+```
+
+Start the Spring control plane with the project SDKMAN pin and Java 25 runtime check:
+
+```bash
+../scripts/run-java-control-plane.sh --server.port=8081
 ```
 
 See [Kernel Shadow Mode](../docs/kernel-shadow-mode.md) for the Python replay command and live-mirroring guarantees.
