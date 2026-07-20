@@ -322,4 +322,5 @@ make secrets-check
 - Keep README concise; put detailed API examples in docs.
 - Keep local fallback honest and explicitly labeled.
 - Do not commit credentials, private endpoints, signed URLs, or unredacted cloud logs.
+- Never print or attach `.env`; inspect only named non-secret keys and use `docker compose config --quiet` for validation.
 - Run `./scripts/check-secrets.sh` before publishing evidence.

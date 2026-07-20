@@ -3,6 +3,8 @@
 This changelog lists significant commits in reverse chronological order.
 Update this file with each significant commit before pushing.
 
+- Hardened local-mode secret handling: serverless-disabled environments must not retain an endpoint token, serverless-enabled environments require one, and maintainer diagnostics must never print `.env`.
+
 - Consolidated local and Nebius runtime configuration into one conditional Docker Compose file, added explicit serverless isolation, independent Prometheus/full-Grafana profiles, combination Make targets, and removed the Nebius override file.
 
 - Added the opt-in local Prometheus/Grafana monitoring profile with provisioned dashboards for end-to-end flow, Java kernel, component health, and bottleneck triage; FastAPI and agent-runner now expose focused Prometheus text metrics.
