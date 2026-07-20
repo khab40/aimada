@@ -58,6 +58,7 @@ backend/test-results.xml
 dist/
 build/
 *.class
+java/**/bin/
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/

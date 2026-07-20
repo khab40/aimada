@@ -312,7 +312,7 @@ jobs:
 
       - name: Smoke test backend runtime imports
         if: ${{ matrix.name == 'backend' }}
-        run: docker run --rm lob-arena-ci/backend:${{ github.sha }} python -c 'import app.main, importlib.util, sys; assert "app.arena.engine" not in sys.modules; assert importlib.util.find_spec("app.websocket.routes") is None; assert importlib.util.find_spec("app.contracts.python_reference") is None; assert importlib.util.find_spec("grpc") is None; assert importlib.util.find_spec("google") is None'
+        run: docker run --rm lob-arena-ci/backend:${{ github.sha }} python -m app.runtime_smoke --minimal-image
 
       - name: Smoke test Java runtime layout
         if: ${{ matrix.name == 'java-kernel' }}

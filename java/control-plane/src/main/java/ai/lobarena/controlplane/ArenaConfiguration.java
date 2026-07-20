@@ -13,8 +13,8 @@ class ArenaConfiguration {
     @Bean
     ArenaJournal arenaJournal(
             ObjectMapper mapper,
-            @Value("${lob.arena.output-dir:../outputs}") Path outputDir) {
-        return new ArenaJournal(outputDir.toAbsolutePath().normalize(), mapper);
+            @Value("${lob.arena.output-dir:../outputs}") String outputDir) {
+        return new ArenaJournal(normalizePath(outputDir), mapper);
     }
 
     @Bean
@@ -23,5 +23,9 @@ class ArenaConfiguration {
             AgentOrchestrator orchestrator,
             ArenaJournal journal) {
         return new LiveArenaService(mapper, orchestrator, journal);
+    }
+
+    static Path normalizePath(String value) {
+        return Path.of(value).toAbsolutePath().normalize();
     }
 }

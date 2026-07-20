@@ -3,6 +3,7 @@ package ai.lobarena.controlplane;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
+import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -25,5 +26,13 @@ final class ControlPlaneApplicationTest {
         assertThat(context.getBeansOfType(PrometheusMeterRegistry.class)).hasSize(1);
         assertThat(context.getBeansOfType(MicrometerKernelGrpcTelemetry.class)).hasSize(1);
         assertThat(context.getBeansOfType(ai.lobarena.grpc.JavaKernelGrpcServer.class)).isEmpty();
+    }
+
+    @Test
+    void arenaOutputDirAcceptsRelativeFilesystemPaths() {
+        Path output = ArenaConfiguration.normalizePath("../outputs");
+
+        assertThat(output).isAbsolute();
+        assertThat(output.getFileName().toString()).isEqualTo("outputs");
     }
 }
