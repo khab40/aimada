@@ -63,7 +63,7 @@ services:
       context: .
       dockerfile: backend/Dockerfile
       args:
-        INSTALL_NEBIUS_CLI: "false"
+        INSTALL_NEBIUS_CLI: ${NEBIUS_SERVERLESS_ENABLED:-false}
     environment:
       LOG_LEVEL: INFO
       ARENA_OUTPUT_DIR: /app/outputs
@@ -73,12 +73,14 @@ services:
       JAVA_ARENA_TIMEOUT_SECONDS: ${JAVA_ARENA_TIMEOUT_SECONDS:-2}
       # Retained only for Nebius/AI runner health reporting; Java orchestrates decisions.
       ARENA_REMOTE_AGENT_URLS: ${ARENA_REMOTE_AGENT_URLS:-http://agent-runner:9100}
+      NEBIUS_SERVERLESS_ENABLED: ${NEBIUS_SERVERLESS_ENABLED:-false}
       ENDPOINT_TOKEN: ${ENDPOINT_TOKEN:-}
       NEBIUS_TENANT_ID: ${NEBIUS_TENANT_ID:-}
       NEBIUS_ENDPOINT_MODE: ${NEBIUS_ENDPOINT_MODE:-mock}
       NEBIUS_ENDPOINT_BASE_URL: ${NEBIUS_ENDPOINT_BASE_URL:-}
       NEBIUS_INCIDENT_EXPLAINER_URL: ${NEBIUS_INCIDENT_EXPLAINER_URL:-}
       NEBIUS_SCENARIO_GENERATOR_URL: ${NEBIUS_SCENARIO_GENERATOR_URL:-}
+      NEBIUS_MARKET_ABUSE_SCENARIO_URL: ${NEBIUS_MARKET_ABUSE_SCENARIO_URL:-}
       NEBIUS_ORDERBOOK_ALERT_URL: ${NEBIUS_ORDERBOOK_ALERT_URL:-}
       NEBIUS_INVESTIGATION_REPORT_URL: ${NEBIUS_INVESTIGATION_REPORT_URL:-}
       NEBIUS_INVESTIGATION_TEAM_URL: ${NEBIUS_INVESTIGATION_TEAM_URL:-}
@@ -95,12 +97,19 @@ services:
       NEBIUS_JOB_OUTPUT_VOLUME: ${NEBIUS_JOB_OUTPUT_VOLUME:-}
       NEBIUS_JOB_OUTPUT_URI: ${NEBIUS_JOB_OUTPUT_URI:-}
       NEBIUS_OBJECT_STORAGE_ENDPOINT_URL: ${NEBIUS_OBJECT_STORAGE_ENDPOINT_URL:-}
-      # Cloud commands are opt-in through docker-compose.nebius.yml. Keeping
-      # these empty prevents stale .env values from invoking a missing CLI.
-      NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE: ""
-      NEBIUS_JOB_STATUS_COMMAND_TEMPLATE: ""
-      NEBIUS_JOB_LOGS_COMMAND_TEMPLATE: ""
-      NEBIUS_JOB_ARTIFACTS_COMMAND_TEMPLATE: ""
+      # Cloud commands remain inert unless explicitly configured. Enabling
+      # serverless also installs the Nebius/AWS CLIs in this image build.
+      NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE: ${NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE:-}
+      NEBIUS_JOB_STATUS_COMMAND_TEMPLATE: ${NEBIUS_JOB_STATUS_COMMAND_TEMPLATE:-}
+      NEBIUS_JOB_LOGS_COMMAND_TEMPLATE: ${NEBIUS_JOB_LOGS_COMMAND_TEMPLATE:-}
+      NEBIUS_JOB_ARTIFACTS_COMMAND_TEMPLATE: ${NEBIUS_JOB_ARTIFACTS_COMMAND_TEMPLATE:-}
+      NEBIUS_JOB_HEALTH_COMMAND: ${NEBIUS_JOB_HEALTH_COMMAND:-}
+      NEBIUS_CLOUD_PROBE_TIMEOUT_SECONDS: ${NEBIUS_CLOUD_PROBE_TIMEOUT_SECONDS:-5}
+      NEBIUS_OBJECT_STORAGE_ACCESS_KEY_ID: ${NEBIUS_OBJECT_STORAGE_ACCESS_KEY_ID:-}
+      NEBIUS_OBJECT_STORAGE_SECRET_ACCESS_KEY: ${NEBIUS_OBJECT_STORAGE_SECRET_ACCESS_KEY:-}
+      NEBIUS_OBJECT_STORAGE_SESSION_TOKEN: ${NEBIUS_OBJECT_STORAGE_SESSION_TOKEN:-}
+      NEBIUS_OBJECT_STORAGE_REGION: ${NEBIUS_OBJECT_STORAGE_REGION:-eu-north1}
+      NEBIUS_EVIDENCE_ARCHIVE_ENABLED: ${NEBIUS_EVIDENCE_ARCHIVE_ENABLED:-false}
       NEBIUS_JOB_RUNS: ${NEBIUS_JOB_RUNS:-1000}
       NEBIUS_JOB_BATCH_SIZE: ${NEBIUS_JOB_BATCH_SIZE:-100}
       NEBIUS_JOB_OUTPUT_DIR: ${NEBIUS_JOB_OUTPUT_DIR:-/job/outputs/serverless-batch}
@@ -112,6 +121,8 @@ services:
         condition: service_healthy
     volumes:
       - ./outputs:/app/outputs
+      - ${NEBIUS_CLI_CONFIG_DIR:-./deployments/nebius-cli-empty}/config.yaml:/root/.nebius/config.yaml:ro
+      - ${NEBIUS_CLI_CONFIG_DIR:-./deployments/nebius-cli-empty}/credentials.yaml:/root/.nebius/credentials.yaml:ro
 
   frontend:
     build:
@@ -128,7 +139,7 @@ services:
 
   prometheus:
     image: prom/prometheus:v3.8.0
-    profiles: ["monitoring"]
+    profiles: ["prometheus", "grafana", "monitoring"]
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
@@ -148,7 +159,7 @@ services:
 
   grafana:
     image: grafana/grafana:13.0.3
-    profiles: ["monitoring"]
+    profiles: ["grafana", "monitoring"]
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}

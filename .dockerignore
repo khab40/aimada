@@ -44,6 +44,7 @@ contracts/**
 !backend/
 backend/**
 !backend/Dockerfile
+!backend/compose-entrypoint.sh
 !backend/pyproject.toml
 !backend/app/
 !backend/app/**

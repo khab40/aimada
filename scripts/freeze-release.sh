@@ -268,7 +268,7 @@ fi
 copy_tracked "endpoint/config" \
   'serverless/endpoint/Dockerfile' 'serverless/endpoint/start.sh' \
   'serverless/endpoint/endpoint_config.yaml' 'serverless/endpoint/endpoint_config.example.yaml' \
-  'serverless/deployment.env.example' 'docker-compose.yml' 'docker-compose.nebius.yml' \
+  'serverless/deployment.env.example' 'docker-compose.yml' \
   'deployments/modes/production-nebius.env' 'deployments/k8s/**' \
   'scripts/create-nebius-ai-endpoint.sh'
 copy_tracked "prompts" \

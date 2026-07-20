@@ -331,12 +331,28 @@ jobs:
       - name: Validate Compose configuration
         run: docker compose config --quiet
 
-      - name: Validate Nebius Compose override
+      - name: Validate serverless Compose configuration
         env:
+          NEBIUS_SERVERLESS_ENABLED: "true"
+          NEBIUS_CLI_CONFIG_DIR: ./deployments/nebius-cli-empty
           NEBIUS_ENDPOINT_BASE_URL: https://example.invalid
-        run: docker compose -f docker-compose.yml -f docker-compose.nebius.yml config --quiet
+          NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE: submit-job
+        run: |
+          docker compose config --format json | jq -e '
+            .services.backend as $backend
+            | ($backend.build.args.INSTALL_NEBIUS_CLI == "true")
+              and ($backend.environment.NEBIUS_SERVERLESS_ENABLED == "true")
+              and ($backend.environment.NEBIUS_ENDPOINT_BASE_URL == "https://example.invalid")
+              and ($backend.environment.NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE == "submit-job")
+          '
 
-      - name: Verify local mode ignores cloud command templates
+      - name: Validate observability profile combinations
+        run: |
+          test "$(docker compose --profile prometheus config --services | grep -E '^(prometheus|grafana)$' | paste -sd, -)" = "prometheus"
+          test "$(docker compose --profile grafana config --services | grep -E '^(prometheus|grafana)$' | sort | paste -sd, -)" = "grafana,prometheus"
+          test "$(docker compose --profile monitoring config --services | grep -E '^(prometheus|grafana)$' | sort | paste -sd, -)" = "grafana,prometheus"
+
+      - name: Verify local mode defaults to the serverless guard
         env:
           NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE: should-not-run
           NEBIUS_JOB_STATUS_COMMAND_TEMPLATE: should-not-run
@@ -344,14 +360,9 @@ jobs:
           NEBIUS_JOB_ARTIFACTS_COMMAND_TEMPLATE: should-not-run
         run: |
           docker compose config --format json | jq -e '
-            .services.backend.environment as $env
-            | ($env.NEBIUS_ENDPOINT_MODE == "mock") and ([
-                $env.NEBIUS_JOB_SUBMIT_COMMAND_TEMPLATE,
-                $env.NEBIUS_JOB_STATUS_COMMAND_TEMPLATE,
-                $env.NEBIUS_JOB_LOGS_COMMAND_TEMPLATE,
-                $env.NEBIUS_JOB_ARTIFACTS_COMMAND_TEMPLATE
-              ]
-            | all(. == ""))
+            .services.backend as $backend
+            | ($backend.build.args.INSTALL_NEBIUS_CLI == "false")
+              and ($backend.environment.NEBIUS_SERVERLESS_ENABLED == "false")
           '
 
   secret-scan:

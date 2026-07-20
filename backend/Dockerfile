@@ -4,14 +4,17 @@ WORKDIR /app
 
 ARG INSTALL_NEBIUS_CLI=false
 
-# Real Nebius mode opts in through docker-compose.nebius.yml. Local mock builds
-# do not carry cloud CLIs or their installer dependencies.
+# Real Nebius mode opts in with NEBIUS_SERVERLESS_ENABLED in Docker Compose.
+# Local mock builds do not carry cloud CLIs or their installer dependencies.
 RUN if [ "${INSTALL_NEBIUS_CLI}" = "true" ]; then \
       apt-get update; \
       apt-get install -y --no-install-recommends ca-certificates curl; \
       curl -fsSL https://storage.eu-north1.nebius.cloud/cli/install.sh | bash; \
       apt-get purge -y --auto-remove curl; \
       rm -rf /var/lib/apt/lists/*; \
+    elif [ "${INSTALL_NEBIUS_CLI}" != "false" ]; then \
+      echo "INSTALL_NEBIUS_CLI must be true or false" >&2; \
+      exit 2; \
     fi
 
 # Add the Nebius binary directory directly to the system PATH
@@ -30,7 +33,11 @@ RUN pip install --no-cache-dir \
   && if [ "${INSTALL_NEBIUS_CLI}" = "true" ]; then pip install --no-cache-dir awscli; fi
 
 COPY backend/app ./app
+COPY backend/compose-entrypoint.sh ./compose-entrypoint.sh
 COPY serverless/jobs ./serverless/jobs
 
+RUN chmod +x ./compose-entrypoint.sh
+
 EXPOSE 8000
+ENTRYPOINT ["/app/compose-entrypoint.sh"]
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

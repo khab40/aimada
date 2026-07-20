@@ -145,7 +145,7 @@ def test_artifact_storage_requires_apply_before_restart(tmp_path: Path) -> None:
 
 
 def test_real_nebius_compose_passes_object_storage_credentials() -> None:
-    compose = yaml.safe_load((ROOT / "docker-compose.nebius.yml").read_text(encoding="utf-8"))
+    compose = yaml.safe_load((ROOT / "docker-compose.yml").read_text(encoding="utf-8"))
     environment = compose["services"]["backend"]["environment"]
 
     assert "NEBIUS_OBJECT_STORAGE_ACCESS_KEY_ID" in environment

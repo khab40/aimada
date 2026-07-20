@@ -18,6 +18,10 @@ local-vLLM endpoint, and backend/job env wiring. The frontend, backend, and
 agent-runner stay on local Docker Compose until there is a concrete need for a
 public cloud app host.
 
+The generated backend environment enables the serverless branch of the single
+`docker-compose.yml`. Prometheus can be added with `--profile prometheus`, and
+`--profile grafana` adds both Prometheus and Grafana.
+
 For a small Nebius VM app host, use:
 
 ```bash

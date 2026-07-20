@@ -3,6 +3,8 @@
 This changelog lists significant commits in reverse chronological order.
 Update this file with each significant commit before pushing.
 
+- Consolidated local and Nebius runtime configuration into one conditional Docker Compose file, added explicit serverless isolation, independent Prometheus/full-Grafana profiles, combination Make targets, and removed the Nebius override file.
+
 - Added the opt-in local Prometheus/Grafana monitoring profile with provisioned dashboards for end-to-end flow, Java kernel, component health, and bottleneck triage; FastAPI and agent-runner now expose focused Prometheus text metrics.
 
 - Cut over the stateful live arena, scenario programs, deterministic detectors/incidents, JSONL journals, REST controls, browser WebSocket delivery, and agent-runner orchestration to Java 25/Spring. FastAPI now retains AI/ML, Nebius, experiments, evidence, and serverless responsibilities behind a thin Java arena client; same-origin Nginx routes arena traffic directly to Java.

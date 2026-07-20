@@ -114,9 +114,19 @@ Open:
 - Java control plane: http://localhost:8081/api/kernel/status
 - Same-origin WebSocket: ws://localhost:5173/ws/arena
 
-The default Compose path builds `java-kernel`, `agent-runner`, `backend`, and `frontend` from source with `NEBIUS_ENDPOINT_MODE=mock`. Java owns the deterministic kernel, live arena, scenarios, detectors, incidents, orchestration, REST controls, and WebSocket. Python retains AI/ML, experiments, and serverless work. Local Mock requires no Nebius credentials, private images, or GPU/vLLM runtime.
+The default Compose path builds `java-kernel`, `agent-runner`, `backend`, and `frontend` from source with serverless access disabled and `NEBIUS_ENDPOINT_MODE=mock`. Java owns the deterministic kernel, live arena, scenarios, detectors, incidents, orchestration, REST controls, and WebSocket. Python retains AI/ML, experiments, and serverless work. Local Mock requires no Nebius credentials, private images, or GPU/vLLM runtime. The backend entrypoint clears stale endpoint, job-command, and object-storage values unless `NEBIUS_SERVERLESS_ENABLED=true`.
 
-Optional local monitoring:
+Compose options can be combined:
+
+| Runtime | Command |
+| --- | --- |
+| Core only | `docker compose up --build` |
+| Core + Prometheus | `docker compose --profile prometheus up --build` |
+| Core + Prometheus + Grafana | `docker compose --profile grafana up --build` |
+| Core + Nebius Serverless | `make docker-up-serverless` |
+| Everything | `make docker-up-all` |
+
+The older `monitoring` profile remains an alias for the Prometheus/Grafana pair:
 
 ```bash
 docker compose --profile monitoring up --build
@@ -233,15 +243,21 @@ Freeze a new local evidence snapshot with `./scripts/freeze-release.sh`; add `--
 
 ## Nebius Cloud
 
-Real cloud execution is opt-in. Use the override only after configuring Nebius credentials and reviewing [docs/nebius-deployment.md](docs/nebius-deployment.md):
+Real cloud execution is opt-in. Configure the variables below, confirm that `$HOME/.nebius` contains `config.yaml` and `credentials.yaml`, and review [docs/nebius-deployment.md](docs/nebius-deployment.md):
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.nebius.yml up --build
+NEBIUS_SERVERLESS_ENABLED=true \
+NEBIUS_CLI_CONFIG_DIR="$HOME/.nebius" \
+docker compose up --build
 ```
+
+Add `--profile prometheus` for metrics only or `--profile grafana` for the full dashboard stack. `make docker-up-serverless` and `make docker-up-all` are equivalent shortcuts.
 
 Core variables:
 
 ```bash
+NEBIUS_SERVERLESS_ENABLED=true
+NEBIUS_CLI_CONFIG_DIR=/absolute/path/to/.nebius
 ENDPOINT_TOKEN=endpoint-auth-token
 NEBIUS_ENDPOINT_BASE_URL=https://your-nebius-endpoint
 NEBIUS_ENDPOINT_MODE=local_vllm

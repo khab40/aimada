@@ -28,6 +28,19 @@ POST /api/red-team/generate-scenario
 
 The browser never receives Nebius tokens.
 
+The repository's single Compose file keeps this wiring disabled by default. To
+run the app against deployed Serverless Endpoint and Job resources, configure
+the endpoint/job variables and start it with:
+
+```bash
+NEBIUS_SERVERLESS_ENABLED=true \
+NEBIUS_CLI_CONFIG_DIR="$HOME/.nebius" \
+docker compose up --build
+```
+
+Use `--profile prometheus` or `--profile grafana` to add metrics or the complete
+dashboard stack to the same serverless run.
+
 ## Local Smoke Test
 
 Endpoint:
