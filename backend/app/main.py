@@ -12,12 +12,24 @@ from app.api.routes_scenarios import router as scenarios_router
 from app.api.routes_simulation import router as simulation_router
 from app.arena.java_client import JavaArenaClient
 from app.config import get_settings
+from app.metrics import PrometheusTextRegistry
 from app.nebius.evidence_archive import configure_default_evidence_archive
 from app.storage.local_store import LocalStore
 from app.storage.retention import cleanup_output_data
 
 app = FastAPI(title="LOB Arena")
 settings = get_settings()
+metrics_registry = PrometheusTextRegistry()
+metrics_registry.counter(
+    "backend_java_arena_requests_total",
+    "Requests from FastAPI to the Java arena.",
+    ("method", "endpoint", "outcome"),
+)
+metrics_registry.histogram(
+    "backend_java_arena_request_duration_seconds",
+    "Request latency from FastAPI to the Java arena.",
+    ("method", "endpoint", "outcome"),
+)
 app.state.store = LocalStore(settings.arena_output_dir)
 app.state.nebius_evidence = (
     configure_default_evidence_archive(app.state.store, settings)
@@ -29,6 +41,7 @@ app.state.settings = settings
 app.state.simulation = JavaArenaClient(
     settings.java_arena_base_url,
     timeout_seconds=settings.java_arena_timeout_seconds,
+    metrics=metrics_registry,
 )
 
 app.add_middleware(
@@ -61,7 +74,7 @@ def api_status() -> dict[str, object]:
 @app.get("/metrics", include_in_schema=False)
 async def metrics(request: Request) -> PlainTextResponse:
     state = await request.app.state.simulation.get_state()
-    incidents = await request.app.state.simulation.list_incidents()
+    incidents = state.incidents or []
     lines = [
         "# HELP arena_tick Current simulation tick.",
         "# TYPE arena_tick gauge",
@@ -72,6 +85,7 @@ async def metrics(request: Request) -> PlainTextResponse:
         "# HELP arena_incidents_total Number of in-memory incidents.",
         "# TYPE arena_incidents_total gauge",
         f"arena_incidents_total {len(incidents)}",
+        metrics_registry.render(),
     ]
     return PlainTextResponse(
         "\n".join(lines) + "\n",

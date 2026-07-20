@@ -1,12 +1,15 @@
 import os
+import time
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import asdict
 from typing import Any
 
 from fastapi import FastAPI
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 
 from app.agents.runtime import AgentManager, MarketSnapshot, build_heavy_agents, build_prefixed_normal_agents
+from app.metrics import PrometheusTextRegistry, Timer
 from langgraph_agents import build_langgraph_agents
 
 
@@ -69,6 +72,27 @@ manager = AgentManager(
     decision_timeout_seconds=DECISION_TIMEOUT_SECONDS,
 )
 app = FastAPI(title="LOB Arena Agent Runner")
+metrics_registry = PrometheusTextRegistry()
+metrics_registry.counter("agent_runner_decide_requests_total", "Agent runner /decide requests.", ("runner_id", "outcome"))
+metrics_registry.histogram(
+    "agent_runner_decide_duration_seconds",
+    "Agent runner /decide request latency.",
+    ("runner_id", "outcome"),
+)
+metrics_registry.histogram(
+    "agent_runner_intents_returned",
+    "Agent intents returned per /decide request.",
+    ("runner_id",),
+    buckets=(0, 1, 5, 10, 25, 50, 100, 250),
+)
+metrics_registry.gauge("agent_runner_agents", "Configured agent count by type.", ("runner_id", "agent_type"))
+metrics_registry.gauge("agent_runner_up", "Agent runner process health.", ("runner_id",))
+metrics_registry.gauge("agent_runner_uptime_seconds", "Agent runner uptime.", ("runner_id",))
+metrics_registry.set("agent_runner_agents", AGENT_COUNT, runner_id=RUNNER_ID, agent_type="normal")
+metrics_registry.set("agent_runner_agents", HEAVY_AGENT_COUNT, runner_id=RUNNER_ID, agent_type="heavy")
+metrics_registry.set("agent_runner_agents", LANGGRAPH_AGENT_COUNT, runner_id=RUNNER_ID, agent_type="langgraph")
+metrics_registry.set("agent_runner_up", 1, runner_id=RUNNER_ID)
+STARTED_AT = time.time()
 
 
 @app.on_event("shutdown")
@@ -102,12 +126,29 @@ def agents() -> dict[str, object]:
     return {"runner_id": RUNNER_ID, "agent_ids": manager.agent_ids}
 
 
+@app.get("/metrics", include_in_schema=False)
+def metrics() -> PlainTextResponse:
+    uptime = time.time() - STARTED_AT
+    metrics_registry.set("agent_runner_uptime_seconds", uptime, runner_id=RUNNER_ID)
+    return PlainTextResponse(metrics_registry.render() + "\n", media_type="text/plain; version=0.0.4")
+
+
 @app.post("/decide", response_model=DecideResponse)
 async def decide(payload: DecideRequest) -> DecideResponse:
-    snapshot = MarketSnapshot(**payload.snapshot)
-    intents = await manager.collect_intents(snapshot)
-    return DecideResponse(
-        runner_id=RUNNER_ID,
-        agent_ids=manager.agent_ids,
-        intents=[asdict(intent) for intent in intents],
-    )
+    timer = Timer()
+    outcome = "completed"
+    try:
+        snapshot = MarketSnapshot(**payload.snapshot)
+        intents = await manager.collect_intents(snapshot)
+        metrics_registry.observe("agent_runner_intents_returned", len(intents), runner_id=RUNNER_ID)
+        return DecideResponse(
+            runner_id=RUNNER_ID,
+            agent_ids=manager.agent_ids,
+            intents=[asdict(intent) for intent in intents],
+        )
+    except Exception:
+        outcome = "error"
+        raise
+    finally:
+        metrics_registry.inc("agent_runner_decide_requests_total", runner_id=RUNNER_ID, outcome=outcome)
+        metrics_registry.observe("agent_runner_decide_duration_seconds", timer.elapsed(), runner_id=RUNNER_ID, outcome=outcome)

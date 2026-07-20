@@ -3,6 +3,10 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["prometheus:9090"]
+
   - job_name: lob-arena-java-kernel
     metrics_path: /actuator/prometheus
     static_configs:
@@ -12,3 +16,8 @@ scrape_configs:
     metrics_path: /metrics
     static_configs:
       - targets: ["backend:8000"]
+
+  - job_name: lob-arena-agent-runner
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["agent-runner:9100"]

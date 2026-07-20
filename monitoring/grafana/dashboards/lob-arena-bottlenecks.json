@@ -1,0 +1,59 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "panels": [
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []},
+      "gridPos": {"h": 9, "w": 24, "x": 0, "y": 0},
+      "id": 1,
+      "targets": [
+        {"expr": "histogram_quantile(0.95, sum(rate(agent_runner_decide_duration_seconds_bucket[5m])) by (le))", "legendFormat": "agent decision p95", "refId": "A"},
+        {"expr": "histogram_quantile(0.95, sum(rate(backend_java_arena_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "backend->java p95", "refId": "B"},
+        {"expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job=\"lob-arena-java-kernel\"}[5m])) by (le))", "legendFormat": "java http p95", "refId": "C"},
+        {"expr": "histogram_quantile(0.95, sum(rate(lob_kernel_grpc_duration_seconds_bucket[5m])) by (le))", "legendFormat": "java grpc p95", "refId": "D"}
+      ],
+      "title": "Latency Comparison",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 9},
+      "id": 2,
+      "targets": [
+        {"expr": "sum(rate(agent_runner_decide_requests_total{outcome!=\"completed\"}[5m]))", "legendFormat": "agent errors", "refId": "A"},
+        {"expr": "sum(rate(backend_java_arena_requests_total{outcome!=\"completed\"}[5m]))", "legendFormat": "backend->java errors", "refId": "B"},
+        {"expr": "sum(rate(lob_kernel_grpc_requests_total{outcome!=\"completed\"}[5m]))", "legendFormat": "kernel grpc errors", "refId": "C"}
+      ],
+      "title": "Error Pressure",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "bytes"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 9},
+      "id": 3,
+      "targets": [{"expr": "jvm_memory_used_bytes{job=\"lob-arena-java-kernel\", area=\"heap\"}", "legendFormat": "{{id}}", "refId": "A"}],
+      "title": "Java Heap Pressure",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 9},
+      "id": 4,
+      "targets": [{"expr": "histogram_quantile(0.95, sum(rate(agent_runner_intents_returned_bucket[5m])) by (le, runner_id))", "legendFormat": "{{runner_id}}", "refId": "A"}],
+      "title": "Agent Output p95",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 41,
+  "tags": ["lob-arena", "bottlenecks"],
+  "templating": {"list": []},
+  "time": {"from": "now-30m", "to": "now"},
+  "title": "LOB Arena Bottlenecks",
+  "uid": "lob-arena-bottlenecks",
+  "version": 1
+}

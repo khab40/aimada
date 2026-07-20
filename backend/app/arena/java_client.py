@@ -2,15 +2,22 @@ import asyncio
 import json
 from urllib import error, parse, request
 
+from app.metrics import PrometheusTextRegistry, Timer
 from app.schemas.arena import ArenaState, AttackTrackerState, ExchangeEventReplay, Incident
 
 
 class JavaArenaClient:
     """Thin retained-Python adapter to the Java-owned live arena."""
 
-    def __init__(self, base_url: str, timeout_seconds: float = 2.0) -> None:
+    def __init__(
+        self,
+        base_url: str,
+        timeout_seconds: float = 2.0,
+        metrics: PrometheusTextRegistry | None = None,
+    ) -> None:
         self.base_url = base_url.rstrip("/")
         self.timeout_seconds = timeout_seconds
+        self.metrics = metrics
 
     @property
     def state(self) -> ArenaState:
@@ -84,15 +91,30 @@ class JavaArenaClient:
             method=method,
             headers={"Accept": "application/json"},
         )
+        timer = Timer()
+        outcome = "completed"
         try:
             with request.urlopen(req, timeout=self.timeout_seconds) as response:
                 return json.loads(response.read().decode("utf-8"))
         except error.HTTPError as exc:
+            outcome = f"http_{exc.code}"
             if exc.code == 404:
                 raise LookupError(path) from exc
             raise ValueError(f"Java arena returned HTTP {exc.code}") from exc
         except (error.URLError, TimeoutError) as exc:
+            outcome = "unavailable"
             raise RuntimeError(f"Java arena is unavailable at {self.base_url}") from exc
+        finally:
+            if self.metrics is not None:
+                endpoint = _endpoint_label(path)
+                self.metrics.inc("backend_java_arena_requests_total", method=method, endpoint=endpoint, outcome=outcome)
+                self.metrics.observe(
+                    "backend_java_arena_request_duration_seconds",
+                    timer.elapsed(),
+                    method=method,
+                    endpoint=endpoint,
+                    outcome=outcome,
+                )
 
 
 def _scenario_path(value: str) -> str:
@@ -107,3 +129,10 @@ def _scenario_path(value: str) -> str:
         return mapping[normalized]
     except KeyError as exc:
         raise ValueError(f"unknown scenario: {value}") from exc
+
+
+def _endpoint_label(path: str) -> str:
+    base = path.split("?", 1)[0]
+    if base.startswith("/api/incidents/"):
+        return "/api/incidents/{id}"
+    return base

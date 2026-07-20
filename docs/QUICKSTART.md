@@ -53,6 +53,17 @@ Open your browser:
 - **Java kernel status**: http://localhost:8081/api/kernel/status
 - **Java arena state**: http://localhost:8081/api/arena/state
 
+Optional monitoring:
+
+```bash
+docker compose --profile monitoring up --build
+```
+
+- **Grafana dashboards**: http://localhost:3000
+- **Prometheus**: http://localhost:9090
+
+Use the `LOB Arena E2E Overview` dashboard first, then `LOB Arena Bottlenecks` if the arena appears slow.
+
 ## 4. Quick Test
 
 In the Arena UI, click **Start** to begin a live simulation. You should see:

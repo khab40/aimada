@@ -1,0 +1,97 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "panels": [
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "gridPos": {"h": 5, "w": 6, "x": 0, "y": 0},
+      "id": 1,
+      "targets": [{"expr": "up{job=~\"lob-arena-.*\"}", "legendFormat": "{{job}}", "refId": "A"}],
+      "title": "Service Scrape Health",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "gridPos": {"h": 5, "w": 6, "x": 6, "y": 0},
+      "id": 2,
+      "targets": [{"expr": "arena_tick", "legendFormat": "tick", "refId": "A"}],
+      "title": "Arena Tick",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "gridPos": {"h": 5, "w": 6, "x": 12, "y": 0},
+      "id": 3,
+      "targets": [{"expr": "arena_running", "legendFormat": "running", "refId": "A"}],
+      "title": "Arena Running",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "gridPos": {"h": 5, "w": 6, "x": 18, "y": 0},
+      "id": 4,
+      "targets": [{"expr": "arena_incidents_total", "legendFormat": "incidents", "refId": "A"}],
+      "title": "Incidents",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "reqps"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 5},
+      "id": 5,
+      "targets": [
+        {"expr": "sum(rate(http_server_requests_seconds_count{job=\"lob-arena-java-kernel\"}[5m])) by (uri, status)", "legendFormat": "java {{uri}} {{status}}", "refId": "A"},
+        {"expr": "sum(rate(backend_java_arena_requests_total[5m])) by (endpoint, outcome)", "legendFormat": "backend->java {{endpoint}} {{outcome}}", "refId": "B"},
+        {"expr": "sum(rate(agent_runner_decide_requests_total[5m])) by (outcome)", "legendFormat": "agent /decide {{outcome}}", "refId": "C"}
+      ],
+      "title": "Request Rate Across Path",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 5},
+      "id": 6,
+      "targets": [
+        {"expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job=\"lob-arena-java-kernel\"}[5m])) by (le, uri))", "legendFormat": "java http p95 {{uri}}", "refId": "A"},
+        {"expr": "histogram_quantile(0.95, sum(rate(backend_java_arena_request_duration_seconds_bucket[5m])) by (le, endpoint))", "legendFormat": "backend->java p95 {{endpoint}}", "refId": "B"},
+        {"expr": "histogram_quantile(0.95, sum(rate(agent_runner_decide_duration_seconds_bucket[5m])) by (le, runner_id))", "legendFormat": "agent p95 {{runner_id}}", "refId": "C"}
+      ],
+      "title": "End-to-End Latency Signals",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "eps"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 13},
+      "id": 7,
+      "targets": [{"expr": "rate(lob_kernel_grpc_events_count[5m])", "legendFormat": "kernel events", "refId": "A"}],
+      "title": "Kernel Event Output",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 13},
+      "id": 8,
+      "targets": [
+        {"expr": "agent_runner_agents", "legendFormat": "{{runner_id}} {{agent_type}}", "refId": "A"},
+        {"expr": "histogram_quantile(0.95, sum(rate(agent_runner_intents_returned_bucket[5m])) by (le, runner_id))", "legendFormat": "p95 intents {{runner_id}}", "refId": "B"}
+      ],
+      "title": "Agent Capacity And Output",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 41,
+  "tags": ["lob-arena", "overview"],
+  "templating": {"list": []},
+  "time": {"from": "now-30m", "to": "now"},
+  "title": "LOB Arena E2E Overview",
+  "uid": "lob-arena-overview",
+  "version": 1
+}

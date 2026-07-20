@@ -28,6 +28,7 @@ Status as of 2026-07-18:
 | [ARD-0018](ARD-0018-canonical-exchange-event-stream.md) | `[done]` | All ten canonical exchange-stream steps are implemented and verified; future dataset mappings use the completed adapter boundary |
 | [ARD-0019](ARD-0019-python-reference-java-kernel-migration.md) | `[done]` | All 18 parity and sole-Java-kernel migration steps are implemented |
 | [ARD-0020](ARD-0020-java-arena-websocket-agent-orchestration.md) | `[done]` | Java owns the live arena, WebSocket, agent orchestration, scenarios, detectors, incidents, and journals |
+| [ARD-0021](ARD-0021-local-observability-grafana.md) | `[done]` | Optional Prometheus/Grafana local observability profile with end-to-end and bottleneck dashboards |
 
 Current UI architecture note: the product shell now exposes AI Command Center, Arena / Workload Generator, and Docs / Demo as the primary demo destinations. Scenario setup, incidents, investigations, detector tournaments, deployment status, and experiment artifacts are folded into the AI Command Center or linked from the active workflow. The About and ARD-0001 diagrams document the four execution areas: Front, Back, Agent Runners Workspace, and Nebius Serverless Cloud.
 
@@ -54,6 +55,7 @@ Current UI architecture note: the product shell now exposes AI Command Center, A
 - [ARD-0018: Canonical Exchange Event Stream](ARD-0018-canonical-exchange-event-stream.md) — Versioned add, modify, cancel, execute, and L2 snapshot stream for simulation and historical data
 - [ARD-0019: Python Reference And Java Kernel Migration](ARD-0019-python-reference-java-kernel-migration.md) — Completed parity-gated cut-over to the sole Java 25 deterministic kernel
 - [ARD-0020: Java Arena WebSocket And Agent Orchestration](ARD-0020-java-arena-websocket-agent-orchestration.md) — Live arena and orchestration cut-over with Python retained for AI/ML and serverless work
+- [ARD-0021: Local Observability With Prometheus And Grafana](ARD-0021-local-observability-grafana.md) — Optional local monitoring stack, scrape contracts, and dashboards
 
 ### UI Shell And Presentation
 

@@ -116,6 +116,14 @@ Open:
 
 The default Compose path builds `java-kernel`, `agent-runner`, `backend`, and `frontend` from source with `NEBIUS_ENDPOINT_MODE=mock`. Java owns the deterministic kernel, live arena, scenarios, detectors, incidents, orchestration, REST controls, and WebSocket. Python retains AI/ML, experiments, and serverless work. Local Mock requires no Nebius credentials, private images, or GPU/vLLM runtime.
 
+Optional local monitoring:
+
+```bash
+docker compose --profile monitoring up --build
+```
+
+Open Grafana at http://localhost:3000 and Prometheus at http://localhost:9090. Grafana is provisioned with end-to-end, Java, component, and bottleneck dashboards.
+
 ## Automated grader
 
 From a fresh checkout of the default `main` branch, run exactly:

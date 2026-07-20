@@ -37,6 +37,37 @@ LOB_KERNEL_TRACE_SAMPLE_PROBABILITY=0.1 \
 
 Trace export uses Spring Boot's `management.tracing.export.otlp.enabled` gate and defaults to disabled. OTLP metric push is separately controlled by `LOB_KERNEL_OTLP_METRICS_ENABLED`; it is off by default because Prometheus scraping is the primary metric path. Local tests and control-plane startup never require a collector.
 
+## Local Prometheus And Grafana
+
+Start the opt-in monitoring profile with the normal local services:
+
+```bash
+docker compose --profile monitoring up --build
+```
+
+Open:
+
+- Grafana: http://localhost:3000
+- Prometheus: http://localhost:9090
+
+Grafana is provisioned automatically with the Prometheus datasource and four dashboards:
+
+- `LOB Arena E2E Overview`
+- `LOB Arena Java Kernel`
+- `LOB Arena Components`
+- `LOB Arena Bottlenecks`
+
+The profile scrapes:
+
+| Job | Target | Purpose |
+| --- | --- | --- |
+| `lob-arena-java-kernel` | `java-kernel:8080/actuator/prometheus` | Java HTTP, JVM, GC, and kernel metrics |
+| `lob-arena-python-control-plane` | `backend:8000/metrics` | arena state and FastAPI-to-Java proxy metrics |
+| `lob-arena-agent-runner` | `agent-runner:9100/metrics` | decision latency, request outcomes, agent mix, and intent output |
+| `prometheus` | `prometheus:9090/metrics` | scrape health and Prometheus self-observation |
+
+Use the bottleneck dashboard first when the arena slows down. If agent decision p95 rises before Java HTTP/kernel latency, the runner is likely saturated. If backend-to-Java latency rises while Java HTTP latency stays flat, the proxy path or network is suspect. If Java heap/GC and Java HTTP latency rise together, inspect Java allocation and scenario load.
+
 The retired Python shadow/authority metrics are intentionally absent. Compatibility drift is a CI failure from exact golden-corpus replay, while production Java health, request outcomes, latency, and event counts remain available through Actuator and Prometheus.
 
 ## Prometheus and Grafana Templates

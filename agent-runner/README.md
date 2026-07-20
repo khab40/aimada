@@ -21,6 +21,15 @@ Endpoints:
 
 - `GET /health`
 - `GET /agents`
+- `GET /metrics`
 - `POST /decide`
 
 LangGraph agents are implemented in `langgraph_agents.py` with `StateGraph`. They use the same `/decide` request and `AgentIntent` response contract as other remote agents.
+
+Metrics are dependency-free Prometheus text metrics for local Grafana dashboards:
+
+- `agent_runner_decide_requests_total`
+- `agent_runner_decide_duration_seconds`
+- `agent_runner_intents_returned`
+- `agent_runner_agents`
+- `agent_runner_up`

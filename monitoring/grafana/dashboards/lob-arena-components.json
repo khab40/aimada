@@ -1,0 +1,77 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "panels": [
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "bytes"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 0},
+      "id": 1,
+      "targets": [{"expr": "jvm_memory_used_bytes{job=\"lob-arena-java-kernel\", area=\"heap\"}", "legendFormat": "{{id}}", "refId": "A"}],
+      "title": "Java Heap",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "percentunit"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 0},
+      "id": 2,
+      "targets": [{"expr": "process_cpu_usage{job=\"lob-arena-java-kernel\"}", "legendFormat": "java", "refId": "A"}],
+      "title": "Java CPU",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "ops"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 0},
+      "id": 3,
+      "targets": [{"expr": "rate(jvm_gc_pause_seconds_count{job=\"lob-arena-java-kernel\"}[5m])", "legendFormat": "{{gc}}", "refId": "A"}],
+      "title": "Java GC Pause Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "id": 4,
+      "targets": [{"expr": "histogram_quantile(0.95, sum(rate(agent_runner_decide_duration_seconds_bucket[5m])) by (le, runner_id, outcome))", "legendFormat": "{{runner_id}} {{outcome}}", "refId": "A"}],
+      "title": "Agent Runner Decision Latency p95",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "reqps"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+      "id": 5,
+      "targets": [{"expr": "sum(rate(agent_runner_decide_requests_total[5m])) by (runner_id, outcome)", "legendFormat": "{{runner_id}} {{outcome}}", "refId": "A"}],
+      "title": "Agent Runner Request Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+      "id": 6,
+      "targets": [{"expr": "histogram_quantile(0.95, sum(rate(backend_java_arena_request_duration_seconds_bucket[5m])) by (le, endpoint, outcome))", "legendFormat": "{{endpoint}} {{outcome}}", "refId": "A"}],
+      "title": "Backend To Java Latency p95",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "reqps"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+      "id": 7,
+      "targets": [{"expr": "sum(rate(backend_java_arena_requests_total[5m])) by (endpoint, outcome)", "legendFormat": "{{endpoint}} {{outcome}}", "refId": "A"}],
+      "title": "Backend To Java Request Rate",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 41,
+  "tags": ["lob-arena", "components"],
+  "templating": {"list": []},
+  "time": {"from": "now-30m", "to": "now"},
+  "title": "LOB Arena Components",
+  "uid": "lob-arena-components",
+  "version": 1
+}
