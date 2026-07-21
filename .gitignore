@@ -42,6 +42,10 @@ outputs/*
 !outputs/.gitkeep
 !outputs/benchmark/
 !outputs/benchmark/**
+
+# Local datasets
+/data/*
+
 aimada-latest.zip
 .coverage
 backend/.coverage
