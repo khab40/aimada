@@ -14,6 +14,7 @@ def test_serverless_builds_use_context_specific_dockerignore_files() -> None:
     assert root_ignore.splitlines()[3] == "**"
     assert "backend/**" in root_ignore
     assert "!backend/app/**" in root_ignore
+    assert "!backend/compose-entrypoint.sh" in root_ignore
     assert "!serverless/jobs/**" in root_ignore
     assert "!assets/" not in root_ignore
     assert "!evidence/" not in root_ignore

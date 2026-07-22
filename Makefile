@@ -1,7 +1,7 @@
-.PHONY: help grader-smoke backend-test backend-dev frontend-dev java-control-plane serverless-benchmark serverless-build serverless-push serverless-smoke nebius-partial-plan nebius-partial-deploy nebius-vm-plan nebius-vm-deploy nebius-k8s-plan nebius-k8s-deploy secrets-plan secrets-rotate secrets-check secrets-test docker-up docker-down
+.PHONY: help grader-smoke backend-test backend-dev frontend-dev java-control-plane serverless-benchmark serverless-build serverless-push serverless-smoke nebius-partial-plan nebius-partial-deploy nebius-vm-plan nebius-vm-deploy nebius-k8s-plan nebius-k8s-deploy secrets-plan secrets-rotate secrets-check secrets-test docker-up docker-up-serverless docker-up-prometheus docker-up-monitoring docker-up-all docker-down
 
 help:
-	@printf "%s\n" "Targets: grader-smoke backend-test backend-dev frontend-dev java-control-plane serverless-benchmark serverless-build serverless-push serverless-smoke nebius-partial-plan nebius-partial-deploy nebius-vm-plan nebius-vm-deploy nebius-k8s-plan nebius-k8s-deploy secrets-plan secrets-rotate secrets-check secrets-test docker-up docker-down"
+	@printf "%s\n" "Targets: grader-smoke backend-test backend-dev frontend-dev java-control-plane serverless-benchmark serverless-build serverless-push serverless-smoke nebius-partial-plan nebius-partial-deploy nebius-vm-plan nebius-vm-deploy nebius-k8s-plan nebius-k8s-deploy secrets-plan secrets-rotate secrets-check secrets-test docker-up docker-up-serverless docker-up-prometheus docker-up-monitoring docker-up-all docker-down"
 
 grader-smoke:
 	./scripts/grader-smoke.sh
@@ -63,5 +63,17 @@ secrets-test:
 docker-up:
 	docker compose up --build
 
+docker-up-serverless:
+	NEBIUS_SERVERLESS_ENABLED=true NEBIUS_CLI_CONFIG_DIR="$${NEBIUS_CLI_CONFIG_DIR:-$${HOME}/.nebius}" docker compose up --build
+
+docker-up-prometheus:
+	docker compose --profile prometheus up --build
+
+docker-up-monitoring:
+	docker compose --profile grafana up --build
+
+docker-up-all:
+	NEBIUS_SERVERLESS_ENABLED=true NEBIUS_CLI_CONFIG_DIR="$${NEBIUS_CLI_CONFIG_DIR:-$${HOME}/.nebius}" docker compose --profile grafana up --build
+
 docker-down:
-	docker compose down
+	docker compose --profile "*" down

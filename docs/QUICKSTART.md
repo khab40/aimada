@@ -38,9 +38,9 @@ docker compose up --build
 This CPU-safe local path builds all four services (`java-kernel`, `agent-runner`,
 `backend`, and `frontend`) from source, needs no Nebius
 configuration or registry login, and falls back to deterministic mock responses.
-Real Nebius credentials are mounted only by the opt-in
-`docker-compose.nebius.yml` override documented in
-[Nebius Deployment](nebius-deployment.md).
+The backend clears stale cloud settings while `NEBIUS_SERVERLESS_ENABLED=false`.
+Real Nebius credentials are mounted only when `NEBIUS_CLI_CONFIG_DIR` is changed
+from the repository's empty directory; see [Nebius Deployment](nebius-deployment.md).
 
 ## 3. Access the UI
 
@@ -53,16 +53,30 @@ Open your browser:
 - **Java kernel status**: http://localhost:8081/api/kernel/status
 - **Java arena state**: http://localhost:8081/api/arena/state
 
-Optional monitoring:
+Optional Prometheus only:
 
 ```bash
-docker compose --profile monitoring up --build
+docker compose --profile prometheus up --build
+```
+
+Optional Prometheus and Grafana:
+
+```bash
+docker compose --profile grafana up --build
 ```
 
 - **Grafana dashboards**: http://localhost:3000
 - **Prometheus**: http://localhost:9090
 
 Use the `LOB Arena E2E Overview` dashboard first, then `LOB Arena Bottlenecks` if the arena appears slow.
+
+For real Nebius Serverless plus dashboards, configure `.env`, then run:
+
+```bash
+NEBIUS_SERVERLESS_ENABLED=true \
+NEBIUS_CLI_CONFIG_DIR="$HOME/.nebius" \
+docker compose --profile grafana up --build
+```
 
 ## 4. Quick Test
 

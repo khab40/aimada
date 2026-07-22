@@ -146,14 +146,25 @@ To wire local Compose to the cloud endpoint and job image:
 set -a
 . outputs/deployments/nebius-partial-latest.env
 set +a
-docker compose -f docker-compose.yml -f docker-compose.nebius.yml up -d --build
+docker compose up -d --build
 ```
 
-The override is intentionally required for real Nebius mode. It installs the
-Nebius CLI in the backend image and mounts the host's
-`$HOME/.nebius/config.yaml` and `$HOME/.nebius/credentials.yaml`. The default
-Compose file omits those mounts and uses mock mode, so a new user does not need
-Nebius credentials or a GPU.
+The generated environment enables the conditional serverless path in the single
+`docker-compose.yml`, installs the Nebius and AWS CLIs in the backend image, and
+sets `NEBIUS_CLI_CONFIG_DIR` to the host's `$HOME/.nebius` directory. The default
+Compose path mounts a repository-owned empty directory and forces mock mode, so
+a new user does not need Nebius credentials or a GPU.
+
+To enable the same path manually:
+
+```bash
+NEBIUS_SERVERLESS_ENABLED=true \
+NEBIUS_CLI_CONFIG_DIR="$HOME/.nebius" \
+docker compose up -d --build
+```
+
+Add `--profile prometheus` for Prometheus only or `--profile grafana` for
+Prometheus plus Grafana.
 
 Serverless Jobs do not need a long-running deployment. The jobs image is pushed
 now; actual jobs are submitted on demand from the backend experiment flow. To

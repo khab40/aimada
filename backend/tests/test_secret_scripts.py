@@ -101,6 +101,45 @@ def test_check_accepts_rotated_temp_env(tmp_path: Path) -> None:
     assert "Secret checks passed" in result.stdout
 
 
+def test_check_accepts_empty_endpoint_token_when_serverless_is_disabled(tmp_path: Path) -> None:
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "NEBIUS_SERVERLESS_ENABLED=false\nENDPOINT_TOKEN=\n",
+        encoding="utf-8",
+    )
+
+    result = _run(CHECK, str(env_file))
+
+    assert result.returncode == 0, result.stderr
+    assert "Secret checks passed" in result.stdout
+
+
+def test_check_rejects_retained_endpoint_token_when_serverless_is_disabled(tmp_path: Path) -> None:
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "NEBIUS_SERVERLESS_ENABLED=false\nENDPOINT_TOKEN=stale-provider-token\n",
+        encoding="utf-8",
+    )
+
+    result = _run(CHECK, str(env_file))
+
+    assert result.returncode == 1
+    assert "must be empty" in result.stderr
+
+
+def test_check_requires_endpoint_token_when_serverless_is_enabled(tmp_path: Path) -> None:
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "NEBIUS_SERVERLESS_ENABLED=true\nENDPOINT_TOKEN=\n",
+        encoding="utf-8",
+    )
+
+    result = _run(CHECK, str(env_file))
+
+    assert result.returncode == 1
+    assert "is required" in result.stderr
+
+
 def test_artifact_storage_dry_run_does_not_modify_env(tmp_path: Path) -> None:
     env_file = tmp_path / ".env"
     original = "KEEP=value\n"
@@ -145,7 +184,7 @@ def test_artifact_storage_requires_apply_before_restart(tmp_path: Path) -> None:
 
 
 def test_real_nebius_compose_passes_object_storage_credentials() -> None:
-    compose = yaml.safe_load((ROOT / "docker-compose.nebius.yml").read_text(encoding="utf-8"))
+    compose = yaml.safe_load((ROOT / "docker-compose.yml").read_text(encoding="utf-8"))
     environment = compose["services"]["backend"]["environment"]
 
     assert "NEBIUS_OBJECT_STORAGE_ACCESS_KEY_ID" in environment

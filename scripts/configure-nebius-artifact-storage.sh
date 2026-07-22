@@ -155,10 +155,14 @@ chmod 600 "${WORK}"
 mv "${WORK}" "${ENV_FILE}"
 
 if [[ "${RESTART}" == "true" ]]; then
-  docker compose -f "${ROOT_DIR}/docker-compose.yml" -f "${ROOT_DIR}/docker-compose.nebius.yml" \
-    --env-file "${ENV_FILE}" up -d --build --no-deps backend
-  docker compose -f "${ROOT_DIR}/docker-compose.yml" -f "${ROOT_DIR}/docker-compose.nebius.yml" \
-    --env-file "${ENV_FILE}" exec -T backend \
+  NEBIUS_SERVERLESS_ENABLED=true \
+    NEBIUS_CLI_CONFIG_DIR="${NEBIUS_CLI_CONFIG_DIR:-${HOME}/.nebius}" \
+    docker compose -f "${ROOT_DIR}/docker-compose.yml" \
+      --env-file "${ENV_FILE}" up -d --build --no-deps backend
+  NEBIUS_SERVERLESS_ENABLED=true \
+    NEBIUS_CLI_CONFIG_DIR="${NEBIUS_CLI_CONFIG_DIR:-${HOME}/.nebius}" \
+    docker compose -f "${ROOT_DIR}/docker-compose.yml" \
+      --env-file "${ENV_FILE}" exec -T backend \
     sh -c 'AWS_ACCESS_KEY_ID="$NEBIUS_OBJECT_STORAGE_ACCESS_KEY_ID" \
       AWS_SECRET_ACCESS_KEY="$NEBIUS_OBJECT_STORAGE_SECRET_ACCESS_KEY" \
       AWS_SESSION_TOKEN="$NEBIUS_OBJECT_STORAGE_SESSION_TOKEN" \

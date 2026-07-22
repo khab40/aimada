@@ -161,6 +161,7 @@ smoke_local_stack() {
 deploy_local_demo() {
   require_cmd docker
   export COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-aimada-local-demo}"
+  export NEBIUS_SERVERLESS_ENABLED=false
   export NEBIUS_ENDPOINT_MODE=mock
   export NEBIUS_ENDPOINT_BASE_URL=http://endpoint:9000
   export VITE_ARENA_MODE="${VITE_ARENA_MODE:-websocket}"
@@ -177,6 +178,8 @@ deploy_nebius_cloud_demo() {
   run "create Nebius endpoint" "${ROOT_DIR}/scripts/create-nebius-ai-endpoint.sh"
   run "create Nebius batch job" "${ROOT_DIR}/scripts/create-nebius-ai-job.sh"
   export COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-aimada-nebius-cloud-demo}"
+  export NEBIUS_SERVERLESS_ENABLED=true
+  export NEBIUS_CLI_CONFIG_DIR="${NEBIUS_CLI_CONFIG_DIR:-${HOME}/.nebius}"
   export NEBIUS_ENDPOINT_MODE="${NEBIUS_ENDPOINT_MODE:-nebius}"
   run "cloud demo app stack" docker compose -f "${ROOT_DIR}/docker-compose.yml" up --build -d backend frontend
   smoke_local_stack
