@@ -3,6 +3,11 @@
 This changelog lists significant commits in reverse chronological order.
 Update this file with each significant commit before pushing.
 
+- Added bounded detector-tournament lifecycle, duration, throughput, in-flight,
+  and artifact-collection Prometheus metrics at the FastAPI orchestration
+  boundary, plus the provisioned `LOB Arena Detector Tournaments` Grafana
+  dashboard.
+
 - Hardened local-mode secret handling: serverless-disabled environments must not retain an endpoint token, serverless-enabled environments require one, and maintainer diagnostics must never print `.env`.
 
 - Consolidated local and Nebius runtime configuration into one conditional Docker Compose file, added explicit serverless isolation, independent Prometheus/full-Grafana profiles, combination Make targets, and removed the Nebius override file.

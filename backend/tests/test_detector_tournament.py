@@ -7,12 +7,16 @@ from fastapi import BackgroundTasks
 from app.config import get_settings
 from app.api.routes_nebius import read_detector_tournament, start_detector_tournament
 from app.nebius.detector_tournament import (
+    complete_queued_tournament,
+    DetectorTournamentMetrics,
     DetectorTournamentStartRequest,
     _parse_job_id,
     get_tournament,
+    queue_tournament,
     refresh_tournament,
     start_tournament,
 )
+from app.metrics import PrometheusTextRegistry
 from app.storage.local_store import LocalStore
 
 
@@ -66,6 +70,55 @@ def test_detector_tournament_nebius_mode_falls_back_without_submit_config(tmp_pa
         assert response.fallback_reason
     finally:
         get_settings.cache_clear()
+
+
+def test_detector_tournament_local_background_lifecycle_updates_in_flight_metrics(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    store = LocalStore(tmp_path)
+    registry = PrometheusTextRegistry()
+    observer = DetectorTournamentMetrics(registry)
+    payload = DetectorTournamentStartRequest(
+        number_of_scenarios=3,
+        manipulation_types=["layering_like"],
+        detector_set=["layering_like"],
+        execution_mode="local",
+    )
+    queued = queue_tournament(
+        payload,
+        store=store,
+        repo_root=Path(__file__).resolve().parents[2],
+        observer=observer,
+    )
+    completed = queued.model_copy(
+        update={
+            "status": "completed",
+            "completed_at": "2026-07-23T12:00:03+00:00",
+            "metrics": {"total_scenarios": 3},
+            "summary": "completed",
+        }
+    )
+    monkeypatch.setattr(
+        "app.nebius.detector_tournament._run_local_tournament",
+        lambda *_args, **_kwargs: completed,
+    )
+
+    result = complete_queued_tournament(
+        payload,
+        tournament_id=queued.tournament_id,
+        started_at=queued.started_at,
+        store=store,
+        repo_root=Path(__file__).resolve().parents[2],
+        observer=observer,
+    )
+
+    assert result is not None
+    assert result.status == "completed"
+    rendered = registry.render()
+    assert 'detector_tournament_in_flight{execution_mode="local"} 0' in rendered
+    assert 'detector_tournament_runs_total{execution_mode="local",outcome="completed"} 1' in rendered
+    assert 'detector_tournament_scenarios_total{execution_mode="local",outcome="completed"} 3' in rendered
 
 
 def test_detector_tournament_nebius_submit_renders_object_storage_env(tmp_path: Path, monkeypatch) -> None:
@@ -147,6 +200,8 @@ def test_detector_tournament_collects_completed_s3_artifacts(tmp_path: Path, mon
     monkeypatch.setattr("app.nebius.detector_tournament.subprocess.run", fake_run)
     get_settings.cache_clear()
     store = LocalStore(tmp_path)
+    registry = PrometheusTextRegistry()
+    observer = DetectorTournamentMetrics(registry)
     try:
         submitted = start_tournament(
             DetectorTournamentStartRequest(
@@ -157,8 +212,13 @@ def test_detector_tournament_collects_completed_s3_artifacts(tmp_path: Path, mon
             ),
             store=store,
             repo_root=Path(__file__).resolve().parents[2],
+            observer=observer,
         )
-        refreshed = refresh_tournament(submitted.tournament_id, store=store)
+        refreshed = refresh_tournament(
+            submitted.tournament_id,
+            store=store,
+            observer=observer,
+        )
     finally:
         get_settings.cache_clear()
 
@@ -171,10 +231,27 @@ def test_detector_tournament_collects_completed_s3_artifacts(tmp_path: Path, mon
     assert refreshed.leaderboard[0].scenario == "spoofing_like_wall"
     assert Path(refreshed.artifacts["artifact_index"]).is_file()
     assert Path(refreshed.artifacts["nebius_job_logs"]).read_text(encoding="utf-8") == "batch complete"
+    rendered = registry.render()
+    assert (
+        'detector_tournament_artifact_collections_total'
+        '{execution_mode="nebius_serverless_job",outcome="success"} 1'
+    ) in rendered
+    assert (
+        'detector_tournament_runs_total'
+        '{execution_mode="nebius_serverless_job",outcome="completed"} 1'
+    ) in rendered
 
 
 def test_detector_tournament_api_facade_round_trip(tmp_path: Path) -> None:
-    request = SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace(store=LocalStore(tmp_path))))
+    registry = PrometheusTextRegistry()
+    request = SimpleNamespace(
+        app=SimpleNamespace(
+            state=SimpleNamespace(
+                store=LocalStore(tmp_path),
+                tournament_metrics=DetectorTournamentMetrics(registry),
+            )
+        )
+    )
     response = start_detector_tournament(
         DetectorTournamentStartRequest(
             number_of_scenarios=1,
@@ -190,3 +267,7 @@ def test_detector_tournament_api_facade_round_trip(tmp_path: Path) -> None:
     assert loaded.tournament_id == response.tournament_id
     assert loaded.status == "completed"
     assert loaded.execution_mode == "local_mock"
+    assert (
+        'detector_tournament_runs_total{execution_mode="local_mock",outcome="completed"} 1'
+        in registry.render()
+    )

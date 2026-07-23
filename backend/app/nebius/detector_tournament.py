@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field
 
 from app.config import get_settings
 from app.experiments.artifact_normalizer import ArtifactNormalizationResponse, normalize_batch_artifacts
+from app.metrics import PrometheusTextRegistry
 from app.nebius.evidence_archive import NebiusEvidenceArchive
 from app.storage.local_store import LocalStore
 
@@ -26,6 +27,14 @@ DetectorName = Literal["spoofing_like", "layering_like", "quote_stuffing", "liqu
 TournamentStatus = Literal["queued", "running", "completed", "failed", "real_nebius_pending"]
 TournamentExecutionMode = Literal["local_mock", "local", "nebius_serverless_job"]
 _LOCAL_TOURNAMENT_LOCK = threading.Lock()
+_ACTIVE_TOURNAMENT_STATUSES = {"queued", "running"}
+_TERMINAL_TOURNAMENT_STATUSES = {"completed", "failed", "real_nebius_pending"}
+_TERMINAL_METRIC_DEDUP_LIMIT = 10_000
+_TOURNAMENT_EXECUTION_MODES: tuple[TournamentExecutionMode, ...] = (
+    "local_mock",
+    "local",
+    "nebius_serverless_job",
+)
 
 
 class DetectorTournamentStartRequest(BaseModel):
@@ -83,11 +92,135 @@ class DetectorTournamentArtifactsResponse(BaseModel):
     artifacts: list[DetectorTournamentArtifact]
 
 
+class DetectorTournamentMetrics:
+    """Projects bounded tournament lifecycle telemetry into Prometheus."""
+
+    def __init__(self, registry: PrometheusTextRegistry) -> None:
+        self.registry = registry
+        self._lock = threading.Lock()
+        self._active_tournaments: dict[str, TournamentExecutionMode] = {}
+        self._terminal_tournaments: dict[str, None] = {}
+        registry.counter(
+            "detector_tournament_runs_total",
+            "Detector tournaments reaching a terminal outcome.",
+            ("execution_mode", "outcome"),
+        )
+        registry.histogram(
+            "detector_tournament_duration_seconds",
+            "End-to-end detector tournament duration.",
+            ("execution_mode", "outcome"),
+            buckets=(0.1, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0, 120.0, 300.0, 600.0, 900.0),
+        )
+        registry.gauge(
+            "detector_tournament_in_flight",
+            "Detector tournaments currently queued or running.",
+            ("execution_mode",),
+        )
+        registry.counter(
+            "detector_tournament_scenarios_total",
+            "Scenarios completed by detector tournaments.",
+            ("execution_mode", "outcome"),
+        )
+        registry.counter(
+            "detector_tournament_artifact_collections_total",
+            "Nebius detector tournament artifact collection attempts.",
+            ("execution_mode", "outcome"),
+        )
+        for mode in _TOURNAMENT_EXECUTION_MODES:
+            registry.set("detector_tournament_in_flight", 0, execution_mode=mode)
+
+    def observe_transition(
+        self,
+        previous: DetectorTournamentResponse | None,
+        current: DetectorTournamentResponse,
+    ) -> None:
+        if previous is not None and previous.tournament_id != current.tournament_id:
+            raise ValueError("tournament metric transition ids do not match")
+
+        mode = current.execution_mode
+        current_active = current.status in _ACTIVE_TOURNAMENT_STATUSES
+        current_terminal = current.status in _TERMINAL_TOURNAMENT_STATUSES
+
+        with self._lock:
+            tracked_mode = self._active_tournaments.get(current.tournament_id)
+            if current_active and tracked_mode is None and current.tournament_id not in self._terminal_tournaments:
+                self._active_tournaments[current.tournament_id] = mode
+                self._render_in_flight(mode)
+            elif tracked_mode is not None and tracked_mode != mode:
+                self._active_tournaments[current.tournament_id] = mode
+                self._render_in_flight(tracked_mode)
+                self._render_in_flight(mode)
+
+            if current_terminal:
+                tracked_mode = self._active_tournaments.pop(current.tournament_id, None)
+                if tracked_mode is not None:
+                    self._render_in_flight(tracked_mode)
+                if current.tournament_id in self._terminal_tournaments:
+                    return
+                if len(self._terminal_tournaments) >= _TERMINAL_METRIC_DEDUP_LIMIT:
+                    self._terminal_tournaments.pop(next(iter(self._terminal_tournaments)))
+                self._terminal_tournaments[current.tournament_id] = None
+                outcome = current.status
+                self.registry.inc(
+                    "detector_tournament_runs_total",
+                    execution_mode=mode,
+                    outcome=outcome,
+                )
+                self.registry.observe(
+                    "detector_tournament_duration_seconds",
+                    _tournament_duration_seconds(current),
+                    execution_mode=mode,
+                    outcome=outcome,
+                )
+                self.registry.inc(
+                    "detector_tournament_scenarios_total",
+                    _completed_scenarios(current),
+                    execution_mode=mode,
+                    outcome=outcome,
+                )
+
+    def _render_in_flight(self, execution_mode: TournamentExecutionMode) -> None:
+        count = sum(mode == execution_mode for mode in self._active_tournaments.values())
+        self.registry.set(
+            "detector_tournament_in_flight",
+            count,
+            execution_mode=execution_mode,
+        )
+
+    def observe_artifact_collection(self, *, execution_mode: TournamentExecutionMode, outcome: str) -> None:
+        if execution_mode != "nebius_serverless_job":
+            return
+        if outcome not in {"success", "failed", "incomplete"}:
+            raise ValueError(f"unsupported artifact collection outcome: {outcome}")
+        self.registry.inc(
+            "detector_tournament_artifact_collections_total",
+            execution_mode=execution_mode,
+            outcome=outcome,
+        )
+
+
+def _tournament_duration_seconds(tournament: DetectorTournamentResponse) -> float:
+    try:
+        started_at = datetime.fromisoformat(tournament.started_at)
+        completed_at = datetime.fromisoformat(tournament.completed_at or _now())
+    except (TypeError, ValueError):
+        return 0.0
+    return max(0.0, (completed_at - started_at).total_seconds())
+
+
+def _completed_scenarios(tournament: DetectorTournamentResponse) -> float:
+    if tournament.status != "completed":
+        return 0.0
+    value = tournament.metrics.get("total_scenarios", tournament.metrics.get("requested_scenarios", 0))
+    return max(0.0, _float(value))
+
+
 def start_tournament(
     request: DetectorTournamentStartRequest,
     *,
     store: LocalStore,
     repo_root: Path,
+    observer: DetectorTournamentMetrics | None = None,
 ) -> DetectorTournamentResponse:
     started_at = _now()
     tournament_id = f"TRN-{uuid4().hex[:8].upper()}"
@@ -117,6 +250,8 @@ def start_tournament(
             fallback_reason=None,
         )
     _persist_tournament(store, response)
+    if observer is not None:
+        observer.observe_transition(None, response)
     return response
 
 
@@ -125,6 +260,7 @@ def queue_tournament(
     *,
     store: LocalStore,
     repo_root: Path,
+    observer: DetectorTournamentMetrics | None = None,
 ) -> DetectorTournamentResponse:
     started_at = _now()
     tournament_id = f"TRN-{uuid4().hex[:8].upper()}"
@@ -147,6 +283,8 @@ def queue_tournament(
     else:
         response = _queued_local_response(request, tournament_id=tournament_id, started_at=started_at)
     _persist_tournament(store, response)
+    if observer is not None:
+        observer.observe_transition(None, response)
     return response
 
 
@@ -157,14 +295,19 @@ def complete_queued_tournament(
     started_at: str,
     store: LocalStore,
     repo_root: Path,
-) -> None:
+    observer: DetectorTournamentMetrics | None = None,
+) -> DetectorTournamentResponse | None:
     queued = get_tournament(tournament_id, store=store)
-    if queued is None or queued.status != "queued":
-        return
-    _persist_tournament(
-        store,
-        queued.model_copy(update={"status": "running", "summary": "Local detector tournament is running."}),
+    if queued is None:
+        return None
+    if queued.status != "queued":
+        return queued
+    running = queued.model_copy(
+        update={"status": "running", "summary": "Local detector tournament is running."}
     )
+    _persist_tournament(store, running)
+    if observer is not None:
+        observer.observe_transition(queued, running)
     if not _LOCAL_TOURNAMENT_LOCK.acquire(blocking=False):
         response = _mock_tournament_response(
             request,
@@ -175,7 +318,9 @@ def complete_queued_tournament(
             fallback_reason="local detector tournament runner is busy; returned deterministic mock output.",
         )
         _persist_tournament(store, response)
-        return
+        if observer is not None:
+            observer.observe_transition(running, response)
+        return response
     try:
         response = _run_local_tournament(
             request,
@@ -188,6 +333,9 @@ def complete_queued_tournament(
         _persist_tournament(store, response)
     finally:
         _LOCAL_TOURNAMENT_LOCK.release()
+    if observer is not None:
+        observer.observe_transition(running, response)
+    return response
 
 
 def get_tournament(tournament_id: str, *, store: LocalStore) -> DetectorTournamentResponse | None:
@@ -197,7 +345,12 @@ def get_tournament(tournament_id: str, *, store: LocalStore) -> DetectorTourname
     return DetectorTournamentResponse.model_validate(decoded)
 
 
-def refresh_tournament(tournament_id: str, *, store: LocalStore) -> DetectorTournamentResponse | None:
+def refresh_tournament(
+    tournament_id: str,
+    *,
+    store: LocalStore,
+    observer: DetectorTournamentMetrics | None = None,
+) -> DetectorTournamentResponse | None:
     tournament = get_tournament(tournament_id, store=store)
     if tournament is None or tournament.execution_mode != "nebius_serverless_job":
         return tournament
@@ -244,6 +397,12 @@ def refresh_tournament(tournament_id: str, *, store: LocalStore) -> DetectorTour
                 }
             )
             _persist_tournament(store, response)
+            if observer is not None:
+                observer.observe_artifact_collection(
+                    execution_mode=tournament.execution_mode,
+                    outcome="failed",
+                )
+                observer.observe_transition(tournament, response)
             return response
         if collected.missing:
             response = tournament.model_copy(
@@ -254,6 +413,12 @@ def refresh_tournament(tournament_id: str, *, store: LocalStore) -> DetectorTour
                 }
             )
             _persist_tournament(store, response)
+            if observer is not None:
+                observer.observe_artifact_collection(
+                    execution_mode=tournament.execution_mode,
+                    outcome="incomplete",
+                )
+                observer.observe_transition(tournament, response)
             return response
         metrics_path = Path(collected.artifact_paths["detector_metrics"])
         leaderboard = _leaderboard_from_metrics(metrics_path)
@@ -278,6 +443,12 @@ def refresh_tournament(tournament_id: str, *, store: LocalStore) -> DetectorTour
             }
         )
         _persist_tournament(store, response)
+        if observer is not None:
+            observer.observe_artifact_collection(
+                execution_mode=tournament.execution_mode,
+                outcome="success",
+            )
+            observer.observe_transition(tournament, response)
         return response
 
     response = tournament.model_copy(
@@ -288,6 +459,8 @@ def refresh_tournament(tournament_id: str, *, store: LocalStore) -> DetectorTour
         }
     )
     _persist_tournament(store, response)
+    if observer is not None:
+        observer.observe_transition(tournament, response)
     return response
 
 

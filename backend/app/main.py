@@ -15,6 +15,7 @@ from app.arena.java_client import JavaArenaClient
 from app.config import get_settings
 from app.data_ingestion.service import DataIngestionService
 from app.metrics import PrometheusTextRegistry
+from app.nebius.detector_tournament import DetectorTournamentMetrics
 from app.nebius.evidence_archive import configure_default_evidence_archive
 from app.storage.local_store import LocalStore
 from app.storage.retention import cleanup_output_data
@@ -32,6 +33,7 @@ metrics_registry.histogram(
     "Request latency from FastAPI to the Java arena.",
     ("method", "endpoint", "outcome"),
 )
+app.state.tournament_metrics = DetectorTournamentMetrics(metrics_registry)
 app.state.store = LocalStore(settings.arena_output_dir)
 app.state.nebius_evidence = (
     configure_default_evidence_archive(app.state.store, settings)

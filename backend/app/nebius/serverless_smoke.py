@@ -14,6 +14,7 @@ from app.experiments.nebius_orchestrator import ExperimentJobRecord
 from app.experiments.repository import ExperimentRepository
 from app.nebius.client import IncidentExplanationResponse, NebiusClient
 from app.nebius.detector_tournament import (
+    DetectorTournamentMetrics,
     DetectorTournamentResponse,
     DetectorTournamentStartRequest,
     start_tournament,
@@ -101,6 +102,7 @@ async def run_serverless_smoke_demo(
     store: LocalStore,
     repo_root: Path,
     execution_mode: SmokeExecutionMode = "local",
+    tournament_metrics: DetectorTournamentMetrics | None = None,
 ) -> ServerlessSmokeResponse:
     settings = get_settings()
     started_at = perf_counter()
@@ -173,6 +175,7 @@ async def run_serverless_smoke_demo(
         ),
         store=store,
         repo_root=repo_root,
+        observer=tournament_metrics,
     )
     cloud_tournament = (
         start_tournament(
@@ -186,6 +189,7 @@ async def run_serverless_smoke_demo(
             ),
             store=store,
             repo_root=repo_root,
+            observer=tournament_metrics,
         )
         if execution_mode == "nebius" and _job_submit_configured(settings)
         else None

@@ -11,6 +11,10 @@ from fastapi.testclient import TestClient
 from app.main import app as backend_app
 from app.arena.java_client import JavaArenaClient
 from app.metrics import PrometheusTextRegistry
+from app.nebius.detector_tournament import (
+    DetectorTournamentMetrics,
+    DetectorTournamentResponse,
+)
 
 
 class Response(BytesIO):
@@ -88,6 +92,64 @@ def test_java_arena_client_records_proxy_metrics(monkeypatch) -> None:
     assert 'backend_java_arena_request_duration_seconds_count{method="GET",endpoint="/api/arena/state",outcome="completed"} 1' in rendered
 
 
+def test_detector_tournament_metrics_track_bounded_lifecycle_without_run_ids() -> None:
+    registry = PrometheusTextRegistry()
+    observer = DetectorTournamentMetrics(registry)
+    queued = DetectorTournamentResponse(
+        tournament_id="TRN-SECRET-ID",
+        status="queued",
+        execution_mode="local",
+        started_at="2026-07-23T12:00:00+00:00",
+        completed_at=None,
+        detectors=["spoofing_like"],
+        leaderboard=[],
+        metrics={"requested_scenarios": 4},
+        artifacts={},
+        summary="queued",
+    )
+    running = queued.model_copy(update={"status": "running"})
+    completed = running.model_copy(
+        update={
+            "status": "completed",
+            "completed_at": "2026-07-23T12:00:03+00:00",
+            "metrics": {"total_scenarios": 4},
+        }
+    )
+
+    observer.observe_transition(None, queued)
+    observer.observe_transition(queued, running)
+    observer.observe_transition(running, completed)
+    observer.observe_transition(completed, completed)
+
+    rendered = registry.render()
+    assert 'detector_tournament_in_flight{execution_mode="local"} 0' in rendered
+    assert 'detector_tournament_runs_total{execution_mode="local",outcome="completed"} 1' in rendered
+    assert 'detector_tournament_scenarios_total{execution_mode="local",outcome="completed"} 4' in rendered
+    assert (
+        'detector_tournament_duration_seconds_count{execution_mode="local",outcome="completed"} 1'
+        in rendered
+    )
+    assert "TRN-SECRET-ID" not in rendered
+
+
+def test_detector_tournament_metrics_track_cloud_artifact_collection_outcomes() -> None:
+    registry = PrometheusTextRegistry()
+    observer = DetectorTournamentMetrics(registry)
+
+    observer.observe_artifact_collection(execution_mode="nebius_serverless_job", outcome="incomplete")
+    observer.observe_artifact_collection(execution_mode="nebius_serverless_job", outcome="success")
+
+    rendered = registry.render()
+    assert (
+        'detector_tournament_artifact_collections_total'
+        '{execution_mode="nebius_serverless_job",outcome="incomplete"} 1'
+    ) in rendered
+    assert (
+        'detector_tournament_artifact_collections_total'
+        '{execution_mode="nebius_serverless_job",outcome="success"} 1'
+    ) in rendered
+
+
 def test_agent_runner_metrics_endpoint_and_decide_contract(monkeypatch) -> None:
     module_path = Path(__file__).resolve().parents[2] / "agent-runner" / "app.py"
     spec = importlib.util.spec_from_file_location("agent_runner_app_for_metrics_test", module_path)
@@ -147,5 +209,6 @@ def test_backend_metrics_uses_single_state_request_for_incident_count(monkeypatc
     assert response.status_code == 200
     assert "arena_tick 9" in response.text
     assert "arena_incidents_total 2" in response.text
+    assert 'detector_tournament_in_flight{execution_mode="local"} 0' in response.text
     assert simulation.state_calls == 1
     assert simulation.incident_calls == 0

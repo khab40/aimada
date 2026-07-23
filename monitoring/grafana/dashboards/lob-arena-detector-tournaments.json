@@ -1,0 +1,119 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "panels": [
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "gridPos": {"h": 5, "w": 8, "x": 0, "y": 0},
+      "id": 1,
+      "targets": [
+        {
+          "expr": "sum(detector_tournament_in_flight) by (execution_mode)",
+          "legendFormat": "{{execution_mode}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Tournaments In Flight",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "gridPos": {"h": 5, "w": 8, "x": 8, "y": 0},
+      "id": 2,
+      "targets": [
+        {
+          "expr": "sum(increase(detector_tournament_runs_total[$__range])) by (execution_mode, outcome)",
+          "legendFormat": "{{execution_mode}} {{outcome}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Tournament Outcomes In Range",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "gridPos": {"h": 5, "w": 8, "x": 16, "y": 0},
+      "id": 3,
+      "targets": [
+        {
+          "expr": "sum(increase(detector_tournament_scenarios_total[$__range])) by (execution_mode, outcome)",
+          "legendFormat": "{{execution_mode}} {{outcome}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Scenarios Completed In Range",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 5},
+      "id": 4,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(detector_tournament_duration_seconds_bucket[$__rate_interval])) by (le, execution_mode, outcome))",
+          "legendFormat": "p95 {{execution_mode}} {{outcome}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Tournament Duration P95",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "ops"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 5},
+      "id": 5,
+      "targets": [
+        {
+          "expr": "sum(rate(detector_tournament_scenarios_total[$__rate_interval])) by (execution_mode, outcome)",
+          "legendFormat": "{{execution_mode}} {{outcome}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Scenario Throughput",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 13},
+      "id": 6,
+      "targets": [
+        {
+          "expr": "sum(increase(detector_tournament_artifact_collections_total[$__range])) by (outcome)",
+          "legendFormat": "{{outcome}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Nebius Artifact Collection Outcomes",
+      "type": "bargauge"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "ops"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 13},
+      "id": 7,
+      "targets": [
+        {
+          "expr": "sum(rate(detector_tournament_runs_total[$__rate_interval])) by (execution_mode, outcome)",
+          "legendFormat": "{{execution_mode}} {{outcome}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Tournament Completion Rate",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 41,
+  "tags": ["lob-arena", "detector-tournament", "observability"],
+  "templating": {"list": []},
+  "time": {"from": "now-6h", "to": "now"},
+  "title": "LOB Arena Detector Tournaments",
+  "uid": "lob-arena-detector-tournaments",
+  "version": 1
+}

@@ -90,17 +90,17 @@ flowchart LR
 | Experiment manager | Owns Managed Experiment manifests on `/api/experiments`, persists `outputs/experiments/<experiment_id>/experiment.json`, and exposes smart-batch-compatible artifact paths to Detection without replacing the Nebius AI smart-batch API. |
 | Nebius Serverless Cloud | Provides Nebius AI inference for Smart Detection and AI Investigator reports, plus Managed Experiment batch execution, GPU utilization, datasets, and artifacts. |
 | Prometheus | Opt-in operational telemetry store that scrapes Java Actuator, FastAPI, agent-runner, and its own health. It is outside the exchange and detector decision path. |
-| Grafana | Opt-in visualization layer that queries Prometheus through a provisioned datasource and supplies end-to-end, Java, component, and bottleneck dashboards. |
+| Grafana | Opt-in visualization layer that queries Prometheus through a provisioned datasource and supplies end-to-end, Java, component, bottleneck, and detector-tournament dashboards. |
 | Event / snapshot log | Stores replayable event streams, order book snapshots, detected incidents, and generated reports for inspection and offline analysis. |
 
 The exchange produces a versioned canonical stream of `add`, `modify`, `cancel`, `execute`, and `snapshot` events. Simulation is the live source; future venue datasets enter through a historical normalizer and preserve their upstream sequence/timestamps separately from canonical replay order. Arena state/WebSocket messages carry a bounded event tail, `/api/arena/exchange-events` provides cursor replay, and append-only history stores full events plus snapshot-only checkpoints.
 
-### Detector Tournament Observability Extension
+### Detector Tournament Observability
 
-Detector tournaments should participate in the observability plane through
+Detector tournaments participate in the observability plane through
 FastAPI, which already owns local child-process execution and Nebius Job
-submission, status refresh, and artifact collection. Prometheus should not
-scrape short-lived tournament processes or Nebius Jobs directly.
+submission, status refresh, and artifact collection. Prometheus does not scrape
+short-lived tournament processes or Nebius Jobs directly.
 
 ```mermaid
 flowchart LR
@@ -123,7 +123,7 @@ flowchart LR
     Grafana -->|"PromQL queries"| Prometheus
 ```
 
-The planned operational contract is deliberately bounded:
+The implemented operational contract is deliberately bounded:
 
 | Metric family | Purpose | Bounded labels |
 | --- | --- | --- |
@@ -131,7 +131,7 @@ The planned operational contract is deliberately bounded:
 | `detector_tournament_duration_seconds` | Measure end-to-end tournament duration | `execution_mode`, `outcome` |
 | `detector_tournament_in_flight` | Show queued or running work | `execution_mode` |
 | `detector_tournament_scenarios_total` | Measure completed scenario throughput | `execution_mode`, `outcome` |
-| `detector_tournament_artifact_collections_total` | Track result-collection success and failure | `execution_mode`, `outcome` |
+| `detector_tournament_artifact_collections_total` | Track successful, failed, and incomplete result collection | `execution_mode`, `outcome` |
 
 Tournament IDs, Job IDs, seeds, scenario IDs, and artifact paths must not become
 Prometheus labels. Precision, recall, F1, detector leaderboards, and per-scenario
@@ -274,9 +274,8 @@ graph TD
 - Prometheus and Grafana are read-only operational diagnostics. Their absence or
   failure must not change deterministic simulation results, and their time
   series must not be confused with detector benchmark artifacts.
-- Detector-tournament processes should publish operational telemetry through
-  the backend orchestration boundary; they should not become direct Prometheus
-  scrape targets.
+- Detector-tournament processes publish operational telemetry through the
+  backend orchestration boundary; they are not direct Prometheus scrape targets.
 - Detection reports and generated AI Investigator text are synthetic educational evidence for this simulator, not real surveillance, trading, or compliance outputs.
 
 ## Related Documentation
