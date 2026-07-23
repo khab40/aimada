@@ -5,9 +5,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.regex.Pattern;
@@ -25,7 +25,7 @@ final class HistoricalMarketDataSource implements ReplayMarketDataSource {
     private final int rowsPerTick;
     private final Deque<ObjectNode> eventTail = new ArrayDeque<>();
     private Connection connection;
-    private Statement statement;
+    private PreparedStatement statement;
     private ResultSet rows;
     private JsonNode manifest;
     private ArrayNode asks;
@@ -75,16 +75,18 @@ final class HistoricalMarketDataSource implements ReplayMarketDataSource {
             datasetId = requestedDatasetId;
             totalRows = manifest.path("row_count").longValue();
             connection = DriverManager.getConnection("jdbc:duckdb:");
-            statement = connection.createStatement();
-            rows = statement.executeQuery("""
+            statement = connection.prepareStatement("""
                     SELECT e.source_sequence, e.timestamp_ns_since_midnight, e.event_kind,
                            e.source_event_code, e.source_order_id, e.size, e.price_x10000,
                            e.direction, e.book_side, e.aggressor_side, e.halt_state,
                            to_json(b.asks) AS asks_json, to_json(b.bids) AS bids_json
-                    FROM read_parquet('%s') e
-                    INNER JOIN read_parquet('%s') b USING (source_sequence)
+                    FROM read_parquet(?) e
+                    INNER JOIN read_parquet(?) b USING (source_sequence)
                     ORDER BY e.source_sequence
-                    """.formatted(sqlPath(eventsPath), sqlPath(booksPath)));
+                    """);
+            statement.setString(1, eventsPath.toAbsolutePath().normalize().toString());
+            statement.setString(2, booksPath.toAbsolutePath().normalize().toString());
+            rows = statement.executeQuery();
             tick = 0;
             replayPosition = 0;
             running = false;
@@ -280,10 +282,6 @@ final class HistoricalMarketDataSource implements ReplayMarketDataSource {
 
     private static void putNullable(ObjectNode target, String field, String value, boolean lowerCase) {
         if (value == null) target.putNull(field); else target.put(field, lowerCase ? value.toLowerCase() : value);
-    }
-
-    private static String sqlPath(Path path) {
-        return path.toAbsolutePath().normalize().toString().replace("'", "''");
     }
 
     private void closeResources() {
