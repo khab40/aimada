@@ -4,7 +4,7 @@ import re
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from decimal import Decimal, InvalidOperation
+from decimal import ROUND_HALF_EVEN, Decimal, InvalidOperation
 from itertools import zip_longest
 from pathlib import Path
 from typing import Iterator
@@ -34,6 +34,7 @@ EVENT_KINDS = {
 }
 DUMMY_ASK_PRICE = 9_999_999_999
 DUMMY_BID_PRICE = -9_999_999_999
+TIMESTAMP_SERIALIZATION_TOLERANCE_NS = Decimal("0.01")
 
 
 @dataclass(frozen=True)
@@ -73,9 +74,13 @@ def parse_message(row: list[str], *, line_number: int) -> ParsedMessage:
     try:
         timestamp = Decimal(row[0].strip())
         timestamp_ns_decimal = timestamp * Decimal(1_000_000_000)
-        if timestamp_ns_decimal != timestamp_ns_decimal.to_integral_value():
+        timestamp_ns_rounded = timestamp_ns_decimal.to_integral_value(rounding=ROUND_HALF_EVEN)
+        # Some LOBSTER files contain tiny sub-nanosecond tails introduced by
+        # floating-point serialization. Tolerate that noise while continuing
+        # to reject genuinely higher-precision timestamps.
+        if abs(timestamp_ns_decimal - timestamp_ns_rounded) > TIMESTAMP_SERIALIZATION_TOLERANCE_NS:
             raise ValueError("timestamp precision exceeds nanoseconds")
-        timestamp_ns = int(timestamp_ns_decimal)
+        timestamp_ns = int(timestamp_ns_rounded)
         event_code = int(row[1])
         order_id = int(row[2])
         size = int(row[3])
