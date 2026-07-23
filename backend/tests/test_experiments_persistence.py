@@ -5,6 +5,7 @@ from types import SimpleNamespace
 
 import yaml
 import pytest
+from fastapi import HTTPException
 
 from app.api.routes_experiments import (
     AttackExperimentRequest,
@@ -31,6 +32,8 @@ from app.api.routes_experiments import (
     list_experiment_jobs,
     refresh_experiment_jobs,
     submit_experiment_nebius,
+    _normalize_scenario,
+    _resolve_readable_artifact,
 )
 from app.api.routes_nebius import observatory
 from app.arena.engine import SimulationEngine
@@ -114,6 +117,39 @@ def test_run_benchmark_experiment_persists_run_and_report_summary(tmp_path: Path
     assert summary.benchmark_runs
     assert summary.significant_events
     assert summary.history_artifacts
+
+
+def test_benchmark_runner_rejects_command_like_scenario_text() -> None:
+    with pytest.raises(ValueError, match="unsupported scenario"):
+        _normalize_scenario("normal_market; touch /tmp/should-not-exist")
+
+
+def test_artifact_resolver_rejects_traversal_and_outside_symlinks(tmp_path: Path) -> None:
+    output_root = tmp_path / "outputs"
+    output_root.mkdir()
+    outside = tmp_path / "outside.txt"
+    outside.write_text("secret", encoding="utf-8")
+    symlink = output_root / "outside-link.txt"
+    symlink.symlink_to(outside)
+    request = _request(output_root)
+
+    with pytest.raises(HTTPException) as traversal:
+        _resolve_readable_artifact(request, "../../outside.txt")
+    with pytest.raises(HTTPException) as symlink_escape:
+        _resolve_readable_artifact(request, str(symlink))
+
+    assert traversal.value.status_code == 403
+    assert symlink_escape.value.status_code == 403
+
+
+def test_artifact_resolver_preserves_in_root_reads(tmp_path: Path) -> None:
+    output_root = tmp_path / "outputs"
+    artifact = output_root / "benchmark" / "report.md"
+    artifact.parent.mkdir(parents=True)
+    artifact.write_text("# report", encoding="utf-8")
+    request = _request(output_root)
+
+    assert _resolve_readable_artifact(request, str(artifact)) == artifact.resolve()
 
 
 def test_managed_experiment_create_list_get_delete(tmp_path: Path) -> None:

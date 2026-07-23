@@ -1,5 +1,6 @@
 import json
 import subprocess
+import time
 from pathlib import Path
 from typing import Any
 
@@ -7,6 +8,7 @@ from app.config import Settings
 from app.nebius.client import NebiusClient
 from app.nebius.evidence_archive import (
     NebiusEvidenceArchive,
+    _redact,
     clear_default_evidence_archive,
     configure_default_evidence_archive,
 )
@@ -52,6 +54,32 @@ def test_endpoint_calls_are_written_locally_and_redacted(monkeypatch: Any, tmp_p
     request_text = Path(records[0].artifact_paths["request"]).read_text(encoding="utf-8")
     assert "must-not-leak" not in request_text
     assert "[REDACTED]" in request_text
+
+
+def test_redaction_rejects_polynomial_backtracking_input_quickly() -> None:
+    adversarial_non_match = '"aws_access_key_id"' + (" " * 20_000) + "x"
+
+    started = time.perf_counter()
+    redacted = _redact(adversarial_non_match)
+    elapsed = time.perf_counter() - started
+
+    assert redacted == adversarial_non_match
+    assert elapsed < 0.5
+
+
+def test_redaction_preserves_supported_aws_credential_shapes() -> None:
+    value = (
+        '{"name":"AWS_ACCESS_KEY_ID","value":"access-value"},'
+        '"AWS_SECRET_ACCESS_KEY": "secret-value" '
+        "AWS_SESSION_TOKEN=session-value"
+    )
+
+    redacted = _redact(value)
+
+    assert "access-value" not in redacted
+    assert "secret-value" not in redacted
+    assert "session-value" not in redacted
+    assert redacted.count("[REDACTED]") == 3
 
 
 def test_job_evidence_uploads_and_syncs_with_object_storage(monkeypatch: Any, tmp_path: Path) -> None:

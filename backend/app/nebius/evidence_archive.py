@@ -387,8 +387,14 @@ def _redact(value: str | None) -> str:
         return ""
     redacted = re.sub(r"(?i)Bearer\s+[A-Za-z0-9._~+/=-]+", "Bearer [REDACTED]", value)
     redacted = re.sub(
-        r'(?i)((?:["\']?name["\']?\s*:\s*)?["\']AWS_(?:ACCESS_KEY_ID|SECRET_ACCESS_KEY|SESSION_TOKEN)["\']'
-        r'\s*(?:,\s*["\']?value["\']?)?\s*:\s*["\'])([^"\']+)(["\'])',
+        r'(?i)(["\']?name["\']?\s*:\s*["\']AWS_(?:ACCESS_KEY_ID|SECRET_ACCESS_KEY|SESSION_TOKEN)["\']'
+        r'\s*,\s*["\']?value["\']?\s*:\s*["\'])([^"\']+)(["\'])',
+        lambda match: f"{match.group(1)}[REDACTED]{match.group(3)}",
+        redacted,
+    )
+    redacted = re.sub(
+        r'(?i)(["\']AWS_(?:ACCESS_KEY_ID|SECRET_ACCESS_KEY|SESSION_TOKEN)["\']'
+        r'\s*:\s*["\'])([^"\']+)(["\'])',
         lambda match: f"{match.group(1)}[REDACTED]{match.group(3)}",
         redacted,
     )
