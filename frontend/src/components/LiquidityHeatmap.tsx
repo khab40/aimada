@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { OrderBookSnapshot, PriceLevel } from "@/types/arena";
+import {
+  bucketHeatmapPrice,
+  formatHeatmapPrice,
+  inferPriceBucket,
+  selectVisibleHeatmapPrices
+} from "@/components/liquidityHeatmapScale";
 
 export type HeatmapSnapshotFrame = {
   book: OrderBookSnapshot;
@@ -16,7 +22,6 @@ export type HeatmapFrame = {
   }[];
 };
 
-const PRICE_BUCKET = 5;
 const DEFAULT_VISIBLE_LEVELS = 22;
 const LEFT_AXIS_WIDTH = 72;
 const BOTTOM_AXIS_HEIGHT = 18;
@@ -45,8 +50,13 @@ export function LiquidityHeatmap({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [canvasSize, setCanvasSize] = useState({ height: 320, width: 900 });
   const [themeVersion, setThemeVersion] = useState(0);
-  const frames = useMemo(() => toHeatmapFrames(snapshots.slice(-maxFrames)), [maxFrames, snapshots]);
-  const visiblePrices = useMemo(() => getVisiblePrices(snapshots.at(-1)?.book, visibleLevels), [snapshots, visibleLevels]);
+  const recentSnapshots = useMemo(() => snapshots.slice(-maxFrames), [maxFrames, snapshots]);
+  const priceBucket = useMemo(() => inferPriceBucket(recentSnapshots), [recentSnapshots]);
+  const frames = useMemo(() => toHeatmapFrames(recentSnapshots, priceBucket), [priceBucket, recentSnapshots]);
+  const visiblePrices = useMemo(
+    () => selectVisibleHeatmapPrices(snapshots.at(-1)?.book, visibleLevels, priceBucket),
+    [priceBucket, snapshots, visibleLevels]
+  );
 
   useEffect(() => {
     const wrapper = wrapperRef.current;
@@ -89,8 +99,8 @@ export function LiquidityHeatmap({
       canvas.height = nextHeight;
     }
     context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-    drawHeatmap(context, frames, visiblePrices, readHeatmapTheme());
-  }, [canvasSize, frames, themeVersion, visiblePrices]);
+    drawHeatmap(context, frames, visiblePrices, priceBucket, readHeatmapTheme());
+  }, [canvasSize, frames, priceBucket, themeVersion, visiblePrices]);
 
   return (
     <section className="liquidity-heatmap">
@@ -114,7 +124,13 @@ export function LiquidityHeatmap({
   );
 }
 
-function drawHeatmap(context: CanvasRenderingContext2D, frames: HeatmapFrame[], visiblePrices: number[], theme: HeatmapTheme) {
+function drawHeatmap(
+  context: CanvasRenderingContext2D,
+  frames: HeatmapFrame[],
+  visiblePrices: number[],
+  priceBucket: number,
+  theme: HeatmapTheme
+) {
   const { canvas } = context;
   const pixelRatio = window.devicePixelRatio || 1;
   const width = canvas.width / pixelRatio;
@@ -138,7 +154,7 @@ function drawHeatmap(context: CanvasRenderingContext2D, frames: HeatmapFrame[], 
   const cellWidth = plotWidth / frames.length;
   const cellHeight = plotHeight / visiblePrices.length;
 
-  drawYAxis(context, visiblePrices, cellHeight, theme);
+  drawYAxis(context, visiblePrices, cellHeight, priceBucket, theme);
 
   frames.forEach((frame, frameIndex) => {
     const levelsByPrice = new Map(frame.levels.map((level) => [level.price, level]));
@@ -163,14 +179,20 @@ function drawHeatmap(context: CanvasRenderingContext2D, frames: HeatmapFrame[], 
   drawXAxis(context, frames, plotWidth, plotHeight, theme);
 }
 
-function drawYAxis(context: CanvasRenderingContext2D, visiblePrices: number[], cellHeight: number, theme: HeatmapTheme) {
+function drawYAxis(
+  context: CanvasRenderingContext2D,
+  visiblePrices: number[],
+  cellHeight: number,
+  priceBucket: number,
+  theme: HeatmapTheme
+) {
   context.fillStyle = theme.axis;
   context.font = "11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
   visiblePrices.forEach((price, index) => {
     if (index % 3 !== 0 && index !== visiblePrices.length - 1) {
       return;
     }
-    context.fillText(price.toLocaleString(), 4, index * cellHeight + cellHeight / 2 + 4);
+    context.fillText(formatHeatmapPrice(price, priceBucket), 4, index * cellHeight + cellHeight / 2 + 4);
   });
 }
 
@@ -224,11 +246,11 @@ function readHeatmapTheme(): HeatmapTheme {
   };
 }
 
-function toHeatmapFrames(snapshots: HeatmapSnapshotFrame[]): HeatmapFrame[] {
+function toHeatmapFrames(snapshots: HeatmapSnapshotFrame[], priceBucket: number): HeatmapFrame[] {
   return snapshots.map((snapshot) => {
     const levelsByPrice = new Map<number, HeatmapFrame["levels"][number]>();
-    snapshot.book.bids.forEach((level) => mergeLevel(levelsByPrice, level, "bid"));
-    snapshot.book.asks.forEach((level) => mergeLevel(levelsByPrice, level, "ask"));
+    snapshot.book.bids.forEach((level) => mergeLevel(levelsByPrice, level, "bid", priceBucket));
+    snapshot.book.asks.forEach((level) => mergeLevel(levelsByPrice, level, "ask", priceBucket));
 
     return {
       levels: Array.from(levelsByPrice.values()),
@@ -240,9 +262,10 @@ function toHeatmapFrames(snapshots: HeatmapSnapshotFrame[]): HeatmapFrame[] {
 function mergeLevel(
   levelsByPrice: Map<number, HeatmapFrame["levels"][number]>,
   level: PriceLevel,
-  side: "ask" | "bid"
+  side: "ask" | "bid",
+  priceBucket: number
 ) {
-  const price = bucketPrice(level.price);
+  const price = bucketHeatmapPrice(level.price, priceBucket);
   const existing = levelsByPrice.get(price) ?? { askSize: 0, bidSize: 0, price };
 
   if (side === "bid") {
@@ -258,24 +281,8 @@ function mergeLevel(
   levelsByPrice.set(price, existing);
 }
 
-function getVisiblePrices(snapshot: OrderBookSnapshot | undefined, visibleLevels: number) {
-  if (!snapshot?.mid) {
-    return [];
-  }
-
-  const midpoint = bucketPrice(snapshot.mid);
-  const halfLevels = Math.floor(visibleLevels / 2);
-  return Array.from({ length: visibleLevels }, (_, index) => (
-    midpoint + (halfLevels - index) * PRICE_BUCKET
-  ));
-}
-
 function formatTick(tick: number | undefined) {
   return tick === undefined ? "" : `T${tick}`;
-}
-
-function bucketPrice(price: number) {
-  return Math.round(price / PRICE_BUCKET) * PRICE_BUCKET;
 }
 
 function isAbuserOwned(level: PriceLevel) {
