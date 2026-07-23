@@ -6,6 +6,7 @@ import { AboutPage } from "@/pages/AboutPage";
 import { getNebiusStatus } from "@/api/client";
 import { ArenaPage } from "@/pages/ArenaPage";
 import { AttackScenarioGeneratorPage } from "@/pages/AttackScenarioGeneratorPage";
+import { DataIngestionPage } from "@/pages/DataIngestionPage";
 import { NebiusControlPanelPage } from "@/pages/NebiusControlPanelPage";
 import {
   getStoredRuntimeMode,
@@ -153,6 +154,7 @@ export function App() {
           <Routes>
             <Route path="/" element={<Navigate to="/nebius" replace />} />
             <Route path="/arena" element={<ArenaPage />} />
+            <Route path="/data-ingestion" element={<DataIngestionPage />} />
             <Route path="/attack-scenarios" element={<AttackScenarioGeneratorPage />} />
             <Route path="/nebius" element={<NebiusControlPanelPage />} />
             <Route path="/about" element={<AboutPage />} />
@@ -262,7 +264,7 @@ function SidebarLink({
   );
 }
 
-type AppIconName = "arena" | "cloud" | "about";
+type AppIconName = "arena" | "cloud" | "database" | "about";
 
 type SidebarItem = {
   icon: AppIconName;
@@ -280,6 +282,10 @@ const workspaceBanners: Record<string, { title: string; description: string }> =
     title: "Arena",
     description: "Generate synthetic market workloads, inspect order-book pressure, and review incident evidence in one live cockpit."
   },
+  "/data-ingestion": {
+    title: "Data Ingestion",
+    description: "Validate and register local historical market datasets for replay in Arena."
+  },
   "/about": {
     title: "About",
     description: "Understand the architecture, safety guardrails, benchmark flow, and research basis behind the synthetic market arena."
@@ -288,6 +294,7 @@ const workspaceBanners: Record<string, { title: string; description: string }> =
 const sidebarItems: SidebarItem[] = [
   { icon: "cloud", label: "Command Center", shortLabel: "CC", to: "/nebius" },
   { icon: "arena", label: "Arena / Workload Generator", shortLabel: "WG", to: "/arena" },
+  { icon: "database", label: "Data Ingestion", shortLabel: "DI", to: "/data-ingestion" },
   { icon: "about", label: "About / Docs", shortLabel: "AD", to: "/about" }
 ];
 
@@ -295,7 +302,8 @@ function AppIcon({ name }: { name: AppIconName }) {
   const paths: Record<AppIconName, string[]> = {
     about: ["M12 17v-5", "M12 8h.01", "M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"],
     arena: ["M4 17h16", "M6 14l3-4 3 2 4-6 2 3", "M5 5v14h14"],
-    cloud: ["M7 18h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.4 8.4 4.5 4.5 0 0 0 7 18Z"]
+    cloud: ["M7 18h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.4 8.4 4.5 4.5 0 0 0 7 18Z"],
+    database: ["M4 6c0-2 16-2 16 0s-16 2-16 0Z", "M4 6v6c0 2 16 2 16 0V6", "M4 12v6c0 2 16 2 16 0v-6"]
   };
   return (
     <svg aria-hidden="true" className="app-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24">

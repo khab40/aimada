@@ -16,6 +16,7 @@ dependencies = [
   "websockets>=15.0.1",
   "protobuf>=7.35.1",
   "grpcio>=1.82.1",
+  "pyarrow>=18.0.0",
 ]
 
 [tool.pytest.ini_options]

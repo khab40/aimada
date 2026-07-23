@@ -64,6 +64,7 @@ describe("Core UI navigation and workflow contracts", () => {
   const apiClient = read("src/api/client.ts");
   const runtimeStatus = read("src/features/nebius/components/RuntimeStatusCard.tsx");
   const usageMonitor = read("src/features/nebius/components/UsageCostMonitor.tsx");
+  const ingestion = read("src/pages/DataIngestionPage.tsx");
 
   it("keeps product navigation focused and removes implementation destinations", () => {
     expectIncludes(app, [
@@ -115,6 +116,33 @@ describe("Core UI navigation and workflow contracts", () => {
     assert.doesNotMatch(arena, /MarketBattlefield3D|OrderBookTerrain|battlefieldFrames/);
   });
 
+  it("keeps historical ingestion administrative and source selection explicit", () => {
+    expectIncludes(app, [
+      "label: \"Data Ingestion\"",
+      "<Route path=\"/data-ingestion\" element={<DataIngestionPage />} />"
+    ]);
+    expectIncludes(ingestion, [
+      "LOBSTER batch import",
+      "Available source datasets",
+      "Dataset registry",
+      "importLobsterCandidate",
+      "1 minute",
+      "5 minutes",
+      "Full range",
+      "Import window"
+    ]);
+    expectIncludes(arena, [
+      "Market data source",
+      "Synthetic",
+      "Historical",
+      "Load Historical Data",
+      "formatReplayProgress",
+      "\"<0.01%\"",
+      "future Hybrid market-data source"
+    ]);
+    assert.doesNotMatch(ingestion, /type="file"/);
+  });
+
   it("labels agent events as synthetic tick-based activity with runtime provenance", () => {
     expectIncludes(agentTimeline, [
       "Clock · simulation ticks",
@@ -124,7 +152,7 @@ describe("Core UI navigation and workflow contracts", () => {
       "formatSimulationTick"
     ]);
     assert.doesNotMatch(agentTimeline, /new Date\(timestamp\)/);
-    expectIncludes(arena, ["activeAgents={state.active_agents}", "title=\"Agent Event Timeline\""]);
+    expectIncludes(arena, ["activeAgents={state.active_agents}", "\"Agent Event Timeline\"", "source={historicalMode ? \"historical\" : \"synthetic\"}"]);
     expectIncludes(marketTimeline, [
       "Rolling simulation history",
       "mid price (cyan)",

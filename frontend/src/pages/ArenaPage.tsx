@@ -15,6 +15,7 @@ import { getProductDemoConfig, type ProductDemoConfig } from "@/demoModes";
 import { controlCenterIncidentPath, investigationContextFromArenaState, storeControlCenterIncident } from "@/controlCenterIncident";
 import type { ArenaState, Incident, OrderBookSnapshot } from "@/types/arena";
 import { arenaScenarioLabels } from "@/scenarios";
+import { listImportedDatasets, type ImportedDataset } from "@/api/client";
 
 const WIDGET_TICK_WINDOW = 48;
 
@@ -30,12 +31,30 @@ function formatScenarioLabel(name?: string | null) {
   return name ? arenaScenarioLabels[name as keyof typeof arenaScenarioLabels] ?? name : "None";
 }
 
+function formatExchangeTime(timestampNs?: number) {
+  if (timestampNs === undefined) return "not loaded";
+  const totalMilliseconds = Math.floor(timestampNs / 1_000_000);
+  const hours = Math.floor(totalMilliseconds / 3_600_000);
+  const minutes = Math.floor((totalMilliseconds % 3_600_000) / 60_000);
+  const seconds = Math.floor((totalMilliseconds % 60_000) / 1_000);
+  const milliseconds = totalMilliseconds % 1_000;
+  return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}.${milliseconds.toString().padStart(3, "0")}`;
+}
+
+function formatReplayProgress(progress = 0) {
+  const percent = Math.max(0, Math.min(1, progress)) * 100;
+  if (percent === 0) return "0%";
+  if (percent < 0.01) return "<0.01%";
+  if (percent < 1) return `${percent.toFixed(2)}%`;
+  return `${Math.round(percent)}%`;
+}
+
 export function ArenaPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const demoConfig = getProductDemoConfig(searchParams.get("demo"));
   const replayScenario = searchParams.get("replayScenario");
-  const { launchScenario, mode, pause, reset, running, sourceStatus, start, state, tick } = useArenaSource({
+  const { launchScenario, loadMarketDataSource, mode, pause, reset, running, sourceStatus, start, state, tick } = useArenaSource({
     demo: Boolean(demoConfig),
     demoScenario: demoConfig?.scenarioType,
     symbol: demoConfig?.marketSymbol
@@ -47,6 +66,10 @@ export function ArenaPage() {
   const lastRecordedTickRef = useRef(state.tick);
   const [pendingControl, setPendingControl] = useState<"pause" | "reset" | "start" | null>(null);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [marketDataChoice, setMarketDataChoice] = useState<"synthetic" | "historical">("synthetic");
+  const [historicalDatasets, setHistoricalDatasets] = useState<ImportedDataset[]>([]);
+  const [selectedDatasetId, setSelectedDatasetId] = useState("");
+  const [datasetError, setDatasetError] = useState<string | null>(null);
   const [incidentDetailsMode, setIncidentDetailsMode] = useState<"live" | "replay">("live");
   const incident = useMemo(() => createIncident(state), [state]);
   const [lastIncident, setLastIncident] = useState<Incident | null>(incident);
@@ -54,6 +77,36 @@ export function ArenaPage() {
   const connected = mode === "demo" || mode === "mock" || sourceStatus === "connected";
   const canReset = tick > 0 || running || state.events.length > 0 || Boolean(state.active_scenario) || Boolean(state.incidents?.length);
   const selectedIncident = incident ?? lastIncident;
+  const historicalMode = state.market_data?.source_type === "historical";
+
+  useEffect(() => {
+    if (historicalMode && state.market_data) {
+      setMarketDataChoice("historical");
+      setSelectedDatasetId(state.market_data.dataset_id);
+    }
+  }, [historicalMode, state.market_data]);
+
+  useEffect(() => {
+    if (marketDataChoice !== "historical") {
+      return;
+    }
+    void listImportedDatasets()
+      .then((datasets) => {
+        setHistoricalDatasets(datasets);
+        setSelectedDatasetId((current) => current || datasets[0]?.dataset_id || "");
+        setDatasetError(null);
+      })
+      .catch((error: unknown) => setDatasetError(error instanceof Error ? error.message : "Dataset registry unavailable"));
+  }, [marketDataChoice]);
+
+  const loadSelectedMarketData = useCallback(() => {
+    if (marketDataChoice === "historical" && !selectedDatasetId) {
+      setDatasetError("Select an imported dataset first.");
+      return;
+    }
+    setDatasetError(null);
+    loadMarketDataSource(marketDataChoice, marketDataChoice === "historical" ? selectedDatasetId : "");
+  }, [loadMarketDataSource, marketDataChoice, selectedDatasetId]);
 
   const sendToControlCenter = useCallback((selected: Incident) => {
     const enriched = {
@@ -155,10 +208,43 @@ export function ArenaPage() {
         connected={connected}
         pendingControl={pendingControl}
         running={running}
-        selectedScenario={formatScenarioLabel(state.active_scenario?.scenario_name)}
+        selectedScenario={historicalMode ? "Unavailable for historical data" : formatScenarioLabel(state.active_scenario?.scenario_name)}
         tick={tick}
-        source={mode === "websocket" ? `backend websocket:${sourceStatus}` : mode === "demo" ? demoConfig?.title ?? "demo mode" : `local mock:${sourceStatus}`}
+        source={historicalMode ? `${state.market_data?.symbol} historical · ${formatExchangeTime(state.market_data?.exchange_timestamp_ns)}` : mode === "websocket" ? `backend websocket:${sourceStatus}` : mode === "demo" ? demoConfig?.title ?? "demo mode" : `local mock:${sourceStatus}`}
       />
+
+      <section className="panel market-data-source-panel" aria-label="Market data source">
+        <div className="market-data-source-options" role="radiogroup" aria-label="Market data source">
+          <strong>Market data source</strong>
+          <label>
+            <input checked={marketDataChoice === "synthetic"} disabled={mode !== "websocket"} name="market-data-source" onChange={() => setMarketDataChoice("synthetic")} type="radio" />
+            Synthetic
+          </label>
+          <label>
+            <input checked={marketDataChoice === "historical"} disabled={mode !== "websocket"} name="market-data-source" onChange={() => setMarketDataChoice("historical")} type="radio" />
+            Historical
+          </label>
+        </div>
+        {marketDataChoice === "historical" ? (
+          <select aria-label="Imported historical dataset" onChange={(event) => setSelectedDatasetId(event.target.value)} value={selectedDatasetId}>
+            <option value="">Select imported dataset</option>
+            {historicalDatasets.map((dataset) => (
+              <option key={dataset.dataset_id} value={dataset.dataset_id}>
+                {dataset.symbol} · {dataset.trade_date} · {dataset.start_time}–{dataset.end_time} · depth {dataset.depth}
+              </option>
+            ))}
+          </select>
+        ) : null}
+        <button className="primary-button" disabled={mode !== "websocket" || !connected || (marketDataChoice === "historical" && !selectedDatasetId)} onClick={loadSelectedMarketData} type="button">
+          {marketDataChoice === "historical" ? "Load Historical Data" : "Load Synthetic Data"}
+        </button>
+        {historicalMode ? (
+          <span className="historical-progress">
+            {formatReplayProgress(state.market_data?.progress)} · {state.market_data?.replay_position.toLocaleString()}/{state.market_data?.row_count.toLocaleString()}
+          </span>
+        ) : null}
+        {datasetError ? <span className="control-error">{datasetError}</span> : null}
+      </section>
 
       <div className="shortcut-help">
         <button
@@ -211,8 +297,16 @@ export function ArenaPage() {
           <header className="arena-column-header">
             <h2>Scenario Setup</h2>
           </header>
-          <AttackTracker attack={state.active_scenario} />
-          <AttackBuilder onLaunchScenario={launchScenario} />
+          {historicalMode ? (
+            <div className="empty-state">
+              Historical replay is read-only. Simulated attack overlays are reserved for the future Hybrid market-data source.
+            </div>
+          ) : (
+            <>
+              <AttackTracker attack={state.active_scenario} />
+              <AttackBuilder onLaunchScenario={launchScenario} />
+            </>
+          )}
         </section>
 
         <section className="panel cockpit-center arena-column">
@@ -260,7 +354,13 @@ export function ArenaPage() {
               ) : secondaryView === "exchange" ? (
                 <ExchangeEventTape events={state.exchange_events ?? []} />
               ) : (
-                <AgentTimeline activeAgents={state.active_agents} events={state.events} layout="compact" title="Agent Event Timeline" />
+                <AgentTimeline
+                  activeAgents={state.active_agents}
+                  events={state.events}
+                  layout="compact"
+                  source={historicalMode ? "historical" : "synthetic"}
+                  title={historicalMode ? "Historical Event Timeline" : "Agent Event Timeline"}
+                />
               )}
             </div>
           </section>

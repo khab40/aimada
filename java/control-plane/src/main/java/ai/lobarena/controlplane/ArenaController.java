@@ -5,10 +5,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.databind.JsonNode;
+import java.util.Map;
 
 @RestController
 final class ArenaController {
@@ -46,6 +48,17 @@ final class ArenaController {
     @PostMapping("/api/simulation/reset")
     JsonNode reset() {
         return arena.reset();
+    }
+
+    @PostMapping("/api/arena/data-source")
+    JsonNode loadDataSource(@RequestBody Map<String, String> body) {
+        try {
+            return arena.loadDataSource(
+                    body.getOrDefault("source_type", ""),
+                    body.getOrDefault("dataset_id", ""));
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, exception.getMessage(), exception);
+        }
     }
 
     @PostMapping("/internal/arena/step")

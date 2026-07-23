@@ -59,16 +59,29 @@ Optional Prometheus only:
 docker compose --profile prometheus up --build
 ```
 
+Prometheus scrapes operational metrics from the Java control plane, FastAPI,
+and the agent runner and stores them as time series. Choose this profile when
+you want to inspect scrape targets or run PromQL without starting Grafana.
+
 Optional Prometheus and Grafana:
 
 ```bash
 docker compose --profile grafana up --build
 ```
 
+The Grafana profile starts both services. Grafana uses the automatically
+provisioned Prometheus datasource to visualize service health, request rates and
+latency, JVM/GC pressure, arena state, and agent-runner behavior.
+
 - **Grafana dashboards**: http://localhost:3000
 - **Prometheus**: http://localhost:9090
 
 Use the `LOB Arena E2E Overview` dashboard first, then `LOB Arena Bottlenecks` if the arena appears slow.
+The monitoring stack is read-only and optional: it is not part of exchange
+execution or detector decisions. Detector precision, recall, and F1 remain
+benchmark outputs rather than Prometheus runtime metrics. See
+[Kernel Observability](kernel-observability.md) for the scrape map and dashboard
+interpretation.
 
 For real Nebius Serverless plus dashboards, configure `.env`, then run:
 
@@ -144,6 +157,7 @@ python scripts/call_endpoint.py --base-url http://localhost:9000 --route orderbo
 - **Learn the workflows**: Read [Use Cases](USE_CASES.md)
 - **Deploy to Nebius**: Read [Nebius Deployment](nebius-deployment.md)
 - **Run benchmarks**: Read [Benchmark Methodology](benchmark-methodology.md)
+- **Inspect runtime health**: Read [Kernel Observability](kernel-observability.md)
 - **Understand the design**: Read [Architecture Records](architecture/README.md)
 
 ## Troubleshooting
@@ -218,6 +232,7 @@ curl -X POST http://localhost:8000/api/red-team/generate-scenario \
 - [Architecture Overview](architecture.md)
 - [Use Cases](USE_CASES.md)
 - [Runtime Model](runtime-model.md)
+- [Kernel Observability](kernel-observability.md)
 - [Benchmark Methodology](benchmark-methodology.md)
 - [Nebius Deployment](nebius-deployment.md)
 - [Safety & Disclaimers](safety-and-disclaimers.md)

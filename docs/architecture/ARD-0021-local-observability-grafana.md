@@ -4,7 +4,7 @@ Status: Accepted
 
 Date: 2026-07-20
 
-Implementation Status: `[done]`
+Implementation Status: `[partial]`
 
 ## Context
 
@@ -18,8 +18,12 @@ Add an opt-in local monitoring profile using Prometheus and Grafana:
 
 1. Prometheus scrapes Java Spring Actuator, FastAPI `/metrics`, agent-runner `/metrics`, and Prometheus itself.
 2. Grafana is provisioned from files with the Prometheus datasource and dashboards, requiring no manual setup.
-3. The default Compose path remains unchanged; monitoring starts only through the `monitoring` profile.
+3. The default Compose path remains unchanged. The `prometheus` profile starts
+   metrics collection alone, the `grafana` profile starts both services, and
+   `monitoring` remains an alias for the full stack.
 4. Python services expose dependency-free Prometheus text metrics for the bottleneck boundaries they own.
+5. The stack carries operational telemetry only. Detector quality metrics and
+   evidence remain persisted benchmark artifacts.
 
 ```mermaid
 flowchart LR
@@ -38,7 +42,7 @@ flowchart LR
     Prom -->|"scrape"| Java
     Prom -->|"scrape"| Backend
     Prom -->|"scrape"| Runner
-    Prom --> Grafana
+    Grafana -->|"PromQL queries"| Prom
 ```
 
 ## Metrics Contract
@@ -80,6 +84,27 @@ Provisioned dashboards are:
 - `LOB Arena Components` for Java JVM pressure, agent runner decision latency/rate, and FastAPI-to-Java proxy metrics.
 - `LOB Arena Bottlenecks` for side-by-side latency, error pressure, heap pressure, and agent output.
 
+## Planned Detector Tournament Extension
+
+Instrument detector tournaments at the FastAPI orchestration boundary rather
+than scraping local child processes or remote Nebius Jobs. That boundary sees
+the same lifecycle in local and cloud modes and can project bounded operational
+telemetry through the existing backend `/metrics` target.
+
+The extension adds:
+
+- `detector_tournament_runs_total{execution_mode,outcome}`;
+- `detector_tournament_duration_seconds_*{execution_mode,outcome}`;
+- `detector_tournament_in_flight{execution_mode}`;
+- `detector_tournament_scenarios_total{execution_mode,outcome}`;
+- `detector_tournament_artifact_collections_total{execution_mode,outcome}`;
+- a provisioned `LOB Arena Detector Tournaments` Grafana dashboard.
+
+Run identifiers, Job identifiers, seeds, scenario identifiers, and artifact
+paths are prohibited as labels. Detector precision, recall, F1, leaderboard
+rows, and per-scenario results remain durable benchmark artifacts. This
+extension is an accepted design but is not yet implemented.
+
 ## Consequences
 
 Positive:
@@ -93,10 +118,13 @@ Tradeoffs:
 - Python metrics are process-local and reset on container restart.
 - Prometheus/Grafana add two opt-in containers and storage volumes.
 - Backend `/metrics` reads live Java arena state, so a down Java arena still makes the backend scrape fail; that reflects the current runtime dependency.
+- Runtime time series and detector benchmark metrics use separate storage and
+  retention paths, so cross-analysis requires deliberate correlation.
 
 ## Related Documentation
 
 - [Kernel Observability](../kernel-observability.md)
+- [High-Level Architecture](../architecture.md#detector-tournament-observability-extension)
 - [Quickstart](../QUICKSTART.md)
 - [ARD-0010: Agent Runner Execution Architecture](ARD-0010-agent-runner-execution.md)
 - [ARD-0020: Java Arena WebSocket And Agent Orchestration](ARD-0020-java-arena-websocket-agent-orchestration.md)

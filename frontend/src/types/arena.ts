@@ -222,6 +222,38 @@ export type ArenaState = {
   detectors: DetectorScores;
   incidents?: Incident[];
   features?: Partial<MarketFeatures>;
+  historical_events?: HistoricalMarketEvent[];
+  market_data?: MarketDataContext;
+};
+
+export type HistoricalMarketEvent = {
+  type: string;
+  event_kind: string;
+  source_event_code: number;
+  source_sequence: number;
+  timestamp_ns_since_midnight: number;
+  order_id: string;
+  source_order_id: number;
+  quantity: number;
+  price_x10000: number;
+  price?: number;
+  side?: "buy" | "sell" | null;
+  symbol: string;
+  source: "historical";
+};
+
+export type MarketDataContext = {
+  source_type: "historical";
+  dataset_id: string;
+  symbol: string;
+  trade_date: string;
+  depth: number;
+  source_sequence: number;
+  replay_position: number;
+  exchange_timestamp_ns: number;
+  row_count: number;
+  progress: number;
+  eof: boolean;
 };
 
 export type ArenaWebSocketMessage = {

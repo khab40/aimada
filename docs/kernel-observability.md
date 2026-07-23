@@ -39,7 +39,28 @@ Trace export uses Spring Boot's `management.tracing.export.otlp.enabled` gate an
 
 ## Local Prometheus And Grafana
 
-Start the opt-in monitoring profile with the normal local services:
+Prometheus and Grafana have separate, complementary roles:
+
+- **Prometheus** is the collector and time-series store. It pulls metrics from
+  the application services every 15 seconds and provides raw target health and
+  PromQL inspection.
+- **Grafana** is the visualization layer. It does not scrape the application
+  services directly; it queries the provisioned Prometheus datasource and
+  renders the project dashboards.
+
+Start Prometheus without Grafana when raw metrics are enough:
+
+```bash
+docker compose --profile prometheus up --build
+```
+
+Start the full dashboard stack (Prometheus plus Grafana) with:
+
+```bash
+docker compose --profile grafana up --build
+```
+
+The older `monitoring` profile is retained as an alias for the full stack:
 
 ```bash
 docker compose --profile monitoring up --build
@@ -66,6 +87,33 @@ The profile scrapes:
 | `lob-arena-agent-runner` | `agent-runner:9100/metrics` | decision latency, request outcomes, agent mix, and intent output |
 | `prometheus` | `prometheus:9090/metrics` | scrape health and Prometheus self-observation |
 
+This is operational telemetry: service availability, throughput, latency,
+resource pressure, arena state, and agent-runner behavior. Detector-tournament
+precision, recall, F1, false-positive counts, and evidence manifests remain
+benchmark artifacts and are not ingested into Prometheus.
+
+### Planned Detector Tournament Telemetry
+
+Detector tournaments fit the operational model, but their short-lived local
+processes and remote Nebius Jobs should not become scrape targets. FastAPI is
+the stable bridge: it launches or submits the work, observes status transitions,
+and collects artifacts, so its `/metrics` endpoint can expose bounded counters,
+gauges, and duration histograms for both execution modes.
+
+The planned Grafana `LOB Arena Detector Tournaments` view will answer:
+
+- how many tournaments complete or fail by execution mode;
+- how long local and Nebius runs take;
+- how many tournaments are queued or running;
+- how many scenarios complete over time;
+- whether Nebius artifact collection succeeds.
+
+No metric label will contain a tournament ID, Nebius Job ID, random seed,
+scenario ID, or artifact path. Detailed quality results remain in CSV/JSON
+artifacts and benchmark reports. See the
+[architecture extension](architecture.md#detector-tournament-observability-extension)
+for the proposed metric families and data flow.
+
 Use the bottleneck dashboard first when the arena slows down. If agent decision p95 rises before Java HTTP/kernel latency, the runner is likely saturated. If backend-to-Java latency rises while Java HTTP latency stays flat, the proxy path or network is suspect. If Java heap/GC and Java HTTP latency rise together, inspect Java allocation and scenario load.
 
 The retired Python shadow/authority metrics are intentionally absent. Compatibility drift is a CI failure from exact golden-corpus replay, while production Java health, request outcomes, latency, and event counts remain available through Actuator and Prometheus.
@@ -75,7 +123,10 @@ The retired Python shadow/authority metrics are intentionally absent. Compatibil
 - `monitoring/prometheus/java-kernel.yml` scrapes the Java actuator and existing Python metric endpoints.
 - `monitoring/grafana/dashboards/java-kernel.json` provides Java request rate, p95/p99 RPC latency, allocation rate, and canonical event-rate panels. Historical shadow panels may be removed from deployed dashboards.
 
-These are provisioning templates only; this step adds no Docker containers. Adjust scrape targets to the deployment service names.
+These files are mounted by the opt-in Compose services. Starting a Prometheus,
+Grafana, or legacy `monitoring` profile adds the corresponding containers and
+persistent local volumes; the default Compose path adds neither. Adjust scrape
+targets when deployment service names differ.
 
 Recommended alerts are:
 
@@ -85,3 +136,9 @@ Recommended alerts are:
 - absence of Java scrape data while the kernel service is deployed.
 
 Grafana is a visualization consumer, never a kernel dependency. Prometheus scraping and OTLP exporting remain outside simulation execution.
+
+## Related Documentation
+
+- [README observability overview](../README.md#role-of-prometheus-and-grafana)
+- [Quick Start](QUICKSTART.md)
+- [ARD-0021: Local Observability With Prometheus And Grafana](architecture/ARD-0021-local-observability-grafana.md)

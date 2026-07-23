@@ -3,6 +3,9 @@ from pathlib import Path
 from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+_BACKEND_ROOT = Path(__file__).resolve().parents[1]
+_PROJECT_ROOT = _BACKEND_ROOT.parent if _BACKEND_ROOT.name == "backend" else _BACKEND_ROOT
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -141,6 +144,14 @@ class Settings(BaseSettings):
     arena_output_dir: Path = Field(default=Path("../outputs"), alias="ARENA_OUTPUT_DIR")
     arena_data_retention_days: int = Field(default=1, ge=1, le=3650, alias="ARENA_DATA_RETENTION_DAYS")
     arena_sample_data_dir: Path = Field(default=Path("../data/sample"), alias="ARENA_SAMPLE_DATA_DIR")
+    arena_lobster_raw_dir: Path = Field(
+        default=_PROJECT_ROOT / "data/lobster",
+        alias="ARENA_LOBSTER_RAW_DIR",
+    )
+    arena_historical_data_dir: Path = Field(
+        default=_PROJECT_ROOT / "data/processed/lobster",
+        alias="ARENA_HISTORICAL_DATA_DIR",
+    )
     arena_local_batch_max_workers: int = Field(
         default=1,
         ge=1,

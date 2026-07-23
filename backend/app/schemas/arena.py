@@ -254,3 +254,5 @@ class ArenaState(BaseModel):
     detectors: DetectorScores
     incidents: list[Incident] | None = None
     features: dict[str, Any] | MarketFeatures | None = None
+    historical_events: list[dict[str, Any]] = Field(default_factory=list)
+    market_data: dict[str, Any] | None = None

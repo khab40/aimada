@@ -10,6 +10,78 @@ import type {
 
 export { API_BASE_URL };
 
+export type LobsterCandidate = {
+  candidate_id: string;
+  symbol: string;
+  trade_date: string;
+  start_time_ms: number;
+  end_time_ms: number;
+  start_time: string;
+  end_time: string;
+  depth: number;
+  message_file: string | null;
+  orderbook_file: string | null;
+  message_file_size: number | null;
+  orderbook_file_size: number | null;
+  status: "ready" | "invalid" | "importing" | "failed" | "imported";
+  errors: string[];
+  dataset_id: string | null;
+};
+
+export type ImportedDataset = {
+  dataset_id: string;
+  source_type: string;
+  symbol: string;
+  trade_date: string;
+  start_time_ms: number;
+  end_time_ms: number;
+  start_time: string;
+  end_time: string;
+  depth: number;
+  row_count: number;
+  event_counts: Record<string, number>;
+  imported_at: string;
+  path: string;
+};
+
+export async function listLobsterCandidates(): Promise<LobsterCandidate[]> {
+  const response = await fetch(`${API_BASE_URL}/api/data-ingestion/lobster/candidates`);
+  if (!response.ok) {
+    throw new Error(await apiErrorMessage(response, "LOBSTER discovery failed"));
+  }
+  return response.json();
+}
+
+export async function importLobsterCandidate(
+  candidateId: string,
+  importWindow: { start_time_ms?: number; end_time_ms?: number } = {}
+): Promise<{
+  candidate_id: string;
+  dataset_id: string | null;
+  status: "importing" | "imported";
+}> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/data-ingestion/lobster/candidates/${encodeURIComponent(candidateId)}/import`,
+    {
+      body: JSON.stringify(importWindow),
+      headers: { "Content-Type": "application/json" },
+      method: "POST"
+    }
+  );
+  if (!response.ok) {
+    throw new Error(await apiErrorMessage(response, "LOBSTER import failed"));
+  }
+  return response.json();
+}
+
+export async function listImportedDatasets(): Promise<ImportedDataset[]> {
+  const response = await fetch(`${API_BASE_URL}/api/data-ingestion/datasets`);
+  if (!response.ok) {
+    throw new Error(await apiErrorMessage(response, "Dataset registry request failed"));
+  }
+  return response.json();
+}
+
 export async function getHealth(): Promise<{ status: string }> {
   const response = await fetch(`${API_BASE_URL}/health`);
   return response.json();

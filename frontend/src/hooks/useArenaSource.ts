@@ -112,11 +112,23 @@ export function useArenaSource({ demo = false, demoScenario, symbol }: { demo?: 
     sendWebSocketCommand({ scenario: scenarioToBackendName(scenario), type: "launch_scenario" });
   }, [mockArena, mode, sendWebSocketCommand]);
 
+  const loadMarketDataSource = useCallback((sourceType: "synthetic" | "historical", datasetId = "") => {
+    if (mode !== "websocket") {
+      return false;
+    }
+    return sendWebSocketCommand({
+      dataset_id: datasetId,
+      source_type: sourceType,
+      type: "load_market_data_source"
+    });
+  }, [mode, sendWebSocketCommand]);
+
   const state = mode === "websocket" ? websocketState : mockArena.state;
 
   return useMemo(
     () => ({
       launchScenario,
+      loadMarketDataSource,
       mode,
       pause,
       reset,
@@ -129,7 +141,7 @@ export function useArenaSource({ demo = false, demoScenario, symbol }: { demo?: 
       apiBaseUrl,
       wsUrl
     }),
-    [apiBaseUrl, launchScenario, mode, pause, reset, sourceStatus, start, state, wsUrl]
+    [apiBaseUrl, launchScenario, loadMarketDataSource, mode, pause, reset, sourceStatus, start, state, wsUrl]
   );
 }
 

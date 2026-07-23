@@ -59,6 +59,8 @@ flowchart LR
     Endpoint["Nebius Serverless Endpoint<br/>investigation + generation"]
     Jobs["Nebius Serverless Jobs<br/>detector tournaments"]
     Store["Artifacts + Evidence<br/>local disk + S3"]
+    Prometheus["Prometheus<br/>operational metrics"]
+    Grafana["Grafana<br/>dashboards"]
 
     UI <-->|commands + arena state| Java
     Java --> Runtime
@@ -72,9 +74,22 @@ flowchart LR
     Endpoint --> Store
     Jobs --> Store
     Store --> API
+    Prometheus -->|scrapes| Java
+    Prometheus -->|scrapes| API
+    Prometheus -->|scrapes| Runner
+    Grafana -->|PromQL queries| Prometheus
 ```
 
 Java is the only writer to the exchange and owns browser WebSocket delivery and runner orchestration. Agents receive read-only market snapshots and return bounded decisions. Python is retained for AI/ML, LangGraph-capable runner work, experiments, and serverless components; the LLM receives summarized evidence rather than raw order-book streams.
+
+Prometheus and Grafana form an optional, read-only observability plane; neither is
+in the simulation or detector decision path. Prometheus scrapes operational
+metrics from Java Spring Actuator, FastAPI, and the agent runner every 15 seconds
+and stores the resulting time series. Grafana queries Prometheus and presents
+provisioned dashboards for end-to-end health, Java/JVM behavior, component
+latency, and bottleneck isolation. These runtime signals complement—but do not
+replace—the precision, recall, F1, and latency artifacts produced by detector
+tournaments.
 
 ```text
 backend/          FastAPI AI/ML, experiments, serverless, and evidence APIs
@@ -133,6 +148,26 @@ docker compose --profile monitoring up --build
 ```
 
 Open Grafana at http://localhost:3000 and Prometheus at http://localhost:9090. Grafana is provisioned with end-to-end, Java, component, and bottleneck dashboards.
+
+### Role of Prometheus and Grafana
+
+| Component | Role in LOB Arena |
+| --- | --- |
+| Prometheus | Pulls and stores operational time-series metrics from `java-kernel:8080/actuator/prometheus`, `backend:8000/metrics`, `agent-runner:9100/metrics`, and Prometheus itself. Its target view and PromQL UI help verify scrape health and inspect raw metrics. |
+| Grafana | Uses Prometheus as its automatically provisioned datasource and turns those metrics into the `LOB Arena E2E Overview`, `LOB Arena Java Kernel`, `LOB Arena Components`, and `LOB Arena Bottlenecks` dashboards. |
+
+Use `--profile prometheus` when raw metrics and PromQL are sufficient. Use
+`--profile grafana` when you also want dashboards; this profile starts both
+services. Both are opt-in local diagnostics and are not required for a valid
+simulation, AI investigation, or detector tournament. See
+[Kernel Observability](docs/kernel-observability.md) for the metric sources,
+dashboard workflow, and troubleshooting guidance.
+
+The planned detector-tournament integration will expose bounded lifecycle
+telemetry—runs, completion status, duration, scenario throughput, and artifact
+collection—through the backend `/metrics` endpoint for a Grafana tournament
+operations view. Prometheus will not scrape short-lived tournament processes or
+use tournament IDs as labels; detailed leaderboards remain durable artifacts.
 
 ## Automated grader
 
@@ -309,6 +344,7 @@ make secrets-check
 | Architecture | [docs/architecture.md](docs/architecture.md) |
 | Architecture decisions | [docs/architecture/README.md](docs/architecture/README.md) |
 | Runtime model | [docs/runtime-model.md](docs/runtime-model.md) |
+| Prometheus and Grafana observability | [docs/kernel-observability.md](docs/kernel-observability.md) |
 | Benchmark methodology | [docs/benchmark-methodology.md](docs/benchmark-methodology.md) |
 | Nebius deployment | [docs/nebius-deployment.md](docs/nebius-deployment.md) |
 | L40S migration | [docs/l40s-migration.md](docs/l40s-migration.md) |
