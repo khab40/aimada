@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import json
 import os
-from pathlib import Path
 import subprocess
+from pathlib import Path
 
 import yaml
 
@@ -67,6 +67,33 @@ def test_observability_profiles_support_prometheus_alone_or_grafana_stack() -> N
     assert services["prometheus"]["profiles"] == ["prometheus", "grafana", "monitoring"]
     assert services["grafana"]["profiles"] == ["grafana", "monitoring"]
     assert "prometheus" in services["grafana"]["depends_on"]
+
+
+def test_detector_tournament_dashboard_uses_bounded_prometheus_metrics() -> None:
+    dashboard_path = (
+        Path(__file__).resolve().parents[2]
+        / "monitoring"
+        / "grafana"
+        / "dashboards"
+        / "lob-arena-detector-tournaments.json"
+    )
+    dashboard = json.loads(dashboard_path.read_text(encoding="utf-8"))
+    expressions = [
+        target["expr"]
+        for panel in dashboard["panels"]
+        for target in panel.get("targets", [])
+    ]
+    rendered = "\n".join(expressions)
+
+    assert dashboard["title"] == "LOB Arena Detector Tournaments"
+    assert dashboard["uid"] == "lob-arena-detector-tournaments"
+    assert "detector_tournament_in_flight" in rendered
+    assert "detector_tournament_runs_total" in rendered
+    assert "detector_tournament_duration_seconds_bucket" in rendered
+    assert "detector_tournament_scenarios_total" in rendered
+    assert "detector_tournament_artifact_collections_total" in rendered
+    assert "tournament_id" not in rendered
+    assert "job_id" not in rendered
 
 
 def test_disabled_serverless_mode_clears_stale_cloud_configuration() -> None:

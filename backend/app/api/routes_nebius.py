@@ -82,6 +82,7 @@ async def run_serverless_smoke(request: Request, payload: ServerlessSmokeRequest
         store=request.app.state.store,
         repo_root=_repo_root(),
         execution_mode=execution_mode,
+        tournament_metrics=request.app.state.tournament_metrics,
     )
 
 
@@ -412,7 +413,13 @@ def start_detector_tournament(
 ) -> DetectorTournamentResponse:
     store = request.app.state.store
     repo_root = _repo_root()
-    response = queue_tournament(payload, store=store, repo_root=repo_root)
+    tournament_metrics = getattr(request.app.state, "tournament_metrics", None)
+    response = queue_tournament(
+        payload,
+        store=store,
+        repo_root=repo_root,
+        observer=tournament_metrics,
+    )
     if response.status == "queued" and response.execution_mode in {"local", "local_mock"}:
         background_tasks.add_task(
             complete_queued_tournament,
@@ -421,6 +428,7 @@ def start_detector_tournament(
             started_at=response.started_at,
             store=store,
             repo_root=repo_root,
+            observer=tournament_metrics,
         )
     append_history_artifact(
         store,
@@ -455,7 +463,11 @@ def read_detector_tournament(tournament_id: str, request: Request) -> DetectorTo
 
 @router.post("/tournament/{tournament_id}/refresh", response_model=DetectorTournamentResponse)
 def refresh_detector_tournament(tournament_id: str, request: Request) -> DetectorTournamentResponse:
-    response = refresh_tournament(tournament_id, store=request.app.state.store)
+    response = refresh_tournament(
+        tournament_id,
+        store=request.app.state.store,
+        observer=getattr(request.app.state, "tournament_metrics", None),
+    )
     if response is None:
         raise HTTPException(status_code=404, detail=f"unknown tournament: {tournament_id}")
     return response

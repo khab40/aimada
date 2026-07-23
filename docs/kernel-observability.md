@@ -71,12 +71,13 @@ Open:
 - Grafana: http://localhost:3000
 - Prometheus: http://localhost:9090
 
-Grafana is provisioned automatically with the Prometheus datasource and four dashboards:
+Grafana is provisioned automatically with the Prometheus datasource and five dashboards:
 
 - `LOB Arena E2E Overview`
 - `LOB Arena Java Kernel`
 - `LOB Arena Components`
 - `LOB Arena Bottlenecks`
+- `LOB Arena Detector Tournaments`
 
 The profile scrapes:
 
@@ -92,15 +93,15 @@ resource pressure, arena state, and agent-runner behavior. Detector-tournament
 precision, recall, F1, false-positive counts, and evidence manifests remain
 benchmark artifacts and are not ingested into Prometheus.
 
-### Planned Detector Tournament Telemetry
+### Detector Tournament Telemetry
 
-Detector tournaments fit the operational model, but their short-lived local
-processes and remote Nebius Jobs should not become scrape targets. FastAPI is
+Detector tournaments use the operational model, but their short-lived local
+processes and remote Nebius Jobs are not scrape targets. FastAPI is
 the stable bridge: it launches or submits the work, observes status transitions,
-and collects artifacts, so its `/metrics` endpoint can expose bounded counters,
-gauges, and duration histograms for both execution modes.
+and collects artifacts, so its `/metrics` endpoint exposes bounded counters,
+gauges, and duration histograms for local, local-mock, and Nebius execution.
 
-The planned Grafana `LOB Arena Detector Tournaments` view will answer:
+The provisioned Grafana `LOB Arena Detector Tournaments` view answers:
 
 - how many tournaments complete or fail by execution mode;
 - how long local and Nebius runs take;
@@ -111,8 +112,8 @@ The planned Grafana `LOB Arena Detector Tournaments` view will answer:
 No metric label will contain a tournament ID, Nebius Job ID, random seed,
 scenario ID, or artifact path. Detailed quality results remain in CSV/JSON
 artifacts and benchmark reports. See the
-[architecture extension](architecture.md#detector-tournament-observability-extension)
-for the proposed metric families and data flow.
+[architecture overview](architecture.md#detector-tournament-observability)
+for the metric families and data flow.
 
 Use the bottleneck dashboard first when the arena slows down. If agent decision p95 rises before Java HTTP/kernel latency, the runner is likely saturated. If backend-to-Java latency rises while Java HTTP latency stays flat, the proxy path or network is suspect. If Java heap/GC and Java HTTP latency rise together, inspect Java allocation and scenario load.
 
@@ -122,6 +123,7 @@ The retired Python shadow/authority metrics are intentionally absent. Compatibil
 
 - `monitoring/prometheus/java-kernel.yml` scrapes the Java actuator and existing Python metric endpoints.
 - `monitoring/grafana/dashboards/java-kernel.json` provides Java request rate, p95/p99 RPC latency, allocation rate, and canonical event-rate panels. Historical shadow panels may be removed from deployed dashboards.
+- `monitoring/grafana/dashboards/lob-arena-detector-tournaments.json` provides tournament outcomes, p95 duration, scenario throughput, in-flight work, and Nebius artifact-collection panels.
 
 These files are mounted by the opt-in Compose services. Starting a Prometheus,
 Grafana, or legacy `monitoring` profile adds the corresponding containers and

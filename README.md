@@ -147,14 +147,14 @@ The older `monitoring` profile remains an alias for the Prometheus/Grafana pair:
 docker compose --profile monitoring up --build
 ```
 
-Open Grafana at http://localhost:3000 and Prometheus at http://localhost:9090. Grafana is provisioned with end-to-end, Java, component, and bottleneck dashboards.
+Open Grafana at http://localhost:3000 and Prometheus at http://localhost:9090. Grafana is provisioned with end-to-end, Java, component, bottleneck, and detector-tournament dashboards.
 
 ### Role of Prometheus and Grafana
 
 | Component | Role in LOB Arena |
 | --- | --- |
 | Prometheus | Pulls and stores operational time-series metrics from `java-kernel:8080/actuator/prometheus`, `backend:8000/metrics`, `agent-runner:9100/metrics`, and Prometheus itself. Its target view and PromQL UI help verify scrape health and inspect raw metrics. |
-| Grafana | Uses Prometheus as its automatically provisioned datasource and turns those metrics into the `LOB Arena E2E Overview`, `LOB Arena Java Kernel`, `LOB Arena Components`, and `LOB Arena Bottlenecks` dashboards. |
+| Grafana | Uses Prometheus as its automatically provisioned datasource and turns those metrics into the `LOB Arena E2E Overview`, `LOB Arena Java Kernel`, `LOB Arena Components`, `LOB Arena Bottlenecks`, and `LOB Arena Detector Tournaments` dashboards. |
 
 Use `--profile prometheus` when raw metrics and PromQL are sufficient. Use
 `--profile grafana` when you also want dashboards; this profile starts both
@@ -163,11 +163,12 @@ simulation, AI investigation, or detector tournament. See
 [Kernel Observability](docs/kernel-observability.md) for the metric sources,
 dashboard workflow, and troubleshooting guidance.
 
-The planned detector-tournament integration will expose bounded lifecycle
-telemetry—runs, completion status, duration, scenario throughput, and artifact
-collection—through the backend `/metrics` endpoint for a Grafana tournament
-operations view. Prometheus will not scrape short-lived tournament processes or
-use tournament IDs as labels; detailed leaderboards remain durable artifacts.
+Detector-tournament orchestration exposes bounded lifecycle telemetry—runs,
+completion status, duration, scenario throughput, in-flight work, and Nebius
+artifact collection—through the backend `/metrics` endpoint. The
+`LOB Arena Detector Tournaments` dashboard visualizes these signals. Prometheus
+does not scrape short-lived tournament processes or use tournament IDs as
+labels; detailed leaderboards remain durable artifacts.
 
 ## Automated grader
 

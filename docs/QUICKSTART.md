@@ -77,6 +77,9 @@ latency, JVM/GC pressure, arena state, and agent-runner behavior.
 - **Prometheus**: http://localhost:9090
 
 Use the `LOB Arena E2E Overview` dashboard first, then `LOB Arena Bottlenecks` if the arena appears slow.
+Use `LOB Arena Detector Tournaments` to inspect local and Nebius tournament
+outcomes, duration, scenario throughput, in-flight work, and artifact
+collection.
 The monitoring stack is read-only and optional: it is not part of exchange
 execution or detector decisions. Detector precision, recall, and F1 remain
 benchmark outputs rather than Prometheus runtime metrics. See
