@@ -11,6 +11,7 @@ import ai.lobarena.kernel.book.KernelOrder;
 import ai.lobarena.kernel.book.MutationContext;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -37,6 +38,7 @@ final class LiveArenaService {
     private final ObjectMapper mapper;
     private final AgentOrchestrator orchestrator;
     private final ArenaJournal journal;
+    private final HistoricalMarketDataSource historical;
     private final Deque<ObjectNode> agentEvents = new ArrayDeque<>();
     private final List<ObjectNode> incidents = new ArrayList<>();
     private final Set<String> incidentKeys = new HashSet<>();
@@ -51,28 +53,50 @@ final class LiveArenaService {
     private double previousDepth;
 
     LiveArenaService(ObjectMapper mapper, AgentOrchestrator orchestrator, ArenaJournal journal) {
+        this(mapper, orchestrator, journal, Path.of("../data/processed/lobster"), 250);
+    }
+
+    LiveArenaService(
+            ObjectMapper mapper,
+            AgentOrchestrator orchestrator,
+            ArenaJournal journal,
+            Path historicalDataDir,
+            int historicalRowsPerTick) {
         this.mapper = mapper;
         this.orchestrator = orchestrator;
         this.journal = journal;
+        this.historical = new HistoricalMarketDataSource(mapper, historicalDataDir, historicalRowsPerTick);
         this.matching = newMatchingEngine();
         this.previousDepth = topDepth(matching.book().snapshot(5));
     }
 
     synchronized JsonNode state() {
+        if (historical.loaded()) {
+            return historical.state();
+        }
         return buildState();
     }
 
     synchronized JsonNode start() {
+        if (historical.loaded()) {
+            return historical.start();
+        }
         running = true;
         return buildState();
     }
 
     synchronized JsonNode pause() {
+        if (historical.loaded()) {
+            return historical.pause();
+        }
         running = false;
         return buildState();
     }
 
     synchronized JsonNode reset() {
+        if (historical.loaded()) {
+            return historical.reset();
+        }
         running = false;
         tick = 0;
         scenario = null;
@@ -86,6 +110,9 @@ final class LiveArenaService {
     }
 
     synchronized JsonNode launchScenario(String family) {
+        if (historical.loaded()) {
+            throw new IllegalArgumentException("scenarios are unavailable for historical market data");
+        }
         String normalized = normalizeScenario(family);
         scenarioCounter++;
         scenario = new LiveScenario(
@@ -119,6 +146,14 @@ final class LiveArenaService {
     }
 
     synchronized JsonNode exchangeEvents(long afterSequence, int limit) {
+        if (historical.loaded()) {
+            ObjectNode replay = mapper.createObjectNode();
+            replay.putArray("events");
+            return replay.put("after_sequence", afterSequence)
+                    .put("next_after_sequence", afterSequence)
+                    .put("latest_sequence", 0)
+                    .put("has_more", false);
+        }
         List<ExchangeEvent> all = matching.events();
         ArrayNode events = mapper.createArrayNode();
         all.stream()
@@ -138,14 +173,35 @@ final class LiveArenaService {
 
     @Scheduled(fixedDelayString = "${lob.arena.tick-interval-ms:500}")
     synchronized void scheduledTick() {
+        if (historical.loaded()) {
+            historical.advance();
+            return;
+        }
         if (running) {
             advance();
         }
     }
 
     synchronized JsonNode stepForTest() {
+        if (historical.loaded()) {
+            historical.start();
+            historical.advance();
+            return historical.state();
+        }
         advance();
         return buildState();
+    }
+
+    synchronized JsonNode loadDataSource(String sourceType, String datasetId) {
+        running = false;
+        if ("historical".equals(sourceType)) {
+            return historical.load(datasetId);
+        }
+        if ("synthetic".equals(sourceType)) {
+            historical.clear();
+            return reset();
+        }
+        throw new IllegalArgumentException("unknown market data source");
     }
 
     private void advance() {

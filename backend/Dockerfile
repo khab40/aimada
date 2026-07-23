@@ -27,6 +27,7 @@ RUN pip install --no-cache-dir \
   "pydantic-settings>=2.14.2" \
   "starlette>=1.3.1" \
   pyyaml \
+  "pyarrow>=18.0.0" \
   uvicorn \
   uvloop \
   httptools \

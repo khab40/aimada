@@ -108,6 +108,186 @@
   --overlay-bg: rgba(2, 6, 23, 0.74);
 }
 
+.administrative-page {
+  display: grid;
+  gap: 14px;
+  padding-bottom: 24px;
+}
+
+.ingestion-intro,
+.ingestion-section {
+  padding: 18px;
+}
+
+.ingestion-intro,
+.ingestion-section > header,
+.dataset-card > div {
+  align-items: center;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.ingestion-intro h2,
+.ingestion-section h2 {
+  margin: 0 0 6px;
+}
+
+.ingestion-intro p {
+  color: var(--color-text-muted);
+  margin: 0;
+  max-width: 800px;
+}
+
+.ingestion-table-wrap {
+  margin-top: 14px;
+  overflow-x: auto;
+}
+
+.ingestion-table {
+  border-collapse: collapse;
+  min-width: 980px;
+  width: 100%;
+}
+
+.ingestion-table th,
+.ingestion-table td {
+  border-bottom: 1px solid var(--panel-border);
+  padding: 11px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.ingestion-table th {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.ingestion-table td small {
+  color: var(--color-danger);
+  display: block;
+  margin-top: 5px;
+  max-width: 220px;
+}
+
+.import-window-controls {
+  display: grid;
+  gap: 6px;
+  min-width: 220px;
+}
+
+.import-window-controls label {
+  align-items: center;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: 54px 1fr;
+}
+
+.import-window-controls label > span {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.import-window-controls input,
+.import-window-controls select {
+  background: var(--panel-bg-soft);
+  border: 1px solid var(--panel-border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  padding: 6px 8px;
+}
+
+.ingestion-table td .import-window-controls small {
+  color: var(--color-text-muted);
+  margin: 0;
+  max-width: none;
+}
+
+.ingestion-table td .import-window-controls small.control-error {
+  color: var(--color-danger);
+}
+
+.ingestion-status {
+  border: 1px solid var(--panel-border-strong);
+  border-radius: 999px;
+  display: inline-block;
+  font-size: 11px;
+  padding: 3px 8px;
+  text-transform: uppercase;
+}
+
+.ingestion-status.ready,
+.ingestion-status.importing,
+.ingestion-status.imported {
+  color: var(--color-success);
+}
+
+.ingestion-status.invalid {
+  color: var(--color-danger);
+}
+
+.dataset-card-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  margin-top: 14px;
+}
+
+.dataset-card {
+  background: var(--panel-bg-soft);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-md);
+  padding: 14px;
+}
+
+.dataset-card p {
+  color: var(--color-text-muted);
+  margin: 8px 0;
+}
+
+.dataset-card code {
+  display: block;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.market-data-source-panel {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+}
+
+.market-data-source-options {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+}
+
+.market-data-source-options label {
+  align-items: center;
+  display: flex;
+  gap: 5px;
+}
+
+.market-data-source-panel select {
+  background: var(--panel-bg-soft);
+  border: 1px solid var(--panel-border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  min-width: min(420px, 100%);
+  padding: 8px 10px;
+}
+
+.historical-progress {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
 
 :root[data-theme="light"] {
   color-scheme: light;

@@ -21,8 +21,15 @@ class ArenaConfiguration {
     LiveArenaService liveArenaService(
             ObjectMapper mapper,
             AgentOrchestrator orchestrator,
-            ArenaJournal journal) {
-        return new LiveArenaService(mapper, orchestrator, journal);
+            ArenaJournal journal,
+            @Value("${lob.arena.historical-data-dir:../data/processed/lobster}") String historicalDataDir,
+            @Value("${lob.arena.historical-rows-per-tick:250}") int historicalRowsPerTick) {
+        return new LiveArenaService(
+                mapper,
+                orchestrator,
+                journal,
+                normalizePath(historicalDataDir),
+                historicalRowsPerTick);
     }
 
     static Path normalizePath(String value) {

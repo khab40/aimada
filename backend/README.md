@@ -13,6 +13,9 @@ Compatibility arena routes below are thin HTTP clients to Java.
 - `POST /api/nebius/red-team-scenario`
 - `POST /api/red-team/generate-scenario`
 - `GET /api/arena/state`
+- `GET /api/data-ingestion/lobster/candidates`
+- `POST /api/data-ingestion/lobster/candidates/{candidate_id}/import`
+- `GET /api/data-ingestion/datasets`
 - `POST /api/simulation/start`
 - `POST /api/simulation/pause`
 - `POST /api/simulation/reset`
@@ -87,6 +90,13 @@ Tests:
 ```bash
 uv run pytest
 ```
+
+LOBSTER batch ingestion reads paired CSV files from `../data/lobster` and
+writes registered datasets under `../data/processed/lobster`. Override those
+paths with `ARENA_LOBSTER_RAW_DIR` and `ARENA_HISTORICAL_DATA_DIR`.
+The Data Ingestion UI can import a one-minute, five-minute, or full-file time
+window. Window end times are exclusive, and each window is registered as a
+separate dataset that can be selected in the Arena.
 
 Coverage:
 

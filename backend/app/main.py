@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 
 from app.api.routes_arena import router as arena_router
+from app.api.routes_data_ingestion import router as data_ingestion_router
 from app.api.routes_experiments import router as experiments_router
 from app.api.routes_health import router as health_router
 from app.api.routes_incidents import router as incidents_router
@@ -12,6 +13,7 @@ from app.api.routes_scenarios import router as scenarios_router
 from app.api.routes_simulation import router as simulation_router
 from app.arena.java_client import JavaArenaClient
 from app.config import get_settings
+from app.data_ingestion.service import DataIngestionService
 from app.metrics import PrometheusTextRegistry
 from app.nebius.evidence_archive import configure_default_evidence_archive
 from app.storage.local_store import LocalStore
@@ -38,6 +40,10 @@ app.state.nebius_evidence = (
 )
 app.state.retention_cleanup = cleanup_output_data(app.state.store.output_dir, settings.arena_data_retention_days)
 app.state.settings = settings
+app.state.data_ingestion = DataIngestionService(
+    settings.arena_lobster_raw_dir,
+    settings.arena_historical_data_dir,
+)
 app.state.simulation = JavaArenaClient(
     settings.java_arena_base_url,
     timeout_seconds=settings.java_arena_timeout_seconds,
@@ -54,6 +60,7 @@ app.add_middleware(
 
 app.include_router(health_router)
 app.include_router(arena_router)
+app.include_router(data_ingestion_router)
 app.include_router(simulation_router)
 app.include_router(experiments_router)
 app.include_router(scenarios_router)

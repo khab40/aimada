@@ -81,6 +81,11 @@ final class ArenaWebSocketHandler extends TextWebSocketHandler {
         if ("launch_scenario".equals(type)) {
             return arena.launchScenario(command.path("scenario").asText());
         }
+        if ("load_market_data_source".equals(type)) {
+            return arena.loadDataSource(
+                    command.path("source_type").asText(),
+                    command.path("dataset_id").asText());
+        }
         throw new IllegalArgumentException("unknown arena command type");
     }
 

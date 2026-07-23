@@ -16,16 +16,18 @@ export function AgentTimeline({
   events,
   layout = "full",
   limit = layout === "compact" ? 12 : 20,
-  title = "Agent Timeline"
+  title = "Agent Timeline",
+  source = "synthetic"
 }: {
   activeAgents?: string[];
   events: AgentEvent[];
   layout?: AgentTimelineLayout;
   limit?: number;
   title?: string;
+  source?: "synthetic" | "historical";
 }) {
   const latestEvents = [...events].sort((left, right) => (
-    eventTick(right) - eventTick(left)
+    eventOrder(right) - eventOrder(left)
   )).slice(0, limit);
 
   return (
@@ -35,12 +37,25 @@ export function AgentTimeline({
         <span>Last {latestEvents.length} events</span>
       </div>
       <div className="agent-timeline-context" role="note">
-        <div>
-          <span>Clock · simulation ticks</span>
-          <span>Venue · synthetic LOB</span>
-          <span>Runtime · {getRuntimeLabel(events, activeAgents)}</span>
-        </div>
-        <p>Software-agent actions inside the simulator. No orders are routed to a real exchange.</p>
+        {source === "historical" ? (
+          <>
+            <div>
+              <span>Clock · exchange time</span>
+              <span>Venue · recorded LOBSTER data</span>
+              <span>Runtime · historical replay</span>
+            </div>
+            <p>Recorded market events are replayed read-only from the imported dataset.</p>
+          </>
+        ) : (
+          <>
+            <div>
+              <span>Clock · simulation ticks</span>
+              <span>Venue · synthetic LOB</span>
+              <span>Runtime · {getRuntimeLabel(events, activeAgents)}</span>
+            </div>
+            <p>Software-agent actions inside the simulator. No orders are routed to a real exchange.</p>
+          </>
+        )}
       </div>
       {!latestEvents.length ? <div className="empty-state">No timeline events yet.</div> : null}
       <ul className="event-tape">
@@ -50,11 +65,13 @@ export function AgentTimeline({
             <li className={`event-tape-item ${kind}`} key={`${event.timestamp ?? "event"}-${index}`}>
               <div className="event-tape-topline">
                 <span className={`event-badge ${kind}`}>{eventLabels[kind]}</span>
-                <time title="Simulation tick">{formatSimulationTick(eventTick(event))}</time>
+                <time title={source === "historical" ? "Exchange time" : "Simulation tick"}>
+                  {source === "historical" ? formatHistoricalTime(event) : formatSimulationTick(eventOrder(event))}
+                </time>
               </div>
               <div className="event-agent-row">
                 <strong>{event.agent_id ?? event.aggressor_agent_id ?? "exchange"}</strong>
-                <span className="event-runtime-source">{getEventSourceLabel(event, kind)}</span>
+                <span className="event-runtime-source">{source === "historical" ? "Historical feed" : getEventSourceLabel(event, kind)}</span>
               </div>
               {layout === "full" ? <small>{formatEvent(event)}</small> : null}
             </li>
@@ -102,8 +119,18 @@ function formatSimulationTick(timestamp?: number) {
     : "tick pending";
 }
 
-function eventTick(event: AgentEvent) {
-  return Number(event.tick ?? event.timestamp ?? 0);
+function eventOrder(event: AgentEvent) {
+  return Number(event.source_sequence ?? event.tick ?? event.timestamp ?? 0);
+}
+
+function formatHistoricalTime(event: AgentEvent) {
+  const timestampNs = Number(event.timestamp_ns_since_midnight);
+  if (!Number.isFinite(timestampNs)) return "time pending";
+  const milliseconds = Math.floor(timestampNs / 1_000_000);
+  const hours = Math.floor(milliseconds / 3_600_000);
+  const minutes = Math.floor((milliseconds % 3_600_000) / 60_000);
+  const seconds = Math.floor((milliseconds % 60_000) / 1_000);
+  return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 }
 
 function getRuntimeLabel(events: AgentEvent[], activeAgents: string[]) {
