@@ -12,6 +12,7 @@ graph TD
     ARDs["architecture - Architecture records"]
     UseCases["USE_CASES.md - Workflow diagrams"]
     Runtime["runtime-model.md - Simulation runtime"]
+    Observability["kernel-observability.md - Prometheus and Grafana"]
     Benchmark["benchmark-methodology.md - Detector metrics"]
     Nebius["nebius-deployment.md - Serverless setup"]
     Submission["challenge-submission.md - Submission guide"]
@@ -25,6 +26,7 @@ graph TD
     Docs --> ARDs
     Docs --> UseCases
     Docs --> Runtime
+    Docs --> Observability
     Docs --> Benchmark
     Docs --> Nebius
     Docs --> Submission
@@ -55,6 +57,7 @@ graph TD
 ### Specialized Topics
 
 - **[runtime-model.md](runtime-model.md)** — How the simulation engine works
+- **[kernel-observability.md](kernel-observability.md)** — Prometheus metric collection, Grafana dashboards, and bottleneck diagnosis
 - **[java-kernel-migration.md](java-kernel-migration.md)** — Parity-gated Python-reference to Java-kernel migration
 - **[architecture/ARD-0020-java-arena-websocket-agent-orchestration.md](architecture/ARD-0020-java-arena-websocket-agent-orchestration.md)** — Java live arena, WebSocket, agent orchestration, and retained Python boundary
 - **[determinism-contract-v1.md](determinism-contract-v1.md)** — Cross-language numeric, ordering, PRNG, identifier, and exchange rules

@@ -22,6 +22,14 @@ The generated backend environment enables the serverless branch of the single
 `docker-compose.yml`. Prometheus can be added with `--profile prometheus`, and
 `--profile grafana` adds both Prometheus and Grafana.
 
+Prometheus is the operational metric collector and time-series store for Java
+Actuator, FastAPI, and agent-runner endpoints. Grafana queries that Prometheus
+instance and renders the pre-provisioned LOB Arena dashboards. Both profiles are
+optional, local, and read-only; they do not deploy a production monitoring
+platform to Nebius or participate in simulation and detector decisions. See
+[Kernel Observability](../docs/kernel-observability.md) for the scrape targets,
+dashboard roles, and profile commands.
+
 For a small Nebius VM app host, use:
 
 ```bash

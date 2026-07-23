@@ -17,6 +17,11 @@ The two execution paths are:
 
 The design keeps the browser UI, Java arena, retained Python AI/serverless service, agent runner workspace, Nebius Serverless Cloud, and persisted event artifacts separate so each part can evolve independently.
 
+An opt-in observability plane supports these execution areas without becoming a
+sixth execution area or a runtime dependency. Java, FastAPI, and agent-runner
+expose operational metrics; Prometheus pulls and stores those metrics; Grafana
+queries Prometheus to visualize system health and isolate bottlenecks.
+
 ## Interactive Demo Path
 
 ```mermaid
@@ -44,6 +49,10 @@ flowchart LR
         Jobs["AI Jobs<br/>batch evaluation"]
         ObjectStorage["Object Storage<br/>evidence archive"]
     end
+    subgraph Observability["Optional Local Observability"]
+        Prometheus["Prometheus<br/>scrape + time-series storage"]
+        Grafana["Grafana<br/>provisioned dashboards"]
+    end
 
     UI -->|"arena REST"| Control
     UI -->|"AI / experiment REST"| API
@@ -64,6 +73,10 @@ flowchart LR
     Jobs -->|"metrics + artifacts"| ObjectStorage
     ObjectStorage -->|"S3 sync"| Incidents
     API <-->|"bounded arena evidence"| Control
+    Prometheus -->|"scrape Actuator"| Control
+    Prometheus -->|"scrape /metrics"| API
+    Prometheus -->|"scrape /metrics"| Runner
+    Grafana -->|"PromQL queries"| Prometheus
 ```
 
 ### Component Responsibilities
@@ -76,9 +89,55 @@ flowchart LR
 | Agent Runners Workspace | Runs out-of-process normal, CPU-heavy, ML, and LangGraph-compatible agents behind the common intent protocol. Runners return intents and never mutate the exchange directly. |
 | Experiment manager | Owns Managed Experiment manifests on `/api/experiments`, persists `outputs/experiments/<experiment_id>/experiment.json`, and exposes smart-batch-compatible artifact paths to Detection without replacing the Nebius AI smart-batch API. |
 | Nebius Serverless Cloud | Provides Nebius AI inference for Smart Detection and AI Investigator reports, plus Managed Experiment batch execution, GPU utilization, datasets, and artifacts. |
+| Prometheus | Opt-in operational telemetry store that scrapes Java Actuator, FastAPI, agent-runner, and its own health. It is outside the exchange and detector decision path. |
+| Grafana | Opt-in visualization layer that queries Prometheus through a provisioned datasource and supplies end-to-end, Java, component, and bottleneck dashboards. |
 | Event / snapshot log | Stores replayable event streams, order book snapshots, detected incidents, and generated reports for inspection and offline analysis. |
 
 The exchange produces a versioned canonical stream of `add`, `modify`, `cancel`, `execute`, and `snapshot` events. Simulation is the live source; future venue datasets enter through a historical normalizer and preserve their upstream sequence/timestamps separately from canonical replay order. Arena state/WebSocket messages carry a bounded event tail, `/api/arena/exchange-events` provides cursor replay, and append-only history stores full events plus snapshot-only checkpoints.
+
+### Detector Tournament Observability Extension
+
+Detector tournaments should participate in the observability plane through
+FastAPI, which already owns local child-process execution and Nebius Job
+submission, status refresh, and artifact collection. Prometheus should not
+scrape short-lived tournament processes or Nebius Jobs directly.
+
+```mermaid
+flowchart LR
+    UI["Command Center"]
+    API["FastAPI tournament orchestrator"]
+    Local["Local tournament process"]
+    Nebius["Nebius Serverless Job"]
+    Artifacts["Metrics CSV + leaderboard + evidence"]
+    Metrics["Backend /metrics<br/>bounded lifecycle telemetry"]
+    Prometheus["Prometheus"]
+    Grafana["Grafana<br/>Tournament Operations"]
+
+    UI -->|"start / refresh"| API
+    API -->|"launch"| Local
+    API -->|"submit / poll / collect"| Nebius
+    Local -->|"results"| Artifacts
+    Nebius -->|"results"| Artifacts
+    API -->|"update counters, gauges, histograms"| Metrics
+    Prometheus -->|"scrape"| Metrics
+    Grafana -->|"PromQL queries"| Prometheus
+```
+
+The planned operational contract is deliberately bounded:
+
+| Metric family | Purpose | Bounded labels |
+| --- | --- | --- |
+| `detector_tournament_runs_total` | Count tournament terminal outcomes | `execution_mode`, `outcome` |
+| `detector_tournament_duration_seconds` | Measure end-to-end tournament duration | `execution_mode`, `outcome` |
+| `detector_tournament_in_flight` | Show queued or running work | `execution_mode` |
+| `detector_tournament_scenarios_total` | Measure completed scenario throughput | `execution_mode`, `outcome` |
+| `detector_tournament_artifact_collections_total` | Track result-collection success and failure | `execution_mode`, `outcome` |
+
+Tournament IDs, Job IDs, seeds, scenario IDs, and artifact paths must not become
+Prometheus labels. Precision, recall, F1, detector leaderboards, and per-scenario
+results remain in the artifact store and product UI. Grafana's tournament view
+is for operational questions—whether work is completing, how long it takes, and
+where it fails—not for replacing the benchmark report.
 
 Java 25 owns both the versioned deterministic kernel API and the stateful live arena. Spring Boot exposes kernel and arena REST plus `/ws/arena`, while framework objects remain outside the matching hot loop. FastAPI retains only AI/ML, Nebius, experiments, evidence, and serverless capabilities.
 
@@ -212,6 +271,12 @@ graph TD
 - Real Nebius Serverless Job submit, status, log, and artifact collection calls are isolated in `backend/app/experiments/nebius_orchestrator.py`; absent configuration records `real_nebius_pending`, while completion requires confirmed cloud status and collected artifacts.
 - Batch benchmark jobs should share simulation and detector code with the live path where practical, but should not depend on the interactive UI.
 - Persisted artifacts should be treated as replay and audit inputs, not only as transient logs.
+- Prometheus and Grafana are read-only operational diagnostics. Their absence or
+  failure must not change deterministic simulation results, and their time
+  series must not be confused with detector benchmark artifacts.
+- Detector-tournament processes should publish operational telemetry through
+  the backend orchestration boundary; they should not become direct Prometheus
+  scrape targets.
 - Detection reports and generated AI Investigator text are synthetic educational evidence for this simulator, not real surveillance, trading, or compliance outputs.
 
 ## Related Documentation
