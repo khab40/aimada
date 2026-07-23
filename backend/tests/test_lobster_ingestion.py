@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 
 import pyarrow.parquet as pq
+import pytest
 
 from app.data_ingestion.lobster import convert_pair, discover_candidates, parse_message, validate_pair
 from app.data_ingestion.service import DataIngestionService
@@ -27,6 +28,25 @@ def test_parser_preserves_price_and_maps_all_lobster_event_codes() -> None:
     assert halt.event_kind == "TRADING_HALT"
     assert halt.halt_state == "HALTED"
     assert halt.price_x10000 == -1
+
+
+def test_parser_rounds_lobster_subnanosecond_serialization_noise() -> None:
+    rounded_down = parse_message(
+        ["34903.864346888004", "1", "30731964", "500", "1354300", "1"],
+        line_number=245_114,
+    )
+    rounded_up = parse_message(
+        ["35053.714665770996", "1", "33493678", "800", "1353500", "1"],
+        line_number=286_886,
+    )
+
+    assert rounded_down.timestamp_ns_since_midnight == 34_903_864_346_888
+    assert rounded_up.timestamp_ns_since_midnight == 35_053_714_665_771
+
+
+def test_parser_rejects_material_subnanosecond_precision() -> None:
+    with pytest.raises(ValueError, match="timestamp precision exceeds nanoseconds"):
+        parse_message(["34200.1234567891", "1", "42", "100", "911400", "1"], line_number=1)
 
 
 def test_discovery_validation_and_parquet_conversion_are_aligned(tmp_path: Path) -> None:
@@ -117,7 +137,7 @@ def test_conversion_can_register_a_selected_one_minute_window(tmp_path: Path) ->
     _write_rows(
         raw / "SPY_2012-06-21_34200000_37800000_message_1.csv",
         [
-            ["34200", "1", "1", "100", "100000", "1"],
+            ["34200.000000000004", "1", "1", "100", "100000", "1"],
             ["34260", "2", "1", "10", "100000", "1"],
             ["34320", "3", "1", "90", "100000", "1"],
         ],
