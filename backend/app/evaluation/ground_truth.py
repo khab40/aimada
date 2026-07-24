@@ -1,6 +1,33 @@
 from typing import Any
 
 
+def binary_classification_metrics(*, tp: int, fp: int, fn: int, tn: int) -> dict[str, float | int | None]:
+    """Return the canonical deterministic binary detector metrics."""
+    if min(tp, fp, fn, tn) < 0:
+        raise ValueError("confusion-matrix counts must be non-negative")
+    precision = tp / (tp + fp) if tp + fp else None
+    recall = tp / (tp + fn) if tp + fn else None
+    f1 = (
+        2 * precision * recall / (precision + recall)
+        if precision is not None and recall is not None and precision + recall
+        else 0.0 if recall == 0
+        else None
+    )
+    specificity = tn / (tn + fp) if tn + fp else None
+    false_positive_rate = fp / (fp + tn) if fp + tn else None
+    return {
+        "precision": _rounded(precision),
+        "recall": _rounded(recall),
+        "f1": _rounded(f1),
+        "specificity": _rounded(specificity),
+        "false_positive_rate": _rounded(false_positive_rate),
+        "true_positive": tp,
+        "false_positive": fp,
+        "false_negative": fn,
+        "true_negative": tn,
+    }
+
+
 def evaluate_detection(
     *,
     alert_ticks: list[int],
@@ -110,3 +137,7 @@ def _attribution(predicted: set[str], truth: set[str]) -> tuple[float | None, fl
         round(precision, 4) if precision is not None else None,
         round(recall, 4),
     )
+
+
+def _rounded(value: float | None) -> float | None:
+    return round(value, 4) if value is not None else None

@@ -68,16 +68,25 @@ describe("Core UI navigation and workflow contracts", () => {
 
   it("keeps product navigation focused and removes implementation destinations", () => {
     expectIncludes(app, [
-      "label: \"Command Center\"",
-      "label: \"Arena / Workload Generator\"",
-      "label: \"About / Docs\"",
+      "label: \"Data Ingestion\"",
+      "label: \"Arena\"",
+      "label: \"Control Panel\"",
+      "label: \"About\"",
       "LOB Arena",
-      "Command Center ready",
+      "Control Panel ready",
       "<Route path=\"/\" element={<Navigate to=\"/nebius\" replace />} />",
       "<Route path=\"/nebius\" element={<NebiusControlPanelPage />} />",
       "<Route path=\"/arena\" element={<ArenaPage />} />",
       "<Route path=\"/about\" element={<AboutPage />} />"
     ]);
+    const navigationOrder = [
+      "label: \"Data Ingestion\"",
+      "label: \"Arena\"",
+      "label: \"Control Panel\"",
+      "label: \"About\""
+    ].map((label) => app.indexOf(label));
+    assert.ok(navigationOrder.every((index) => index >= 0));
+    assert.deepEqual(navigationOrder, [...navigationOrder].sort((left, right) => left - right));
     assert.doesNotMatch(app, /label: "Attack"/);
     assert.doesNotMatch(app, /label: "Demo"/);
     assert.doesNotMatch(app, /label: "Scenario Generator"/);
@@ -134,11 +143,17 @@ describe("Core UI navigation and workflow contracts", () => {
     expectIncludes(arena, [
       "Market data source",
       "Synthetic",
-      "Historical",
-      "Load Historical Data",
+      "Historical control",
+      "Hybrid + attacks",
+      "marketDataChoiceTouchedRef",
+      "chooseMarketDataSource",
+      "Historical dataset",
+      "Only canonical event streams support attack injection.",
+      "Load Historical Control",
+      "Load Hybrid Replay",
       "formatReplayProgress",
       "\"<0.01%\"",
-      "future Hybrid market-data source"
+      "no inferred benign or attack labels"
     ]);
     assert.doesNotMatch(ingestion, /type="file"/);
   });
@@ -457,16 +472,14 @@ describe("Core UI navigation and workflow contracts", () => {
   });
 });
 
-describe("Archived feature boundaries", () => {
+describe("Retired feature boundaries", () => {
   const app = read("src/App.tsx");
   const arena = read("src/pages/ArenaPage.tsx");
   const client = read("src/api/client.ts");
   const attackBuilder = read("src/components/AttackBuilder.tsx");
   const attackPage = read("src/pages/AttackScenarioGeneratorPage.tsx");
-  const archiveIndex = read("../archived/README.md");
 
-  it("excludes archived features from active frontend imports and routes", () => {
-    expectIncludes(archiveIndex, ["3d-lob-ui/", "google-auth/", "advanced-controls/", "unused-modules/"]);
+  it("keeps retired features out of active frontend imports and routes", () => {
     expectIncludes(attackBuilder, ["Scenario Setup", "Manipulation type", "Difficulty", "Send to Nebius investigation", "storeControlCenterIncident", "controlCenterIncidentPath"]);
     expectIncludes(attackPage, ["AI Scenario Generator", "sendToInvestigation", "storeControlCenterIncident"]);
     assert.doesNotMatch(`${app}\n${arena}\n${client}`, /GoogleAuth|AuthProvider|IdentityPanel|MarketBattlefield3D|OrderBookTerrain/);

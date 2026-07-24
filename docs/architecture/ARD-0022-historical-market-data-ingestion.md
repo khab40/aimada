@@ -1,6 +1,7 @@
 # ARD-0022: Historical Market Data Ingestion And Replay
 
-Status: Accepted and Implemented
+Status: Accepted and Implemented; original source-exclusivity constraint
+superseded by [ARD-0023](ARD-0023-hybrid-historical-replay.md)
 
 Date: 2026-07-23
 
@@ -21,9 +22,9 @@ WebSocket authority.
 - LOBSTER `price_x10000` remains an integer in the persisted contract.
 - The Java control plane reads only normalized Parquet and manifest fields
   through `HistoricalMarketDataSource`.
-- Synthetic and historical sources are mutually exclusive in this increment.
-- The shared source boundary reserves `HybridMarketDataSource` for a future
-  deterministic historical-baseline plus simulated-attack overlay.
+- The initial increment allowed either synthetic or historical execution. That
+  temporary exclusivity constraint is superseded by ARD-0023, which reuses the
+  same normalized datasets for deterministic hybrid execution.
 - Streaming ingestion, distributed import jobs, and timestamp-paced replay are
   outside this increment.
 
@@ -45,6 +46,27 @@ distinct dataset identifier, so multiple test slices may coexist.
 
 ## Consequences
 
-LOBSTER parsing cannot leak into the simulator. Historical snapshots are never
-mutated by synthetic orders. A future hybrid source must maintain a separate
-overlay book and deterministic provenance rather than editing recorded state.
+LOBSTER parsing cannot leak into the simulator. Historical snapshots remain
+immutable source evidence. In hybrid mode, the Java kernel reconstructs
+historical aggregate level orders and adds namespaced synthetic orders to the
+live book; the canonical historical snapshot payload is still recorded from
+the source snapshot rather than from the combined book.
+
+## Implementation Evolution
+
+The implemented hybrid path preserves this ARD's ingestion and storage
+contract:
+
+- FastAPI still discovers, validates, and converts paired LOBSTER CSV files.
+- Imported Parquet files and their manifest remain immutable.
+- Java reads only normalized Parquet and uses the integer matching engine as
+  the sole live-book writer.
+- ARD-0023 defines merge ordering, ID separation, seed derivation, label
+  isolation, detector input, and comparison artifacts.
+
+## Related Documentation
+
+- [ARD-0018: Canonical Exchange Event Stream](ARD-0018-canonical-exchange-event-stream.md)
+- [ARD-0023: Hybrid Historical Replay](ARD-0023-hybrid-historical-replay.md)
+- [Public LOBSTER-compatible fixture](../../data/lobster/README.md)
+- [Historical and hybrid replay instructions](../../README.md#historical-and-hybrid-replay)

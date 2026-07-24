@@ -355,7 +355,7 @@ Deliverables:
 - `[done]` final disclaimer and safety language in README/docs/UI
 - `[done]` professional UI shell controls: compact sidebar toggle, day/night/system theme selector, and paused-state-stable Liquidity Map
 - `[done]` multiuser platform foundation with demo fallback user/workspace, global workspace/user menu, case ownership metadata, report attribution, and audit trail records.
-- `[done]` compact primary navigation: Command Center, Arena / Workload Generator, Scenario Generator, and About
+- `[done]` compact primary navigation ordered as Data Ingestion, Arena, Control Panel, and About
 - `[done]` Command Center orchestrates endpoint status, scenario generation, AI investigation, detector tournaments, jobs, and artifacts
 - `[done]` Arena three-section layout: Scenario / Attack Configuration, Market, and Detection
 - `[done]` About and ARD-0001 architecture diagrams show Front, Back, Agent Runners Workspace, and Nebius Serverless Cloud

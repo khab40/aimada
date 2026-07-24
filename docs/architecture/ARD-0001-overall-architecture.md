@@ -10,7 +10,8 @@ Status as of 2026-07-19: `[partial; live runtime ownership replaced]`
 
 Implemented:
 
-- React/Vite routed UI for AI Command Center, Arena / Workload Generator, Scenario Generator, and About pages.
+- React/Vite routed UI with primary navigation ordered as Data Ingestion,
+  Arena, Control Panel, and About.
 - Old standalone demo, blue-team, report, experiment, and deployment pages have been removed or folded into current Command Center and Arena surfaces.
 - Java/Spring live arena with simulation lifecycle APIs, WebSocket state, scenario launch, deterministic incidents, canonical replay, and JSONL journals.
 - FastAPI retained for AI/ML, Nebius, experiments, evidence, and serverless APIs through a thin Java arena client.
@@ -43,7 +44,7 @@ The main architecture has four execution areas:
 
 ```mermaid
 graph TD
-    Front["Front - React / Vite UI - Command Center, Arena, Scenario Generator, About"]
+    Front["Front - React / Vite UI - Data Ingestion, Arena, Control Panel, About"]
     Back["Back - FastAPI backend - REST, WebSocket, orchestration, persistence"]
     Runners["Agent Runners Workspace - normal, heavy, and LangGraph agents"]
     Nebius["Nebius Serverless Cloud - model selection, inference, batch jobs, GPU runtime, datasets, artifacts"]
@@ -120,7 +121,9 @@ graph LR
 
 ### UI Layer
 
-The UI is a React product shell under `frontend/`. It presents AI Command Center, Arena, Scenario Generator, and About without owning simulation logic.
+The UI is a React product shell under `frontend/`. Its primary navigation is
+Data Ingestion, Arena, Control Panel, and About; it does not own simulation
+logic.
 
 Responsibilities:
 

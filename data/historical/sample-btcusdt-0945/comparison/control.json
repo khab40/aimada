@@ -1,0 +1,31 @@
+{
+  "canonical_event_count": 15,
+  "dataset_id": "sample-btcusdt-0945",
+  "detector_alert_ticks": {},
+  "event_counts": {
+    "by_source": {
+      "historical": 12,
+      "simulation": 3
+    },
+    "by_type": {
+      "add": 6,
+      "cancel": 2,
+      "execute": 2,
+      "modify": 2,
+      "snapshot": 3
+    }
+  },
+  "events_sha256": "04ce80fc774ebec178fbf78c6f3c1f8ebd39336f07c080cce4e7554f3879cc31",
+  "ground_truth": null,
+  "mode": "historical",
+  "realism": {
+    "final_depth_top_n": 13.25,
+    "final_imbalance": -0.0566,
+    "final_level_count": 4,
+    "final_spread": 2.0
+  },
+  "source_row_count": 12,
+  "source_rows_replayed": 12,
+  "stream_hash": "ef5e12d40c5bb90d2fd6b4e6530a227b4c0ee42d3e720ae7a9f982dc492eab5c",
+  "ticks_executed": 3
+}

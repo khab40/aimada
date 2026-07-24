@@ -9,13 +9,22 @@ import ai.lobarena.kernel.book.IntegerMatchingEngine;
 import ai.lobarena.kernel.book.IntegerOrderBook;
 import ai.lobarena.kernel.book.KernelOrder;
 import ai.lobarena.kernel.book.MutationContext;
+import ai.lobarena.kernel.determinism.EventOrderKey;
+import ai.lobarena.kernel.determinism.EventPhase;
+import ai.lobarena.kernel.determinism.DeterministicValues;
+import ai.lobarena.kernel.hashing.CanonicalHashes;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Deque;
+import java.util.HexFormat;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -39,9 +48,12 @@ final class LiveArenaService {
     private final AgentOrchestrator orchestrator;
     private final ArenaJournal journal;
     private final HistoricalMarketDataSource historical;
+    private final HistoricalCsvMarketDataSource historicalCsv;
     private final Deque<ObjectNode> agentEvents = new ArrayDeque<>();
     private final List<ObjectNode> incidents = new ArrayList<>();
     private final Set<String> incidentKeys = new HashSet<>();
+    private final Map<String, List<Long>> detectorAlertTicks = new LinkedHashMap<>();
+    private final long defaultMasterSeed;
 
     private IntegerMatchingEngine matching;
     private long tick;
@@ -51,9 +63,21 @@ final class LiveArenaService {
     private List<String> activeAgentIds = List.of();
     private LiveScenario scenario;
     private double previousDepth;
+    private String replaySourceType;
+    private long replayMasterSeed;
+    private boolean lobsterKernelReplay;
+    private final Set<Long> lobsterBidPrices = new HashSet<>();
+    private final Set<Long> lobsterAskPrices = new HashSet<>();
 
     LiveArenaService(ObjectMapper mapper, AgentOrchestrator orchestrator, ArenaJournal journal) {
-        this(mapper, orchestrator, journal, Path.of("../data/processed/lobster"), 250);
+        this(
+                mapper,
+                orchestrator,
+                journal,
+                Path.of("../../data/processed/lobster"),
+                Path.of("../../data/historical"),
+                250,
+                42);
     }
 
     LiveArenaService(
@@ -62,23 +86,62 @@ final class LiveArenaService {
             ArenaJournal journal,
             Path historicalDataDir,
             int historicalRowsPerTick) {
+        this(
+                mapper,
+                orchestrator,
+                journal,
+                historicalDataDir,
+                Path.of("../../data/historical"),
+                historicalRowsPerTick,
+                42);
+    }
+
+    LiveArenaService(
+            ObjectMapper mapper,
+            AgentOrchestrator orchestrator,
+            ArenaJournal journal,
+            Path historicalDataDir,
+            Path historicalCsvDataDir,
+            int historicalRowsPerTick) {
+        this(
+                mapper,
+                orchestrator,
+                journal,
+                historicalDataDir,
+                historicalCsvDataDir,
+                historicalRowsPerTick,
+                42);
+    }
+
+    LiveArenaService(
+            ObjectMapper mapper,
+            AgentOrchestrator orchestrator,
+            ArenaJournal journal,
+            Path historicalDataDir,
+            Path historicalCsvDataDir,
+            int historicalRowsPerTick,
+            long masterSeed) {
         this.mapper = mapper;
         this.orchestrator = orchestrator;
         this.journal = journal;
         this.historical = new HistoricalMarketDataSource(mapper, historicalDataDir, historicalRowsPerTick);
+        this.historicalCsv =
+                new HistoricalCsvMarketDataSource(mapper, historicalCsvDataDir, historicalRowsPerTick);
+        this.defaultMasterSeed = masterSeed;
+        this.replayMasterSeed = masterSeed;
         this.matching = newMatchingEngine();
         this.previousDepth = topDepth(matching.book().snapshot(5));
     }
 
     synchronized JsonNode state() {
-        if (historical.loaded()) {
+        if (historical.loaded() && !lobsterKernelReplay) {
             return historical.state();
         }
         return buildState();
     }
 
     synchronized JsonNode start() {
-        if (historical.loaded()) {
+        if (historical.loaded() && !lobsterKernelReplay) {
             return historical.start();
         }
         running = true;
@@ -86,7 +149,7 @@ final class LiveArenaService {
     }
 
     synchronized JsonNode pause() {
-        if (historical.loaded()) {
+        if (historical.loaded() && !lobsterKernelReplay) {
             return historical.pause();
         }
         running = false;
@@ -94,40 +157,70 @@ final class LiveArenaService {
     }
 
     synchronized JsonNode reset() {
-        if (historical.loaded()) {
+        if (historical.loaded() && !lobsterKernelReplay) {
             return historical.reset();
         }
+        if (historicalCsv.loaded()) {
+            historicalCsv.reset();
+            resetRuntime(newHistoricalMatchingEngine());
+            return buildState();
+        }
+        if (lobsterKernelReplay) {
+            historical.reset();
+            lobsterBidPrices.clear();
+            lobsterAskPrices.clear();
+            resetRuntime(newHistoricalMatchingEngine());
+            return buildState();
+        }
+        resetRuntime(newMatchingEngine());
+        return buildState();
+    }
+
+    private void resetRuntime(IntegerMatchingEngine replacement) {
         running = false;
         tick = 0;
         scenario = null;
         agentEvents.clear();
         incidents.clear();
         incidentKeys.clear();
+        detectorAlertTicks.clear();
         activeAgentIds = List.of();
-        matching = newMatchingEngine();
+        matching = replacement;
+        lobsterBidPrices.clear();
+        lobsterAskPrices.clear();
         previousDepth = topDepth(matching.book().snapshot(5));
-        return buildState();
     }
 
     synchronized JsonNode launchScenario(String family) {
-        if (historical.loaded()) {
+        if (historical.loaded() && !lobsterKernelReplay) {
             throw new IllegalArgumentException("scenarios are unavailable for historical market data");
+        }
+        if (kernelHistoricalLoaded() && !"hybrid".equals(replaySourceType)) {
+            throw new IllegalArgumentException("scenarios require the hybrid historical source");
         }
         String normalized = normalizeScenario(family);
         scenarioCounter++;
+        String scenarioAgentId = kernelHistoricalLoaded() ? "SYN:ABUSER_01" : "ABUSER_01";
+        long scenarioSeed = kernelHistoricalLoaded()
+                ? DeterministicValues.deriveStreamSeed(
+                        replayMasterSeed,
+                        "hybrid:" + replayDatasetId() + ":" + normalized + ":" + scenarioCounter)
+                : 0L;
         scenario = new LiveScenario(
                 "SCN-%06d".formatted(scenarioCounter),
                 normalized,
                 displayName(normalized),
-                "ABUSER_01",
-                tick + 1);
+                scenarioAgentId,
+                tick + 1,
+                scenarioSeed);
         running = true;
-        addAgentEvent(event("red_team", "ABUSER_01", "scenario armed")
+        addAgentEvent(event("red_team", scenarioAgentId, "scenario armed")
                 .put("scenario_id", scenario.id())
                 .put("scenario_name", scenario.name())
                 .put("scenario_family", scenario.family())
                 .put("stage", "armed"));
         journal.append("attacks/attacks.jsonl", scenarioJson());
+        journal.append("labels/scenario_labels.jsonl", groundTruthLabel());
         return scenarioJson();
     }
 
@@ -173,7 +266,7 @@ final class LiveArenaService {
 
     @Scheduled(fixedDelayString = "${lob.arena.tick-interval-ms:500}")
     synchronized void scheduledTick() {
-        if (historical.loaded()) {
+        if (historical.loaded() && !lobsterKernelReplay) {
             historical.advance();
             return;
         }
@@ -183,7 +276,7 @@ final class LiveArenaService {
     }
 
     synchronized JsonNode stepForTest() {
-        if (historical.loaded()) {
+        if (historical.loaded() && !lobsterKernelReplay) {
             historical.start();
             historical.advance();
             return historical.state();
@@ -192,19 +285,134 @@ final class LiveArenaService {
         return buildState();
     }
 
+    synchronized long defaultMasterSeed() {
+        return defaultMasterSeed;
+    }
+
     synchronized JsonNode loadDataSource(String sourceType, String datasetId) {
+        return loadDataSource(sourceType, datasetId, defaultMasterSeed);
+    }
+
+    synchronized JsonNode loadDataSource(String sourceType, String datasetId, long masterSeed) {
         running = false;
+        replayMasterSeed = masterSeed;
         if ("historical".equals(sourceType)) {
-            return historical.load(datasetId);
+            if (historicalCsv.supports(datasetId)) {
+                historical.clear();
+                lobsterKernelReplay = false;
+                replaySourceType = "historical";
+                historicalCsv.load(datasetId);
+                resetRuntime(newHistoricalMatchingEngine());
+                return buildState();
+            }
+            historicalCsv.clear();
+            replaySourceType = "historical";
+            lobsterKernelReplay = false;
+            historical.load(datasetId);
+            lobsterKernelReplay = true;
+            resetRuntime(newHistoricalMatchingEngine());
+            return buildState();
+        }
+        if ("hybrid".equals(sourceType)) {
+            if (historicalCsv.supports(datasetId)) {
+                historical.clear();
+                lobsterKernelReplay = false;
+                replaySourceType = "hybrid";
+                historicalCsv.load(datasetId);
+                resetRuntime(newHistoricalMatchingEngine());
+                return buildState();
+            }
+            historicalCsv.clear();
+            lobsterKernelReplay = false;
+            historical.load(datasetId);
+            lobsterKernelReplay = true;
+            replaySourceType = "hybrid";
+            resetRuntime(newHistoricalMatchingEngine());
+            return buildState();
         }
         if ("synthetic".equals(sourceType)) {
             historical.clear();
+            historicalCsv.clear();
+            lobsterKernelReplay = false;
+            replaySourceType = null;
             return reset();
         }
         throw new IllegalArgumentException("unknown market data source");
     }
 
+    synchronized JsonNode historicalCsvDatasets() {
+        ArrayNode result = mapper.createArrayNode();
+        historicalCsv.datasets().forEach(result::add);
+        historical.datasets().forEach(result::add);
+        return result;
+    }
+
+    synchronized JsonNode runReplayComparison(String datasetId, String scenarioFamily, int maxTicks) {
+        return runReplayComparison(datasetId, scenarioFamily, maxTicks, defaultMasterSeed);
+    }
+
+    synchronized JsonNode runReplayComparison(
+            String datasetId, String scenarioFamily, int maxTicks, long masterSeed) {
+        if (maxTicks < 1 || maxTicks > 100_000) {
+            throw new IllegalArgumentException("max_ticks must be between 1 and 100000");
+        }
+        String normalizedScenario = normalizeScenario(scenarioFamily);
+        scenarioCounter = 0;
+        incidentCounter = 0;
+        ObjectNode control = runReplayOnce("historical", datasetId, null, maxTicks, masterSeed);
+        ObjectNode hybrid = runReplayOnce("hybrid", datasetId, normalizedScenario, maxTicks, masterSeed);
+        ObjectNode result = mapper.createObjectNode()
+                .put("schema_version", "historical_replay_comparison_v1")
+                .put("dataset_id", datasetId)
+                .put("master_seed", masterSeed)
+                .put("events_sha256", replayEventsSha256())
+                .set("control", control)
+                .set("hybrid", hybrid);
+        ObjectNode impact = result.putObject("realism_impact");
+        impact.put(
+                "canonical_event_count_delta",
+                hybrid.path("canonical_event_count").longValue()
+                        - control.path("canonical_event_count").longValue());
+        impact.put(
+                "final_depth_delta",
+                round(hybrid.path("realism").path("final_depth_top_n").doubleValue()
+                        - control.path("realism").path("final_depth_top_n").doubleValue()));
+        impact.put(
+                "final_spread_delta",
+                round(hybrid.path("realism").path("final_spread").doubleValue()
+                        - control.path("realism").path("final_spread").doubleValue()));
+        journal.append("historical-replay/comparisons.jsonl", result);
+        return result;
+    }
+
+    private ObjectNode runReplayOnce(
+            String sourceType, String datasetId, String scenarioFamily, int maxTicks, long masterSeed) {
+        loadDataSource(sourceType, datasetId, masterSeed);
+        if (scenarioFamily != null) {
+            launchScenario(scenarioFamily);
+        } else {
+            start();
+        }
+        int advanced = 0;
+        while (running && advanced < maxTicks) {
+            advance();
+            advanced++;
+        }
+        running = false;
+        ObjectNode summary = replaySummary(sourceType);
+        summary.put("ticks_executed", advanced);
+        return summary;
+    }
+
     private void advance() {
+        if (lobsterKernelReplay) {
+            advanceLobsterReplay();
+            return;
+        }
+        if (historicalCsv.loaded()) {
+            advanceHistoricalReplay();
+            return;
+        }
         tick++;
         BookSnapshot before = matching.book().snapshot(5);
         double depthBefore = topDepth(before);
@@ -229,6 +437,186 @@ final class LiveArenaService {
         previousDepth = depthBefore;
         JsonNode state = buildState();
         journal.append("snapshots/ticks.jsonl", state);
+    }
+
+    private void advanceHistoricalReplay() {
+        if (historicalCsv.eof()) {
+            running = false;
+            return;
+        }
+        tick++;
+        BookSnapshot before = matching.book().snapshot(5);
+        double depthBefore = topDepth(before);
+        List<HistoricalCsvMarketDataSource.HistoricalCsvRecord> records =
+                new ArrayList<>(historicalCsv.nextBatch());
+        records.sort(Comparator.comparing(record -> new EventOrderKey(
+                record.timestampNs(),
+                EventPhase.HISTORICAL.code(),
+                0,
+                historicalParticipantId(record.participantId()),
+                record.sourceSequence(),
+                record.sourceSequence())));
+        records.forEach(this::applyHistoricalRecord);
+        if ("hybrid".equals(replaySourceType)) {
+            applyScenario();
+        }
+        MutationContext snapshotContext = new MutationContext(
+                tick,
+                null,
+                null,
+                null,
+                EventSource.EVENT_SOURCE_SIMULATION,
+                null,
+                null,
+                null);
+        matching.recordSnapshot(SNAPSHOT_DEPTH, snapshotContext);
+        previousDepth = depthBefore;
+        if (historicalCsv.eof()) {
+            running = false;
+        }
+        JsonNode state = buildState();
+        journal.append("snapshots/ticks.jsonl", state);
+    }
+
+    private void advanceLobsterReplay() {
+        if (historical.eof()) {
+            running = false;
+            return;
+        }
+        tick++;
+        BookSnapshot before = matching.book().snapshot(5);
+        double depthBefore = topDepth(before);
+        List<HistoricalMarketDataSource.HistoricalSnapshotRecord> records =
+                new ArrayList<>(historical.nextKernelBatch());
+        records.sort(Comparator.comparing(record -> new EventOrderKey(
+                record.timestampNs(),
+                EventPhase.HISTORICAL.code(),
+                0,
+                "HIST:" + historical.datasetId(),
+                record.sourceSequence(),
+                record.sourceSequence())));
+        records.forEach(this::applyLobsterSnapshot);
+        if ("hybrid".equals(replaySourceType)) {
+            applyScenario();
+        }
+        matching.recordSnapshot(
+                SNAPSHOT_DEPTH,
+                new MutationContext(
+                        tick, null, null, null, EventSource.EVENT_SOURCE_SIMULATION,
+                        null, historical.currentTimestampNs(), historical.currentTimestampNs()));
+        previousDepth = depthBefore;
+        if (historical.eof()) running = false;
+        journal.append("snapshots/ticks.jsonl", buildState());
+    }
+
+    private void applyLobsterSnapshot(HistoricalMarketDataSource.HistoricalSnapshotRecord record) {
+        MutationContext context = new MutationContext(
+                tick,
+                null,
+                null,
+                null,
+                EventSource.EVENT_SOURCE_HISTORICAL,
+                record.sourceSequence(),
+                record.timestampNs(),
+                record.timestampNs());
+        matching.runWithMutationContext(context, () -> {
+            syncLobsterSide(Side.SIDE_BUY, record.bids(), lobsterBidPrices, record);
+            syncLobsterSide(Side.SIDE_SELL, record.asks(), lobsterAskPrices, record);
+            int depth = Math.max(1, historical.context(replaySourceType).path("depth").intValue());
+            matching.recordSnapshot(lobsterSourceSnapshot(record), depth, context);
+        });
+    }
+
+    private BookSnapshot lobsterSourceSnapshot(
+            HistoricalMarketDataSource.HistoricalSnapshotRecord record) {
+        BookSnapshot.Builder snapshot = BookSnapshot.newBuilder();
+        record.bids().forEach(level -> snapshot.addBids(PriceLevel.newBuilder()
+                .setPriceTicks(level.path("price_x10000").longValue())
+                .setQuantityLots(level.path("quantity").longValue())
+                .setOwner("historical")));
+        record.asks().forEach(level -> snapshot.addAsks(PriceLevel.newBuilder()
+                .setPriceTicks(level.path("price_x10000").longValue())
+                .setQuantityLots(level.path("quantity").longValue())
+                .setOwner("historical")));
+        if (!record.bids().isEmpty()) {
+            snapshot.setBestBidTicks(record.bids().get(0).path("price_x10000").longValue());
+        }
+        if (!record.asks().isEmpty()) {
+            snapshot.setBestAskTicks(record.asks().get(0).path("price_x10000").longValue());
+        }
+        if (!record.bids().isEmpty() && !record.asks().isEmpty()) {
+            long bestBid = record.bids().get(0).path("price_x10000").longValue();
+            long bestAsk = record.asks().get(0).path("price_x10000").longValue();
+            snapshot.setMidPriceTicksX2(Math.addExact(bestBid, bestAsk));
+            snapshot.setSpreadTicks(Math.subtractExact(bestAsk, bestBid));
+        }
+        return snapshot.build();
+    }
+
+    private void syncLobsterSide(
+            Side side,
+            JsonNode levels,
+            Set<Long> priorPrices,
+            HistoricalMarketDataSource.HistoricalSnapshotRecord record) {
+        Map<Long, Long> desired = new LinkedHashMap<>();
+        levels.forEach(level -> desired.put(
+                level.path("price_x10000").longValue(),
+                level.path("quantity").longValue()));
+        for (long price : new HashSet<>(priorPrices)) {
+            if (!desired.containsKey(price)) {
+                matching.book().updateAgentLevel(
+                        side, price, 0, lobsterParticipantId(), "historical",
+                        lobsterLevelOrderId(side, price), record.timestampNs(),
+                        null, null, null);
+            }
+        }
+        desired.forEach((price, quantity) -> matching.book().updateAgentLevel(
+                side, price, quantity, lobsterParticipantId(), "historical",
+                lobsterLevelOrderId(side, price), record.timestampNs(),
+                null, null, null));
+        priorPrices.clear();
+        priorPrices.addAll(desired.keySet());
+    }
+
+    private void applyHistoricalRecord(HistoricalCsvMarketDataSource.HistoricalCsvRecord record) {
+        String orderId = historicalOrderId(record.orderId());
+        String participantId = historicalParticipantId(record.participantId());
+        KernelOrder order = switch (record.eventType()) {
+            case "ADD" -> KernelOrder.limit(
+                    orderId,
+                    participantId,
+                    record.side(),
+                    record.quantityLots(),
+                    record.priceTicks(),
+                    record.timestampNs());
+            case "MODIFY" -> KernelOrder.modify(
+                    orderId,
+                    participantId,
+                    record.side(),
+                    record.quantityLots(),
+                    record.priceTicks(),
+                    record.timestampNs());
+            case "CANCEL" -> KernelOrder.cancel(
+                    orderId, participantId, record.side(), record.timestampNs());
+            case "MARKET" -> KernelOrder.market(
+                    orderId,
+                    participantId,
+                    record.side(),
+                    record.quantityLots(),
+                    record.timestampNs());
+            default -> throw new IllegalStateException(
+                    "validated historical event type is unsupported: " + record.eventType());
+        };
+        MutationContext context = new MutationContext(
+                tick,
+                null,
+                null,
+                null,
+                EventSource.EVENT_SOURCE_HISTORICAL,
+                record.sourceSequence(),
+                record.timestampNs(),
+                record.timestampNs());
+        matching.submit(order, context);
     }
 
     private void applyIntent(JsonNode intent) {
@@ -283,8 +671,16 @@ final class LiveArenaService {
             return;
         }
         long age = scenario.age(tick);
+        Long exchangeTimestamp = kernelHistoricalLoaded() ? replayCurrentTimestampNs() : null;
         MutationContext context = new MutationContext(
-                tick, scenario.id(), scenario.name(), scenario.family());
+                tick,
+                scenario.id(),
+                scenario.name(),
+                scenario.family(),
+                EventSource.EVENT_SOURCE_SIMULATION,
+                null,
+                exchangeTimestamp,
+                exchangeTimestamp);
         matching.runWithMutationContext(context, () -> {
             switch (scenario.family()) {
                 case "spoofing_like_wall" -> applySpoofing(age);
@@ -305,21 +701,27 @@ final class LiveArenaService {
     }
 
     private void applySpoofing(long age) {
-        long price = REFERENCE_PRICE_TICKS + 2 * LEVEL_SPACING_TICKS;
+        Side side = hybridAttackSide();
+        int direction = side == Side.SIDE_SELL ? 1 : -1;
+        long price = referencePriceTicks()
+                + direction * (2 + Math.floorMod(scenario.seed(), 2)) * LEVEL_SPACING_TICKS;
         matching.book().updateAgentLevel(
-                Side.SIDE_SELL, price, age < 3 ? 30_000 : 0, scenario.agentId(), "abuser",
-                "SCENARIO-WALL", tick, scenario.id(), scenario.name(), scenario.family());
+                side, price, age < 3 ? 30_000 : 0, scenario.agentId(), "abuser",
+                scenarioOrderId("WALL"), tick, scenario.id(), scenario.name(), scenario.family());
     }
 
     private void applyLayering(long age) {
+        long referencePrice = referencePriceTicks();
+        Side side = hybridAttackSide();
+        int direction = side == Side.SIDE_SELL ? 1 : -1;
         for (int level = 2; level <= 4; level++) {
             matching.book().updateAgentLevel(
-                    Side.SIDE_SELL,
-                    REFERENCE_PRICE_TICKS + level * LEVEL_SPACING_TICKS,
+                    side,
+                    referencePrice + direction * level * LEVEL_SPACING_TICKS,
                     age < 4 ? 10_000 + level * 1_000L : 0,
                     scenario.agentId(),
                     "abuser",
-                    "SCENARIO-LAYER-" + level,
+                    scenarioOrderId("LAYER-" + level),
                     tick,
                     scenario.id(),
                     scenario.name(),
@@ -328,18 +730,38 @@ final class LiveArenaService {
     }
 
     private void applyQuoteStuffing(long age) {
-        int level = (int) (age % 5) + 1;
-        matching.book().updateAgentLevel(
-                age % 2 == 0 ? Side.SIDE_BUY : Side.SIDE_SELL,
-                REFERENCE_PRICE_TICKS + (age % 2 == 0 ? -1 : 1) * level * LEVEL_SPACING_TICKS,
-                age < 5 ? 1_000 : 0,
-                scenario.agentId(),
-                "abuser",
-                "SCENARIO-STUFF-" + level,
-                tick,
-                scenario.id(),
-                scenario.name(),
-                scenario.family());
+        if (age > 5) {
+            return;
+        }
+        long referencePrice = referencePriceTicks();
+        for (int burst = 0; burst < 6; burst++) {
+            Side side = burst % 2 == 0 ? Side.SIDE_BUY : Side.SIDE_SELL;
+            int direction = side == Side.SIDE_BUY ? -1 : 1;
+            long price = referencePrice + direction * (burst + 2L) * LEVEL_SPACING_TICKS;
+            String orderId = scenarioOrderId("STUFF-" + age + "-" + burst);
+            matching.book().updateAgentLevel(
+                    side,
+                    price,
+                    1_000,
+                    scenario.agentId(),
+                    "abuser",
+                    orderId,
+                    tick,
+                    scenario.id(),
+                    scenario.name(),
+                    scenario.family());
+            matching.book().updateAgentLevel(
+                    side,
+                    price,
+                    0,
+                    scenario.agentId(),
+                    "abuser",
+                    orderId,
+                    tick,
+                    scenario.id(),
+                    scenario.name(),
+                    scenario.family());
+        }
     }
 
     private void applyLiquidityEvaporation(long age) {
@@ -380,6 +802,22 @@ final class LiveArenaService {
                 .skip(Math.max(0, matching.events().size() - EVENT_WINDOW))
                 .map(this::exchangeEventJson)
                 .forEach(exchangeEvents::add);
+        if (kernelHistoricalLoaded()) {
+            ArrayNode historicalEvents = result.putArray("historical_events");
+            matching.events().stream()
+                    .filter(event -> event.getMetadata().getSource()
+                            == EventSource.EVENT_SOURCE_HISTORICAL)
+                    .skip(Math.max(
+                            0,
+                            matching.events().stream()
+                                            .filter(event -> event.getMetadata().getSource()
+                                                    == EventSource.EVENT_SOURCE_HISTORICAL)
+                                            .count()
+                                    - EVENT_WINDOW))
+                    .map(this::exchangeEventJson)
+                    .forEach(historicalEvents::add);
+            result.set("market_data", replayContext());
+        }
         ObjectNode bookJson = bookJson(book);
         result.set("book", bookJson);
         copyNullable(result, bookJson, "best_bid");
@@ -410,16 +848,35 @@ final class LiveArenaService {
         double wall = book.getBidsList().stream().limit(5).mapToDouble(level -> quantity(level.getQuantityLots())).max().orElse(0);
         wall = Math.max(wall, book.getAsksList().stream().limit(5).mapToDouble(level -> quantity(level.getQuantityLots())).max().orElse(0));
         double average = depth / Math.max(1, Math.min(10, book.getBidsCount() + book.getAsksCount()));
+        long largeLevelCount = book.getBidsList().stream()
+                        .limit(5)
+                        .filter(level -> quantity(level.getQuantityLots()) >= average * 1.5)
+                        .count()
+                + book.getAsksList().stream()
+                        .limit(5)
+                        .filter(level -> quantity(level.getQuantityLots()) >= average * 1.5)
+                        .count();
+        List<ExchangeEvent> currentEvents = matching.events().stream()
+                .filter(event -> event.getMetadata().getTick() == tick)
+                .filter(event -> event.getPayloadCase() != ExchangeEvent.PayloadCase.SNAPSHOT)
+                .toList();
+        long cancels = currentEvents.stream()
+                .filter(event -> event.getPayloadCase() == ExchangeEvent.PayloadCase.CANCEL)
+                .count();
+        long executions = currentEvents.stream()
+                .filter(event -> event.getPayloadCase() == ExchangeEvent.PayloadCase.EXECUTE)
+                .count();
         double spread = book.hasSpreadTicks() ? price(book.getSpreadTicks()) : 0;
         double mid = book.hasMidPriceTicksX2() ? price(book.getMidPriceTicksX2()) / 2 : 0;
         return mapper.createObjectNode()
                 .put("spread_bps", mid == 0 ? 0 : round(spread / mid * 10_000))
                 .put("depth_top_n", round(depth))
                 .put("imbalance", round(imbalance))
-                .put("message_rate", 2.0 * Math.max(1, agentEvents.size()))
-                .put("cancel_to_trade_ratio", scenario == null ? 0.0 : 1.0)
-                .put("order_lifetime_ms", scenario == null ? 0.0 : scenario.age(tick) * 500.0)
+                .put("message_rate", 2.0 * currentEvents.size())
+                .put("cancel_to_trade_ratio", round((double) cancels / Math.max(1, executions)))
+                .put("order_lifetime_ms", round(averageCancelledLifetimeMs(currentEvents)))
                 .put("wall_size_ratio", average == 0 ? 1.0 : round(wall / average))
+                .put("large_level_count", largeLevelCount)
                 .put("depth_change_pct", previousDepth == 0 ? 0 : round((depth - previousDepth) / previousDepth * 100));
     }
 
@@ -427,17 +884,30 @@ final class LiveArenaService {
         ObjectNode result = mapper.createObjectNode();
         ArrayNode scores = result.putArray("scores");
         ArrayNode alerts = result.putArray("alerts");
-        Map<String, String> families = Map.of(
-                "spoofing_like_detector", "spoofing_like_wall",
-                "layering_like_detector", "layering_like",
-                "quote_stuffing_detector", "quote_stuffing",
-                "liquidity_shock_detector", "liquidity_evaporation");
-        for (Map.Entry<String, String> entry : families.entrySet()) {
-            double confidence = scenario != null && scenario.family().equals(entry.getValue())
-                    ? Math.min(0.95, 0.60 + scenario.age(tick) * 0.12)
-                    : 0.05;
+        double wallRatio = features.path("wall_size_ratio").doubleValue();
+        double cancelRatio = features.path("cancel_to_trade_ratio").doubleValue();
+        double messageRate = features.path("message_rate").doubleValue();
+        double largeLevels = features.path("large_level_count").doubleValue();
+        double depthChange = features.path("depth_change_pct").doubleValue();
+        List<DetectorScore> detectorScores = List.of(
+                new DetectorScore(
+                        "spoofing_like_detector",
+                        clamp(0.05 + Math.max(0, wallRatio - 1.5) * 0.55
+                                + Math.min(4, cancelRatio) * 0.08)),
+                new DetectorScore(
+                        "layering_like_detector",
+                        clamp(0.05 + largeLevels * 0.25 + Math.min(4, cancelRatio) * 0.05)),
+                new DetectorScore(
+                        "quote_stuffing_detector",
+                        clamp(0.05 + Math.min(1, messageRate / 25) * 0.55
+                                + Math.min(1, cancelRatio / 6) * 0.35)),
+                new DetectorScore(
+                        "liquidity_shock_detector",
+                        clamp(0.05 + Math.min(1, Math.max(0, -depthChange) / 60) * 0.95)));
+        for (DetectorScore detector : detectorScores) {
+            double confidence = detector.confidence();
             ObjectNode score = mapper.createObjectNode()
-                    .put("name", entry.getKey())
+                    .put("name", detector.name())
                     .put("confidence", round(confidence))
                     .put("alert", confidence >= 0.75);
             if (confidence >= 0.75) {
@@ -446,12 +916,20 @@ final class LiveArenaService {
                 score.putNull("severity");
             }
             ArrayNode evidence = score.putArray("evidence");
-            evidence.add(evidence("scenario_stage", "Scenario stage", scenario == null ? "none" : scenario.stage(tick)));
             evidence.add(evidence("wall_size_ratio", "Wall size ratio", features.path("wall_size_ratio").doubleValue()));
+            evidence.add(evidence("message_rate", "Message rate", messageRate));
+            evidence.add(evidence("cancel_to_trade_ratio", "Cancel to trade ratio", cancelRatio));
+            evidence.add(evidence("large_level_count", "Large top levels", largeLevels));
+            evidence.add(evidence("depth_change_pct", "Top-depth change", depthChange));
             scores.add(score);
             if (confidence >= 0.75) {
                 alerts.add(score.deepCopy());
-                maybeCreateIncident(entry.getKey(), confidence, evidence);
+                detectorAlertTicks.computeIfAbsent(detector.name(), ignored -> new ArrayList<>());
+                List<Long> ticks = detectorAlertTicks.get(detector.name());
+                if (ticks.isEmpty() || ticks.getLast() != tick) {
+                    ticks.add(tick);
+                }
+                maybeCreateIncident(detector.name(), confidence, evidence);
             }
         }
         return result;
@@ -489,10 +967,270 @@ final class LiveArenaService {
                 .put("agent_id", scenario.agentId())
                 .put("current_stage", scenario.stage(tick))
                 .put("start_tick", scenario.startTick())
+                .put("attack_seed", scenario.seed())
                 .put("status", scenario.stage(tick));
         result.putArray("stages");
         result.putArray("evidence");
         return result;
+    }
+
+    private ObjectNode groundTruthLabel() {
+        if (scenario == null) {
+            throw new IllegalStateException("ground truth requires an active synthetic scenario");
+        }
+        long endTick = scenario.startTick() + 4;
+        ObjectNode result = mapper.createObjectNode()
+                .put("schema_version", "scenario_ground_truth_v1")
+                .put("scenario_id", scenario.id())
+                .put("scenario_family", scenario.family())
+                .put("source", "synthetic_scenario")
+                .put("has_attack", true)
+                .put("start_tick", scenario.startTick())
+                .put("end_tick", endTick);
+        result.putArray("agent_ids").add(scenario.agentId());
+        ArrayNode orderIds = result.putArray("order_ids");
+        expectedScenarioOrderIds().forEach(orderIds::add);
+        ArrayNode windows = result.putArray("manipulation_windows");
+        windows.add(mapper.createObjectNode()
+                .put("start_tick", scenario.startTick())
+                .put("end_tick", endTick)
+                .put("scenario_family", scenario.family()));
+        ObjectNode phases = result.putObject("phase_windows");
+        phases.set("pressure_phase", mapper.createObjectNode()
+                .put("start_tick", scenario.startTick())
+                .put("end_tick", scenario.startTick() + 2));
+        phases.set("cancellation_phase", mapper.createObjectNode()
+                .put("start_tick", scenario.startTick() + 3)
+                .put("end_tick", endTick));
+        return result;
+    }
+
+    private List<String> expectedScenarioOrderIds() {
+        return switch (scenario.family()) {
+            case "spoofing_like_wall" -> List.of(scenarioOrderId("WALL"));
+            case "layering_like" -> List.of(
+                    scenarioOrderId("LAYER-2"),
+                    scenarioOrderId("LAYER-3"),
+                    scenarioOrderId("LAYER-4"));
+            case "quote_stuffing" -> {
+                List<String> ids = new ArrayList<>();
+                for (int age = 1; age <= 5; age++) {
+                    for (int burst = 0; burst < 6; burst++) {
+                        ids.add(scenarioOrderId("STUFF-" + age + "-" + burst));
+                    }
+                }
+                yield List.copyOf(ids);
+            }
+            case "liquidity_evaporation" -> List.of();
+            default -> throw new IllegalStateException("unsupported scenario family");
+        };
+    }
+
+    private ObjectNode replaySummary(String sourceType) {
+        ObjectNode summary = mapper.createObjectNode()
+                .put("mode", sourceType)
+                .put("dataset_id", replayDatasetId())
+                .put("master_seed", replayMasterSeed)
+                .put("source_row_count", replayRowCount())
+                .put("source_rows_replayed", replayPosition())
+                .put("events_sha256", replayEventsSha256())
+                .put("canonical_event_count", matching.events().size())
+                .put("stream_hash", HexFormat.of().formatHex(CanonicalHashes.eventStreamHash(matching.events(), 1)))
+                .put("historical_event_hash", sourceEventHash(EventSource.EVENT_SOURCE_HISTORICAL))
+                .put("synthetic_event_hash", sourceEventHash(EventSource.EVENT_SOURCE_SIMULATION))
+                .put(
+                        "historical_source_sequences",
+                        matching.events().stream()
+                                .filter(event -> event.getMetadata().getSource()
+                                        == EventSource.EVENT_SOURCE_HISTORICAL)
+                                .filter(event -> event.getMetadata().hasSourceSequence())
+                                .map(event -> event.getMetadata().getSourceSequence())
+                                .distinct()
+                                .count());
+        ObjectNode counts = summary.putObject("event_counts");
+        ObjectNode sourceCounts = counts.putObject("by_source");
+        ObjectNode typeCounts = counts.putObject("by_type");
+        for (ExchangeEvent event : matching.events()) {
+            String source = event.getMetadata().getSource() == EventSource.EVENT_SOURCE_HISTORICAL
+                    ? "historical"
+                    : "simulation";
+            sourceCounts.put(source, sourceCounts.has(source) ? sourceCounts.path(source).longValue() + 1 : 1);
+            String type = event.getPayloadCase().name().toLowerCase();
+            typeCounts.put(type, typeCounts.has(type) ? typeCounts.path(type).longValue() + 1 : 1);
+        }
+        ObjectNode alerts = summary.putObject("detector_alert_ticks");
+        detectorAlertTicks.forEach((detector, ticks) -> {
+            ArrayNode values = alerts.putArray(detector);
+            ticks.forEach(values::add);
+        });
+        if (scenario == null) {
+            summary.putNull("ground_truth");
+            summary.putNull("attack_seed");
+        } else {
+            summary.set("ground_truth", groundTruthLabel());
+            summary.put("attack_seed", scenario.seed());
+        }
+        BookSnapshot book = matching.book().snapshot(SNAPSHOT_DEPTH);
+        ObjectNode realism = summary.putObject("realism");
+        ObjectNode derived = features(book);
+        realism.put("final_depth_top_n", derived.path("depth_top_n").doubleValue());
+        realism.put("final_spread", book.hasSpreadTicks() ? price(book.getSpreadTicks()) : 0);
+        realism.put("final_imbalance", derived.path("imbalance").doubleValue());
+        realism.put("final_level_count", book.getBidsCount() + book.getAsksCount());
+        return summary;
+    }
+
+    private String sourceEventHash(EventSource source) {
+        MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 must be available", exception);
+        }
+        matching.events().stream()
+                .filter(event -> event.getMetadata().getSource() == source)
+                .map(CanonicalHashes::eventHash)
+                .forEach(digest::update);
+        return HexFormat.of().formatHex(digest.digest());
+    }
+
+    private double averageCancelledLifetimeMs(List<ExchangeEvent> currentEvents) {
+        Set<String> cancelledOrderIds = currentEvents.stream()
+                .filter(event -> event.getPayloadCase() == ExchangeEvent.PayloadCase.CANCEL)
+                .map(event -> event.getCancel().getOrderId())
+                .collect(java.util.stream.Collectors.toSet());
+        if (cancelledOrderIds.isEmpty()) {
+            return 0;
+        }
+        Map<String, ExchangeEvent> adds = new LinkedHashMap<>();
+        matching.events().stream()
+                .filter(event -> event.getPayloadCase() == ExchangeEvent.PayloadCase.ADD)
+                .filter(event -> cancelledOrderIds.contains(event.getAdd().getOrderId()))
+                .forEach(event -> adds.putIfAbsent(event.getAdd().getOrderId(), event));
+        double total = 0;
+        int count = 0;
+        for (ExchangeEvent cancel : currentEvents) {
+            if (cancel.getPayloadCase() != ExchangeEvent.PayloadCase.CANCEL) {
+                continue;
+            }
+            ExchangeEvent add = adds.get(cancel.getCancel().getOrderId());
+            if (add == null) {
+                continue;
+            }
+            long addTime = eventTimeNs(add);
+            long cancelTime = eventTimeNs(cancel);
+            total += Math.max(0, cancelTime - addTime) / 1_000_000.0;
+            count++;
+        }
+        return count == 0 ? 0 : total / count;
+    }
+
+    private static long eventTimeNs(ExchangeEvent event) {
+        if (event.getMetadata().hasExchangeTimestampNs()) {
+            return event.getMetadata().getExchangeTimestampNs();
+        }
+        return event.getMetadata().getTick() * 500_000_000L;
+    }
+
+    private long referencePriceTicks() {
+        BookSnapshot book = matching.book().snapshot(1);
+        if (book.hasMidPriceTicksX2()) {
+            return book.getMidPriceTicksX2() / 2;
+        }
+        if (book.hasBestBidTicks()) {
+            return book.getBestBidTicks();
+        }
+        if (book.hasBestAskTicks()) {
+            return book.getBestAskTicks();
+        }
+        return REFERENCE_PRICE_TICKS;
+    }
+
+    private Side hybridAttackSide() {
+        if (!kernelHistoricalLoaded()) {
+            return Side.SIDE_SELL;
+        }
+        return (scenario.seed() & 1L) == 0 ? Side.SIDE_SELL : Side.SIDE_BUY;
+    }
+
+    private boolean kernelHistoricalLoaded() {
+        return historicalCsv.loaded() || lobsterKernelReplay;
+    }
+
+    private String replayDatasetId() {
+        return historicalCsv.loaded() ? historicalCsv.datasetId() : historical.datasetId();
+    }
+
+    private String replaySymbol() {
+        return historicalCsv.loaded() ? historicalCsv.symbol() : historical.symbol();
+    }
+
+    private String replayVenue() {
+        return historicalCsv.loaded() ? historicalCsv.venue() : historical.venue();
+    }
+
+    private long replayPriceTickSizeNanos() {
+        return historicalCsv.loaded()
+                ? historicalCsv.priceTickSizeNanos()
+                : historical.priceTickSizeNanos();
+    }
+
+    private long replayQuantityLotSizeNanos() {
+        return historicalCsv.loaded()
+                ? historicalCsv.quantityLotSizeNanos()
+                : historical.quantityLotSizeNanos();
+    }
+
+    private long replayCurrentTimestampNs() {
+        return historicalCsv.loaded()
+                ? historicalCsv.currentTimestampNs()
+                : historical.currentTimestampNs();
+    }
+
+    private long replayPosition() {
+        return historicalCsv.loaded()
+                ? historicalCsv.replayPosition()
+                : historical.replayPosition();
+    }
+
+    private long replayRowCount() {
+        return historicalCsv.loaded() ? historicalCsv.rowCount() : historical.rowCount();
+    }
+
+    private String replayEventsSha256() {
+        return historicalCsv.loaded()
+                ? historicalCsv.eventsSha256()
+                : historical.eventsSha256();
+    }
+
+    private JsonNode replayContext() {
+        return historicalCsv.loaded()
+                ? historicalCsv.context(replaySourceType)
+                : historical.context(replaySourceType);
+    }
+
+    private String lobsterParticipantId() {
+        return "HIST:" + replayDatasetId() + ":P:LOBSTER";
+    }
+
+    private String lobsterLevelOrderId(Side side, long priceTicks) {
+        String bookSide = side == Side.SIDE_BUY ? "B" : "S";
+        return "HIST:" + replayDatasetId() + ":L2:" + bookSide + ":" + priceTicks;
+    }
+
+    private String scenarioOrderId(String suffix) {
+        if (kernelHistoricalLoaded()) {
+            return "SYN:" + scenario.id() + ":" + Long.toUnsignedString(scenario.seed(), 16) + ":O:" + suffix;
+        }
+        return "SCENARIO-" + suffix;
+    }
+
+    private String historicalOrderId(String sourceOrderId) {
+        return "HIST:" + replayDatasetId() + ":O:" + sourceOrderId;
+    }
+
+    private String historicalParticipantId(String sourceParticipantId) {
+        return "HIST:" + replayDatasetId() + ":P:" + sourceParticipantId;
     }
 
     private ObjectNode marketSnapshot(BookSnapshot book) {
@@ -550,12 +1288,24 @@ final class LiveArenaService {
         result.put("event_id", metadata.getEventId());
         result.put("sequence", metadata.getSequence());
         result.put("source", metadata.getSource() == EventSource.EVENT_SOURCE_HISTORICAL ? "historical" : "simulation");
-        result.putNull("source_sequence");
+        if (metadata.hasSourceSequence()) {
+            result.put("source_sequence", metadata.getSourceSequence());
+        } else {
+            result.putNull("source_sequence");
+        }
         result.put("symbol", metadata.getSymbol());
         result.put("venue", metadata.getVenue());
         result.put("tick", metadata.getTick());
-        result.putNull("exchange_timestamp_ns");
-        result.putNull("received_timestamp_ns");
+        if (metadata.hasExchangeTimestampNs()) {
+            result.put("exchange_timestamp_ns", metadata.getExchangeTimestampNs());
+        } else {
+            result.putNull("exchange_timestamp_ns");
+        }
+        if (metadata.hasReceivedTimestampNs()) {
+            result.put("received_timestamp_ns", metadata.getReceivedTimestampNs());
+        } else {
+            result.putNull("received_timestamp_ns");
+        }
         optional(result, "scenario_id", metadata.hasScenarioId(), metadata.getScenarioId());
         optional(result, "scenario_name", metadata.hasScenarioName(), metadata.getScenarioName());
         optional(result, "scenario_family", metadata.hasScenarioFamily(), metadata.getScenarioFamily());
@@ -615,6 +1365,16 @@ final class LiveArenaService {
         IntegerOrderBook book = new IntegerOrderBook(UNIT_NANOS, UNIT_NANOS);
         book.initialize(REFERENCE_PRICE_TICKS, BASELINE_LEVELS, LEVEL_SPACING_TICKS, BASE_QUANTITY_LOTS, "normal");
         return new IntegerMatchingEngine(book, "BTCUSDT", "SIM", EventSource.EVENT_SOURCE_SIMULATION);
+    }
+
+    private IntegerMatchingEngine newHistoricalMatchingEngine() {
+        IntegerOrderBook book =
+                new IntegerOrderBook(replayPriceTickSizeNanos(), replayQuantityLotSizeNanos());
+        return new IntegerMatchingEngine(
+                book,
+                replaySymbol(),
+                replayVenue(),
+                EventSource.EVENT_SOURCE_SIMULATION);
     }
 
     private void addAgentEvent(ObjectNode event) {
@@ -679,29 +1439,45 @@ final class LiveArenaService {
         return provided.isBlank() ? agentId + "-" + intent.path("tick").longValue() + "-" + sequence : provided;
     }
 
-    private static long ticks(double value) {
+    private long ticks(double value) {
         if (!Double.isFinite(value) || value <= 0) {
             throw new IllegalArgumentException("positive finite price is required");
         }
-        return BigDecimal.valueOf(value).movePointRight(3).setScale(0, RoundingMode.HALF_EVEN).longValueExact();
+        long unit = kernelHistoricalLoaded() ? replayPriceTickSizeNanos() : UNIT_NANOS;
+        return BigDecimal.valueOf(value)
+                .movePointRight(9)
+                .divide(BigDecimal.valueOf(unit), 0, RoundingMode.HALF_EVEN)
+                .longValueExact();
     }
 
-    private static long lots(double value) {
+    private long lots(double value) {
         if (!Double.isFinite(value) || value < 0) {
             throw new IllegalArgumentException("non-negative finite quantity is required");
         }
-        return BigDecimal.valueOf(value).movePointRight(3).setScale(0, RoundingMode.HALF_EVEN).longValueExact();
+        long unit = kernelHistoricalLoaded() ? replayQuantityLotSizeNanos() : UNIT_NANOS;
+        return BigDecimal.valueOf(value)
+                .movePointRight(9)
+                .divide(BigDecimal.valueOf(unit), 0, RoundingMode.HALF_EVEN)
+                .longValueExact();
     }
 
-    private static double price(long ticks) {
-        return BigDecimal.valueOf(ticks, 3).doubleValue();
+    private double price(long ticks) {
+        long unit = kernelHistoricalLoaded() ? replayPriceTickSizeNanos() : UNIT_NANOS;
+        return BigDecimal.valueOf(ticks)
+                .multiply(BigDecimal.valueOf(unit))
+                .movePointLeft(9)
+                .doubleValue();
     }
 
-    private static double quantity(long lots) {
-        return BigDecimal.valueOf(lots, 3).doubleValue();
+    private double quantity(long lots) {
+        long unit = kernelHistoricalLoaded() ? replayQuantityLotSizeNanos() : UNIT_NANOS;
+        return BigDecimal.valueOf(lots)
+                .multiply(BigDecimal.valueOf(unit))
+                .movePointLeft(9)
+                .doubleValue();
     }
 
-    private static double topDepth(BookSnapshot book) {
+    private double topDepth(BookSnapshot book) {
         return book.getBidsList().stream().mapToDouble(level -> quantity(level.getQuantityLots())).sum()
                 + book.getAsksList().stream().mapToDouble(level -> quantity(level.getQuantityLots())).sum();
     }
@@ -719,6 +1495,10 @@ final class LiveArenaService {
         return BigDecimal.valueOf(value).setScale(4, RoundingMode.HALF_EVEN).doubleValue();
     }
 
+    private static double clamp(double value) {
+        return Math.max(0, Math.min(0.99, value));
+    }
+
     private static void optional(ObjectNode node, String field, boolean present, String value) {
         if (present) {
             node.put(field, value);
@@ -730,4 +1510,6 @@ final class LiveArenaService {
     private static void copyNullable(ObjectNode target, ObjectNode source, String field) {
         target.set(field, source.path(field).deepCopy());
     }
+
+    private record DetectorScore(String name, double confidence) {}
 }

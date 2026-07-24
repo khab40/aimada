@@ -129,7 +129,8 @@ flowchart LR
 - The simulation API now reads through a live `SimulationEventSource` instead of its concrete log.
 - Added validated canonical JSONL replay as another source implementation.
 - Added a historical record-normalizer boundary that preserves upstream sequence/timestamps and assigns independent canonical order.
-- Established the completed extension point for vendor-specific CSV/JSON mappings after a historical dataset is selected.
+- Established the extension point now used by strict canonical CSV and
+  normalized LOBSTER Parquet replay.
 
 ## Step 10 Implementation Record
 
@@ -155,9 +156,25 @@ Tradeoffs:
 - Schema version changes will require explicit adapter and persistence migrations.
 - Full order-by-order reconstruction requires canonical events; L2 snapshots alone remain observational checkpoints.
 
+## Historical Replay Evolution
+
+ARD-0023 implements the historical extension point without changing the
+versioned event schema:
+
+- strict canonical CSV maps source lifecycle events into add/modify/cancel/
+  execute-compatible kernel mutations;
+- normalized LOBSTER replay reconstructs deterministic visible aggregate
+  levels and records the immutable source L2 snapshot;
+- historical source sequence remains distinct from total canonical sequence;
+  and
+- synthetic overlays share the live kernel but retain separate source,
+  identity, seed, and ground-truth provenance.
+
 ## Related Documentation
 
 - [Exchange Event Stream](../exchange-event-stream.md)
 - [ARD-0002: WebSocket State Schema](ARD-0002-websocket-state-schema.md)
 - [ARD-0004: Benchmark Artifact Format](ARD-0004-benchmark-artifact-format.md)
 - [ARD-0011: Exchange Liquidity Invariant](ARD-0011-exchange-liquidity-invariant.md)
+- [ARD-0022: Historical Market Data Ingestion](ARD-0022-historical-market-data-ingestion.md)
+- [ARD-0023: Deterministic Hybrid Historical Replay](ARD-0023-hybrid-historical-replay.md)

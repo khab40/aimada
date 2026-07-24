@@ -3,8 +3,10 @@ package ai.lobarena.kernel.book;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.lobarena.exchange.v1.BookSnapshot;
 import ai.lobarena.exchange.v1.EventSource;
 import ai.lobarena.exchange.v1.ExchangeEvent;
+import ai.lobarena.exchange.v1.PriceLevel;
 import ai.lobarena.exchange.v1.Side;
 import ai.lobarena.kernel.hashing.CanonicalHashes;
 import java.util.List;
@@ -89,6 +91,74 @@ final class IntegerMatchingEngineTest {
         assertTrue(engine.submit(KernelOrder.modify("missing", "maker", Side.SIDE_BUY, 1, 99L, 0)).isEmpty());
         assertTrue(engine.submit(KernelOrder.market("empty", "taker", Side.SIDE_BUY, 5, 0)).isEmpty());
         assertTrue(engine.events().isEmpty());
+    }
+
+    @Test
+    void perSubmissionContextPreservesHistoricalProvenanceAndLogicalTick() {
+        IntegerMatchingEngine engine = engine();
+        MutationContext historical = new MutationContext(
+                7L,
+                null,
+                null,
+                null,
+                EventSource.EVENT_SOURCE_HISTORICAL,
+                42L,
+                35_100_000_000_000L,
+                35_100_000_000_001L);
+        engine.submit(
+                KernelOrder.limit("ask", "historical-maker", Side.SIDE_SELL, 5, 101, 35_100_000_000_000L),
+                historical);
+        ExchangeEvent execution = engine.submit(
+                        KernelOrder.market(
+                                "buy", "historical-taker", Side.SIDE_BUY, 2, 35_100_000_000_100L),
+                        new MutationContext(
+                                8L,
+                                null,
+                                null,
+                                null,
+                                EventSource.EVENT_SOURCE_HISTORICAL,
+                                43L,
+                                35_100_000_000_100L,
+                                35_100_000_000_101L))
+                .getFirst();
+
+        assertEquals(EventSource.EVENT_SOURCE_HISTORICAL, execution.getMetadata().getSource());
+        assertEquals(43, execution.getMetadata().getSourceSequence());
+        assertEquals(8, execution.getMetadata().getTick());
+        assertEquals(35_100_000_000_100L, execution.getMetadata().getExchangeTimestampNs());
+        assertEquals(32, CanonicalHashes.eventStreamHash(engine.events(), 1).length);
+    }
+
+    @Test
+    void recordsImmutableSourceSnapshotWithoutReplacingLiveBook() {
+        IntegerMatchingEngine engine = engine();
+        engine.submit(KernelOrder.limit("synthetic-bid", "agent", Side.SIDE_BUY, 5, 99, 1));
+        BookSnapshot historical = BookSnapshot.newBuilder()
+                .addBids(PriceLevel.newBuilder().setPriceTicks(90).setQuantityLots(10).setOwner("historical"))
+                .addAsks(PriceLevel.newBuilder().setPriceTicks(91).setQuantityLots(12).setOwner("historical"))
+                .setBestBidTicks(90)
+                .setBestAskTicks(91)
+                .setMidPriceTicksX2(181)
+                .setSpreadTicks(1)
+                .build();
+
+        ExchangeEvent event = engine.recordSnapshot(
+                historical,
+                1,
+                new MutationContext(
+                        2L,
+                        null,
+                        null,
+                        null,
+                        EventSource.EVENT_SOURCE_HISTORICAL,
+                        17L,
+                        34_200_000_000_000L,
+                        34_200_000_000_000L));
+
+        assertEquals(90, event.getSnapshot().getBook().getBestBidTicks());
+        assertEquals(99, engine.book().snapshot(1).getBestBidTicks());
+        assertEquals(EventSource.EVENT_SOURCE_HISTORICAL, event.getMetadata().getSource());
+        assertEquals(17, event.getMetadata().getSourceSequence());
     }
 
     private IntegerMatchingEngine engine() {

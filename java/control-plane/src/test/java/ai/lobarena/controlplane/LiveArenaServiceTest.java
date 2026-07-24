@@ -2,9 +2,13 @@ package ai.lobarena.controlplane;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.lobarena.kernel.determinism.DeterministicValues;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.Statement;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
@@ -90,6 +94,154 @@ class LiveArenaServiceTest {
         assertThat(replay.path("next_after_sequence").longValue()).isPositive();
     }
 
+    @Test
+    void historicalReplayPreservesLifecycleProvenanceAndHasNoGroundTruth(@TempDir Path output) {
+        LiveArenaService arena = historicalArena(output, 4);
+        JsonNode loaded = arena.loadDataSource("historical", "sample-btcusdt-0945");
+
+        assertThat(loaded.path("market_data").path("source_type").textValue()).isEqualTo("historical");
+        JsonNode state = null;
+        for (int index = 0; index < 3; index++) {
+            state = arena.stepForTest();
+        }
+
+        assertThat(state.path("active_scenario").isNull()).isTrue();
+        assertThat(state.path("historical_events")).isNotEmpty();
+        assertThat(state.path("exchange_events"))
+                .filteredOn(event -> "historical".equals(event.path("source").textValue()))
+                .allMatch(event -> event.path("source_sequence").isIntegralNumber())
+                .allMatch(event -> event.path("scenario_id").isNull());
+        assertThat(state.path("exchange_events"))
+                .filteredOn(event -> event.hasNonNull("order_id"))
+                .allMatch(event -> event.path("order_id").textValue().startsWith("HIST:"));
+        assertThat(state.path("detectors").toString()).doesNotContain("scenario");
+    }
+
+    @Test
+    void hybridReplayMergesHistoryBeforeCollisionSafeSyntheticAttack(@TempDir Path output) {
+        LiveArenaService arena = historicalArena(output, 12);
+        arena.loadDataSource("hybrid", "sample-btcusdt-0945");
+        JsonNode label = arena.launchScenario("spoofing_like_wall");
+        JsonNode state = arena.stepForTest();
+
+        assertThat(label.path("agent_id").textValue()).startsWith("SYN:");
+        assertThat(state.path("exchange_events"))
+                .filteredOn(event -> "historical".equals(event.path("source").textValue()))
+                .allMatch(event -> {
+                    String participant = event.hasNonNull("agent_id")
+                            ? event.path("agent_id").textValue()
+                            : event.path("aggressor_agent_id").asText("");
+                    return participant.startsWith("HIST:");
+                });
+        assertThat(state.path("exchange_events"))
+                .filteredOn(event -> event.hasNonNull("scenario_id"))
+                .allMatch(event -> event.path("order_id").asText("").startsWith("SYN:"));
+        int firstSynthetic = -1;
+        int lastHistorical = -1;
+        for (int index = 0; index < state.path("exchange_events").size(); index++) {
+            JsonNode event = state.path("exchange_events").get(index);
+            if ("historical".equals(event.path("source").textValue())) {
+                lastHistorical = index;
+            } else if (event.hasNonNull("scenario_id") && firstSynthetic < 0) {
+                firstSynthetic = index;
+            }
+        }
+        assertThat(firstSynthetic).isGreaterThan(lastHistorical);
+        assertThat(state.path("detectors").path("alerts"))
+                .anyMatch(alert -> "spoofing_like_detector".equals(alert.path("name").textValue()));
+    }
+
+    @Test
+    void comparisonUsesSameWindowAndLabelsOnlyHybridRun(@TempDir Path output) {
+        LiveArenaService arena = historicalArena(output, 4);
+
+        JsonNode comparison =
+                arena.runReplayComparison("sample-btcusdt-0945", "quote_stuffing", 10);
+
+        assertThat(comparison.path("control").path("source_row_count").longValue()).isEqualTo(12);
+        assertThat(comparison.path("hybrid").path("source_row_count").longValue()).isEqualTo(12);
+        assertThat(comparison.path("control").path("ground_truth").isNull()).isTrue();
+        assertThat(comparison.path("hybrid").path("ground_truth").path("has_attack").booleanValue())
+                .isTrue();
+        assertThat(comparison.path("hybrid").path("ground_truth").path("order_ids"))
+                .allMatch(id -> id.textValue().startsWith("SYN:"));
+        assertThat(comparison.path("control").path("detector_alert_ticks")
+                        .path("quote_stuffing_detector").isMissingNode())
+                .isTrue();
+        assertThat(comparison.path("hybrid").path("detector_alert_ticks")
+                        .path("quote_stuffing_detector"))
+                .as(comparison.toPrettyString())
+                .isNotEmpty();
+        assertThat(comparison.path("events_sha256").textValue()).isNotBlank();
+        assertThat(Files.exists(output.resolve("historical-replay/comparisons.jsonl"))).isTrue();
+
+        JsonNode repeated =
+                arena.runReplayComparison("sample-btcusdt-0945", "quote_stuffing", 10);
+        assertThat(repeated.path("control").path("stream_hash").textValue())
+                .isEqualTo(comparison.path("control").path("stream_hash").textValue());
+        assertThat(repeated.path("hybrid").path("stream_hash").textValue())
+                .isEqualTo(comparison.path("hybrid").path("stream_hash").textValue());
+    }
+
+    @Test
+    void lobsterHybridIsDeterministicSeededAndPreservesEveryHistoricalMessage(@TempDir Path root)
+            throws Exception {
+        Path registry = createLobsterDataset(root.resolve("lobster"));
+        LiveArenaService arena = lobsterArena(root.resolve("output"), registry, 1);
+
+        JsonNode first = arena.runReplayComparison(
+                "lobster-spy-fixture", "layering_like", 20, 7);
+        JsonNode repeated = arena.runReplayComparison(
+                "lobster-spy-fixture", "layering_like", 20, 7);
+        long firstAttackSeed = DeterministicValues.deriveStreamSeed(
+                7, "hybrid:lobster-spy-fixture:layering_like:1");
+        long differentMasterSeed = 8;
+        while ((DeterministicValues.deriveStreamSeed(
+                                differentMasterSeed,
+                                "hybrid:lobster-spy-fixture:layering_like:1")
+                        & 1L)
+                == (firstAttackSeed & 1L)) {
+            differentMasterSeed++;
+        }
+        JsonNode differentSeed = arena.runReplayComparison(
+                "lobster-spy-fixture", "layering_like", 20, differentMasterSeed);
+
+        assertThat(first.path("control").path("source_rows_replayed").longValue()).isEqualTo(8);
+        assertThat(first.path("hybrid").path("source_rows_replayed").longValue()).isEqualTo(8);
+        assertThat(first.path("control").path("historical_source_sequences").longValue()).isEqualTo(8);
+        assertThat(first.path("hybrid").path("historical_source_sequences").longValue()).isEqualTo(8);
+        assertThat(repeated.path("control").path("stream_hash").textValue())
+                .isEqualTo(first.path("control").path("stream_hash").textValue());
+        assertThat(repeated.path("hybrid").path("stream_hash").textValue())
+                .isEqualTo(first.path("hybrid").path("stream_hash").textValue());
+        assertThat(differentSeed.path("control").path("historical_event_hash").textValue())
+                .isEqualTo(first.path("control").path("historical_event_hash").textValue());
+        assertThat(differentSeed.path("hybrid").path("historical_event_hash").textValue())
+                .isEqualTo(first.path("hybrid").path("historical_event_hash").textValue());
+        assertThat(differentSeed.path("hybrid").path("synthetic_event_hash").textValue())
+                .isNotEqualTo(first.path("hybrid").path("synthetic_event_hash").textValue());
+        assertThat(first.path("control").path("ground_truth").isNull()).isTrue();
+        assertThat(first.path("hybrid").path("ground_truth").path("source").textValue())
+                .isEqualTo("synthetic_scenario");
+
+        arena.loadDataSource("hybrid", "lobster-spy-fixture", 7);
+        arena.launchScenario("spoofing_like_wall");
+        JsonNode live = arena.stepForTest();
+        assertThat(live.path("detectors").toString())
+                .doesNotContain("scenario", "attack_seed", "SYN:");
+        int lastHistorical = -1;
+        int firstSynthetic = -1;
+        for (int index = 0; index < live.path("exchange_events").size(); index++) {
+            JsonNode event = live.path("exchange_events").get(index);
+            if ("historical".equals(event.path("source").textValue())) {
+                lastHistorical = index;
+            } else if (event.hasNonNull("scenario_id") && firstSynthetic < 0) {
+                firstSynthetic = index;
+            }
+        }
+        assertThat(firstSynthetic).isGreaterThan(lastHistorical);
+    }
+
     private LiveArenaService arena(Path output, JsonNode runnerResponse) {
         AgentRunnerClient client = (URI runner, JsonNode snapshot) -> {
             JsonNode response = runnerResponse.deepCopy();
@@ -101,5 +253,88 @@ class LiveArenaServiceTest {
         };
         AgentOrchestrator orchestrator = new AgentOrchestrator(List.of(URI.create("http://runner:9100/")), client);
         return new LiveArenaService(mapper, orchestrator, new ArenaJournal(output, mapper));
+    }
+
+    private LiveArenaService historicalArena(Path output, int rowsPerTick) {
+        AgentRunnerClient client = (URI runner, JsonNode snapshot) -> CompletableFuture.completedFuture(
+                mapper.readTree("{\"agent_ids\":[],\"intents\":[]}"));
+        AgentOrchestrator orchestrator = new AgentOrchestrator(List.of(), client);
+        return new LiveArenaService(
+                mapper,
+                orchestrator,
+                new ArenaJournal(output, mapper),
+                output.resolve("unused-parquet"),
+                HistoricalCsvMarketDataSourceTest.fixtureRoot(),
+                rowsPerTick);
+    }
+
+    private LiveArenaService lobsterArena(Path output, Path registry, int rowsPerTick) {
+        AgentRunnerClient client = (URI runner, JsonNode snapshot) -> CompletableFuture.completedFuture(
+                mapper.readTree("{\"agent_ids\":[],\"intents\":[]}"));
+        AgentOrchestrator orchestrator = new AgentOrchestrator(List.of(), client);
+        return new LiveArenaService(
+                mapper,
+                orchestrator,
+                new ArenaJournal(output, mapper),
+                registry,
+                output.resolve("unused-canonical"),
+                rowsPerTick,
+                42);
+    }
+
+    private static Path createLobsterDataset(Path registry) throws Exception {
+        String datasetId = "lobster-spy-fixture";
+        Path dataset = Files.createDirectories(registry.resolve(datasetId));
+        Path events = dataset.resolve("events.parquet");
+        Path books = dataset.resolve("book_snapshots.parquet");
+        try (Connection connection = DriverManager.getConnection("jdbc:duckdb:");
+                Statement statement = connection.createStatement()) {
+            statement.execute("""
+                    CREATE TABLE events AS
+                    SELECT i::BIGINT source_sequence,
+                           (34200000000000 + i)::BIGINT timestamp_ns_since_midnight,
+                           'ADD'::VARCHAR event_kind, 1::TINYINT source_event_code,
+                           (1000 + i)::BIGINT source_order_id, 10::BIGINT size,
+                           1000000::BIGINT price_x10000, 1::TINYINT direction,
+                           'BUY'::VARCHAR book_side, NULL::VARCHAR aggressor_side,
+                           NULL::VARCHAR halt_state
+                    FROM range(1, 9) values(i)
+                    """);
+            statement.execute("COPY events TO '" + sqlPath(events) + "' (FORMAT PARQUET)");
+            statement.execute("""
+                    CREATE TABLE books AS
+                    SELECT i::BIGINT source_sequence,
+                           (34200000000000 + i)::BIGINT timestamp_ns_since_midnight,
+                           2::SMALLINT depth,
+                           [{'level': 1::SMALLINT, 'price_x10000': 1001000::BIGINT, 'quantity': 200::BIGINT},
+                            {'level': 2::SMALLINT, 'price_x10000': 1002000::BIGINT, 'quantity': 300::BIGINT}] asks,
+                           [{'level': 1::SMALLINT, 'price_x10000': 1000000::BIGINT, 'quantity': (100 + i)::BIGINT},
+                            {'level': 2::SMALLINT, 'price_x10000': 999000::BIGINT, 'quantity': 400::BIGINT}] bids
+                    FROM range(1, 9) values(i)
+                    """);
+            statement.execute("COPY books TO '" + sqlPath(books) + "' (FORMAT PARQUET)");
+        }
+        Files.writeString(dataset.resolve("manifest.json"), """
+                {
+                  "dataset_id": "%s",
+                  "status": "ready",
+                  "source_type": "lobster",
+                  "symbol": "SPY",
+                  "trade_date": "2012-06-21",
+                  "start_time_ms": 34200000,
+                  "end_time_ms": 34260000,
+                  "depth": 2,
+                  "row_count": 8,
+                  "source_files": [
+                    {"sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+                    {"sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}
+                  ]
+                }
+                """.formatted(datasetId));
+        return registry;
+    }
+
+    private static String sqlPath(Path path) {
+        return path.toAbsolutePath().normalize().toString().replace("'", "''");
     }
 }

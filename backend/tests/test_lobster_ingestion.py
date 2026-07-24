@@ -168,6 +168,26 @@ def test_conversion_can_register_a_selected_one_minute_window(tmp_path: Path) ->
     assert events.column("event_kind").to_pylist() == ["PARTIAL_CANCEL"]
 
 
+def test_committed_lobster_fixture_converts_without_losing_messages(tmp_path: Path) -> None:
+    raw = Path(__file__).resolve().parents[2] / "data" / "lobster" / "fixture"
+    candidates = discover_candidates(raw, tmp_path)
+
+    assert len(candidates) == 1
+    candidate = candidates[0]
+    assert candidate.symbol == "SPY"
+    assert candidate.depth == 2
+    manifest = convert_pair(candidate, raw, tmp_path)
+    events = pq.read_table(tmp_path / manifest.dataset_id / "events.parquet")
+    books = pq.read_table(tmp_path / manifest.dataset_id / "book_snapshots.parquet")
+
+    assert manifest.row_count == 12
+    assert events.num_rows == books.num_rows == 12
+    assert events.column("source_sequence").to_pylist() == list(range(1, 13))
+    assert events.column("timestamp_ns_since_midnight").to_pylist() == sorted(
+        events.column("timestamp_ns_since_midnight").to_pylist()
+    )
+
+
 def test_background_import_status_is_visible_and_failure_can_be_retried(tmp_path: Path) -> None:
     raw = tmp_path / "lobster"
     raw.mkdir()

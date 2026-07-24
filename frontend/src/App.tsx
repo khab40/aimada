@@ -168,7 +168,7 @@ export function App() {
 function ConsoleTopbar() {
   return (
     <section className="console-topbar" aria-label="AI command console">
-      <span className="runtime-status active console-ai-button">Command Center ready</span>
+      <span className="runtime-status active console-ai-button">Control Panel ready</span>
     </section>
   );
 }
@@ -275,7 +275,7 @@ type SidebarItem = {
 
 const workspaceBanners: Record<string, { title: string; description: string }> = {
   "/nebius": {
-    title: "Command Center",
+    title: "Control Panel",
     description: "Generate suspicious workload, detect incidents with Nebius AI, and run detector tournaments on Nebius Serverless Jobs."
   },
   "/arena": {
@@ -292,10 +292,10 @@ const workspaceBanners: Record<string, { title: string; description: string }> =
   }
 };
 const sidebarItems: SidebarItem[] = [
-  { icon: "cloud", label: "Command Center", shortLabel: "CC", to: "/nebius" },
-  { icon: "arena", label: "Arena / Workload Generator", shortLabel: "WG", to: "/arena" },
   { icon: "database", label: "Data Ingestion", shortLabel: "DI", to: "/data-ingestion" },
-  { icon: "about", label: "About / Docs", shortLabel: "AD", to: "/about" }
+  { icon: "arena", label: "Arena", shortLabel: "AR", to: "/arena" },
+  { icon: "cloud", label: "Control Panel", shortLabel: "CP", to: "/nebius" },
+  { icon: "about", label: "About", shortLabel: "AB", to: "/about" }
 ];
 
 function AppIcon({ name }: { name: AppIconName }) {

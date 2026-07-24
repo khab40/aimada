@@ -1,6 +1,7 @@
 package ai.lobarena.kernel.book;
 
 import ai.lobarena.exchange.v1.AddOrder;
+import ai.lobarena.exchange.v1.BookSnapshot;
 import ai.lobarena.exchange.v1.CancelOrder;
 import ai.lobarena.exchange.v1.EventMetadata;
 import ai.lobarena.exchange.v1.EventSource;
@@ -33,9 +34,13 @@ public final class IntegerMatchingEngine {
     }
 
     public List<ExchangeEvent> submit(KernelOrder order) {
+        return submit(order, contextFrom(order));
+    }
+
+    public List<ExchangeEvent> submit(KernelOrder order, MutationContext context) {
         int cursor = events.size();
         MutationContext previous = mutationContext;
-        mutationContext = contextFrom(order);
+        mutationContext = mergeContext(order, context);
         try {
             switch (order.orderType()) {
                 case CANCEL -> book.cancel(order.orderId());
@@ -67,19 +72,48 @@ public final class IntegerMatchingEngine {
             String scenarioId,
             String scenarioName,
             String scenarioFamily) {
-        EventMetadata.Builder metadata = metadata("snapshot", tick, scenarioId, scenarioName, scenarioFamily);
-        if (exchangeTimestampNs != null) {
-            metadata.setExchangeTimestampNs(exchangeTimestampNs);
+        return recordSnapshot(
+                depth,
+                new MutationContext(
+                        tick,
+                        scenarioId,
+                        scenarioName,
+                        scenarioFamily,
+                        null,
+                        null,
+                        exchangeTimestampNs,
+                        receivedTimestampNs));
+    }
+
+    public ExchangeEvent recordSnapshot(int depth, MutationContext context) {
+        return recordSnapshot(book.snapshot(depth), depth, context);
+    }
+
+    public ExchangeEvent recordSnapshot(BookSnapshot snapshot, int depth, MutationContext context) {
+        if (snapshot == null) {
+            throw new IllegalArgumentException("snapshot must not be null");
         }
-        if (receivedTimestampNs != null) {
-            metadata.setReceivedTimestampNs(receivedTimestampNs);
+        if (depth <= 0) {
+            throw new IllegalArgumentException("snapshot depth must be positive");
         }
-        ExchangeEvent event = ExchangeEvent.newBuilder()
-                .setMetadata(metadata)
-                .setSnapshot(LobSnapshot.newBuilder().setDepth(depth).setBook(book.snapshot(depth)))
-                .build();
-        events.add(event);
-        return event;
+        MutationContext previous = mutationContext;
+        mutationContext = context == null ? MutationContext.EMPTY : context;
+        try {
+            long snapshotTick = mutationContext.tick() == null ? 0L : mutationContext.tick();
+            ExchangeEvent event = ExchangeEvent.newBuilder()
+                    .setMetadata(metadata(
+                            "snapshot",
+                            snapshotTick,
+                            mutationContext.scenarioId(),
+                            mutationContext.scenarioName(),
+                            mutationContext.scenarioFamily()))
+                    .setSnapshot(LobSnapshot.newBuilder().setDepth(depth).setBook(snapshot))
+                    .build();
+            events.add(event);
+            return event;
+        } finally {
+            mutationContext = previous;
+        }
     }
 
     public List<ExchangeEvent> events() {
@@ -106,7 +140,7 @@ public final class IntegerMatchingEngine {
             ExchangeEvent event = ExchangeEvent.newBuilder()
                     .setMetadata(metadata(
                             "execute",
-                            order.timestamp(),
+                            mutationContext.tick() == null ? order.timestamp() : mutationContext.tick(),
                             order.scenarioId(),
                             order.scenarioName(),
                             order.scenarioFamily(),
@@ -186,10 +220,19 @@ public final class IntegerMatchingEngine {
                 .setSchemaVersion(1)
                 .setEventId(eventId)
                 .setSequence(nextSequence())
-                .setSource(source)
+                .setSource(mutationContext.source() == null ? source : mutationContext.source())
                 .setSymbol(symbol)
                 .setVenue(venue)
                 .setTick(tick);
+        if (mutationContext.sourceSequence() != null) {
+            metadata.setSourceSequence(mutationContext.sourceSequence());
+        }
+        if (mutationContext.exchangeTimestampNs() != null) {
+            metadata.setExchangeTimestampNs(mutationContext.exchangeTimestampNs());
+        }
+        if (mutationContext.receivedTimestampNs() != null) {
+            metadata.setReceivedTimestampNs(mutationContext.receivedTimestampNs());
+        }
         if (scenarioId != null) {
             metadata.setScenarioId(scenarioId);
         }
@@ -205,6 +248,19 @@ public final class IntegerMatchingEngine {
     private MutationContext contextFrom(KernelOrder order) {
         return new MutationContext(
                 order.timestamp(), order.scenarioId(), order.scenarioName(), order.scenarioFamily());
+    }
+
+    private MutationContext mergeContext(KernelOrder order, MutationContext context) {
+        MutationContext requested = context == null ? MutationContext.EMPTY : context;
+        return new MutationContext(
+                firstNonNull(requested.tick(), order.timestamp()),
+                firstNonNull(requested.scenarioId(), order.scenarioId()),
+                firstNonNull(requested.scenarioName(), order.scenarioName()),
+                firstNonNull(requested.scenarioFamily(), order.scenarioFamily()),
+                requested.source(),
+                requested.sourceSequence(),
+                requested.exchangeTimestampNs(),
+                requested.receivedTimestampNs());
     }
 
     private long nextSequence() {

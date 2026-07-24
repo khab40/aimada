@@ -1,0 +1,68 @@
+{
+  "canonical_event_count": 18,
+  "dataset_id": "sample-btcusdt-0945",
+  "detector_alert_ticks": {
+    "spoofing_like_detector": [
+      1,
+      2,
+      3
+    ]
+  },
+  "event_counts": {
+    "by_source": {
+      "historical": 12,
+      "simulation": 6
+    },
+    "by_type": {
+      "add": 7,
+      "cancel": 2,
+      "execute": 2,
+      "modify": 4,
+      "snapshot": 3
+    }
+  },
+  "events_sha256": "04ce80fc774ebec178fbf78c6f3c1f8ebd39336f07c080cce4e7554f3879cc31",
+  "ground_truth": {
+    "agent_ids": [
+      "SYN:ABUSER_01"
+    ],
+    "end_tick": 5,
+    "has_attack": true,
+    "manipulation_windows": [
+      {
+        "end_tick": 5,
+        "scenario_family": "spoofing_like_wall",
+        "start_tick": 1
+      }
+    ],
+    "order_ids": [
+      "SYN:SCN-000001:O:WALL"
+    ],
+    "phase_windows": {
+      "cancellation_phase": {
+        "end_tick": 5,
+        "start_tick": 4
+      },
+      "pressure_phase": {
+        "end_tick": 3,
+        "start_tick": 1
+      }
+    },
+    "scenario_family": "spoofing_like_wall",
+    "scenario_id": "SCN-000001",
+    "schema_version": "scenario_ground_truth_v1",
+    "source": "synthetic_scenario",
+    "start_tick": 1
+  },
+  "mode": "hybrid",
+  "realism": {
+    "final_depth_top_n": 43.25,
+    "final_imbalance": -0.711,
+    "final_level_count": 4,
+    "final_spread": 2.0
+  },
+  "source_row_count": 12,
+  "source_rows_replayed": 12,
+  "stream_hash": "7a99ad47487dae46ca91e0d51335afdde1af68b006e82aa62f083c60ddf826f2",
+  "ticks_executed": 3
+}

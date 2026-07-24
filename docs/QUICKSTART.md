@@ -129,6 +129,20 @@ curl -X POST http://localhost:5173/api/scenarios/spoofing-like
 - Click **Inject Scenario** to trigger abuse-like behavior
 - View detector confidence in the right panel
 
+### Historical And Hybrid Replay
+
+1. Open **Data Ingestion** and import a paired LOBSTER message/order-book
+   dataset. The repository includes a small public fixture under
+   [data/lobster/fixture](../data/lobster/README.md).
+2. Open Arena, select **Historical control**, choose the imported dataset, and
+   load it for an unlabeled control replay.
+3. Select **Hybrid + attacks**, load the same dataset, then launch spoofing-like
+   or layering-like from the existing Scenario Setup panel.
+
+Historical data is never automatically labeled benign. Only the synthetic
+scenario creates ground truth. For API/config examples and comparison artifact
+generation, see [Historical and hybrid replay](../README.md#historical-and-hybrid-replay).
+
 ### Command Center Demo
 - Open `/nebius`
 - Use **Run Serverless E2E Demo** or the Runtime workflow steps

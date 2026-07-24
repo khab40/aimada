@@ -44,6 +44,18 @@ export type ImportedDataset = {
   path: string;
 };
 
+export type HistoricalReplayDataset = {
+  dataset_id: string;
+  source_type: string;
+  symbol: string;
+  trade_date: string;
+  start_time: string;
+  end_time: string;
+  depth: number;
+  row_count: number;
+  events_sha256?: string;
+};
+
 export async function listLobsterCandidates(): Promise<LobsterCandidate[]> {
   const response = await fetch(`${API_BASE_URL}/api/data-ingestion/lobster/candidates`);
   if (!response.ok) {
@@ -78,6 +90,14 @@ export async function listImportedDatasets(): Promise<ImportedDataset[]> {
   const response = await fetch(`${API_BASE_URL}/api/data-ingestion/datasets`);
   if (!response.ok) {
     throw new Error(await apiErrorMessage(response, "Dataset registry request failed"));
+  }
+  return response.json();
+}
+
+export async function listHistoricalReplayDatasets(): Promise<HistoricalReplayDataset[]> {
+  const response = await fetch(`${API_BASE_URL}/api/arena/historical-datasets`);
+  if (!response.ok) {
+    throw new Error(await apiErrorMessage(response, "Historical replay registry request failed"));
   }
   return response.json();
 }

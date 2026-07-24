@@ -106,6 +106,7 @@ graph LR
 | Command Center Demo | Demo Operator | Run the Serverless E2E demo, inspect endpoint/job status, and show AI investigation plus detector tournament evidence. |
 | Live Arena Mode | Demo Operator | Show a changing synthetic order book with normal and red-team activity. |
 | Manual Scenario Launch | Demo Operator | Inject a bounded abuse-like pattern and observe visible market effects. |
+| Hybrid Historical Replay | Demo Operator / Research User | Replay a LOBSTER window as an unlabeled control, then inject the same predefined synthetic attack over that window for reproducible comparison. |
 | Incident Investigation | Demo Operator / Reviewer | Use AI Investigator to turn detector evidence into a clear explanation. |
 | Red-Team Scenario Generation | Demo Operator | Use Scenario Generator to create a launchable synthetic scenario configuration. |
 | Detector Tournament Benchmark | Research / Benchmark User | Use Managed Experiment jobs to compare detector precision, recall, F1, and latency. |
@@ -210,6 +211,60 @@ Nebius role:
 
 - Manually launched scenarios can be generated or narrated by Nebius AI.
 - Scenario labels become inputs for Managed Experiment benchmark runs.
+
+## Hybrid Historical Replay
+
+Purpose: compare detector behavior on an immutable LOBSTER window with and
+without an existing synthetic attack overlay.
+
+```mermaid
+graph TD
+    Operator["Demo Operator / Research User"]
+    Ingestion["Data Ingestion UI"]
+    Dataset["Normalized LOBSTER dataset"]
+    Control["Historical control replay"]
+    Hybrid["Hybrid replay"]
+    Launcher["Existing Scenario Setup"]
+    Kernel["Java integer exchange"]
+    Detectors["Deterministic detectors"]
+    Artifacts["Comparison metrics + checksums"]
+
+    Operator --> Ingestion
+    Ingestion --> Dataset
+    Dataset --> Control
+    Dataset --> Hybrid
+    Operator --> Launcher
+    Launcher -->|"spoofing-like / layering-like"| Hybrid
+    Control --> Kernel
+    Hybrid --> Kernel
+    Kernel --> Detectors
+    Detectors --> Artifacts
+```
+
+Main flow:
+
+1. Import a paired LOBSTER message/order-book dataset.
+2. Select **Historical control**, load the dataset, and replay the window
+   without assigning benign or attack ground truth.
+3. Select **Hybrid + attacks** and load the same dataset.
+4. Launch a predefined scenario from the existing Scenario Setup UI.
+5. Compare source/event counts, detector alerts, TP/FN/FP/TN, precision,
+   recall, F1, and final-book realism deltas.
+
+Business value:
+
+- Tests existing detectors against genuine visible-depth market conditions.
+- Preserves reproducibility without creating another simulator.
+- Separates synthetic ground truth from potentially suspicious historical
+  activity.
+- Demonstrates that attack behavior responds only to the reconstructed current
+  book, never future data.
+
+Nebius role:
+
+- No Nebius call is required for deterministic replay or detector scoring.
+- Persisted comparison evidence may later be summarized by AI Investigator,
+  without moving labels or AI output into the detector decision path.
 
 ## Incident Investigation
 
@@ -439,6 +494,7 @@ Each use case is supported by specific architecture components:
 |----------|--------------|-----------------|------|
 | Live Arena Mode | Interactive | UI + Backend + Runtime + Exchange | [ARD-0001](architecture/ARD-0001-overall-architecture.md), [ARD-0002](architecture/ARD-0002-websocket-state-schema.md) |
 | Manual Scenario Launch | Interactive | Scenario Launcher + Backend API | [ARD-0006](architecture/ARD-0006-scenario-labeling-and-reproducibility.md) |
+| Hybrid Historical Replay | Interactive / Evaluation | Data Ingestion + Java Replay Adapter + Integer Exchange + Scenario Launcher + Comparison Artifacts | [ARD-0018](architecture/ARD-0018-canonical-exchange-event-stream.md), [ARD-0022](architecture/ARD-0022-historical-market-data-ingestion.md), [ARD-0023](architecture/ARD-0023-hybrid-historical-replay.md) |
 | Incident Investigation | Interactive | Incident Store + Nebius Endpoint | [ARD-0005](architecture/ARD-0005-nebius-endpoint-contract.md), [ARD-0008](architecture/ARD-0008-nebius-serverless-ai-endpoints.md), [ARD-0015](architecture/ARD-0015-nebius-ai-investigation-team.md) |
 | Red-Team Scenario Generation | Interactive | Nebius Endpoint /generate-scenario | [ARD-0005](architecture/ARD-0005-nebius-endpoint-contract.md), [ARD-0016](architecture/ARD-0016-ai-scenario-generator.md) |
 | Detector Tournament Benchmark | Batch | Nebius Jobs + Simulation + Metrics | [ARD-0004](architecture/ARD-0004-benchmark-artifact-format.md), [ARD-0007](architecture/ARD-0007-nebius-serverless-ai-jobs.md), [ARD-0017](architecture/ARD-0017-ai-detector-tournament.md) |

@@ -10,9 +10,17 @@ Status as of 2026-06-23: `[partial]`
 
 Implemented:
 
-- Scenario IDs, families, parameters, and metadata propagate through scenario controllers, agents, exchange events, detector inputs, and benchmark outputs.
+- Scenario IDs, families, parameters, and metadata propagate through scenario
+  controllers, agents, synthetic exchange events, separate labels, and
+  benchmark outputs.
+- Detector input remains a label-free numeric/event projection; scenario
+  labels, attack seeds, and synthetic-only identifiers are not detector
+  features.
 - Benchmark and dataset scripts write scenario/attack labels for detector evaluation.
 - Tests cover scenario launch, metadata preservation, and deterministic scenario behavior.
+- Historical-only replay produces no ground truth. Hybrid replay writes ground
+  truth only for the launched synthetic overlay and records the master/derived
+  seeds in replay evidence.
 
 Future work:
 
@@ -104,6 +112,9 @@ graph TD
 - Avoid wall-clock timestamps as the primary benchmark coordinate; use ticks.
 - Keep label windows separate from detector output.
 - Evaluate detector results against labels after the simulation run completes.
+- Never infer benign ground truth from an unlabeled historical record.
+- In hybrid mode, keep historical provenance and synthetic scenario labels in
+  separate namespaces and artifacts.
 
 ## Consequences
 
@@ -124,3 +135,4 @@ Tradeoffs:
 - `PHASES.md`
 - `docs/benchmark-methodology.md`
 - [ARD-0004: Benchmark Artifact Format](ARD-0004-benchmark-artifact-format.md)
+- [ARD-0023: Deterministic Hybrid Historical Replay](ARD-0023-hybrid-historical-replay.md)

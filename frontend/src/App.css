@@ -254,7 +254,7 @@
 }
 
 .market-data-source-panel {
-  align-items: center;
+  align-items: flex-end;
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
@@ -263,15 +263,68 @@
 }
 
 .market-data-source-options {
-  align-items: center;
+  border: 0;
   display: flex;
-  gap: 12px;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+}
+
+.market-data-source-options legend {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 5px;
+  text-transform: uppercase;
 }
 
 .market-data-source-options label {
   align-items: center;
+  background: var(--panel-bg-soft);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
   display: flex;
-  gap: 5px;
+  gap: 7px;
+  min-height: 42px;
+  padding: 6px 9px;
+}
+
+.market-data-source-options label.selected {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary);
+}
+
+.market-data-source-options label:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.market-data-source-options label span {
+  display: grid;
+  gap: 1px;
+}
+
+.market-data-source-options label strong {
+  font-size: 12px;
+}
+
+.market-data-source-options label small,
+.market-data-dataset-field small {
+  color: var(--color-text-muted);
+  font-size: 10px;
+}
+
+.market-data-dataset-field {
+  display: grid;
+  gap: 4px;
+}
+
+.market-data-dataset-field > span {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
 .market-data-source-panel select {
@@ -281,6 +334,10 @@
   color: var(--color-text);
   min-width: min(420px, 100%);
   padding: 8px 10px;
+}
+
+.market-data-source-panel .primary-button {
+  min-height: 42px;
 }
 
 .historical-progress {

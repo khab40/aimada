@@ -4,7 +4,8 @@ LOB Arena is organized around five execution areas and two execution paths.
 
 The five execution areas are:
 
-- **Front**: React/Vite browser UI for Command Center, Arena / Workload Generator, Scenario Generator, and About.
+- **Front**: React/Vite browser UI with primary navigation ordered as Data
+  Ingestion, Arena, Control Panel, and About.
 - **Java Arena**: Java 25/Spring owner of exchange state, live scheduling, scenarios, deterministic detectors/incidents, agent orchestration, persistence, REST controls, and WebSocket streaming.
 - **Python AI/Serverless**: FastAPI adapters for Nebius AI/ML, experiments, evidence, and serverless jobs; it reads arena evidence through a thin Java HTTP client.
 - **Agent Runners Workspace**: local Docker or remote `agent-runner` processes where normal, CPU-heavy, and LangGraph-compatible agents convert read-only market snapshots into bounded intents.
@@ -83,7 +84,7 @@ flowchart LR
 
 | Component | Responsibility |
 | --- | --- |
-| React / Vite UI | Presents the themed product shell, Command Center, Arena, Scenario Generator, About, 2D order-book views, detector output, Incident Details, and AI Investigator reports. Arena live controls and state use WebSocket; Nebius AI, experiment, artifact, and report actions use backend REST APIs. |
+| React / Vite UI | Presents the themed product shell with Data Ingestion, Arena, Control Panel, and About navigation, plus 2D order-book views, detector output, Incident Details, and AI Investigator reports. Arena live controls and state use WebSocket; Nebius AI, experiment, artifact, and report actions use backend REST APIs. |
 | Java arena/control plane | Owns the live exchange, scenarios, deterministic detectors/incidents, journals, REST controls, WebSocket sessions, and agent fan-out as the sole book writer. |
 | FastAPI AI/serverless service | Owns Nebius AI/ML, explanations, experiments, evidence archives, and serverless workflows. Its arena compatibility routes are thin Java clients. |
 | Agent Runners Workspace | Runs out-of-process normal, CPU-heavy, ML, and LangGraph-compatible agents behind the common intent protocol. Runners return intents and never mutate the exchange directly. |
@@ -93,7 +94,45 @@ flowchart LR
 | Grafana | Opt-in visualization layer that queries Prometheus through a provisioned datasource and supplies end-to-end, Java, component, bottleneck, and detector-tournament dashboards. |
 | Event / snapshot log | Stores replayable event streams, order book snapshots, detected incidents, and generated reports for inspection and offline analysis. |
 
-The exchange produces a versioned canonical stream of `add`, `modify`, `cancel`, `execute`, and `snapshot` events. Simulation is the live source; future venue datasets enter through a historical normalizer and preserve their upstream sequence/timestamps separately from canonical replay order. Arena state/WebSocket messages carry a bounded event tail, `/api/arena/exchange-events` provides cursor replay, and append-only history stores full events plus snapshot-only checkpoints.
+The exchange produces a versioned canonical stream of `add`, `modify`,
+`cancel`, `execute`, and `snapshot` events. Simulation, strict canonical CSV,
+and normalized LOBSTER Parquet now enter the same Java exchange while preserving
+upstream sequence/timestamps separately from canonical replay order. Arena
+state/WebSocket messages carry a bounded event tail,
+`/api/arena/exchange-events` provides cursor replay, and append-only history
+stores full events plus snapshot-only checkpoints.
+
+### Historical And Hybrid Replay Path
+
+```mermaid
+graph LR
+    Raw["Paired LOBSTER CSV"]
+    Ingestion["FastAPI ingestion"]
+    Parquet["Immutable Parquet + manifest"]
+    Replay["Java historical adapter"]
+    Book["Combined integer book"]
+    Attack["UI-launched synthetic scenario"]
+    Detectors["Deterministic detectors"]
+    Labels["Separate synthetic labels"]
+    Comparison["Metrics + checksummed comparison"]
+
+    Raw --> Ingestion
+    Ingestion --> Parquet
+    Parquet --> Replay
+    Replay -->|"historical phase first"| Book
+    Attack -->|"synthetic phase second"| Book
+    Book --> Detectors
+    Attack --> Labels
+    Detectors --> Comparison
+    Labels --> Comparison
+```
+
+Historical-only control and hybrid runs reuse the same dataset window. LOBSTER
+visible depth is reconstructed as deterministic `HIST:` aggregate level orders;
+synthetic scenario orders use a disjoint `SYN:` namespace. Every source snapshot
+is recorded from the immutable historical payload, while attacks and detectors
+read the combined live book. Ground truth comes only from the launched synthetic
+scenario and is never part of detector input.
 
 ### Detector Tournament Observability
 
@@ -229,6 +268,10 @@ Phase 4.5 adds a Managed Experiment manifest control plane before execution. The
 | `events.jsonl` | Append-only stream of simulation events, agent actions, detector signals, and state changes. |
 | `history/exchange_events.jsonl` | Canonical add/modify/cancel/execute/snapshot archive, segmented by stream ID for replay. |
 | `history/lob_snapshots.jsonl` | Snapshot-only canonical checkpoints for efficient L2 state scans. |
+| `data/processed/lobster/<dataset_id>/` | Immutable normalized LOBSTER events, aligned visible-depth snapshots, and registry manifest. |
+| `historical-replay/<run>/control.json` / `hybrid.json` | Historical-only and hybrid summaries over the same source window, including source/canonical counts and stream hashes. |
+| `historical-replay/<run>/comparison.json` | Detector TP/FN/FP/TN, precision, recall, F1, alert timing, and final-book realism deltas. |
+| `historical-replay/<run>/manifest.json` / `checksums.sha256` | Replay comparison inventory and integrity checks. |
 | `experiments/<experiment_id>/experiment.json` | Phase 4.5 experiment manifest with requested scenarios, execution mode, status, artifact paths, optional smart-batch link, and metrics. |
 | `experiments/<experiment_id>/attacks.jsonl` | Deterministic attack plan rows with expected labels, detector family, timing, agent profile, and parameters for each planned run. |
 | `experiments/<experiment_id>/jobs.jsonl` | Experiment-scoped local and Nebius Job records, including queued, running, completed, failed, and explicitly unconfigured states. |
@@ -271,6 +314,11 @@ graph TD
 - Real Nebius Serverless Job submit, status, log, and artifact collection calls are isolated in `backend/app/experiments/nebius_orchestrator.py`; absent configuration records `real_nebius_pending`, while completion requires confirmed cloud status and collected artifacts.
 - Batch benchmark jobs should share simulation and detector code with the live path where practical, but should not depend on the interactive UI.
 - Persisted artifacts should be treated as replay and audit inputs, not only as transient logs.
+- Historical source records and source snapshots are immutable. Hybrid
+  execution may add synthetic orders to the live book but must not rewrite the
+  historical snapshot payload or infer benign labels.
+- Detector inputs must remain numeric/event-derived projections and must not
+  expose scenario labels, attack seeds, or synthetic-only identifiers.
 - Prometheus and Grafana are read-only operational diagnostics. Their absence or
   failure must not change deterministic simulation results, and their time
   series must not be confused with detector benchmark artifacts.
@@ -284,12 +332,13 @@ This architecture supports all workflows described in [Use Cases](USE_CASES.md):
 
 1. **Live Arena Mode** — Supported by WebSocket live commands and `arena_state` streaming
 2. **Manual Scenario Launch** — Scenario launcher through the WebSocket-backed Arena UI
-3. **Incident Investigation** — Incident store and AI Investigator
-4. **Red-Team Scenario Generation** — Scenario Generator through backend Nebius AI adapters
-5. **Detector Tournament / Smart Batch Benchmark** — Batch / Benchmark Path with Managed Experiment jobs
-6. **Synthetic Dataset Generation** — Batch / Benchmark Path artifact outputs
-7. **Detection Outputs And Evidence Review** — Detection reads persisted benchmark, Managed Experiment, Nebius AI, AI Investigator, screenshot, and promoted evidence artifacts
-8. **UI Shell Personalization** — Local day/night/system preferences
+3. **Hybrid Historical Replay** — LOBSTER control and UI-launched synthetic overlay through the Java exchange
+4. **Incident Investigation** — Incident store and AI Investigator
+5. **Red-Team Scenario Generation** — Scenario Generator through backend Nebius AI adapters
+6. **Detector Tournament / Smart Batch Benchmark** — Batch / Benchmark Path with Managed Experiment jobs
+7. **Synthetic Dataset Generation** — Batch / Benchmark Path artifact outputs
+8. **Detection Outputs And Evidence Review** — Detection reads persisted benchmark, Managed Experiment, Nebius AI, AI Investigator, screenshot, and promoted evidence artifacts
+9. **UI Shell Personalization** — Local day/night/system preferences
 
 Detailed architecture decisions are recorded in [Architecture Records (ARDs)](architecture/README.md):
 
@@ -312,3 +361,5 @@ Detailed architecture decisions are recorded in [Architecture Records (ARDs)](ar
 - [ARD-0019: Python Reference And Java Kernel Migration](architecture/ARD-0019-python-reference-java-kernel-migration.md) — Completed parity-gated Java kernel cut-over and retained Python ownership boundary
 - [ARD-0020: Java Arena WebSocket And Agent Orchestration](architecture/ARD-0020-java-arena-websocket-agent-orchestration.md) — Java live-arena ownership and Python AI/ML/serverless boundary
 - [ARD-0021: Local Observability With Prometheus And Grafana](architecture/ARD-0021-local-observability-grafana.md) — Optional local monitoring profile and bottleneck dashboards
+- [ARD-0022: Historical Market Data Ingestion And Replay](architecture/ARD-0022-historical-market-data-ingestion.md) — LOBSTER discovery, validation, Parquet normalization, and registry contract
+- [ARD-0023: Deterministic Hybrid Historical Replay](architecture/ARD-0023-hybrid-historical-replay.md) — Java historical/synthetic merge ordering, provenance, seed, labels, metrics, and artifacts

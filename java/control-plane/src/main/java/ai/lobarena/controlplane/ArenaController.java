@@ -51,13 +51,33 @@ final class ArenaController {
     }
 
     @PostMapping("/api/arena/data-source")
-    JsonNode loadDataSource(@RequestBody Map<String, String> body) {
+    JsonNode loadDataSource(@RequestBody Map<String, Object> body) {
         try {
             return arena.loadDataSource(
-                    body.getOrDefault("source_type", ""),
-                    body.getOrDefault("dataset_id", ""));
+                    String.valueOf(body.getOrDefault("source_type", "")),
+                    String.valueOf(body.getOrDefault("dataset_id", "")),
+                    longValue(body.get("master_seed"), arena.defaultMasterSeed()));
         } catch (IllegalArgumentException exception) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, exception.getMessage(), exception);
+        }
+    }
+
+    @GetMapping("/api/arena/historical-datasets")
+    JsonNode historicalDatasets() {
+        return arena.historicalCsvDatasets();
+    }
+
+    @PostMapping("/api/arena/replay-comparison")
+    JsonNode replayComparison(@RequestBody Map<String, Object> body) {
+        try {
+            return arena.runReplayComparison(
+                    String.valueOf(body.getOrDefault("dataset_id", "")),
+                    String.valueOf(body.getOrDefault("scenario_family", "")),
+                    integerValue(body.get("max_ticks"), 10_000),
+                    longValue(body.get("master_seed"), arena.defaultMasterSeed()));
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(
+                    HttpStatus.UNPROCESSABLE_ENTITY, exception.getMessage(), exception);
         }
     }
 
@@ -87,5 +107,33 @@ final class ArenaController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "unknown incident: " + incidentId);
         }
         return incident;
+    }
+
+    private static int integerValue(Object value, int defaultValue) {
+        if (value == null) {
+            return defaultValue;
+        }
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        try {
+            return Integer.parseInt(String.valueOf(value));
+        } catch (NumberFormatException exception) {
+            throw new IllegalArgumentException("max_ticks must be an integer", exception);
+        }
+    }
+
+    private static long longValue(Object value, long defaultValue) {
+        if (value == null) {
+            return defaultValue;
+        }
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        try {
+            return Long.parseLong(String.valueOf(value));
+        } catch (NumberFormatException exception) {
+            throw new IllegalArgumentException("master_seed must be an integer", exception);
+        }
     }
 }

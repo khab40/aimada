@@ -45,6 +45,13 @@ outputs/*
 
 # Local datasets
 /data/*
+!/data/historical/
+!/data/historical/**
+!/data/lobster/
+/data/lobster/*
+!/data/lobster/README.md
+!/data/lobster/fixture/
+!/data/lobster/fixture/**
 
 aimada-latest.zip
 .coverage

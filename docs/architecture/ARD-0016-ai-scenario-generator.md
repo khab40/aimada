@@ -360,4 +360,4 @@ Backend response:
 - Risk: canonical event replay is richer than current Arena scenario launch. Shortcut: store canonical events now, project to existing scenario names for replay, then add direct event replay later.
 - Requests are limited to the four first-class Arena routes so generated scenarios always replay their named implementation.
 - Risk: AI output violates enums. Shortcut: backend schema validation plus deterministic fallback.
-- Risk: too many controls in demo. The active page keeps only the core controls; legacy tuning is preserved under `archived/advanced-controls/`.
+- Risk: too many controls in demo. The active page keeps only the core controls; the retired legacy tuning implementation has been removed.

@@ -131,6 +131,96 @@ Open:
 
 The default Compose path builds `java-kernel`, `agent-runner`, `backend`, and `frontend` from source with serverless access disabled and `NEBIUS_ENDPOINT_MODE=mock`. Java owns the deterministic kernel, live arena, scenarios, detectors, incidents, orchestration, REST controls, and WebSocket. Python retains AI/ML, experiments, and serverless work. Local Mock requires no Nebius credentials, private images, or GPU/vLLM runtime. The backend entrypoint clears stale endpoint, job-command, and object-storage values unless `NEBIUS_SERVERLESS_ENABLED=true`.
 
+### Historical and hybrid replay
+
+The Java exchange replays both existing `canonical_csv_v1` order events and
+LOBSTER message/order-book imports through the same integer matching engine used
+by synthetic runs. LOBSTER ingestion remains the existing paired-file workflow:
+the Python adapter validates the public six-column message and `4 × depth`
+order-book formats, writes aligned Parquet plus a checksummed manifest, and the
+Java exchange reconstructs each contemporaneous book state from that immutable
+stream.
+
+The small public [LOBSTER-compatible fixture](data/lobster/README.md) contains
+synthetic test records covering add, partial cancel, delete, visible/hidden
+execution, cross trade, and halt messages. It can be imported from **Data
+Ingestion** without redistributing licensed market data. The older
+[canonical CSV fixture](data/historical/README.md) remains supported.
+
+In the Arena UI:
+
+1. Import a LOBSTER pair in **Data Ingestion**.
+2. Select **Historical control**, choose the imported dataset, load it, and
+   start replay for an unlabeled control run.
+3. Select **Hybrid + attacks**, load the same dataset, then launch the existing
+   spoofing-like or layering-like attack from **Scenario Setup**. Attacks are
+   intentionally launched from the UI/API after the replay source is loaded;
+   the historical importer never creates attacks or labels.
+
+Historical records are immutable and never become benign ground truth. Only the synthetic overlay supplies attack labels, and detector features do not contain scenario labels or synthetic-only metadata. Historical and synthetic participant/order IDs use separate `HIST:` and `SYN:` namespaces.
+
+At each replay step, records are ordered by exchange timestamp, historical
+phase, source priority, actor ID, source sequence, and insertion sequence.
+Historical records therefore win equal-timestamp ties; the attack generator
+then reads only the reconstructed live book. It never reads a future Parquet
+row. The attack seed is derived from the configured master seed, dataset,
+scenario family, and deterministic scenario number. Synthetic-only runs keep
+their previous fixed behavior.
+
+Example request bodies are committed as
+[historical-control.json](configs/replay/historical-control.json) and
+[hybrid-with-ui-attack.json](configs/replay/hybrid-with-ui-attack.json). Load
+one with:
+
+```bash
+curl -sS -X POST http://localhost:8081/api/arena/data-source \
+  -H 'Content-Type: application/json' \
+  --data @configs/replay/historical-control.json
+```
+
+The Java comparison endpoint executes both modes over the same source:
+
+```bash
+curl -sS -X POST http://localhost:8081/api/arena/replay-comparison \
+  -H 'Content-Type: application/json' \
+  -d '{"dataset_id":"sample-btcusdt-0945","scenario_family":"spoofing_like_wall","master_seed":42,"max_ticks":10000}'
+```
+
+To reuse the tournament precision/recall/F1 calculation and create a checksummed artifact bundle:
+
+```bash
+backend/.venv/bin/python scripts/run_historical_replay_comparison.py \
+  --base-url http://localhost:8081 \
+  --dataset sample-btcusdt-0945 \
+  --scenario spoofing_like_wall \
+  --master-seed 42 \
+  --output outputs/historical-replay/sample-btcusdt-0945
+```
+
+The bundle contains `control.json`, `hybrid.json`, `comparison.json`,
+`manifest.json`, and `checksums.sha256`. It records full-stream, historical-only,
+and synthetic-only hashes, source/event counts, detector alerts, TP/FN/FP/TN,
+precision, recall, F1, and basic final-book realism deltas.
+
+Known limitation: LOBSTER exposes aggregate depth snapshots but not participant
+identity, and selected windows can begin after orders were originally entered.
+The replay therefore represents historical liquidity as deterministic
+per-price `HIST:` level orders while preserving every source message sequence
+and its aligned post-event snapshot. Synthetic orders remain separate and
+retain their own lifecycle. This is deterministic and faithful at the visible
+depth supplied by LOBSTER, but it cannot recover queue priority or participant
+identity absent from the source files.
+Injection granularity is the configured replay batch
+(`LOB_ARENA_HISTORICAL_ROWS_PER_TICK`, default `250`); within a batch every
+historical message is applied in source order before the synthetic attack reads
+the resulting live book.
+
+Architecture decisions are recorded in
+[ARD-0022](docs/architecture/ARD-0022-historical-market-data-ingestion.md) for
+ingestion/storage and
+[ARD-0023](docs/architecture/ARD-0023-hybrid-historical-replay.md) for hybrid
+ordering, provenance, seed derivation, label isolation, metrics, and artifacts.
+
 Compose options can be combined:
 
 | Runtime | Command |

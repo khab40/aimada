@@ -9,7 +9,13 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HexFormat;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.regex.Pattern;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -38,6 +44,7 @@ final class HistoricalMarketDataSource implements ReplayMarketDataSource {
     private long totalRows;
     private boolean running;
     private boolean eof;
+    private boolean kernelCursorStarted;
 
     HistoricalMarketDataSource(ObjectMapper mapper, Path registryRoot, int rowsPerTick) {
         this.mapper = mapper;
@@ -91,6 +98,7 @@ final class HistoricalMarketDataSource implements ReplayMarketDataSource {
             replayPosition = 0;
             running = false;
             eof = false;
+            kernelCursorStarted = false;
             eventTail.clear();
             if (!readNext()) {
                 throw new IllegalArgumentException("historical dataset is empty");
@@ -142,6 +150,127 @@ final class HistoricalMarketDataSource implements ReplayMarketDataSource {
             }
             if (eof) break;
         }
+    }
+
+    synchronized List<HistoricalSnapshotRecord> nextKernelBatch() {
+        requireLoaded();
+        if (eof && kernelCursorStarted) return List.of();
+        List<HistoricalSnapshotRecord> result = new ArrayList<>();
+        if (!kernelCursorStarted) {
+            kernelCursorStarted = true;
+            result.add(currentRecord());
+        }
+        while (result.size() < rowsPerTick && !eof) {
+            if (!readNext()) {
+                eof = true;
+                break;
+            }
+            result.add(currentRecord());
+        }
+        if (replayPosition >= totalRows) eof = true;
+        return List.copyOf(result);
+    }
+
+    synchronized boolean eof() {
+        return eof && kernelCursorStarted;
+    }
+
+    synchronized long currentTimestampNs() {
+        return timestampNs;
+    }
+
+    synchronized long replayPosition() {
+        return replayPosition;
+    }
+
+    synchronized long rowCount() {
+        return totalRows;
+    }
+
+    synchronized String datasetId() {
+        requireLoaded();
+        return datasetId;
+    }
+
+    synchronized String symbol() {
+        requireLoaded();
+        return manifest.path("symbol").asText();
+    }
+
+    synchronized String venue() {
+        return "LOBSTER";
+    }
+
+    synchronized long priceTickSizeNanos() {
+        return 100_000L;
+    }
+
+    synchronized long quantityLotSizeNanos() {
+        return 1_000_000_000L;
+    }
+
+    synchronized String eventsSha256() {
+        requireLoaded();
+        MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 must be available", exception);
+        }
+        manifest.path("source_files").forEach(file ->
+                digest.update(file.path("sha256").asText().getBytes(StandardCharsets.US_ASCII)));
+        return HexFormat.of().formatHex(digest.digest());
+    }
+
+    synchronized JsonNode context(String sourceType) {
+        requireLoaded();
+        return mapper.createObjectNode()
+                .put("source_type", sourceType)
+                .put("dataset_id", datasetId)
+                .put("format", "lobster_parquet_v1")
+                .put("symbol", symbol())
+                .put("venue", venue())
+                .put("trade_date", manifest.path("trade_date").asText())
+                .put("depth", manifest.path("depth").intValue())
+                .put("source_sequence", sourceSequence)
+                .put("replay_position", replayPosition)
+                .put("exchange_timestamp_ns", timestampNs)
+                .put("row_count", totalRows)
+                .put("progress", totalRows == 0 ? 0 : Math.min(1.0, (double) replayPosition / totalRows))
+                .put("eof", eof())
+                .put("events_sha256", eventsSha256());
+    }
+
+    synchronized JsonNode datasets() {
+        ArrayNode result = mapper.createArrayNode();
+        if (!Files.isDirectory(registryRoot)) return result;
+        try (var paths = Files.list(registryRoot)) {
+            paths.filter(Files::isDirectory).sorted().forEach(path -> {
+                Path manifestPath = path.resolve("manifest.json");
+                if (!Files.isRegularFile(manifestPath)
+                        || !Files.isRegularFile(path.resolve("events.parquet"))
+                        || !Files.isRegularFile(path.resolve("book_snapshots.parquet"))) return;
+                try {
+                    JsonNode candidate = mapper.readTree(Files.readString(manifestPath));
+                    if (!"ready".equals(candidate.path("status").asText())) return;
+                    result.add(mapper.createObjectNode()
+                            .put("dataset_id", candidate.path("dataset_id").asText())
+                            .put("source_type", "lobster")
+                            .put("symbol", candidate.path("symbol").asText())
+                            .put("venue", "LOBSTER")
+                            .put("trade_date", candidate.path("trade_date").asText())
+                            .put("start_time", formatMilliseconds(candidate.path("start_time_ms").longValue()))
+                            .put("end_time", formatMilliseconds(candidate.path("end_time_ms").longValue()))
+                            .put("depth", candidate.path("depth").intValue())
+                            .put("row_count", candidate.path("row_count").longValue()));
+                } catch (IOException ignored) {
+                    // Invalid datasets are not advertised.
+                }
+            });
+        } catch (IOException exception) {
+            throw new IllegalStateException("failed to list LOBSTER datasets", exception);
+        }
+        return result;
     }
 
     public synchronized JsonNode state() {
@@ -216,6 +345,14 @@ final class HistoricalMarketDataSource implements ReplayMarketDataSource {
         } catch (SQLException exception) {
             throw new IllegalStateException("historical replay failed", exception);
         }
+    }
+
+    private HistoricalSnapshotRecord currentRecord() {
+        return new HistoricalSnapshotRecord(
+                sourceSequence,
+                timestampNs,
+                asks == null ? mapper.createArrayNode() : asks.deepCopy(),
+                bids == null ? mapper.createArrayNode() : bids.deepCopy());
     }
 
     private ObjectNode book() {
@@ -307,10 +444,27 @@ final class HistoricalMarketDataSource implements ReplayMarketDataSource {
         eventTail.clear();
         running = false;
         eof = false;
+        kernelCursorStarted = false;
     }
 
     @Override
     public synchronized void close() {
         clear();
     }
+
+    private static String formatMilliseconds(long value) {
+        long hours = value / 3_600_000;
+        long remainder = value % 3_600_000;
+        long minutes = remainder / 60_000;
+        remainder %= 60_000;
+        long seconds = remainder / 1_000;
+        long milliseconds = remainder % 1_000;
+        return "%02d:%02d:%02d.%03d".formatted(hours, minutes, seconds, milliseconds);
+    }
+
+    record HistoricalSnapshotRecord(
+            long sourceSequence,
+            long timestampNs,
+            ArrayNode asks,
+            ArrayNode bids) {}
 }

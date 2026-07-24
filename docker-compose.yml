@@ -17,6 +17,7 @@ services:
       ARENA_WEBSOCKET_STREAM_INTERVAL_MS: ${ARENA_WEBSOCKET_STREAM_INTERVAL_MS:-500}
       ARENA_OUTPUT_DIR: /app/outputs
       LOB_ARENA_HISTORICAL_DATA_DIR: /app/data/processed/lobster
+      LOB_ARENA_HISTORICAL_CSV_DATA_DIR: /app/data/historical
       LOB_ARENA_HISTORICAL_ROWS_PER_TICK: ${LOB_ARENA_HISTORICAL_ROWS_PER_TICK:-250}
     ports:
       - "8081:8080"
@@ -33,6 +34,7 @@ services:
     volumes:
       - ./outputs:/app/outputs
       - ./data/processed/lobster:/app/data/processed/lobster:ro
+      - ./data/historical:/app/data/historical:ro
 
   agent-runner:
     build:

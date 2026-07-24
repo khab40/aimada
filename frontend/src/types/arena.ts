@@ -28,6 +28,7 @@ export type MarketFeatures = {
   cancel_to_trade_ratio: number;
   order_lifetime_ms: number;
   wall_size_ratio: number;
+  large_level_count?: number;
   depth_change_pct: number;
 };
 
@@ -222,7 +223,7 @@ export type ArenaState = {
   detectors: DetectorScores;
   incidents?: Incident[];
   features?: Partial<MarketFeatures>;
-  historical_events?: HistoricalMarketEvent[];
+  historical_events?: Array<HistoricalMarketEvent | ExchangeEvent>;
   market_data?: MarketDataContext;
 };
 
@@ -243,9 +244,11 @@ export type HistoricalMarketEvent = {
 };
 
 export type MarketDataContext = {
-  source_type: "historical";
+  source_type: "historical" | "hybrid";
   dataset_id: string;
+  format?: string;
   symbol: string;
+  venue?: string;
   trade_date: string;
   depth: number;
   source_sequence: number;
@@ -254,6 +257,7 @@ export type MarketDataContext = {
   row_count: number;
   progress: number;
   eof: boolean;
+  events_sha256?: string;
 };
 
 export type ArenaWebSocketMessage = {

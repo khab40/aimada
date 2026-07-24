@@ -6,7 +6,7 @@ ARDs capture architecture decisions, context, tradeoffs, implementation phases, 
 
 ## Implementation Summary
 
-Status as of 2026-07-18:
+Status as of 2026-07-24:
 
 | ARD | Implementation | Notes |
 |-----|----------------|-------|
@@ -29,8 +29,14 @@ Status as of 2026-07-18:
 | [ARD-0019](ARD-0019-python-reference-java-kernel-migration.md) | `[done]` | All 18 parity and sole-Java-kernel migration steps are implemented |
 | [ARD-0020](ARD-0020-java-arena-websocket-agent-orchestration.md) | `[done]` | Java owns the live arena, WebSocket, agent orchestration, scenarios, detectors, incidents, and journals |
 | [ARD-0021](ARD-0021-local-observability-grafana.md) | `[done]` | Prometheus/Grafana observability includes bounded detector-tournament lifecycle telemetry and a provisioned operations dashboard |
+| [ARD-0022](ARD-0022-historical-market-data-ingestion.md) | `[done]` | FastAPI validates paired LOBSTER CSV files and atomically registers normalized Parquet datasets |
+| [ARD-0023](ARD-0023-hybrid-historical-replay.md) | `[done]` | Java deterministically merges immutable LOBSTER history with UI-launched synthetic attacks while isolating labels and provenance |
 
-Current UI architecture note: the product shell now exposes AI Command Center, Arena / Workload Generator, and Docs / Demo as the primary demo destinations. Scenario setup, incidents, investigations, detector tournaments, deployment status, and experiment artifacts are folded into the AI Command Center or linked from the active workflow. The About and ARD-0001 diagrams document the four execution areas: Front, Back, Agent Runners Workspace, and Nebius Serverless Cloud.
+Current UI architecture note: the product shell exposes Data Ingestion, Arena,
+Control Panel, and About in that order. Scenario setup, incidents,
+investigations, detector tournaments, deployment status, and experiment
+artifacts are folded into Arena or Control Panel. The About and ARD-0001
+diagrams document the execution boundaries.
 
 ## Records
 
@@ -47,6 +53,8 @@ Current UI architecture note: the product shell now exposes AI Command Center, A
 ### Data & Artifacts
 
 - [ARD-0004: Benchmark Artifact Format](ARD-0004-benchmark-artifact-format.md) — Persisted data formats (JSON, Parquet, CSV, Markdown)
+- [ARD-0022: Historical Market Data Ingestion And Replay](ARD-0022-historical-market-data-ingestion.md) — Paired LOBSTER validation, normalized Parquet storage, and dataset registration
+- [ARD-0023: Deterministic Hybrid Historical Replay](ARD-0023-hybrid-historical-replay.md) — Historical/synthetic merge ordering, source immutability, ID/seed separation, labels, metrics, and evidence
 
 ### Agent Execution
 

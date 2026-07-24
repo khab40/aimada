@@ -22,14 +22,18 @@ class ArenaConfiguration {
             ObjectMapper mapper,
             AgentOrchestrator orchestrator,
             ArenaJournal journal,
-            @Value("${lob.arena.historical-data-dir:../data/processed/lobster}") String historicalDataDir,
-            @Value("${lob.arena.historical-rows-per-tick:250}") int historicalRowsPerTick) {
+            @Value("${lob.arena.historical-data-dir:../../data/processed/lobster}") String historicalDataDir,
+            @Value("${lob.arena.historical-csv-data-dir:../../data/historical}") String historicalCsvDataDir,
+            @Value("${lob.arena.historical-rows-per-tick:250}") int historicalRowsPerTick,
+            @Value("${lob.arena.master-seed:42}") long masterSeed) {
         return new LiveArenaService(
                 mapper,
                 orchestrator,
                 journal,
                 normalizePath(historicalDataDir),
-                historicalRowsPerTick);
+                normalizePath(historicalCsvDataDir),
+                historicalRowsPerTick,
+                masterSeed);
     }
 
     static Path normalizePath(String value) {

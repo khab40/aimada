@@ -1,6 +1,6 @@
 package ai.lobarena.controlplane;
 
-record LiveScenario(String id, String family, String name, String agentId, long startTick) {
+record LiveScenario(String id, String family, String name, String agentId, long startTick, long seed) {
     long age(long tick) {
         return Math.max(0, tick - startTick);
     }

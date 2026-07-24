@@ -98,6 +98,24 @@ The Data Ingestion UI can import a one-minute, five-minute, or full-file time
 window. Window end times are exclusive, and each window is registered as a
 separate dataset that can be selected in the Arena.
 
+The Java arena consumes those normalized datasets through:
+
+- `GET /api/arena/historical-datasets`
+- `POST /api/arena/data-source`
+- `POST /api/arena/replay-comparison`
+
+Use `source_type: historical` for an unlabeled control or `source_type: hybrid`
+before launching an existing attack from Scenario Setup. Import never assigns
+benign or attack ground truth. Hybrid ground truth comes only from the
+subsequent synthetic scenario launch. The source Parquet and manifest remain
+immutable; Java records historical snapshots from source data while scenarios
+and detectors use the combined live book.
+
+See [ARD-0022](../docs/architecture/ARD-0022-historical-market-data-ingestion.md)
+for ingestion and
+[ARD-0023](../docs/architecture/ARD-0023-hybrid-historical-replay.md) for
+ordering, seed derivation, provenance, labels, and artifact guarantees.
+
 Coverage:
 
 ```bash

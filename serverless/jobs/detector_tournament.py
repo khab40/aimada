@@ -25,7 +25,11 @@ def _add_backend_to_path() -> None:
 _add_backend_to_path()
 
 from app.arena.engine import SimulationEngine  # noqa: E402
-from app.evaluation.ground_truth import evaluate_detection, evidence_attribution  # noqa: E402
+from app.evaluation.ground_truth import (  # noqa: E402
+    binary_classification_metrics,
+    evaluate_detection,
+    evidence_attribution,
+)
 from app.evaluation.run_planning import (  # noqa: E402
     DEFAULT_DIFFICULTY_MIX,
     derive_run_seed,
@@ -229,25 +233,17 @@ def _compute_metrics(run_results: list[RunResult], detectors: list[str]) -> list
         fp = sum(item.false_positive for item in results)
         fn = sum(item.false_negative for item in results)
         tn = sum(item.true_negative for item in results)
-        precision = tp / (tp + fp) if tp + fp else None
-        recall = tp / (tp + fn) if tp + fn else None
-        f1 = (
-            2 * precision * recall / (precision + recall)
-            if precision is not None and recall is not None and precision + recall
-            else 0.0 if recall == 0 else None
-        )
-        specificity = tn / (tn + fp) if tn + fp else None
-        false_positive_rate = fp / (fp + tn) if fp + tn else None
+        classification = binary_classification_metrics(tp=tp, fp=fp, fn=fn, tn=tn)
         latencies = [item.latency_ms for item in results if item.latency_ms is not None and item.truth]
         rows.append(
             {
                 "scenario": scenario,
                 "detector": detector,
-                "precision": _rounded(precision),
-                "recall": _rounded(recall),
-                "f1": _rounded(f1),
-                "specificity": _rounded(specificity),
-                "false_positive_rate": _rounded(false_positive_rate),
+                "precision": classification["precision"],
+                "recall": classification["recall"],
+                "f1": classification["f1"],
+                "specificity": classification["specificity"],
+                "false_positive_rate": classification["false_positive_rate"],
                 "avg_detection_latency_ms": round(sum(latencies) / len(latencies), 2) if latencies else None,
                 "true_positive": tp,
                 "false_positive": fp,

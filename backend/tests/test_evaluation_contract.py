@@ -4,7 +4,7 @@ from pathlib import Path
 
 from app.arena.engine import SimulationEngine
 from app.detectors.features import extract_features
-from app.evaluation.ground_truth import evaluate_detection
+from app.evaluation.ground_truth import binary_classification_metrics, evaluate_detection
 from app.evaluation.run_planning import derive_run_seed, engine_profile, exact_balanced_plan, exact_weighted_plan
 from app.schemas.arena import AgentEvent, OrderBookSnapshot, PriceLevel
 from serverless.jobs import detector_tournament, run_batch_experiments
@@ -176,3 +176,17 @@ def test_ground_truth_scores_temporal_event_attribution_and_phases() -> None:
     assert result["order_recall"] == 1.0
     assert result["detection_timing"] == "on_time"
     assert result["phase_detection"] == {"pressure_phase": True}
+
+
+def test_binary_classification_metrics_are_shared_and_exact() -> None:
+    assert binary_classification_metrics(tp=1, fp=1, fn=0, tn=1) == {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "specificity": 0.5,
+        "false_positive_rate": 0.5,
+        "true_positive": 1,
+        "false_positive": 1,
+        "false_negative": 0,
+        "true_negative": 1,
+    }

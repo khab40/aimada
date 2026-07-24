@@ -1,0 +1,10 @@
+{
+  "artifacts": [
+    "comparison.json",
+    "control.json",
+    "hybrid.json"
+  ],
+  "dataset_id": "sample-btcusdt-0945",
+  "events_sha256": "04ce80fc774ebec178fbf78c6f3c1f8ebd39336f07c080cce4e7554f3879cc31",
+  "schema_version": "historical_replay_bundle_v1"
+}

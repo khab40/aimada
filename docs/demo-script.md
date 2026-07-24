@@ -54,7 +54,7 @@ Screenshot: `AI Scenario Generator` result.
 ## Step 2: Replay Scenario In Arena
 
 1. Click `Replay in Arena`.
-2. Open or switch to the Arena / Workload Generator if needed.
+2. Open or switch to **Arena** if needed.
 3. Show that the generated scenario is projected into the existing simulator replay path.
 4. Point out that replay uses synthetic ground truth, not real market data.
 

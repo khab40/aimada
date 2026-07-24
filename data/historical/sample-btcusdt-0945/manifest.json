@@ -1,0 +1,12 @@
+{
+  "dataset_id": "sample-btcusdt-0945",
+  "status": "ready",
+  "format": "canonical_csv_v1",
+  "symbol": "BTCUSDT",
+  "venue": "SAMPLE",
+  "trade_date": "2026-07-23",
+  "price_tick_size_nanos": 1000000,
+  "quantity_lot_size_nanos": 1000000,
+  "row_count": 12,
+  "events_sha256": "04ce80fc774ebec178fbf78c6f3c1f8ebd39336f07c080cce4e7554f3879cc31"
+}

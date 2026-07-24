@@ -49,6 +49,21 @@ Update this file with each significant commit before pushing.
 
 ## Unreleased
 
+### Current - feat: add deterministic LOBSTER hybrid replay
+
+- Reused the authoritative Java integer exchange to replay normalized LOBSTER
+  history and inject existing UI-launched spoofing-like or layering-like
+  scenarios against the reconstructed current book.
+- Preserved immutable historical source snapshots, historical-first equal-time
+  ordering, disjoint `HIST:`/`SYN:` identities, domain-separated attack seeds,
+  separate synthetic ground truth, and label-free detector input.
+- Added historical-only and hybrid comparison artifacts with source/event
+  counts, historical/synthetic hashes, TP/FN/FP/TN, precision, recall, F1,
+  realism deltas, manifests, and checksums.
+- Added a public LOBSTER-compatible fixture, replay configs, end-to-end
+  determinism/provenance/label-leakage tests, ARD-0023, and updated ARD-0022,
+  architecture, use-case, quick-start, backend, and root README documentation.
+
 ### Current - docs: freeze Python-to-Java kernel migration boundary
 
 - Added ARD-0019 and the Java kernel migration tracker with the Python reference, Java candidate, authority modes, parity gates, rollback rules, and component ownership boundary.
@@ -87,6 +102,7 @@ Update this file with each significant commit before pushing.
 - Moved the experimental 3D LOB UI, Google Auth, disabled advanced controls, and orphan modules under `archived/` outside active build roots.
 - Removed their active routes, imports, configuration, styles, dependencies, and stale architecture claims.
 - Kept Local Mock as the credential-free default and added backend, Compose, frontend contract, lint, and build coverage.
+- Deleted the archived source tree after confirming active code no longer imported it; this also removed its obsolete Google Auth persona test from test discovery.
 
 ### Current - chore: rename project to LOB Arena
 
