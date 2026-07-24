@@ -210,6 +210,8 @@ neighbourhood, paired books must match exactly and book/event-flow metrics must
 pass the documented statistical equivalence bounds. See
 [Hybrid Dataset Validation](docs/hybrid-dataset-validation.md) for the
 methodology, signing trust boundary, verification commands, and limitations.
+For repeatable client deliveries, use the
+[Client Historical Dataset Validation Runbook](docs/client-historical-dataset-validation-runbook.md).
 The public fixture includes a
 [signed sample report](data/lobster/fixture/validation/validation-report.json).
 
