@@ -1,0 +1,9 @@
+{
+  "algorithm": "Ed25519",
+  "key_id": "sha256:b590d081daf221e8f6b06035340d306e8f7ac3664d2c3e648f44bf5bffbb1c8c",
+  "public_key_file": "validation-public-key.pem",
+  "schema_version": "hybrid_bundle_signature_v1",
+  "signature_file": "manifest.sig",
+  "signed_artifact": "manifest.json",
+  "signer": "LOB Arena sample validation"
+}

@@ -3,6 +3,16 @@
 This changelog lists significant commits in reverse chronological order.
 Update this file with each significant commit before pushing.
 
+- Added LOBSTER message/book, lifecycle, visible-volume, session, crossed-book,
+  normalized hash, and provenance validation; repeat-run determinism and
+  before/during/after causal-neighbourhood equivalence; synthetic
+  cancellation/execution audits; future-data leakage coverage; and an
+  Ed25519-signed public validation bundle. Java now rejects modified,
+  incomplete, or unsynchronized normalized Parquet before replay;
+  quote-stuffing impact is validated through per-tick event flow; and the
+  Ed25519 signature binds the full evidence inventory. Fixed stable-ID agent
+  order moves that could leave ghost liquidity at an old price.
+
 - Added bounded detector-tournament lifecycle, duration, throughput, in-flight,
   and artifact-collection Prometheus metrics at the FastAPI orchestration
   boundary, plus the provisioned `LOB Arena Detector Tournaments` Grafana

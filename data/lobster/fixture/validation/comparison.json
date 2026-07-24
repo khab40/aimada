@@ -1,0 +1,179 @@
+{
+  "dataset_id": "lobster-spy-2012-06-21-34200000-34260000-d2-8d4fca057cfb",
+  "detector_metrics": [
+    {
+      "control_alert_ticks": [],
+      "control_evaluation": {
+        "detection_timing": "not_applicable",
+        "event_precision": null,
+        "event_recall": null,
+        "order_precision": null,
+        "order_recall": null,
+        "participant_precision": null,
+        "participant_recall": null,
+        "phase_detection": {},
+        "temporal_overlap": null
+      },
+      "detector": "layering_like_detector",
+      "f1": 1.0,
+      "false_negative": 0,
+      "false_positive": 0,
+      "false_positive_rate": 0.0,
+      "hybrid_alert_ticks": [
+        1
+      ],
+      "hybrid_evaluation": {
+        "detection_timing": "on_time",
+        "event_precision": null,
+        "event_recall": null,
+        "order_precision": null,
+        "order_recall": 0.0,
+        "participant_precision": null,
+        "participant_recall": 0.0,
+        "phase_detection": {
+          "cancellation_phase": false,
+          "pressure_phase": true
+        },
+        "temporal_overlap": 0.2
+      },
+      "precision": 1.0,
+      "recall": 1.0,
+      "specificity": 1.0,
+      "true_negative": 1,
+      "true_positive": 1
+    },
+    {
+      "control_alert_ticks": [],
+      "control_evaluation": {
+        "detection_timing": "not_applicable",
+        "event_precision": null,
+        "event_recall": null,
+        "order_precision": null,
+        "order_recall": null,
+        "participant_precision": null,
+        "participant_recall": null,
+        "phase_detection": {},
+        "temporal_overlap": null
+      },
+      "detector": "liquidity_shock_detector",
+      "f1": 0.0,
+      "false_negative": 1,
+      "false_positive": 0,
+      "false_positive_rate": 0.0,
+      "hybrid_alert_ticks": [],
+      "hybrid_evaluation": {
+        "detection_timing": "missed",
+        "event_precision": null,
+        "event_recall": null,
+        "order_precision": null,
+        "order_recall": 0.0,
+        "participant_precision": null,
+        "participant_recall": 0.0,
+        "phase_detection": {
+          "cancellation_phase": false,
+          "pressure_phase": false
+        },
+        "temporal_overlap": 0.0
+      },
+      "precision": null,
+      "recall": 0.0,
+      "specificity": 1.0,
+      "true_negative": 1,
+      "true_positive": 0
+    },
+    {
+      "control_alert_ticks": [],
+      "control_evaluation": {
+        "detection_timing": "not_applicable",
+        "event_precision": null,
+        "event_recall": null,
+        "order_precision": null,
+        "order_recall": null,
+        "participant_precision": null,
+        "participant_recall": null,
+        "phase_detection": {},
+        "temporal_overlap": null
+      },
+      "detector": "quote_stuffing_detector",
+      "f1": 0.0,
+      "false_negative": 1,
+      "false_positive": 0,
+      "false_positive_rate": 0.0,
+      "hybrid_alert_ticks": [],
+      "hybrid_evaluation": {
+        "detection_timing": "missed",
+        "event_precision": null,
+        "event_recall": null,
+        "order_precision": null,
+        "order_recall": 0.0,
+        "participant_precision": null,
+        "participant_recall": 0.0,
+        "phase_detection": {
+          "cancellation_phase": false,
+          "pressure_phase": false
+        },
+        "temporal_overlap": 0.0
+      },
+      "precision": null,
+      "recall": 0.0,
+      "specificity": 1.0,
+      "true_negative": 1,
+      "true_positive": 0
+    },
+    {
+      "control_alert_ticks": [],
+      "control_evaluation": {
+        "detection_timing": "not_applicable",
+        "event_precision": null,
+        "event_recall": null,
+        "order_precision": null,
+        "order_recall": null,
+        "participant_precision": null,
+        "participant_recall": null,
+        "phase_detection": {},
+        "temporal_overlap": null
+      },
+      "detector": "spoofing_like_detector",
+      "f1": 1.0,
+      "false_negative": 0,
+      "false_positive": 0,
+      "false_positive_rate": 0.0,
+      "hybrid_alert_ticks": [
+        1
+      ],
+      "hybrid_evaluation": {
+        "detection_timing": "on_time",
+        "event_precision": null,
+        "event_recall": null,
+        "order_precision": null,
+        "order_recall": 0.0,
+        "participant_precision": null,
+        "participant_recall": 0.0,
+        "phase_detection": {
+          "cancellation_phase": false,
+          "pressure_phase": true
+        },
+        "temporal_overlap": 0.2
+      },
+      "precision": 1.0,
+      "recall": 1.0,
+      "specificity": 1.0,
+      "true_negative": 1,
+      "true_positive": 1
+    }
+  ],
+  "event_counts": {
+    "control": 63,
+    "delta": 3,
+    "hybrid": 66
+  },
+  "events_sha256": "8d4fca057cfbaa0bb4c1660f752cf09827d2dccbb3af49127dff959e0a1d6327",
+  "master_seed": 42,
+  "realism_impact": {
+    "canonical_event_count_delta": 3,
+    "final_depth_delta": 39000.0,
+    "final_spread_delta": 0.0
+  },
+  "same_historical_window": true,
+  "schema_version": "historical_replay_metrics_v1"
+}

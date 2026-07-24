@@ -6,9 +6,12 @@ import ai.lobarena.kernel.determinism.DeterministicValues;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
@@ -181,6 +184,22 @@ class LiveArenaServiceTest {
                 .isEqualTo(comparison.path("control").path("stream_hash").textValue());
         assertThat(repeated.path("hybrid").path("stream_hash").textValue())
                 .isEqualTo(comparison.path("hybrid").path("stream_hash").textValue());
+        assertThat(comparison.path("determinism").path("control_stream_match").booleanValue())
+                .isTrue();
+        assertThat(comparison.path("determinism").path("hybrid_stream_match").booleanValue())
+                .isTrue();
+        assertThat(comparison.path("determinism").path("control_trace_match").booleanValue())
+                .isTrue();
+        assertThat(comparison.path("determinism").path("hybrid_trace_match").booleanValue())
+                .isTrue();
+        JsonNode controlAttackTick = comparison.path("control").path("validation_trace").get(1);
+        JsonNode hybridAttackTick = comparison.path("hybrid").path("validation_trace").get(1);
+        assertThat(hybridAttackTick.path("book_hash").textValue())
+                .isEqualTo(controlAttackTick.path("book_hash").textValue());
+        assertThat(hybridAttackTick.path("message_count").longValue())
+                .isGreaterThan(controlAttackTick.path("message_count").longValue());
+        assertThat(hybridAttackTick.path("cancel_count").longValue())
+                .isGreaterThan(controlAttackTick.path("cancel_count").longValue());
     }
 
     @Test
@@ -210,6 +229,12 @@ class LiveArenaServiceTest {
         assertThat(first.path("hybrid").path("source_rows_replayed").longValue()).isEqualTo(8);
         assertThat(first.path("control").path("historical_source_sequences").longValue()).isEqualTo(8);
         assertThat(first.path("hybrid").path("historical_source_sequences").longValue()).isEqualTo(8);
+        assertThat(first.path("control").path("source_integrity").path("validated").booleanValue())
+                .isTrue();
+        assertThat(first.path("control").path("source_integrity").path("paired_rows").longValue())
+                .isEqualTo(8);
+        assertThat(first.path("control").path("source_integrity").path("output_sha256"))
+                .isEqualTo(first.path("hybrid").path("source_integrity").path("output_sha256"));
         assertThat(repeated.path("control").path("stream_hash").textValue())
                 .isEqualTo(first.path("control").path("stream_hash").textValue());
         assertThat(repeated.path("hybrid").path("stream_hash").textValue())
@@ -220,6 +245,34 @@ class LiveArenaServiceTest {
                 .isEqualTo(first.path("hybrid").path("historical_event_hash").textValue());
         assertThat(differentSeed.path("hybrid").path("synthetic_event_hash").textValue())
                 .isNotEqualTo(first.path("hybrid").path("synthetic_event_hash").textValue());
+        assertThat(first.path("control").path("historical_snapshot_stream_hash").textValue())
+                .isEqualTo(first.path("hybrid").path("historical_snapshot_stream_hash").textValue());
+        assertThat(repeated.path("control").path("validation_trace"))
+                .isEqualTo(first.path("control").path("validation_trace"));
+        assertThat(repeated.path("hybrid").path("validation_trace"))
+                .isEqualTo(first.path("hybrid").path("validation_trace"));
+        for (int index = 0; index < first.path("control").path("validation_trace").size(); index++) {
+            JsonNode controlObservation = first.path("control").path("validation_trace").get(index);
+            JsonNode hybridObservation = first.path("hybrid").path("validation_trace").get(index);
+            long observationTick = controlObservation.path("tick").longValue();
+            assertThat(hybridObservation.path("tick").longValue()).isEqualTo(observationTick);
+            if (observationTick == 0 || observationTick >= 5) {
+                assertThat(hybridObservation.path("book_hash").textValue())
+                        .as(
+                                "book outside the layering causal neighbourhood at tick %s%ncontrol=%s%nhybrid=%s",
+                                observationTick,
+                                controlObservation,
+                                hybridObservation)
+                        .isEqualTo(controlObservation.path("book_hash").textValue());
+            } else {
+                assertThat(hybridObservation.path("book_hash").textValue())
+                        .as("intended layering impact at tick %s", observationTick)
+                        .isNotEqualTo(controlObservation.path("book_hash").textValue());
+            }
+        }
+        assertThat(first.path("hybrid").path("synthetic_events"))
+                .allMatch(event -> event.path("tick").longValue() >= 1
+                        && event.path("tick").longValue() <= 5);
         assertThat(first.path("control").path("ground_truth").isNull()).isTrue();
         assertThat(first.path("hybrid").path("ground_truth").path("source").textValue())
                 .isEqualTo("synthetic_scenario");
@@ -240,6 +293,38 @@ class LiveArenaServiceTest {
             }
         }
         assertThat(firstSynthetic).isGreaterThan(lastHistorical);
+    }
+
+    @Test
+    void hybridAttackAtInjectionTimeCannotObserveFutureLobsterRows(@TempDir Path root)
+            throws Exception {
+        Path firstRegistry = createLobsterDataset(root.resolve("first"), 0);
+        Path changedFutureRegistry = createLobsterDataset(root.resolve("changed-future"), 50_000);
+        LiveArenaService first = lobsterArena(root.resolve("first-output"), firstRegistry, 1);
+        LiveArenaService changedFuture =
+                lobsterArena(root.resolve("changed-output"), changedFutureRegistry, 1);
+
+        first.loadDataSource("hybrid", "lobster-spy-fixture", 17);
+        changedFuture.loadDataSource("hybrid", "lobster-spy-fixture", 17);
+        first.launchScenario("spoofing_like_wall");
+        changedFuture.launchScenario("spoofing_like_wall");
+
+        JsonNode firstStep = first.stepForTest();
+        JsonNode changedFutureStep = changedFuture.stepForTest();
+        List<JsonNode> firstSynthetic = new ArrayList<>();
+        List<JsonNode> changedSynthetic = new ArrayList<>();
+        firstStep.path("exchange_events").forEach(event -> {
+            if (event.hasNonNull("scenario_id")) firstSynthetic.add(event);
+        });
+        changedFutureStep.path("exchange_events").forEach(event -> {
+            if (event.hasNonNull("scenario_id")) changedSynthetic.add(event);
+        });
+
+        assertThat(firstSynthetic).isNotEmpty();
+        assertThat(changedSynthetic).isEqualTo(firstSynthetic);
+        assertThat(firstStep.path("market_data").path("source_sequence").longValue()).isEqualTo(1);
+        assertThat(changedFutureStep.path("market_data").path("source_sequence").longValue())
+                .isEqualTo(1);
     }
 
     private LiveArenaService arena(Path output, JsonNode runnerResponse) {
@@ -283,6 +368,11 @@ class LiveArenaServiceTest {
     }
 
     private static Path createLobsterDataset(Path registry) throws Exception {
+        return createLobsterDataset(registry, 0);
+    }
+
+    private static Path createLobsterDataset(Path registry, long futureBidQuantityDelta)
+            throws Exception {
         String datasetId = "lobster-spy-fixture";
         Path dataset = Files.createDirectories(registry.resolve(datasetId));
         Path events = dataset.resolve("events.parquet");
@@ -308,10 +398,11 @@ class LiveArenaServiceTest {
                            2::SMALLINT depth,
                            [{'level': 1::SMALLINT, 'price_x10000': 1001000::BIGINT, 'quantity': 200::BIGINT},
                             {'level': 2::SMALLINT, 'price_x10000': 1002000::BIGINT, 'quantity': 300::BIGINT}] asks,
-                           [{'level': 1::SMALLINT, 'price_x10000': 1000000::BIGINT, 'quantity': (100 + i)::BIGINT},
+                           [{'level': 1::SMALLINT, 'price_x10000': 1000000::BIGINT,
+                             'quantity': (100 + i + CASE WHEN i > 1 THEN %d ELSE 0 END)::BIGINT},
                             {'level': 2::SMALLINT, 'price_x10000': 999000::BIGINT, 'quantity': 400::BIGINT}] bids
                     FROM range(1, 9) values(i)
-                    """);
+                    """.formatted(futureBidQuantityDelta));
             statement.execute("COPY books TO '" + sqlPath(books) + "' (FORMAT PARQUET)");
         }
         Files.writeString(dataset.resolve("manifest.json"), """
@@ -328,13 +419,27 @@ class LiveArenaServiceTest {
                   "source_files": [
                     {"sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
                     {"sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}
+                  ],
+                  "output_files": [
+                    {"name": "events.parquet", "size_bytes": %d, "sha256": "%s"},
+                    {"name": "book_snapshots.parquet", "size_bytes": %d, "sha256": "%s"}
                   ]
                 }
-                """.formatted(datasetId));
+                """.formatted(
+                datasetId,
+                Files.size(events),
+                sha256(events),
+                Files.size(books),
+                sha256(books)));
         return registry;
     }
 
     private static String sqlPath(Path path) {
         return path.toAbsolutePath().normalize().toString().replace("'", "''");
+    }
+
+    private static String sha256(Path path) throws Exception {
+        return HexFormat.of().formatHex(
+                MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(path)));
     }
 }

@@ -235,16 +235,22 @@ public final class IntegerOrderBook {
             cancel(resolvedOrderId);
             return;
         }
+        KernelOrder replaced = orders.get(resolvedOrderId);
+        if (replaced != null) {
+            NavigableMap<Long, List<KernelOrder>> priorSide = levels(replaced.side());
+            List<KernelOrder> priorQueue =
+                    new ArrayList<>(priorSide.getOrDefault(replaced.priceTicks(), List.of()));
+            priorQueue.removeIf(item -> item.orderId().equals(resolvedOrderId));
+            if (priorQueue.isEmpty()) {
+                priorSide.remove(replaced.priceTicks());
+            } else {
+                priorSide.put(replaced.priceTicks(), priorQueue);
+            }
+            orders.remove(resolvedOrderId);
+        }
         NavigableMap<Long, List<KernelOrder>> sideLevels = levels(side);
         List<KernelOrder> queue = new ArrayList<>(sideLevels.getOrDefault(priceTicks, List.of()));
-        KernelOrder replaced = queue.stream()
-                .filter(item -> item.orderId().equals(resolvedOrderId))
-                .findFirst()
-                .orElse(null);
         queue.removeIf(item -> item.orderId().equals(resolvedOrderId));
-        if (replaced != null) {
-            orders.remove(replaced.orderId());
-        }
         KernelOrder updated = new KernelOrder(
                 resolvedOrderId, agentId, side, quantityLots, priceTicks, OrderType.LIMIT, timestamp,
                 scenarioId, scenarioName, scenarioFamily, owner);

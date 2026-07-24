@@ -1,8 +1,12 @@
 package ai.lobarena.controlplane;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -12,9 +16,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HexFormat;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.regex.Pattern;
 import tools.jackson.databind.JsonNode;
@@ -42,6 +43,9 @@ final class HistoricalMarketDataSource implements ReplayMarketDataSource {
     private long timestampNs;
     private long tick;
     private long totalRows;
+    private long pairedRows;
+    private String eventsParquetSha256;
+    private String booksParquetSha256;
     private boolean running;
     private boolean eof;
     private boolean kernelCursorStarted;
@@ -81,14 +85,22 @@ final class HistoricalMarketDataSource implements ReplayMarketDataSource {
             }
             datasetId = requestedDatasetId;
             totalRows = manifest.path("row_count").longValue();
+            if (totalRows <= 0) {
+                throw new IllegalArgumentException("historical manifest row_count must be positive");
+            }
+            eventsParquetSha256 = verifyOutputFile(eventsPath, "events.parquet");
+            booksParquetSha256 = verifyOutputFile(booksPath, "book_snapshots.parquet");
             connection = DriverManager.getConnection("jdbc:duckdb:");
+            validateNormalizedTables(eventsPath, booksPath);
             statement = connection.prepareStatement("""
                     SELECT e.source_sequence, e.timestamp_ns_since_midnight, e.event_kind,
                            e.source_event_code, e.source_order_id, e.size, e.price_x10000,
                            e.direction, e.book_side, e.aggressor_side, e.halt_state,
                            to_json(b.asks) AS asks_json, to_json(b.bids) AS bids_json
                     FROM read_parquet(?) e
-                    INNER JOIN read_parquet(?) b USING (source_sequence)
+                    INNER JOIN read_parquet(?) b
+                      ON e.source_sequence = b.source_sequence
+                     AND e.timestamp_ns_since_midnight = b.timestamp_ns_since_midnight
                     ORDER BY e.source_sequence
                     """);
             statement.setString(1, eventsPath.toAbsolutePath().normalize().toString());
@@ -220,6 +232,19 @@ final class HistoricalMarketDataSource implements ReplayMarketDataSource {
         manifest.path("source_files").forEach(file ->
                 digest.update(file.path("sha256").asText().getBytes(StandardCharsets.US_ASCII)));
         return HexFormat.of().formatHex(digest.digest());
+    }
+
+    synchronized JsonNode integrity() {
+        requireLoaded();
+        ObjectNode result = mapper.createObjectNode()
+                .put("validated", true)
+                .put("format", "lobster_parquet_v1")
+                .put("row_count", totalRows)
+                .put("paired_rows", pairedRows);
+        result.putObject("output_sha256")
+                .put("events.parquet", eventsParquetSha256)
+                .put("book_snapshots.parquet", booksParquetSha256);
+        return result;
     }
 
     synchronized JsonNode context(String sourceType) {
@@ -413,6 +438,150 @@ final class HistoricalMarketDataSource implements ReplayMarketDataSource {
         if (!loaded()) throw new IllegalStateException("no historical dataset is loaded");
     }
 
+    private String verifyOutputFile(Path path, String name) throws IOException {
+        JsonNode expected = null;
+        for (JsonNode output : manifest.path("output_files")) {
+            if (name.equals(output.path("name").asText())) {
+                expected = output;
+                break;
+            }
+        }
+        if (expected == null) {
+            throw new IllegalArgumentException("historical manifest is missing output metadata for " + name);
+        }
+        String expectedHash = expected.path("sha256").asText();
+        if (!expectedHash.matches("[0-9a-f]{64}")) {
+            throw new IllegalArgumentException("historical manifest has an invalid SHA-256 for " + name);
+        }
+        long expectedSize = expected.path("size_bytes").longValue();
+        long actualSize = Files.size(path);
+        if (expectedSize != actualSize) {
+            throw new IllegalArgumentException("historical output size does not match manifest for " + name);
+        }
+        String actualHash = sha256(path);
+        if (!expectedHash.equals(actualHash)) {
+            throw new IllegalArgumentException("historical output SHA-256 does not match manifest for " + name);
+        }
+        return actualHash;
+    }
+
+    private void validateNormalizedTables(Path eventsPath, Path booksPath) throws SQLException {
+        long startNs;
+        long endNs;
+        try {
+            startNs = Math.multiplyExact(manifest.path("start_time_ms").longValue(), 1_000_000L);
+            endNs = Math.multiplyExact(manifest.path("end_time_ms").longValue(), 1_000_000L);
+        } catch (ArithmeticException exception) {
+            throw new IllegalArgumentException("historical session boundaries overflow nanoseconds", exception);
+        }
+        if (startNs < 0 || endNs <= startNs) {
+            throw new IllegalArgumentException("historical manifest has invalid session boundaries");
+        }
+        try (PreparedStatement validation = connection.prepareStatement("""
+                WITH event_rows AS (
+                    SELECT source_sequence,
+                           timestamp_ns_since_midnight,
+                           lag(timestamp_ns_since_midnight)
+                               OVER (ORDER BY source_sequence) AS prior_timestamp
+                    FROM read_parquet(?)
+                ),
+                book_rows AS (
+                    SELECT source_sequence,
+                           timestamp_ns_since_midnight,
+                           lag(timestamp_ns_since_midnight)
+                               OVER (ORDER BY source_sequence) AS prior_timestamp
+                    FROM read_parquet(?)
+                )
+                SELECT
+                    (SELECT count(*) FROM event_rows) AS event_count,
+                    (SELECT count(*) FROM book_rows) AS book_count,
+                    (SELECT count(DISTINCT source_sequence) FROM event_rows)
+                        AS distinct_event_sequences,
+                    (SELECT count(DISTINCT source_sequence) FROM book_rows)
+                        AS distinct_book_sequences,
+                    (SELECT count(*) FROM event_rows
+                     WHERE prior_timestamp > timestamp_ns_since_midnight)
+                        AS event_timestamp_regressions,
+                    (SELECT count(*) FROM book_rows
+                     WHERE prior_timestamp > timestamp_ns_since_midnight)
+                        AS book_timestamp_regressions,
+                    (SELECT count(*) FROM event_rows
+                     WHERE timestamp_ns_since_midnight < ?
+                        OR timestamp_ns_since_midnight >= ?)
+                        AS event_out_of_session,
+                    (SELECT count(*) FROM book_rows
+                     WHERE timestamp_ns_since_midnight < ?
+                        OR timestamp_ns_since_midnight >= ?)
+                        AS book_out_of_session,
+                    (SELECT count(*)
+                     FROM event_rows e
+                     FULL OUTER JOIN book_rows b
+                       ON e.source_sequence = b.source_sequence
+                      AND e.timestamp_ns_since_midnight = b.timestamp_ns_since_midnight
+                     WHERE e.source_sequence IS NULL OR b.source_sequence IS NULL)
+                        AS unpaired_rows
+                """)) {
+            validation.setString(1, eventsPath.toAbsolutePath().normalize().toString());
+            validation.setString(2, booksPath.toAbsolutePath().normalize().toString());
+            validation.setLong(3, startNs);
+            validation.setLong(4, endNs);
+            validation.setLong(5, startNs);
+            validation.setLong(6, endNs);
+            try (ResultSet result = validation.executeQuery()) {
+                if (!result.next()) {
+                    throw new IllegalArgumentException("historical integrity query returned no result");
+                }
+                long eventCount = result.getLong("event_count");
+                long bookCount = result.getLong("book_count");
+                long distinctEvents = result.getLong("distinct_event_sequences");
+                long distinctBooks = result.getLong("distinct_book_sequences");
+                long eventRegressions = result.getLong("event_timestamp_regressions");
+                long bookRegressions = result.getLong("book_timestamp_regressions");
+                long eventOutOfSession = result.getLong("event_out_of_session");
+                long bookOutOfSession = result.getLong("book_out_of_session");
+                long unpairedRows = result.getLong("unpaired_rows");
+                if (eventCount != totalRows || bookCount != totalRows) {
+                    throw new IllegalArgumentException(
+                            "historical Parquet row counts do not match the manifest");
+                }
+                if (distinctEvents != totalRows || distinctBooks != totalRows) {
+                    throw new IllegalArgumentException(
+                            "historical source_sequence values must be unique");
+                }
+                if (eventRegressions != 0 || bookRegressions != 0) {
+                    throw new IllegalArgumentException(
+                            "historical timestamps regress in source_sequence order");
+                }
+                if (eventOutOfSession != 0 || bookOutOfSession != 0) {
+                    throw new IllegalArgumentException(
+                            "historical timestamps fall outside the manifest session");
+                }
+                if (unpairedRows != 0) {
+                    throw new IllegalArgumentException(
+                            "historical message and order-book rows are not synchronized");
+                }
+                pairedRows = eventCount;
+            }
+        }
+    }
+
+    private static String sha256(Path path) throws IOException {
+        MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 must be available", exception);
+        }
+        try (InputStream input = Files.newInputStream(path)) {
+            byte[] buffer = new byte[1024 * 1024];
+            int read;
+            while ((read = input.read(buffer)) != -1) {
+                digest.update(buffer, 0, read);
+            }
+        }
+        return HexFormat.of().formatHex(digest.digest());
+    }
+
     private static void copyNullable(ObjectNode target, ObjectNode source, String field) {
         if (source.path(field).isNull()) target.putNull(field); else target.set(field, source.path(field));
     }
@@ -441,6 +610,9 @@ final class HistoricalMarketDataSource implements ReplayMarketDataSource {
         timestampNs = 0;
         tick = 0;
         totalRows = 0;
+        pairedRows = 0;
+        eventsParquetSha256 = null;
+        booksParquetSha256 = null;
         eventTail.clear();
         running = false;
         eof = false;

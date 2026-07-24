@@ -1,12 +1,16 @@
 package ai.lobarena.controlplane;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.security.MessageDigest;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
+import java.util.HexFormat;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.JsonNode;
@@ -47,16 +51,7 @@ class HistoricalMarketDataSourceTest {
                     """);
             statement.execute("COPY books TO '" + sqlPath(books) + "' (FORMAT PARQUET)");
         }
-        Files.writeString(dataset.resolve("manifest.json"), """
-                {
-                  "dataset_id": "%s",
-                  "status": "ready",
-                  "symbol": "AAPL",
-                  "trade_date": "2012-06-21",
-                  "depth": 1,
-                  "row_count": 2
-                }
-                """.formatted(datasetId));
+        writeManifest(dataset, datasetId, events, books, 2);
 
         HistoricalMarketDataSource source = new HistoricalMarketDataSource(mapper, root, 1);
         JsonNode loaded = source.load(datasetId);
@@ -80,6 +75,53 @@ class HistoricalMarketDataSourceTest {
         assertThat(reset.path("market_data").path("source_sequence").longValue()).isEqualTo(91);
         assertThat(reset.path("running").booleanValue()).isFalse();
         source.close();
+
+        Files.write(events, new byte[] {0}, StandardOpenOption.APPEND);
+        HistoricalMarketDataSource tampered = new HistoricalMarketDataSource(mapper, root, 1);
+        assertThatThrownBy(() -> tampered.load(datasetId))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("output size does not match manifest");
+        assertThat(tampered.loaded()).isFalse();
+    }
+
+    @Test
+    void rejectsMessageAndBookRowsWithDifferentTimestamps(@TempDir Path root) throws Exception {
+        String datasetId = "lobster-unsynchronized";
+        Path dataset = Files.createDirectories(root.resolve(datasetId));
+        Path events = dataset.resolve("events.parquet");
+        Path books = dataset.resolve("book_snapshots.parquet");
+        try (Connection connection = DriverManager.getConnection("jdbc:duckdb:");
+                Statement statement = connection.createStatement()) {
+            statement.execute("""
+                    CREATE TABLE events AS
+                    SELECT 1::BIGINT source_sequence,
+                           34200000000001::BIGINT timestamp_ns_since_midnight,
+                           'ADD'::VARCHAR event_kind, 1::TINYINT source_event_code,
+                           1001::BIGINT source_order_id, 100::BIGINT size,
+                           911400::BIGINT price_x10000, 1::TINYINT direction,
+                           'BUY'::VARCHAR book_side, NULL::VARCHAR aggressor_side,
+                           NULL::VARCHAR halt_state
+                    """);
+            statement.execute("COPY events TO '" + sqlPath(events) + "' (FORMAT PARQUET)");
+            statement.execute("""
+                    CREATE TABLE books AS
+                    SELECT 1::BIGINT source_sequence,
+                           34200000000002::BIGINT timestamp_ns_since_midnight,
+                           1::SMALLINT depth,
+                           [{'level': 1::SMALLINT, 'price_x10000': 911500::BIGINT,
+                             'quantity': 200::BIGINT}] asks,
+                           [{'level': 1::SMALLINT, 'price_x10000': 911400::BIGINT,
+                             'quantity': 100::BIGINT}] bids
+                    """);
+            statement.execute("COPY books TO '" + sqlPath(books) + "' (FORMAT PARQUET)");
+        }
+        writeManifest(dataset, datasetId, events, books, 1);
+
+        HistoricalMarketDataSource source = new HistoricalMarketDataSource(mapper, root, 1);
+        assertThatThrownBy(() -> source.load(datasetId))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("not synchronized");
+        assertThat(source.loaded()).isFalse();
     }
 
     @Test
@@ -104,5 +146,42 @@ class HistoricalMarketDataSourceTest {
 
     private static String sqlPath(Path path) {
         return path.toAbsolutePath().normalize().toString().replace("'", "''");
+    }
+
+    private static void writeManifest(
+            Path dataset, String datasetId, Path events, Path books, long rowCount)
+            throws Exception {
+        Files.writeString(dataset.resolve("manifest.json"), """
+                {
+                  "dataset_id": "%s",
+                  "status": "ready",
+                  "source_type": "lobster",
+                  "symbol": "AAPL",
+                  "trade_date": "2012-06-21",
+                  "start_time_ms": 34200000,
+                  "end_time_ms": 34260000,
+                  "depth": 1,
+                  "row_count": %d,
+                  "source_files": [
+                    {"sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+                    {"sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}
+                  ],
+                  "output_files": [
+                    {"name": "events.parquet", "size_bytes": %d, "sha256": "%s"},
+                    {"name": "book_snapshots.parquet", "size_bytes": %d, "sha256": "%s"}
+                  ]
+                }
+                """.formatted(
+                datasetId,
+                rowCount,
+                Files.size(events),
+                sha256(events),
+                Files.size(books),
+                sha256(books)));
+    }
+
+    private static String sha256(Path path) throws Exception {
+        return HexFormat.of().formatHex(
+                MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(path)));
     }
 }

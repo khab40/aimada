@@ -93,6 +93,27 @@ final class IntegerOrderBookTest {
     }
 
     @Test
+    void movingAgentOrderByStableIdRemovesOldQueueEntryAndCancelsCleanly() {
+        IntegerOrderBook book = book();
+        book.updateAgentLevel(
+                Side.SIDE_SELL, 103, 48, "ABUSER", "abuser", "attack-wall", 1,
+                "scenario-1", "spoofing_like_wall", "spoofing_like_wall");
+
+        book.updateAgentLevel(
+                Side.SIDE_SELL, 104, 48, "ABUSER", "abuser", "attack-wall", 2,
+                "scenario-1", "spoofing_like_wall", "spoofing_like_wall");
+
+        assertEquals(List.of(), book.orderIdsAt(Side.SIDE_SELL, 103));
+        assertEquals(List.of("attack-wall"), book.orderIdsAt(Side.SIDE_SELL, 104));
+        assertEquals(1, book.orders().size());
+        book.updateAgentLevel(
+                Side.SIDE_SELL, 105, 0, "ABUSER", "abuser", "attack-wall", 3,
+                "scenario-1", "spoofing_like_wall", "spoofing_like_wall");
+        assertTrue(book.orders().isEmpty());
+        assertTrue(book.snapshot(5).getAsksList().isEmpty());
+    }
+
+    @Test
     void invalidModifyAndDuplicateOrUnknownOrdersFollowFrozenRules() {
         IntegerOrderBook book = book();
         book.add(KernelOrder.limit("bid", "maker", Side.SIDE_BUY, 2, 99, 0));

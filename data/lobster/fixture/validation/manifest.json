@@ -1,0 +1,34 @@
+{
+  "artifacts": {
+    "comparison.json": {
+      "sha256": "9469ff17cbae4565e0ea3e2fed3c52e37086ad04dec2d7518036f2a5ae02191b",
+      "size_bytes": 5022
+    },
+    "control.json": {
+      "sha256": "10a29aa77a1e24801329c9a57eb8c979740c90e61a98e3bbe9750e75f2e27b92",
+      "size_bytes": 2260
+    },
+    "hybrid.json": {
+      "sha256": "10c2abe50afbd4ccd28769e24efe8181580ea821b4743d29544f6d4e3a4df931",
+      "size_bytes": 5158
+    },
+    "signature.json": {
+      "sha256": "eaf1ea5f65eddf70cf022927c2c74d07d28b38a3256149049a62f172cf9f7442",
+      "size_bytes": 333
+    },
+    "validation-public-key.pem": {
+      "sha256": "b590d081daf221e8f6b06035340d306e8f7ac3664d2c3e648f44bf5bffbb1c8c",
+      "size_bytes": 113
+    },
+    "validation-report.json": {
+      "sha256": "117415649f1107f81fee1d50ab9567a7c11ff86857c920274ae1533678e813ff",
+      "size_bytes": 17282
+    }
+  },
+  "dataset_id": "lobster-spy-2012-06-21-34200000-34260000-d2-8d4fca057cfb",
+  "events_sha256": "8d4fca057cfbaa0bb4c1660f752cf09827d2dccbb3af49127dff959e0a1d6327",
+  "master_seed": 42,
+  "schema_version": "historical_replay_bundle_v2",
+  "signed": true,
+  "validation_verdict": "pass"
+}

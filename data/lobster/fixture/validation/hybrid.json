@@ -1,0 +1,182 @@
+{
+  "attack_seed": 7351117980526022858,
+  "canonical_event_count": 66,
+  "dataset_id": "lobster-spy-2012-06-21-34200000-34260000-d2-8d4fca057cfb",
+  "detector_alert_ticks": {
+    "layering_like_detector": [
+      1
+    ],
+    "spoofing_like_detector": [
+      1
+    ]
+  },
+  "event_counts": {
+    "by_source": {
+      "historical": 62,
+      "simulation": 4
+    },
+    "by_type": {
+      "add": 9,
+      "cancel": 2,
+      "modify": 42,
+      "snapshot": 13
+    }
+  },
+  "events_sha256": "8d4fca057cfbaa0bb4c1660f752cf09827d2dccbb3af49127dff959e0a1d6327",
+  "ground_truth": {
+    "agent_ids": [
+      "SYN:ABUSER_01"
+    ],
+    "end_tick": 5,
+    "has_attack": true,
+    "manipulation_windows": [
+      {
+        "end_tick": 5,
+        "scenario_family": "layering_like",
+        "start_tick": 1
+      }
+    ],
+    "order_ids": [
+      "SYN:SCN-000001:66046adafb3d90ca:O:LAYER-2",
+      "SYN:SCN-000001:66046adafb3d90ca:O:LAYER-3",
+      "SYN:SCN-000001:66046adafb3d90ca:O:LAYER-4"
+    ],
+    "phase_windows": {
+      "cancellation_phase": {
+        "end_tick": 5,
+        "start_tick": 5
+      },
+      "pressure_phase": {
+        "end_tick": 4,
+        "start_tick": 1
+      }
+    },
+    "scenario_family": "layering_like",
+    "scenario_id": "SCN-000001",
+    "schema_version": "scenario_ground_truth_v1",
+    "source": "synthetic_scenario",
+    "start_tick": 1
+  },
+  "historical_event_hash": "5002dad9cf761d1f2bd53d273c27a6de5e2b30c0f0f90ec2f4e57892add10f23",
+  "historical_snapshot_stream_hash": "00c99ce912a0a1dfc8a6ce44054799fa5a77ee1ac3cc48668ecfecf554b87d9e",
+  "historical_source_sequences": 12,
+  "master_seed": 42,
+  "mode": "hybrid",
+  "realism": {
+    "final_depth_top_n": 39365.0,
+    "final_imbalance": -0.9957,
+    "final_level_count": 7,
+    "final_spread": 0.1
+  },
+  "source_integrity": {
+    "format": "lobster_parquet_v1",
+    "output_sha256": {
+      "book_snapshots.parquet": "95fc64689c90d2c4aed488de8a4dae766d1f14767faea90b1e7aa736161b6b54",
+      "events.parquet": "90a5c277783f007038fadcc4ed7112fbafbf1fe4b48b7a8b876bf54e9f13a7ff"
+    },
+    "paired_rows": 12,
+    "row_count": 12,
+    "validated": true
+  },
+  "source_row_count": 12,
+  "source_rows_replayed": 12,
+  "stream_hash": "aa9c9d2c63a35e129466d4a45e508ad29c98d5f565ccab7bbbb65263f00a77cc",
+  "synthetic_event_hash": "b613deed403a54a7c84cc58ead00c0ae108cd9e6c4cfac3ba02ab1f5bc002936",
+  "synthetic_events": [
+    {
+      "agent_id": "SYN:ABUSER_01",
+      "event_id": "LOBSTER:add:63",
+      "event_type": "add",
+      "exchange_timestamp_ns": 34200000000012,
+      "order_id": "SYN:SCN-000001:66046adafb3d90ca:O:LAYER-2",
+      "owner": "abuser",
+      "price": 100.25,
+      "quantity": 12000.0,
+      "received_timestamp_ns": 34200000000012,
+      "scenario_family": "layering_like",
+      "scenario_id": "SCN-000001",
+      "scenario_name": "Layering-like Pattern",
+      "schema_version": 1,
+      "sequence": 63,
+      "side": "sell",
+      "source": "simulation",
+      "source_sequence": null,
+      "symbol": "SPY",
+      "tick": 1,
+      "venue": "LOBSTER"
+    },
+    {
+      "agent_id": "SYN:ABUSER_01",
+      "event_id": "LOBSTER:add:64",
+      "event_type": "add",
+      "exchange_timestamp_ns": 34200000000012,
+      "order_id": "SYN:SCN-000001:66046adafb3d90ca:O:LAYER-3",
+      "owner": "abuser",
+      "price": 100.35,
+      "quantity": 13000.0,
+      "received_timestamp_ns": 34200000000012,
+      "scenario_family": "layering_like",
+      "scenario_id": "SCN-000001",
+      "scenario_name": "Layering-like Pattern",
+      "schema_version": 1,
+      "sequence": 64,
+      "side": "sell",
+      "source": "simulation",
+      "source_sequence": null,
+      "symbol": "SPY",
+      "tick": 1,
+      "venue": "LOBSTER"
+    },
+    {
+      "agent_id": "SYN:ABUSER_01",
+      "event_id": "LOBSTER:add:65",
+      "event_type": "add",
+      "exchange_timestamp_ns": 34200000000012,
+      "order_id": "SYN:SCN-000001:66046adafb3d90ca:O:LAYER-4",
+      "owner": "abuser",
+      "price": 100.45,
+      "quantity": 14000.0,
+      "received_timestamp_ns": 34200000000012,
+      "scenario_family": "layering_like",
+      "scenario_id": "SCN-000001",
+      "scenario_name": "Layering-like Pattern",
+      "schema_version": 1,
+      "sequence": 65,
+      "side": "sell",
+      "source": "simulation",
+      "source_sequence": null,
+      "symbol": "SPY",
+      "tick": 1,
+      "venue": "LOBSTER"
+    }
+  ],
+  "ticks_executed": 1,
+  "validation_trace": [
+    {
+      "add_count": 0,
+      "book_hash": "4714e08b48eedc17eda7c12ee8f557288535fb4d429aededf98826f25914dc87",
+      "cancel_count": 0,
+      "depth_top_n": 0.0,
+      "exchange_timestamp_ns": 0,
+      "execute_count": 0,
+      "imbalance": 0.0,
+      "level_count": 0,
+      "message_count": 0,
+      "spread": 0.0,
+      "tick": 0
+    },
+    {
+      "add_count": 9,
+      "book_hash": "e09fe227b31503737ff5e9ce102304be1ce3a81721bf39c02272ebf3b12709cc",
+      "cancel_count": 2,
+      "depth_top_n": 39365.0,
+      "exchange_timestamp_ns": 34200000000012,
+      "execute_count": 0,
+      "imbalance": -0.9957,
+      "level_count": 7,
+      "message_count": 53,
+      "spread": 0.1,
+      "tick": 1
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "attack_seed": null,
+  "canonical_event_count": 63,
+  "dataset_id": "lobster-spy-2012-06-21-34200000-34260000-d2-8d4fca057cfb",
+  "detector_alert_ticks": {},
+  "event_counts": {
+    "by_source": {
+      "historical": 62,
+      "simulation": 1
+    },
+    "by_type": {
+      "add": 6,
+      "cancel": 2,
+      "modify": 42,
+      "snapshot": 13
+    }
+  },
+  "events_sha256": "8d4fca057cfbaa0bb4c1660f752cf09827d2dccbb3af49127dff959e0a1d6327",
+  "ground_truth": null,
+  "historical_event_hash": "5002dad9cf761d1f2bd53d273c27a6de5e2b30c0f0f90ec2f4e57892add10f23",
+  "historical_snapshot_stream_hash": "00c99ce912a0a1dfc8a6ce44054799fa5a77ee1ac3cc48668ecfecf554b87d9e",
+  "historical_source_sequences": 12,
+  "master_seed": 42,
+  "mode": "historical",
+  "realism": {
+    "final_depth_top_n": 365.0,
+    "final_imbalance": -0.5342,
+    "final_level_count": 4,
+    "final_spread": 0.1
+  },
+  "source_integrity": {
+    "format": "lobster_parquet_v1",
+    "output_sha256": {
+      "book_snapshots.parquet": "95fc64689c90d2c4aed488de8a4dae766d1f14767faea90b1e7aa736161b6b54",
+      "events.parquet": "90a5c277783f007038fadcc4ed7112fbafbf1fe4b48b7a8b876bf54e9f13a7ff"
+    },
+    "paired_rows": 12,
+    "row_count": 12,
+    "validated": true
+  },
+  "source_row_count": 12,
+  "source_rows_replayed": 12,
+  "stream_hash": "05b64f4e85eaf0c88b8248d282380033bb826b1b663d93a7616416820f6083f6",
+  "synthetic_event_hash": "3d9937427e0cee42892ed5d0ae0d222caa6970203a5d0670078c0f2677e522e6",
+  "synthetic_events": [],
+  "ticks_executed": 1,
+  "validation_trace": [
+    {
+      "add_count": 0,
+      "book_hash": "4714e08b48eedc17eda7c12ee8f557288535fb4d429aededf98826f25914dc87",
+      "cancel_count": 0,
+      "depth_top_n": 0.0,
+      "exchange_timestamp_ns": 0,
+      "execute_count": 0,
+      "imbalance": 0.0,
+      "level_count": 0,
+      "message_count": 0,
+      "spread": 0.0,
+      "tick": 0
+    },
+    {
+      "add_count": 6,
+      "book_hash": "a957e9baced4d70ad8147646e2d20eacee7175b25069e20a9c7c35c0af159b3d",
+      "cancel_count": 2,
+      "depth_top_n": 365.0,
+      "exchange_timestamp_ns": 34200000000012,
+      "execute_count": 0,
+      "imbalance": -0.5342,
+      "level_count": 4,
+      "message_count": 50,
+      "spread": 0.1,
+      "tick": 1
+    }
+  ]
+}

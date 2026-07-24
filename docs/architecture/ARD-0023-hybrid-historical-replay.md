@@ -137,19 +137,43 @@ scenario actions to observe the combined market.
 The comparison endpoint runs:
 
 1. a historical-only control; and
-2. a hybrid run over the same dataset with a UI/API-selected scenario.
+2. a hybrid run over the same dataset with a UI/API-selected scenario; then
+3. repeats both runs to record deterministic stream and trace equality.
 
 The existing Python comparison CLI writes:
 
 - `control.json`
 - `hybrid.json`
 - `comparison.json`
+- `validation-report.json`
+- `manifest.sig`
+- `validation-public-key.pem`
+- `signature.json`
 - `manifest.json`
 - `checksums.sha256`
 
 Artifacts contain source and canonical event counts, historical/synthetic
 hashes, detector alert ticks, TP, FN, FP, TN, precision, recall, F1, and basic
-final-book realism deltas.
+final-book realism deltas. The validation report additionally contains
+synthetic lifecycle semantics, attack localisation, immutable historical
+snapshot hashes, and paired before/during/after book metrics.
+
+Outside the inclusive synthetic ground-truth interval, the combined control
+and hybrid book hashes must match exactly. Spread, top-depth, imbalance, level
+count, and message/add/cancel/execute counts must also pass a paired 95%
+mean-difference equivalence interval within the documented margin. During the
+interval, book divergence or event-flow divergence proves intended impact; the
+latter covers quote-stuffing bursts that cancel before the tick snapshot. This
+detects ghost orders and unintended post-attack contamination that
+final-book-only metrics cannot expose.
+
+The Java loader verifies actual Parquet hashes, sizes, row counts, sequences,
+timestamps, session bounds, and message/book pairing before replay. The full
+artifact inventory in `manifest.json` is signed with a caller-supplied Ed25519
+private key, so the signature binds the control, hybrid, comparison, validation
+report, signature metadata, and public key rather than only the report.
+Production trust requires independent authentication of the public-key
+fingerprint.
 
 ## Validation Requirements
 
@@ -166,7 +190,16 @@ Automated coverage must prove:
 - detector payloads contain no scenario labels, attack seed, or synthetic ID
   metadata; and
 - TP, FN, FP, TN, precision, recall, and F1 follow the shared evaluation
-  contract.
+  contract;
+- message/order-book alignment, price-level deltas, tracked order lifecycles,
+  session boundaries, crossed books, and applicable visible-volume
+  conservation are validated;
+- future source rows cannot affect an attack action at the current injection
+  tick;
+- injected add/modify/cancel/execute events obey volume and terminal-state
+  semantics; and
+- books remain exactly and statistically equivalent outside the labelled
+  causal neighbourhood.
 
 ## Alternatives Considered
 

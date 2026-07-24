@@ -26,6 +26,8 @@ class ValidationReport(BaseModel):
     valid: bool
     row_count: int = 0
     event_counts: dict[str, int] = Field(default_factory=dict)
+    checks: dict[str, bool] = Field(default_factory=dict)
+    statistics: dict[str, int | float] = Field(default_factory=dict)
     errors: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
 

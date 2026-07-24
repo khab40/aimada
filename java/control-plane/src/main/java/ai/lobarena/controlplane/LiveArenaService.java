@@ -361,6 +361,12 @@ final class LiveArenaService {
         incidentCounter = 0;
         ObjectNode control = runReplayOnce("historical", datasetId, null, maxTicks, masterSeed);
         ObjectNode hybrid = runReplayOnce("hybrid", datasetId, normalizedScenario, maxTicks, masterSeed);
+        scenarioCounter = 0;
+        incidentCounter = 0;
+        ObjectNode repeatedControl =
+                runReplayOnce("historical", datasetId, null, maxTicks, masterSeed);
+        ObjectNode repeatedHybrid =
+                runReplayOnce("hybrid", datasetId, normalizedScenario, maxTicks, masterSeed);
         ObjectNode result = mapper.createObjectNode()
                 .put("schema_version", "historical_replay_comparison_v1")
                 .put("dataset_id", datasetId)
@@ -368,6 +374,27 @@ final class LiveArenaService {
                 .put("events_sha256", replayEventsSha256())
                 .set("control", control)
                 .set("hybrid", hybrid);
+        ObjectNode determinism = result.putObject("determinism");
+        determinism.put(
+                "control_stream_match",
+                control.path("stream_hash").equals(repeatedControl.path("stream_hash")));
+        determinism.put(
+                "hybrid_stream_match",
+                hybrid.path("stream_hash").equals(repeatedHybrid.path("stream_hash")));
+        determinism.put(
+                "control_trace_match",
+                control.path("validation_trace").equals(repeatedControl.path("validation_trace")));
+        determinism.put(
+                "hybrid_trace_match",
+                hybrid.path("validation_trace").equals(repeatedHybrid.path("validation_trace")));
+        determinism.put(
+                "historical_snapshot_match",
+                control.path("historical_snapshot_stream_hash")
+                                .equals(repeatedControl.path("historical_snapshot_stream_hash"))
+                        && hybrid.path("historical_snapshot_stream_hash")
+                                .equals(repeatedHybrid.path("historical_snapshot_stream_hash")));
+        determinism.put("control_repeat_stream_hash", repeatedControl.path("stream_hash").asText());
+        determinism.put("hybrid_repeat_stream_hash", repeatedHybrid.path("stream_hash").asText());
         ObjectNode impact = result.putObject("realism_impact");
         impact.put(
                 "canonical_event_count_delta",
@@ -978,7 +1005,13 @@ final class LiveArenaService {
         if (scenario == null) {
             throw new IllegalStateException("ground truth requires an active synthetic scenario");
         }
-        long endTick = scenario.startTick() + 4;
+        long endTick = switch (scenario.family()) {
+            case "spoofing_like_wall" -> scenario.startTick() + 3;
+            case "layering_like" -> scenario.startTick() + 4;
+            case "quote_stuffing" -> scenario.startTick() + 5;
+            case "liquidity_evaporation" -> scenario.startTick() + 1;
+            default -> throw new IllegalStateException("unsupported scenario family");
+        };
         ObjectNode result = mapper.createObjectNode()
                 .put("schema_version", "scenario_ground_truth_v1")
                 .put("scenario_id", scenario.id())
@@ -996,12 +1029,23 @@ final class LiveArenaService {
                 .put("end_tick", endTick)
                 .put("scenario_family", scenario.family()));
         ObjectNode phases = result.putObject("phase_windows");
-        phases.set("pressure_phase", mapper.createObjectNode()
-                .put("start_tick", scenario.startTick())
-                .put("end_tick", scenario.startTick() + 2));
-        phases.set("cancellation_phase", mapper.createObjectNode()
-                .put("start_tick", scenario.startTick() + 3)
-                .put("end_tick", endTick));
+        long cancellationStart = switch (scenario.family()) {
+            case "spoofing_like_wall" -> scenario.startTick() + 3;
+            case "layering_like" -> scenario.startTick() + 4;
+            case "quote_stuffing" -> scenario.startTick();
+            case "liquidity_evaporation" -> scenario.startTick();
+            default -> throw new IllegalStateException("unsupported scenario family");
+        };
+        phases.set(
+                "pressure_phase",
+                mapper.createObjectNode()
+                        .put("start_tick", scenario.startTick())
+                        .put("end_tick", Math.max(scenario.startTick(), cancellationStart - 1)));
+        phases.set(
+                "cancellation_phase",
+                mapper.createObjectNode()
+                        .put("start_tick", cancellationStart)
+                        .put("end_tick", endTick));
         return result;
     }
 
@@ -1014,7 +1058,7 @@ final class LiveArenaService {
                     scenarioOrderId("LAYER-4"));
             case "quote_stuffing" -> {
                 List<String> ids = new ArrayList<>();
-                for (int age = 1; age <= 5; age++) {
+                for (int age = 0; age <= 5; age++) {
                     for (int burst = 0; burst < 6; burst++) {
                         ids.add(scenarioOrderId("STUFF-" + age + "-" + burst));
                     }
@@ -1038,6 +1082,7 @@ final class LiveArenaService {
                 .put("stream_hash", HexFormat.of().formatHex(CanonicalHashes.eventStreamHash(matching.events(), 1)))
                 .put("historical_event_hash", sourceEventHash(EventSource.EVENT_SOURCE_HISTORICAL))
                 .put("synthetic_event_hash", sourceEventHash(EventSource.EVENT_SOURCE_SIMULATION))
+                .put("historical_snapshot_stream_hash", historicalSnapshotStreamHash())
                 .put(
                         "historical_source_sequences",
                         matching.events().stream()
@@ -1047,6 +1092,7 @@ final class LiveArenaService {
                                 .map(event -> event.getMetadata().getSourceSequence())
                                 .distinct()
                                 .count());
+        summary.set("source_integrity", replaySourceIntegrity());
         ObjectNode counts = summary.putObject("event_counts");
         ObjectNode sourceCounts = counts.putObject("by_source");
         ObjectNode typeCounts = counts.putObject("by_type");
@@ -1077,21 +1123,107 @@ final class LiveArenaService {
         realism.put("final_spread", book.hasSpreadTicks() ? price(book.getSpreadTicks()) : 0);
         realism.put("final_imbalance", derived.path("imbalance").doubleValue());
         realism.put("final_level_count", book.getBidsCount() + book.getAsksCount());
+        summary.set("validation_trace", validationTrace());
+        ArrayNode syntheticEvents = summary.putArray("synthetic_events");
+        matching.events().stream()
+                .filter(event -> event.getMetadata().getSource() == EventSource.EVENT_SOURCE_SIMULATION)
+                .filter(event -> event.getMetadata().hasScenarioId())
+                .map(this::exchangeEventJson)
+                .forEach(syntheticEvents::add);
         return summary;
     }
 
-    private String sourceEventHash(EventSource source) {
-        MessageDigest digest;
-        try {
-            digest = MessageDigest.getInstance("SHA-256");
-        } catch (NoSuchAlgorithmException exception) {
-            throw new IllegalStateException("SHA-256 must be available", exception);
+    private String historicalSnapshotStreamHash() {
+        MessageDigest digest = sha256Digest();
+        matching.events().stream()
+                .filter(event -> event.getMetadata().getSource() == EventSource.EVENT_SOURCE_HISTORICAL)
+                .filter(event -> event.getPayloadCase() == ExchangeEvent.PayloadCase.SNAPSHOT)
+                .forEach(event -> {
+                    var metadata = event.getMetadata();
+                    String identity = "%d|%d|".formatted(
+                            metadata.hasSourceSequence() ? metadata.getSourceSequence() : 0,
+                            metadata.hasExchangeTimestampNs() ? metadata.getExchangeTimestampNs() : 0);
+                    digest.update(identity.getBytes(java.nio.charset.StandardCharsets.US_ASCII));
+                    digest.update(CanonicalHashes.bookHash(event.getSnapshot().getBook()));
+                });
+        return HexFormat.of().formatHex(digest.digest());
+    }
+
+    private ArrayNode validationTrace() {
+        ArrayNode trace = mapper.createArrayNode();
+        Map<Long, long[]> flowByTick = new LinkedHashMap<>();
+        for (ExchangeEvent event : matching.events()) {
+            if (event.getPayloadCase() == ExchangeEvent.PayloadCase.SNAPSHOT) {
+                continue;
+            }
+            long[] counts = flowByTick.computeIfAbsent(
+                    event.getMetadata().getTick(), ignored -> new long[4]);
+            counts[0]++;
+            switch (event.getPayloadCase()) {
+                case ADD -> counts[1]++;
+                case CANCEL -> counts[2]++;
+                case EXECUTE -> counts[3]++;
+                default -> {
+                    // Other canonical messages still contribute to message_count.
+                }
+            }
         }
+        trace.add(validationObservation(
+                0, 0, BookSnapshot.getDefaultInstance(), flowByTick.getOrDefault(0L, new long[4])));
+        matching.events().stream()
+                .filter(event -> event.getMetadata().getSource() == EventSource.EVENT_SOURCE_SIMULATION)
+                .filter(event -> event.getPayloadCase() == ExchangeEvent.PayloadCase.SNAPSHOT)
+                .map(event -> validationObservation(
+                        event.getMetadata().getTick(),
+                        event.getMetadata().hasExchangeTimestampNs()
+                                ? event.getMetadata().getExchangeTimestampNs()
+                                : 0,
+                        event.getSnapshot().getBook(),
+                        flowByTick.getOrDefault(event.getMetadata().getTick(), new long[4])))
+                .forEach(trace::add);
+        return trace;
+    }
+
+    private ObjectNode validationObservation(
+            long observationTick, long timestampNs, BookSnapshot book, long[] eventFlow) {
+        double bidDepth = book.getBidsList().stream()
+                .limit(5)
+                .mapToDouble(level -> quantity(level.getQuantityLots()))
+                .sum();
+        double askDepth = book.getAsksList().stream()
+                .limit(5)
+                .mapToDouble(level -> quantity(level.getQuantityLots()))
+                .sum();
+        double depth = bidDepth + askDepth;
+        return mapper.createObjectNode()
+                .put("tick", observationTick)
+                .put("exchange_timestamp_ns", timestampNs)
+                .put("book_hash", HexFormat.of().formatHex(CanonicalHashes.bookHash(book)))
+                .put("spread", book.hasSpreadTicks() ? price(book.getSpreadTicks()) : 0)
+                .put("depth_top_n", round(depth))
+                .put("imbalance", depth == 0 ? 0 : round((bidDepth - askDepth) / depth))
+                .put("level_count", book.getBidsCount() + book.getAsksCount())
+                .put("message_count", eventFlow[0])
+                .put("add_count", eventFlow[1])
+                .put("cancel_count", eventFlow[2])
+                .put("execute_count", eventFlow[3]);
+    }
+
+    private String sourceEventHash(EventSource source) {
+        MessageDigest digest = sha256Digest();
         matching.events().stream()
                 .filter(event -> event.getMetadata().getSource() == source)
                 .map(CanonicalHashes::eventHash)
                 .forEach(digest::update);
         return HexFormat.of().formatHex(digest.digest());
+    }
+
+    private static MessageDigest sha256Digest() {
+        try {
+            return MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 must be available", exception);
+        }
     }
 
     private double averageCancelledLifetimeMs(List<ExchangeEvent> currentEvents) {
@@ -1201,6 +1333,20 @@ final class LiveArenaService {
         return historicalCsv.loaded()
                 ? historicalCsv.eventsSha256()
                 : historical.eventsSha256();
+    }
+
+    private JsonNode replaySourceIntegrity() {
+        if (!historicalCsv.loaded()) {
+            return historical.integrity();
+        }
+        ObjectNode result = mapper.createObjectNode()
+                .put("validated", true)
+                .put("format", "canonical_csv_v1")
+                .put("row_count", historicalCsv.rowCount())
+                .put("paired_rows", historicalCsv.rowCount());
+        result.putObject("output_sha256")
+                .put("events.csv", historicalCsv.eventsSha256());
+        return result;
     }
 
     private JsonNode replayContext() {

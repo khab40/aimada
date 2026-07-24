@@ -21,3 +21,11 @@ See the root [historical and hybrid replay instructions](../../README.md#histori
 for ingestion, and
 [ARD-0023](../../docs/architecture/ARD-0023-hybrid-historical-replay.md) for
 ordering, provenance, labels, and evaluation guarantees.
+
+The fixture is internally message/book consistent and is covered by lifecycle,
+visible-volume, sequence, timestamp, session, and crossed-book tests. Its
+[signed validation bundle](fixture/validation/manifest.json) compares the
+historical control with a layering injection, proves exact equivalence outside
+the attack window, and demonstrates Ed25519 verification. The sample signer is
+not a production organizational identity; see
+[Hybrid Dataset Validation](../../docs/hybrid-dataset-validation.md).

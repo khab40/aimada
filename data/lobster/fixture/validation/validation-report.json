@@ -1,0 +1,580 @@
+{
+  "causal_neighbourhood": {
+    "definition": "synthetic ground-truth attack window, inclusive",
+    "end_tick": 5,
+    "phases": {
+      "after": {
+        "exact_book_match_rate": null,
+        "metrics": {},
+        "statistically_equivalent": null,
+        "tick_count": 0
+      },
+      "before": {
+        "exact_book_match_rate": 1.0,
+        "metrics": {
+          "add_count": {
+            "confidence_interval_95": [
+              0.0,
+              0.0
+            ],
+            "equivalent": true,
+            "margin": 0.01,
+            "max_absolute_difference": 0.0,
+            "mean_difference": 0.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          },
+          "cancel_count": {
+            "confidence_interval_95": [
+              0.0,
+              0.0
+            ],
+            "equivalent": true,
+            "margin": 0.01,
+            "max_absolute_difference": 0.0,
+            "mean_difference": 0.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          },
+          "depth_top_n": {
+            "confidence_interval_95": [
+              0.0,
+              0.0
+            ],
+            "equivalent": true,
+            "margin": 0.01,
+            "max_absolute_difference": 0.0,
+            "mean_difference": 0.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          },
+          "execute_count": {
+            "confidence_interval_95": [
+              0.0,
+              0.0
+            ],
+            "equivalent": true,
+            "margin": 0.01,
+            "max_absolute_difference": 0.0,
+            "mean_difference": 0.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          },
+          "imbalance": {
+            "confidence_interval_95": [
+              0.0,
+              0.0
+            ],
+            "equivalent": true,
+            "margin": 0.01,
+            "max_absolute_difference": 0.0,
+            "mean_difference": 0.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          },
+          "level_count": {
+            "confidence_interval_95": [
+              0.0,
+              0.0
+            ],
+            "equivalent": true,
+            "margin": 0.01,
+            "max_absolute_difference": 0.0,
+            "mean_difference": 0.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          },
+          "message_count": {
+            "confidence_interval_95": [
+              0.0,
+              0.0
+            ],
+            "equivalent": true,
+            "margin": 0.01,
+            "max_absolute_difference": 0.0,
+            "mean_difference": 0.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          },
+          "spread": {
+            "confidence_interval_95": [
+              0.0,
+              0.0
+            ],
+            "equivalent": true,
+            "margin": 0.01,
+            "max_absolute_difference": 0.0,
+            "mean_difference": 0.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          }
+        },
+        "statistically_equivalent": true,
+        "tick_count": 1
+      },
+      "during": {
+        "exact_book_match_rate": 0.0,
+        "metrics": {
+          "add_count": {
+            "confidence_interval_95": [
+              3.0,
+              3.0
+            ],
+            "equivalent": false,
+            "margin": 0.06,
+            "max_absolute_difference": 3.0,
+            "mean_difference": 3.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          },
+          "cancel_count": {
+            "confidence_interval_95": [
+              0.0,
+              0.0
+            ],
+            "equivalent": true,
+            "margin": 0.02,
+            "max_absolute_difference": 0.0,
+            "mean_difference": 0.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          },
+          "depth_top_n": {
+            "confidence_interval_95": [
+              39000.0,
+              39000.0
+            ],
+            "equivalent": false,
+            "margin": 3.65,
+            "max_absolute_difference": 39000.0,
+            "mean_difference": 39000.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          },
+          "execute_count": {
+            "confidence_interval_95": [
+              0.0,
+              0.0
+            ],
+            "equivalent": true,
+            "margin": 0.01,
+            "max_absolute_difference": 0.0,
+            "mean_difference": 0.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          },
+          "imbalance": {
+            "confidence_interval_95": [
+              -0.4615,
+              -0.4615
+            ],
+            "equivalent": false,
+            "margin": 0.01,
+            "max_absolute_difference": 0.4615,
+            "mean_difference": -0.4615,
+            "method": "paired_mean_95pct_equivalence_interval"
+          },
+          "level_count": {
+            "confidence_interval_95": [
+              3.0,
+              3.0
+            ],
+            "equivalent": false,
+            "margin": 0.04,
+            "max_absolute_difference": 3.0,
+            "mean_difference": 3.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          },
+          "message_count": {
+            "confidence_interval_95": [
+              3.0,
+              3.0
+            ],
+            "equivalent": false,
+            "margin": 0.5,
+            "max_absolute_difference": 3.0,
+            "mean_difference": 3.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          },
+          "spread": {
+            "confidence_interval_95": [
+              0.0,
+              0.0
+            ],
+            "equivalent": true,
+            "margin": 0.01,
+            "max_absolute_difference": 0.0,
+            "mean_difference": 0.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          }
+        },
+        "statistically_equivalent": false,
+        "tick_count": 1
+      },
+      "outside_causal_neighbourhood": {
+        "exact_book_match_rate": 1.0,
+        "metrics": {
+          "add_count": {
+            "confidence_interval_95": [
+              0.0,
+              0.0
+            ],
+            "equivalent": true,
+            "margin": 0.01,
+            "max_absolute_difference": 0.0,
+            "mean_difference": 0.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          },
+          "cancel_count": {
+            "confidence_interval_95": [
+              0.0,
+              0.0
+            ],
+            "equivalent": true,
+            "margin": 0.01,
+            "max_absolute_difference": 0.0,
+            "mean_difference": 0.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          },
+          "depth_top_n": {
+            "confidence_interval_95": [
+              0.0,
+              0.0
+            ],
+            "equivalent": true,
+            "margin": 0.01,
+            "max_absolute_difference": 0.0,
+            "mean_difference": 0.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          },
+          "execute_count": {
+            "confidence_interval_95": [
+              0.0,
+              0.0
+            ],
+            "equivalent": true,
+            "margin": 0.01,
+            "max_absolute_difference": 0.0,
+            "mean_difference": 0.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          },
+          "imbalance": {
+            "confidence_interval_95": [
+              0.0,
+              0.0
+            ],
+            "equivalent": true,
+            "margin": 0.01,
+            "max_absolute_difference": 0.0,
+            "mean_difference": 0.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          },
+          "level_count": {
+            "confidence_interval_95": [
+              0.0,
+              0.0
+            ],
+            "equivalent": true,
+            "margin": 0.01,
+            "max_absolute_difference": 0.0,
+            "mean_difference": 0.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          },
+          "message_count": {
+            "confidence_interval_95": [
+              0.0,
+              0.0
+            ],
+            "equivalent": true,
+            "margin": 0.01,
+            "max_absolute_difference": 0.0,
+            "mean_difference": 0.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          },
+          "spread": {
+            "confidence_interval_95": [
+              0.0,
+              0.0
+            ],
+            "equivalent": true,
+            "margin": 0.01,
+            "max_absolute_difference": 0.0,
+            "mean_difference": 0.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          }
+        },
+        "statistically_equivalent": true,
+        "tick_count": 1
+      }
+    },
+    "start_tick": 1
+  },
+  "checks": {
+    "attack_localisation": {
+      "labelled_window": {
+        "end_tick": 5,
+        "start_tick": 1
+      },
+      "observed_event_ticks": [
+        1
+      ],
+      "status": "pass"
+    },
+    "deterministic_replay": {
+      "control_repeat_stream_hash": "05b64f4e85eaf0c88b8248d282380033bb826b1b663d93a7616416820f6083f6",
+      "control_stream_match": true,
+      "control_trace_match": true,
+      "historical_snapshot_match": true,
+      "hybrid_repeat_stream_hash": "aa9c9d2c63a35e129466d4a45e508ad29c98d5f565ccab7bbbb65263f00a77cc",
+      "hybrid_stream_match": true,
+      "hybrid_trace_match": true,
+      "status": "pass"
+    },
+    "ground_truth_isolation": {
+      "control_ground_truth": null,
+      "hybrid_label_source": "synthetic_scenario",
+      "status": "pass"
+    },
+    "historical_source_immutability": {
+      "snapshot_stream_hash": "00c99ce912a0a1dfc8a6ce44054799fa5a77ee1ac3cc48668ecfecf554b87d9e",
+      "source_rows": 12,
+      "source_sha256": "8d4fca057cfbaa0bb4c1660f752cf09827d2dccbb3af49127dff959e0a1d6327",
+      "status": "pass",
+      "verified_source_integrity": {
+        "format": "lobster_parquet_v1",
+        "output_sha256": {
+          "book_snapshots.parquet": "95fc64689c90d2c4aed488de8a4dae766d1f14767faea90b1e7aa736161b6b54",
+          "events.parquet": "90a5c277783f007038fadcc4ed7112fbafbf1fe4b48b7a8b876bf54e9f13a7ff"
+        },
+        "paired_rows": 12,
+        "row_count": 12,
+        "validated": true
+      }
+    },
+    "injected_order_lifecycle": {
+      "added_order_count": 3,
+      "cancelled_order_count": 0,
+      "errors": [],
+      "execution_quantity_by_order": {},
+      "status": "pass",
+      "terminal_state_by_order": {
+        "SYN:SCN-000001:66046adafb3d90ca:O:LAYER-2": "active",
+        "SYN:SCN-000001:66046adafb3d90ca:O:LAYER-3": "active",
+        "SYN:SCN-000001:66046adafb3d90ca:O:LAYER-4": "active"
+      },
+      "valid": true
+    },
+    "intended_market_impact": {
+      "book_divergence": true,
+      "during_ticks": [
+        1
+      ],
+      "event_flow_divergence": true,
+      "result": {
+        "exact_book_match_rate": 0.0,
+        "metrics": {
+          "add_count": {
+            "confidence_interval_95": [
+              3.0,
+              3.0
+            ],
+            "equivalent": false,
+            "margin": 0.06,
+            "max_absolute_difference": 3.0,
+            "mean_difference": 3.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          },
+          "cancel_count": {
+            "confidence_interval_95": [
+              0.0,
+              0.0
+            ],
+            "equivalent": true,
+            "margin": 0.02,
+            "max_absolute_difference": 0.0,
+            "mean_difference": 0.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          },
+          "depth_top_n": {
+            "confidence_interval_95": [
+              39000.0,
+              39000.0
+            ],
+            "equivalent": false,
+            "margin": 3.65,
+            "max_absolute_difference": 39000.0,
+            "mean_difference": 39000.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          },
+          "execute_count": {
+            "confidence_interval_95": [
+              0.0,
+              0.0
+            ],
+            "equivalent": true,
+            "margin": 0.01,
+            "max_absolute_difference": 0.0,
+            "mean_difference": 0.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          },
+          "imbalance": {
+            "confidence_interval_95": [
+              -0.4615,
+              -0.4615
+            ],
+            "equivalent": false,
+            "margin": 0.01,
+            "max_absolute_difference": 0.4615,
+            "mean_difference": -0.4615,
+            "method": "paired_mean_95pct_equivalence_interval"
+          },
+          "level_count": {
+            "confidence_interval_95": [
+              3.0,
+              3.0
+            ],
+            "equivalent": false,
+            "margin": 0.04,
+            "max_absolute_difference": 3.0,
+            "mean_difference": 3.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          },
+          "message_count": {
+            "confidence_interval_95": [
+              3.0,
+              3.0
+            ],
+            "equivalent": false,
+            "margin": 0.5,
+            "max_absolute_difference": 3.0,
+            "mean_difference": 3.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          },
+          "spread": {
+            "confidence_interval_95": [
+              0.0,
+              0.0
+            ],
+            "equivalent": true,
+            "margin": 0.01,
+            "max_absolute_difference": 0.0,
+            "mean_difference": 0.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          }
+        },
+        "statistically_equivalent": false,
+        "tick_count": 1
+      },
+      "status": "pass"
+    },
+    "outside_causal_neighbourhood_equivalence": {
+      "after_ticks": [],
+      "before_ticks": [
+        0
+      ],
+      "causal_neighbourhood": {
+        "end_tick": 5,
+        "start_tick": 1
+      },
+      "result": {
+        "exact_book_match_rate": 1.0,
+        "metrics": {
+          "add_count": {
+            "confidence_interval_95": [
+              0.0,
+              0.0
+            ],
+            "equivalent": true,
+            "margin": 0.01,
+            "max_absolute_difference": 0.0,
+            "mean_difference": 0.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          },
+          "cancel_count": {
+            "confidence_interval_95": [
+              0.0,
+              0.0
+            ],
+            "equivalent": true,
+            "margin": 0.01,
+            "max_absolute_difference": 0.0,
+            "mean_difference": 0.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          },
+          "depth_top_n": {
+            "confidence_interval_95": [
+              0.0,
+              0.0
+            ],
+            "equivalent": true,
+            "margin": 0.01,
+            "max_absolute_difference": 0.0,
+            "mean_difference": 0.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          },
+          "execute_count": {
+            "confidence_interval_95": [
+              0.0,
+              0.0
+            ],
+            "equivalent": true,
+            "margin": 0.01,
+            "max_absolute_difference": 0.0,
+            "mean_difference": 0.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          },
+          "imbalance": {
+            "confidence_interval_95": [
+              0.0,
+              0.0
+            ],
+            "equivalent": true,
+            "margin": 0.01,
+            "max_absolute_difference": 0.0,
+            "mean_difference": 0.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          },
+          "level_count": {
+            "confidence_interval_95": [
+              0.0,
+              0.0
+            ],
+            "equivalent": true,
+            "margin": 0.01,
+            "max_absolute_difference": 0.0,
+            "mean_difference": 0.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          },
+          "message_count": {
+            "confidence_interval_95": [
+              0.0,
+              0.0
+            ],
+            "equivalent": true,
+            "margin": 0.01,
+            "max_absolute_difference": 0.0,
+            "mean_difference": 0.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          },
+          "spread": {
+            "confidence_interval_95": [
+              0.0,
+              0.0
+            ],
+            "equivalent": true,
+            "margin": 0.01,
+            "max_absolute_difference": 0.0,
+            "mean_difference": 0.0,
+            "method": "paired_mean_95pct_equivalence_interval"
+          }
+        },
+        "statistically_equivalent": true,
+        "tick_count": 1
+      },
+      "status": "pass"
+    },
+    "trace_alignment": {
+      "control_ticks": [
+        0,
+        1
+      ],
+      "hybrid_ticks": [
+        0,
+        1
+      ],
+      "status": "pass"
+    }
+  },
+  "dataset_id": "lobster-spy-2012-06-21-34200000-34260000-d2-8d4fca057cfb",
+  "master_seed": 42,
+  "schema_version": "hybrid_dataset_validation_v1",
+  "verdict": "pass"
+}

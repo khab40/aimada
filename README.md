@@ -186,7 +186,8 @@ curl -sS -X POST http://localhost:8081/api/arena/replay-comparison \
   -d '{"dataset_id":"sample-btcusdt-0945","scenario_family":"spoofing_like_wall","master_seed":42,"max_ticks":10000}'
 ```
 
-To reuse the tournament precision/recall/F1 calculation and create a checksummed artifact bundle:
+To reuse the tournament precision/recall/F1 calculation and create a
+checksummed, signed validation bundle:
 
 ```bash
 backend/.venv/bin/python scripts/run_historical_replay_comparison.py \
@@ -194,13 +195,23 @@ backend/.venv/bin/python scripts/run_historical_replay_comparison.py \
   --dataset sample-btcusdt-0945 \
   --scenario spoofing_like_wall \
   --master-seed 42 \
+  --signing-key /secure/lob-validation-key.pem \
+  --signer "Market Surveillance QA" \
   --output outputs/historical-replay/sample-btcusdt-0945
 ```
 
-The bundle contains `control.json`, `hybrid.json`, `comparison.json`,
-`manifest.json`, and `checksums.sha256`. It records full-stream, historical-only,
-and synthetic-only hashes, source/event counts, detector alerts, TP/FN/FP/TN,
-precision, recall, F1, and basic final-book realism deltas.
+The bundle contains the control, hybrid, metrics, validation, signed manifest,
+checksum, Ed25519 signature, and public-key artifacts. The signed manifest
+binds every evidence payload by SHA-256 and byte size. It records Java-verified
+Parquet hashes, repeat-run determinism, full-stream/historical/synthetic
+hashes, source/event counts, injected-order lifecycle, detector metrics, and
+before/during/after causal locality. Outside the labelled attack
+neighbourhood, paired books must match exactly and book/event-flow metrics must
+pass the documented statistical equivalence bounds. See
+[Hybrid Dataset Validation](docs/hybrid-dataset-validation.md) for the
+methodology, signing trust boundary, verification commands, and limitations.
+The public fixture includes a
+[signed sample report](data/lobster/fixture/validation/validation-report.json).
 
 Known limitation: LOBSTER exposes aggregate depth snapshots but not participant
 identity, and selected windows can begin after orders were originally entered.

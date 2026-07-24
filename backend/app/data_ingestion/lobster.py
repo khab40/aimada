@@ -95,11 +95,15 @@ def parse_message(row: list[str], *, line_number: int) -> ParsedMessage:
     if order_id < 0 or size < 0:
         raise ValueError(f"message line {line_number}: order id and size must be non-negative")
     if event_code == 7:
-        if price not in {-1, 0, 1} or direction != -1:
+        if order_id != 0 or size != 0 or price not in {-1, 0, 1} or direction != -1:
             raise ValueError(f"message line {line_number}: invalid trading-halt sentinel")
         halt_state = {-1: "HALTED", 0: "QUOTE_RESUME", 1: "TRADING_RESUMED"}[price]
         book_side = None
     else:
+        if size == 0:
+            raise ValueError(f"message line {line_number}: non-halt size must be positive")
+        if event_code in {1, 2, 3, 4} and order_id == 0:
+            raise ValueError(f"message line {line_number}: visible order event requires a positive order id")
         if price <= 0:
             raise ValueError(f"message line {line_number}: price_x10000 must be positive")
         if direction not in {-1, 1}:
@@ -227,10 +231,18 @@ def validate_pair(
     previous_timestamp = -1
     selected_last_timestamp = -1
     row_count = 0
+    source_row_count = 0
+    price_transition_checks = 0
+    tracked_lifecycle_events = 0
+    untracked_lifecycle_events = 0
+    previous_book: dict[str, dict[int, int]] | None = None
+    active_orders: dict[int, tuple[str, int, int]] = {}
     effective_start = candidate.start_time_ms if start_time_ms is None else start_time_ms
     effective_end = candidate.end_time_ms if end_time_ms is None else end_time_ms
     start_ns = effective_start * 1_000_000
     end_ns = effective_end * 1_000_000
+    source_start_ns = candidate.start_time_ms * 1_000_000
+    source_end_ns = candidate.end_time_ms * 1_000_000
     with message_path.open(newline="", encoding="utf-8") as messages, orderbook_path.open(
         newline="", encoding="utf-8"
     ) as books:
@@ -247,13 +259,10 @@ def validate_pair(
                     errors.append("validation stopped after 100 errors")
                     break
                 continue
+            source_row_count += 1
             if event.timestamp_ns_since_midnight < previous_timestamp:
                 errors.append(f"message line {line_number}: timestamp decreased")
             previous_timestamp = event.timestamp_ns_since_midnight
-            if event.timestamp_ns_since_midnight < start_ns:
-                continue
-            if event.timestamp_ns_since_midnight >= end_ns:
-                break
             try:
                 asks, bids = _parse_book(book_row, depth=candidate.depth, line_number=line_number)
             except ValueError as exc:
@@ -264,14 +273,37 @@ def validate_pair(
                 continue
             ask_prices = [level["price_x10000"] for level in asks]
             bid_prices = [level["price_x10000"] for level in bids]
-            if ask_prices != sorted(ask_prices):
+            if ask_prices != sorted(ask_prices) or len(ask_prices) != len(set(ask_prices)):
                 errors.append(f"orderbook line {line_number}: ask levels are not ascending")
-            if bid_prices != sorted(bid_prices, reverse=True):
+            if bid_prices != sorted(bid_prices, reverse=True) or len(bid_prices) != len(set(bid_prices)):
                 errors.append(f"orderbook line {line_number}: bid levels are not descending")
-            if ask_prices and bid_prices and bid_prices[0] >= ask_prices[0]:
-                warning = "dataset contains a locked or crossed order book"
+            if ask_prices and bid_prices and bid_prices[0] > ask_prices[0]:
+                errors.append(f"orderbook line {line_number}: book is crossed")
+            elif ask_prices and bid_prices and bid_prices[0] == ask_prices[0]:
+                warning = "dataset contains a locked order book"
                 if warning not in warnings:
                     warnings.append(warning)
+            if not source_start_ns <= event.timestamp_ns_since_midnight < source_end_ns:
+                errors.append(f"message line {line_number}: timestamp is outside the filename session window")
+            current_book = {
+                "SELL": {level["price_x10000"]: level["quantity"] for level in asks},
+                "BUY": {level["price_x10000"]: level["quantity"] for level in bids},
+            }
+            transition_checked, lifecycle_tracked = _validate_event_against_books(
+                event,
+                previous_book=previous_book,
+                current_book=current_book,
+                active_orders=active_orders,
+                line_number=line_number,
+                errors=errors,
+            )
+            price_transition_checks += int(transition_checked)
+            tracked_lifecycle_events += int(lifecycle_tracked)
+            if event.source_event_code in {2, 3, 4} and event.source_order_id not in active_orders and not lifecycle_tracked:
+                untracked_lifecycle_events += 1
+            previous_book = current_book
+            if event.timestamp_ns_since_midnight < start_ns or event.timestamp_ns_since_midnight >= end_ns:
+                continue
             selected_last_timestamp = event.timestamp_ns_since_midnight
             counts[event.event_kind] += 1
             row_count += 1
@@ -283,6 +315,33 @@ def validate_pair(
         valid=not errors,
         row_count=row_count,
         event_counts=dict(sorted(counts.items())),
+        checks={
+            "message_orderbook_synchronization": not any(
+                "row counts differ" in error for error in errors
+            ),
+            "sequence_and_timestamp_integrity": not any(
+                "timestamp decreased" in error for error in errors
+            ),
+            "trading_session_boundaries": not any(
+                "filename session window" in error for error in errors
+            ),
+            "valid_uncrossed_books": not any(
+                "book is crossed" in error or "levels are not" in error for error in errors
+            ),
+            "price_level_consistency": not any(
+                "visible quantity delta" in error for error in errors
+            ),
+            "order_lifecycle_consistency": not any(
+                "source order" in error for error in errors
+            ),
+        },
+        statistics={
+            "source_row_count": source_row_count,
+            "price_transition_checks": price_transition_checks,
+            "tracked_lifecycle_events": tracked_lifecycle_events,
+            "untracked_lifecycle_events": untracked_lifecycle_events,
+            "active_tracked_orders_at_end": len(active_orders),
+        },
         errors=errors,
         warnings=warnings,
     )
@@ -446,6 +505,77 @@ def _parse_book(row: list[str], *, depth: int, line_number: int) -> tuple[list[d
                 raise ValueError(f"orderbook line {line_number}: occupied bid price must be positive")
             bids.append({"level": index + 1, "price_x10000": bid_price, "quantity": bid_size})
     return asks, bids
+
+
+def _validate_event_against_books(
+    event: ParsedMessage,
+    *,
+    previous_book: dict[str, dict[int, int]] | None,
+    current_book: dict[str, dict[int, int]],
+    active_orders: dict[int, tuple[str, int, int]],
+    line_number: int,
+    errors: list[str],
+) -> tuple[bool, bool]:
+    transition_checked = False
+    lifecycle_tracked = False
+    visible_delta = {1: 1, 2: -1, 3: -1, 4: -1}.get(event.source_event_code)
+    if (
+        visible_delta is not None
+        and previous_book is not None
+        and event.book_side is not None
+        and (
+            event.price_x10000 in previous_book[event.book_side]
+            and (
+                event.price_x10000 in current_book[event.book_side]
+                or visible_delta < 0
+            )
+        )
+    ):
+        observed = current_book[event.book_side].get(event.price_x10000, 0) - previous_book[
+            event.book_side
+        ].get(event.price_x10000, 0)
+        expected = visible_delta * event.size
+        transition_checked = True
+        if observed != expected:
+            errors.append(
+                f"orderbook line {line_number}: visible quantity delta {observed} "
+                f"does not match message delta {expected}"
+            )
+    if event.source_event_code in {5, 6, 7} and previous_book is not None and current_book != previous_book:
+        errors.append(
+            f"orderbook line {line_number}: {event.event_kind.lower()} unexpectedly changed visible depth"
+        )
+
+    if event.source_event_code == 1:
+        if event.source_order_id in active_orders:
+            errors.append(f"message line {line_number}: duplicate active source order id")
+        elif event.book_side is not None:
+            active_orders[event.source_order_id] = (
+                event.book_side,
+                event.price_x10000,
+                event.size,
+            )
+            lifecycle_tracked = True
+        if current_book.get(event.book_side or "", {}).get(event.price_x10000, 0) < event.size:
+            errors.append(f"orderbook line {line_number}: added source order is absent from visible depth")
+    elif event.source_event_code in {2, 3, 4}:
+        existing = active_orders.get(event.source_order_id)
+        if existing is not None:
+            lifecycle_tracked = True
+            side, price, remaining = existing
+            if side != event.book_side or price != event.price_x10000:
+                errors.append(f"message line {line_number}: source order side or price changed")
+            if event.size > remaining:
+                errors.append(f"message line {line_number}: source order volume is over-consumed")
+            elif event.source_event_code == 3 and event.size != remaining:
+                errors.append(f"message line {line_number}: delete does not remove the remaining source order volume")
+            else:
+                new_remaining = remaining - event.size
+                if event.source_event_code == 3 or new_remaining == 0:
+                    active_orders.pop(event.source_order_id, None)
+                else:
+                    active_orders[event.source_order_id] = (side, price, new_remaining)
+    return transition_checked, lifecycle_tracked
 
 
 def _write_chunks(pa, pq, directory, event_rows, book_rows, event_writer, book_writer):
